@@ -1,0 +1,37 @@
+# TODO strip down to bare minimum and upgrade python
+name: corr-24
+channels:
+  - conda-forge
+  - maxibor
+  - defaults
+  - bioconda # for fitter
+dependencies:
+  - python=3.9
+  - jupyter
+  - datasets
+  - numpy
+  - matplotlib
+  - seaborn
+  - pandas
+  - numba>=0.55
+  - scikit-learn
+  - scipy
+  - seaborn
+  - pytest
+  - pyhamcrest
+  - plotly
+  - python-graphviz
+  - llvmlite
+  - llvmdev
+  - tslearn
+  - wandb
+  - joblib
+  - gpy # dependency of GPclust
+  - fitter # find best distribution also for discrete data
+  - distfit # find best distribution for data
+  - pip
+  - pip:
+    - git+https://github.com/SheffieldML/GPclust.git # Gaussian clustering of TS
+    - stumpy # doesn't work if conda-forge installed, gives error Numba needs NumPy 1.20 or less even when forcing numba >0.55
+    - sequana
+    - teneto # not available on conda
