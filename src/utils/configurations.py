@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from os import path
 
 ROOT_DIR = path.realpath(path.join(path.dirname(__file__), '../..'))
+PATTERNS_TO_MODEL_PATH = path.join(ROOT_DIR, 'src/data_generation/config/correlation_patterns_to_model.csv')
 
 
 @dataclass
