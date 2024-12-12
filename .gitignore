@@ -1,6 +1,9 @@
 # don't check in the data - download from Zenodo
 data/
 
+# don't check in private configruations
+private.yaml
+
 #jetbrains
 .idea/
 .DS_Store

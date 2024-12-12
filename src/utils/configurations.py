@@ -1,9 +1,37 @@
 from dataclasses import dataclass, field
 
+import yaml
 from os import path
 
 ROOT_DIR = path.realpath(path.join(path.dirname(__file__), '../..'))
 PATTERNS_TO_MODEL_PATH = path.join(ROOT_DIR, 'src/data_generation/config/correlation_patterns_to_model.csv')
+SYNTHETIC_DATA_DIR = path.join(ROOT_DIR, 'data/synthetic_data')
+SYN_RAW_DATA_DIR = path.join(ROOT_DIR, '')
+SYN_NORMAL_CORR_DATA_DIR = path.join(ROOT_DIR, '')
+SYN_NON_NORMAL_CORR_DATA_DIR = path.join(ROOT_DIR, '')
+
+
+def load_private_yaml():
+    private_file = path.join(ROOT_DIR, 'private.yaml')
+    assert (path.exists(private_file))
+    with open(private_file, "r") as f:
+        config = yaml.safe_load(f)
+    return config
+
+
+@dataclass
+class SyntheticDataVariates:
+    iob: str = 'iob'  # insulin on board
+    cob: str = 'cob'  # carbs on board
+    ig: str = 'bg'  # interstitial glucose #todo change back to ig
+
+    @staticmethod
+    def columns():
+        return [SyntheticDataVariates.iob, SyntheticDataVariates.cob, SyntheticDataVariates.ig]
+
+    @staticmethod
+    def plot_columns():
+        return [col.upper() for col in SyntheticDataVariates.columns()]
 
 
 @dataclass
@@ -88,20 +116,6 @@ class Hourly(Resampling):
 
 
 @dataclass
-class HourlyJMIR29(Resampling):
-    # Hourly sampled for n=29, all days are left even those that don't have all hours
-    max_gap_in_min: int = 60
-    # there needs to be a reading at least every hour for the data points to be resampled for that hour
-    sample_rule: str = '1H'
-    needs_max_gap_checking: bool = False
-    description: str = 'Hourly'
-
-    @staticmethod
-    def csv_file_name():
-        return 'hourly_raw_jmir_29_iob_cob_bg.csv'
-
-
-@dataclass
 class Daily(Resampling):
     max_gap_in_min: int = 180
     # a reading every three hours for a daily resampling to be created
@@ -129,3 +143,11 @@ class FifteenMin(Resampling):
     @staticmethod
     def csv_file_name():
         return '15min_iob_cob_bg.csv'
+
+
+@dataclass
+class WandbConfiguration:
+    config = load_private_yaml()
+    # READ CONFIGURATIONS
+    wandb_project_name: str = config['wandb_project_name']
+    wandb_entity: str = config['wandb_entity']

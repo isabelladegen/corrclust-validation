@@ -72,7 +72,7 @@ class SyntheticSegmentedData:
         self.n_segments = n_segments
         self.generated_df = None  # that is the final correlated df
         self.segment_data_generators: [GenerateData] = []
-        self.generated_segment_df = None  # similar structure like for relclust result
+        self.generated_segment_df = None  # TODO rename to labels_d
         self.resampled_data = None
         self.resampled_segment_df = None
 

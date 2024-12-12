@@ -26,7 +26,7 @@ This repository provides:
 corrclust-validation/
 ├── data/                                       # Not in git - add yourself
 │   ├── synthetic-data/                         # Available on Zenodo
-│   │    ├── normal/                            # 30 ground truth datasets
+│   │    ├── raw/                               # Uncorrelated raw data
 │   │    │   ├── wandb-run-name-1-data.csv      # ts data for ds 1
 │   │    │   ├── wandb-run-name-1-labels.csv    # ground truth labels for ds 1
 │   │    │   ├── wandb-run-name-2-data.csv      # ts data for ds 2
@@ -36,12 +36,13 @@ corrclust-validation/
 │   │    │   │    └── wandb-run-name-1-wrong-cluster-1-labels.csv # just the labels file as that defines the segmentation and clustering
 │   │    │   │    └── wandb-run-name-1-wrong-cluster-2-labels.csv
 │   │    │   │    └── ...
+│   │    ├── normal/                            # 30 ground truth datasets
 │   │    ├── non_normal/                        # Distribution-shifted versions
 │   │    ├── irregular_p30/                     # Irregular 30% randomly dropped observations, non-normal  
 │   │    ├── irregular_p90/                     # Irregular 90% randomly dropped observations, non-normal
 │   │    ├── downsampled/                       # 1-min intervals downsampled and aggregated, non-normal
 │   │    ├── min_max_scaled/                    # min-max scaled 0-10
-│   │    └── wandb-30ds-generation-summary.csv  # Dataset generation parameters
+│   │    └── wandb-30ds-generation-summary.csv  # Datasets generated, names and summary
 ├── src/                    
 │   ├── data_generation/                        # Synthetic data generation
 │   ├── evaluation/                             # Core evaluation methodology
