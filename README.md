@@ -40,7 +40,7 @@ corrclust-validation/
 │   │    ├── non_normal/                        # Distribution-shifted versions
 │   │    ├── irregular_p30/                     # Irregular 30% randomly dropped observations, non-normal  
 │   │    ├── irregular_p90/                     # Irregular 90% randomly dropped observations, non-normal
-│   │    ├── downsampled/                       # 1-min intervals downsampled and aggregated, non-normal
+│   │    ├── downsampled_1min/                  # 1-min intervals downsampled and aggregated, non-normal
 │   │    ├── min_max_scaled/                    # min-max scaled 0-10
 │   │    └── wandb-30ds-generation-summary.csv  # Datasets generated, names and summary
 ├── src/                    

@@ -8,6 +8,7 @@ from src.utils.configurations import GeneralisedCols
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.evaluation.describe_synthetic_dataset import DescribeSyntheticDataset, DescribeSyntheticCols
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
+from tests.test_utils.configurations_for_testing import TEST_DATA_DIR
 
 group1_cluster_ids_to_compare = [(0, 1), (0, 2), (0, 3), (0, 6), (0, 9), (1, 4), (0, 18), (1, 7), (1, 10), (1, 19),
                                  (2, 5), (2, 8), (2, 11), (2, 20), (3, 4), (3, 5), (3, 12), (3, 21), (4, 13), (5, 23),
@@ -43,12 +44,13 @@ group5_cluster_ids_to_compare = [(4, 17), (5, 25), (7, 23), (8, 13), (10, 23), (
 
 a_ds_name = "misty-forest-56"
 backend = Backends.none.value
-ds = DescribeSyntheticDataset(a_ds_name, backend=backend)
+test_data_dir = TEST_DATA_DIR
+ds = DescribeSyntheticDataset(a_ds_name, backend=backend, data_dir=TEST_DATA_DIR)
 
 
 def test_describes_numeric_properties_of_synthetic_dataset():
     run_name = SyntheticDataSets.splendid_sunset
-    describe = DescribeSyntheticDataset(run_name)
+    describe = DescribeSyntheticDataset(run_name, data_dir=test_data_dir)
 
     assert_that(describe.needs_to_recalculate_labels, is_(False))
 

@@ -31,20 +31,21 @@ def min_max_scaled_df(df: pd.DataFrame, scale_range: (), columns: []) -> pd.Data
 
 
 @dataclass
-class SyntheticDataSegmentCols:
+class SyntheticDataSegmentCols:  # todo rename to labels cols
     segment_id = "id"
     start_idx = "start idx"
     end_idx = "end idx"
     length = "length"
-    pattern_id = "cluster_id"  # correlation pattern id
-    correlation_to_model = "correlation to model"
-    regularisation = "cov regularisation"
+    pattern_id = "cluster_id"  # canonical pattern id
+    correlation_to_model = "correlation to model"  # canonical pattern to model
+    regularisation = "cov regularisation"  # todo move to dataset level
     actual_correlation = "correlation achieved"  # this is spearman correlation
+    mae = "MAE"  # between canonical pattern and achieved correlation
     actual_within_tolerance = "correlation achieved with tolerance"
-    distribution_to_model = 'distribution to model'
-    distribution_args = 'distribution args'
-    distribution_kwargs = 'distribution kwargs'
-    repeats = 'repeated data generation'
+    distribution_to_model = 'distribution to model'  # todo move to dataset level
+    distribution_args = 'distribution args'  # todo move to dataset level
+    distribution_kwargs = 'distribution kwargs'  # todo move to dataset level
+    repeats = 'repeated data generation'  # todo move to dataset level
 
 
 class SyntheticSegmentedData:

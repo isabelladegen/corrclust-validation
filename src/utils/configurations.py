@@ -6,9 +6,11 @@ from os import path
 ROOT_DIR = path.realpath(path.join(path.dirname(__file__), '../..'))
 PATTERNS_TO_MODEL_PATH = path.join(ROOT_DIR, 'src/data_generation/config/correlation_patterns_to_model.csv')
 SYNTHETIC_DATA_DIR = path.join(ROOT_DIR, 'data/synthetic_data')
-SYN_RAW_DATA_DIR = path.join(ROOT_DIR, '')
-SYN_NORMAL_CORR_DATA_DIR = path.join(ROOT_DIR, '')
-SYN_NON_NORMAL_CORR_DATA_DIR = path.join(ROOT_DIR, '')
+
+
+def dir_for_data_type(data_type: str, data_dir: str = SYNTHETIC_DATA_DIR):
+    """ Returns the path to the data for the given type"""
+    return path.join(data_dir, data_type)
 
 
 def load_private_yaml():

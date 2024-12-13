@@ -8,8 +8,8 @@ from matplotlib import pyplot as plt
 import matplotlib as mpl
 from matplotlib.collections import EllipseCollection
 
-from src.utils.load_synthetic_data import load_synthetic_data, SyntheticFileTypes
-from src.utils.configurations import GeneralisedCols, SyntheticDataVariates
+from src.utils.load_synthetic_data import load_synthetic_data, SyntheticFileTypes, SyntheticDataType
+from src.utils.configurations import GeneralisedCols, SyntheticDataVariates, SYNTHETIC_DATA_DIR
 from src.utils.plots.matplotlib_helper_functions import reset_matplotlib, fontsize, Backends, use_latex_labels
 from src.data_generation.generate_synthetic_correlated_data import calculate_spearman_correlation, \
     check_correlations_are_within_original_strength
@@ -42,58 +42,30 @@ def to_correlation_matrix(corr_pairs: []):
     return corr_m
 
 
-def recalculate_correlation_columns_in_labels(data_df, labels_df):
-    achieved_corrs = []
-    within_tols = []
-    # iterate through all segments and recalculate achieved correlation, keep data ordered by pattern_id
-    for idx, row in labels_df.iterrows():
-        start_idx = row[SyntheticDataSegmentCols.start_idx]
-        end_idx = row[SyntheticDataSegmentCols.end_idx]
-        length = row[SyntheticDataSegmentCols.length]
-        pattern_id = row[SyntheticDataSegmentCols.pattern_id]
-        original_cor = ast.literal_eval(row[SyntheticDataSegmentCols.correlation_to_model])
-
-        # select data
-        segment_df = data_df.iloc[start_idx:end_idx + 1]
-        segment = segment_df.to_numpy()
-        if segment.shape[0] != length:
-            print("Help")
-        assert segment.shape[0] == length, "Mistake with indexing dataframe"
-
-        # calculated
-        achieved_cor = calculate_spearman_correlation(segment)
-        within_tol = check_correlations_are_within_original_strength(original_cor, achieved_cor)
-
-        # store results
-        achieved_corrs.append(str(achieved_cor))
-        within_tols.append(str(within_tol))
-
-    # update df
-    labels_df[SyntheticDataSegmentCols.actual_correlation] = achieved_corrs
-    labels_df[SyntheticDataSegmentCols.actual_within_tolerance] = within_tols
-    return labels_df
 
 
 class DescribeSyntheticDataset:
-    def __init__(self, run_name: str, data_type: str = SyntheticFileTypes.data, labels_file: str = '',
+    def __init__(self, run_name: str, data_type: str = SyntheticDataType.non_normal_correlated, labels_file: str = '',
                  data_cols: [str] = SyntheticDataVariates.columns(), value_range: (float, float) = None,
+                 data_dir: str = SYNTHETIC_DATA_DIR,
                  backend: str = Backends.none.value):
         """
         :param run_name: the name of the wandb run that generated the dataset
-        :param data_type: data is the correlated distribution shifted version, you can also access versions
-        before the distribution was shifted and correlation patterns implied
+        :param data_type: which data variation to load, by default most AID like SyntheticDataType.non_normal_correlated
         :param labels_file: if '' it will automatically select the label for the run time, if you want to
         read e.g bad labels file than you can provide the full name without the '_labels.csv' for that file
         :param data_cols: which columns in the data df are the values excluding time
         :param value_range: if not None data will be min max scaled to the range provided before description
+        :param data_dir: the root directory from which to read data, by default SYNTHETIC_DATA_DIR
         """
         self.backend = backend
         self.run_name = run_name
         self.data_type = data_type
         self.data_cols = data_cols
+        self.data_dir = data_dir
         self.value_range = value_range
-        self.data, self.labels, gt_labels = load_synthetic_data(self.run_name, self.data_type,
-                                                                labels_dataset=labels_file)
+        self.data, self.labels = load_synthetic_data(self.run_name, self.data_type,
+                                                                labels_dataset=labels_file, data_dir=data_dir)
 
         if self.value_range is not None:  # needs to scale data first
             self.data = min_max_scaled_df(self.data, scale_range=self.value_range, columns=self.data_cols)
