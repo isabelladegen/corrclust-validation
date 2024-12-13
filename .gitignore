@@ -1,6 +1,15 @@
 # don't check in the data - download from Zenodo
 data/
 
+# test data also too big for github
+tests/test_data/synthetic_data/irregular_p30/irregular_p_0_3_misty-forest-56-data.csv
+tests/test_data/synthetic_data/non_normal/misty-forest-56-data.csv
+tests/test_data/synthetic_data/non_normal/splendid-sunset-12-data.csv
+tests/test_data/synthetic_data/normal/misty-forest-56-data.csv
+tests/test_data/synthetic_data/normal/splendid-sunset-12-data.csv
+tests/test_data/synthetic_data/raw/misty-forest-56-data.csv
+tests/test_data/synthetic_data/raw/splendid-sunset-12-data.csv
+
 # don't check in private configruations
 private.yaml
 
