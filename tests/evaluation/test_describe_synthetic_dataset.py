@@ -3,7 +3,7 @@ import itertools
 import numpy as np
 from hamcrest import *
 
-from src.utils.load_synthetic_data import SyntheticDataSets, SyntheticFileTypes
+from src.utils.load_synthetic_data import SyntheticDataSets, SyntheticFileTypes, SyntheticDataType
 from src.utils.configurations import GeneralisedCols
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.evaluation.describe_synthetic_dataset import DescribeSyntheticDataset, DescribeSyntheticCols
@@ -166,8 +166,8 @@ def test_misty_forest_ds_description():
 
 def test_can_provide_datatype_for_uncorrelated_normal_data():
     run_name = SyntheticDataSets.splendid_sunset
-    data_type = SyntheticFileTypes.normal_data  # normal, not correlated data
-    describe = DescribeSyntheticDataset(run_name, data_type)
+    data_type = SyntheticDataType.raw  # normal, not correlated raw data
+    describe = DescribeSyntheticDataset(run_name, data_type, data_dir=test_data_dir)
 
     assert_that(describe.number_of_variates, is_(3))
     assert_that(describe.number_of_observations, is_(1226400))
@@ -177,19 +177,19 @@ def test_can_provide_datatype_for_uncorrelated_normal_data():
 
     # check not correlated
     correlation_patterns = describe.correlation_patterns_df
-    # just one pattern which is (0,0,0)
-    assert_that(correlation_patterns.shape[0], is_(1))
+    # raw data but the patterns we latter put in are still there
+    assert_that(correlation_patterns.shape[0], is_(23))
     row0 = correlation_patterns.iloc[0]
     # all segments follow the 0,0,0 correlation
-    assert_that(row0[DescribeSyntheticCols.n_within_tolerance], contains_exactly(100, 100, 100))
+    assert_that(row0[DescribeSyntheticCols.n_within_tolerance], contains_exactly(5, 5, 5))
     assert_that(row0[DescribeSyntheticCols.n_outside_tolerance], contains_exactly(0, 0, 0))
 
     # no variation all the same none correlated data
     sum_mean_abs_error = describe.sum_mean_absolute_error_stats
-    assert_that(sum_mean_abs_error['mean'], is_(0.0351))
-    assert_that(sum_mean_abs_error['min'], is_(0.0351))
-    assert_that(sum_mean_abs_error['max'], is_(0.0351))
-    assert_that(np.isnan(sum_mean_abs_error['std']))
+    assert_that(sum_mean_abs_error['mean'], is_(1.8393))
+    assert_that(sum_mean_abs_error['min'], is_(0.034))
+    assert_that(sum_mean_abs_error['max'], is_(3.02))
+    assert_that(sum_mean_abs_error['std'], is_(0.7673))
 
     # values generated follow normal distribution
     obs_values = describe.observations_stats
@@ -209,8 +209,8 @@ def test_can_provide_datatype_for_uncorrelated_normal_data():
 
 def test_can_provide_datatype_for_correlated_normal_data():
     run_name = SyntheticDataSets.splendid_sunset
-    data_type = SyntheticFileTypes.normal_correlated_data  # normal, not correlated data
-    describe = DescribeSyntheticDataset(run_name, data_type)
+    data_type = SyntheticDataType.normal_correlated
+    describe = DescribeSyntheticDataset(run_name, data_type=data_type, data_dir=test_data_dir)
 
     assert_that(describe.number_of_variates, is_(3))
     assert_that(describe.number_of_observations, is_(1226400))
@@ -360,8 +360,8 @@ def test_can_min_max_scale_the_data():
 
 
 def test_can_load_irregular_dataset():
-    irregular_30_ds_name = "irregular_p_0_3_" + a_ds_name
-    irregular_30 = DescribeSyntheticDataset(run_name=irregular_30_ds_name, backend=backend)
+    data_type = SyntheticDataType.irregular_p30_drop
+    irregular_30 = DescribeSyntheticDataset(run_name=a_ds_name, data_type=data_type, backend=backend, data_dir=test_data_dir)
     irregular_30.correlation_patterns_df[DescribeSyntheticCols.sum_mean_abs_error].describe()
 
     # check that the irregular lengths are the same or shorter (given we're dropping samples)

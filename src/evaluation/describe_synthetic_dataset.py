@@ -1,4 +1,3 @@
-import ast
 import itertools
 from dataclasses import dataclass
 
@@ -435,8 +434,7 @@ class DescribeSyntheticDataset:
          segments actual correlation and y has the class label for each row in X that has been modeled. (y_true)
         """
         y = self.labels[SyntheticDataSegmentCols.pattern_id].to_numpy()
-        x = np.array(
-            list(self.labels[SyntheticDataSegmentCols.actual_correlation].apply(lambda x: ast.literal_eval(x))))
+        x = np.array(self.labels[SyntheticDataSegmentCols.actual_correlation].to_list())
         return x, y
 
 
