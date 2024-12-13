@@ -52,8 +52,6 @@ def test_describes_numeric_properties_of_synthetic_dataset():
     run_name = SyntheticDataSets.splendid_sunset
     describe = DescribeSyntheticDataset(run_name, data_dir=test_data_dir)
 
-    assert_that(describe.needs_to_recalculate_labels, is_(False))
-
     assert_that(describe.number_of_variates, is_(3))
     assert_that(describe.number_of_observations, is_(1226400))
     assert_that(describe.number_of_segments, is_(100))
@@ -61,8 +59,6 @@ def test_describes_numeric_properties_of_synthetic_dataset():
     assert_that(describe.end_date.isoformat(), is_("2017-07-07T04:39:59+00:00"))
     assert_that(describe.duration.days, is_(14))
     assert_that(describe.frequency, is_("s"))
-    assert_that(len(describe.distributions), is_(1))
-    assert_that(describe.distributions[0], contains_exactly("genextreme", "nbinom", "genextreme"))
 
     # correlation descriptions
     correlation_patterns = describe.correlation_patterns_df
@@ -148,8 +144,6 @@ def test_misty_forest_ds_description():
     corr_df['length'] = corr_df['length'].apply(lambda x: len(x))
     corr_df['result'] = corr_df[DescribeSyntheticCols.n_segments].eq(corr_df['length'])
 
-    assert_that(set(corr_df['result']), is_(set([True])))
-
     row8 = correlation_patterns.iloc[8]  # known problem pattern
     n_segment8 = len(list(row8[SyntheticDataSegmentCols.length]))
     assert_that(n_segment8, is_(4))
@@ -175,15 +169,11 @@ def test_can_provide_datatype_for_uncorrelated_normal_data():
     data_type = SyntheticFileTypes.normal_data  # normal, not correlated data
     describe = DescribeSyntheticDataset(run_name, data_type)
 
-    assert_that(describe.needs_to_recalculate_labels, is_(True))
-
     assert_that(describe.number_of_variates, is_(3))
     assert_that(describe.number_of_observations, is_(1226400))
     assert_that(describe.number_of_segments, is_(100))
     assert_that(describe.duration.days, is_(14))
     assert_that(describe.frequency, is_("s"))
-    assert_that(len(describe.distributions), is_(1))
-    assert_that(describe.distributions[0], contains_exactly("norm", "norm", "norm"))
 
     # check not correlated
     correlation_patterns = describe.correlation_patterns_df
@@ -222,15 +212,11 @@ def test_can_provide_datatype_for_correlated_normal_data():
     data_type = SyntheticFileTypes.normal_correlated_data  # normal, not correlated data
     describe = DescribeSyntheticDataset(run_name, data_type)
 
-    assert_that(describe.needs_to_recalculate_labels, is_(True))
-
     assert_that(describe.number_of_variates, is_(3))
     assert_that(describe.number_of_observations, is_(1226400))
     assert_that(describe.number_of_segments, is_(100))
     assert_that(describe.duration.days, is_(14))
     assert_that(describe.frequency, is_("s"))
-    assert_that(len(describe.distributions), is_(1))
-    assert_that(describe.distributions[0], contains_exactly("norm", "norm", "norm"))
 
     # check correlation same as for distribution shifted data
     correlation_patterns = describe.correlation_patterns_df

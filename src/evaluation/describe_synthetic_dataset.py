@@ -8,11 +8,9 @@ from matplotlib import pyplot as plt
 import matplotlib as mpl
 from matplotlib.collections import EllipseCollection
 
-from src.utils.load_synthetic_data import load_synthetic_data, SyntheticFileTypes, SyntheticDataType
+from src.utils.load_synthetic_data import load_synthetic_data, SyntheticDataType
 from src.utils.configurations import GeneralisedCols, SyntheticDataVariates, SYNTHETIC_DATA_DIR
 from src.utils.plots.matplotlib_helper_functions import reset_matplotlib, fontsize, Backends, use_latex_labels
-from src.data_generation.generate_synthetic_correlated_data import calculate_spearman_correlation, \
-    check_correlations_are_within_original_strength
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols, min_max_scaled_df
 
 
@@ -42,8 +40,6 @@ def to_correlation_matrix(corr_pairs: []):
     return corr_m
 
 
-
-
 class DescribeSyntheticDataset:
     def __init__(self, run_name: str, data_type: str = SyntheticDataType.non_normal_correlated, labels_file: str = '',
                  data_cols: [str] = SyntheticDataVariates.columns(), value_range: (float, float) = None,
@@ -65,14 +61,10 @@ class DescribeSyntheticDataset:
         self.data_dir = data_dir
         self.value_range = value_range
         self.data, self.labels = load_synthetic_data(self.run_name, self.data_type,
-                                                                labels_dataset=labels_file, data_dir=data_dir)
+                                                     labels_dataset=labels_file, data_dir=data_dir)
 
         if self.value_range is not None:  # needs to scale data first
             self.data = min_max_scaled_df(self.data, scale_range=self.value_range, columns=self.data_cols)
-
-        self.needs_to_recalculate_labels = not data_type == SyntheticFileTypes.data
-        if self.needs_to_recalculate_labels:
-            self.__recalculate_labels()
 
         self.number_of_variates = len(self.data_cols)
         self.number_of_observations = self.data.shape[0]
@@ -81,16 +73,11 @@ class DescribeSyntheticDataset:
         self.end_date = self.data.iloc[-1][GeneralisedCols.datetime]
         self.duration = self.end_date - self.start_date
         self.frequency = self.data[GeneralisedCols.datetime].dt.freq
-        # unique distribution for each variates, returns list of lists
-        self.distributions = [ast.literal_eval(item) for item in
-                              self.labels[SyntheticDataSegmentCols.distribution_to_model].unique()]
         self.patterns = self.labels[SyntheticDataSegmentCols.pattern_id].unique().tolist()
 
         # absolute errors
-        correlation_to_model_as_numpy = np.array([ast.literal_eval(item) for item in
-                                                  self.labels[SyntheticDataSegmentCols.correlation_to_model]])
-        achieved_correlation_as_numpy = np.array([ast.literal_eval(item) for item in
-                                                  self.labels[SyntheticDataSegmentCols.actual_correlation]])
+        correlation_to_model_as_numpy = np.array(self.labels[SyntheticDataSegmentCols.correlation_to_model].to_list())
+        achieved_correlation_as_numpy = np.array(self.labels[SyntheticDataSegmentCols.actual_correlation].to_list())
         absolute_errors = np.absolute(np.array(correlation_to_model_as_numpy) - np.array(achieved_correlation_as_numpy))
 
         # dfs with pattern id col and achieved correlations for each variate with indices as columns
@@ -100,21 +87,18 @@ class DescribeSyntheticDataset:
         abs_errors_df[SyntheticDataSegmentCols.pattern_id] = self.labels[SyntheticDataSegmentCols.pattern_id]
 
         # Within tolerance with id and variate indices as columns
-        within_tolerance_as_numpy = np.array([ast.literal_eval(item) for item in
-                                              self.labels[SyntheticDataSegmentCols.actual_within_tolerance]])
+        within_tolerance_as_numpy = np.array(self.labels[SyntheticDataSegmentCols.actual_within_tolerance].to_list())
         within_tolerance_df = pd.DataFrame(within_tolerance_as_numpy)
         within_tolerance_df[SyntheticDataSegmentCols.pattern_id] = self.labels[SyntheticDataSegmentCols.pattern_id]
 
         # creates df from value counts with columns: SyntheticDataSegmentCols.pattern_id,
         # SyntheticDataSegmentCols.correlation_to_model, counts, 'length' (list of segment lengths for pattern),
         # min, max, mean, std achieved correlations, min, max, mean, std absolute error in correlation
-        as_df = self.labels[[SyntheticDataSegmentCols.pattern_id,
-                             SyntheticDataSegmentCols.correlation_to_model]].value_counts().to_frame().reset_index()
-        as_df[SyntheticDataSegmentCols.correlation_to_model] = [ast.literal_eval(item) for item in
-                                                                as_df[SyntheticDataSegmentCols.correlation_to_model]]
+        as_df = self.labels[[SyntheticDataSegmentCols.pattern_id]].value_counts().to_frame().reset_index()
         as_df.rename(columns={'count': DescribeSyntheticCols.n_segments}, inplace=True)
 
         # add list of segment length, achieved corr cols and error corr cols
+        correlation_to_model = []
         seg_lengths_by_pattern = []
         achieved_min_results = []
         achieved_max_results = []
@@ -131,10 +115,11 @@ class DescribeSyntheticDataset:
 
         for idx, row in as_df.iterrows():
             pattern_id = row[SyntheticDataSegmentCols.pattern_id]
-            lengths = list(self.labels[self.labels[SyntheticDataSegmentCols.pattern_id] == pattern_id][
-                               SyntheticDataSegmentCols.length])
+            labels_for_id = self.labels[self.labels[SyntheticDataSegmentCols.pattern_id] == pattern_id]
+            lengths = list(labels_for_id[SyntheticDataSegmentCols.length])
             seg_lengths_by_pattern.append(lengths)
-
+            corr_to_model = labels_for_id.iloc[0][SyntheticDataSegmentCols.correlation_to_model]
+            correlation_to_model.append(corr_to_model)
             corr_stats = correlations_df[correlations_df[SyntheticDataSegmentCols.pattern_id] == pattern_id][
                 var_columns].describe().round(4)
             achieved_min_results.append(list(corr_stats.loc['min']))
@@ -157,6 +142,7 @@ class DescribeSyntheticDataset:
             n_within_tol_results.append(count_trues)
             n_outside_tol_results.append(count_falses)
 
+        as_df[SyntheticDataSegmentCols.correlation_to_model] = correlation_to_model
         as_df[SyntheticDataSegmentCols.length] = seg_lengths_by_pattern
         as_df[DescribeSyntheticCols.achieved_min] = achieved_min_results
         as_df[DescribeSyntheticCols.achieved_max] = achieved_max_results
@@ -201,7 +187,7 @@ class DescribeSyntheticDataset:
 
         self.segment_length_stats = self.labels[SyntheticDataSegmentCols.length].describe().round(3)
         self.segment_length_counts = self.labels[SyntheticDataSegmentCols.length].value_counts()
-        self.observations_stats = self.data[self.data_cols].describe().round(3)
+        self.observations_stats = self.data[SyntheticDataVariates.columns()].describe().round(3)
 
         out_tol = np.array(list(self.correlation_patterns_df[DescribeSyntheticCols.n_outside_tolerance]))
         cols_comb = itertools.combinations(self.data_cols, 2)
@@ -235,39 +221,11 @@ class DescribeSyntheticDataset:
         # calculate data by pattern id
         self.data_by_pattern_id = self.__create_dictionary_of_data_by_pattern_id()
 
-    def __recalculate_labels(self):
-        """ The labels files is wrong for the normal and normal uncorrelated data and needs changing """
-        n_rows = self.labels.shape[0]
-
-        # update distribution - needs to be in string as that is how it loads from csv
-        if self.data_type in [SyntheticFileTypes.normal_data, SyntheticFileTypes.normal_scaled_data,
-                              SyntheticFileTypes.normal_correlated_data,
-                              SyntheticFileTypes.normal_correlated_scaled_data]:
-            distribution = str(['norm', 'norm', 'norm'])
-            args = str([(), (), ()])
-            kwargs = str([{'loc': 0, 'scale': 1}, {'loc': 0, 'scale': 1}, {'loc': 0, 'scale': 1}])
-            self.labels[SyntheticDataSegmentCols.distribution_to_model] = list(itertools.repeat(distribution, n_rows))
-            self.labels[SyntheticDataSegmentCols.distribution_args] = list(itertools.repeat(args, n_rows))
-            self.labels[SyntheticDataSegmentCols.distribution_kwargs] = list(itertools.repeat(kwargs, n_rows))
-
-        # data with no correlation pattern
-        if self.data_type in [SyntheticFileTypes.normal_data, SyntheticFileTypes.normal_scaled_data]:
-            # change to no pattern
-            self.labels[SyntheticDataSegmentCols.pattern_id] = 0
-            cor_to_model = str([0, 0, 0])
-            self.labels[SyntheticDataSegmentCols.correlation_to_model] = list(itertools.repeat(cor_to_model, n_rows))
-
-        # for all recalculate achieved correlation
-        data_df = self.data[self.data_cols]
-        self.labels = recalculate_correlation_columns_in_labels(data_df, self.labels)
-
     def __find_all_groups(self):
         # all combinations of patterns
         all_pattern_combinations = list(itertools.combinations_with_replacement(self.patterns, 2))
-        pattern_models = {
-            pid: ast.literal_eval(self.labels[self.labels[SyntheticDataSegmentCols.pattern_id] == pid][
-                                      SyntheticDataSegmentCols.correlation_to_model].iloc[0]) for pid in
-            self.patterns}
+        pattern_models = {pid: self.labels[self.labels[SyntheticDataSegmentCols.pattern_id] == pid][
+            SyntheticDataSegmentCols.correlation_to_model].iloc[0] for pid in self.patterns}
 
         # dictionary of pattern id and pattern model
         groups = {i: [] for i in range(6)}
@@ -375,7 +333,6 @@ class DescribeSyntheticDataset:
             end_idx = row[SyntheticDataSegmentCols.end_idx]
             length = row[SyntheticDataSegmentCols.length]
             pattern_id = row[SyntheticDataSegmentCols.pattern_id]
-            original_cor = ast.literal_eval(row[SyntheticDataSegmentCols.correlation_to_model])
 
             # select data
             segment_df = data_df.iloc[start_idx:end_idx + 1]
