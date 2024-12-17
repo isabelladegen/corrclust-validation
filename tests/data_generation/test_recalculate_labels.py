@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
-from src.data_generation.recalculate_labels import recalculate_labels_df_from_data
+from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols, \
+    recalculate_labels_df_from_data
 from src.utils.configurations import dir_for_data_type
 from src.utils.load_synthetic_data import SyntheticDataType, load_synthetic_data, SyntheticFileTypes
 from tests.test_utils.configurations_for_testing import TEST_DATA_DIR
@@ -16,7 +16,7 @@ def test_this_is_temporary_to_create_correct_labels_files():
     run_name = "misty-forest-56"
     # run_name = "splendid-sunset-12"
 
-    data_type = SyntheticDataType.downsampled_1min
+    data_type = SyntheticDataType.irregular_p30_drop
     data_df, labels_df = load_synthetic_data(run_name, data_type=data_type, data_dir=test_data_dir)
     # drop columns:
     keep_columns = [SyntheticDataSegmentCols.segment_id, SyntheticDataSegmentCols.start_idx,

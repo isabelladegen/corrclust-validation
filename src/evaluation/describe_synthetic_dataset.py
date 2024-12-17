@@ -40,14 +40,12 @@ def to_correlation_matrix(corr_pairs: []):
 
 
 class DescribeSyntheticDataset:
-    def __init__(self, run_name: str, data_type: str = SyntheticDataType.non_normal_correlated, labels_file: str = '',
+    def __init__(self, run_name: str, data_type: str = SyntheticDataType.non_normal_correlated,
                  data_cols: [str] = SyntheticDataVariates.columns(), value_range: (float, float) = None,
-                 data_dir: str = SYNTHETIC_DATA_DIR,
-                 backend: str = Backends.none.value):
+                 data_dir: str = SYNTHETIC_DATA_DIR, backend: str = Backends.none.value):
         """
         :param run_name: the name of the wandb run that generated the dataset
         :param data_type: which data variation to load, by default most AID like SyntheticDataType.non_normal_correlated
-        :param labels_file: if '' it will automatically select the label for the run time, if you want to
         read e.g bad labels file than you can provide the full name without the '_labels.csv' for that file
         :param data_cols: which columns in the data df are the values excluding time
         :param value_range: if not None data will be min max scaled to the range provided before description
@@ -59,8 +57,7 @@ class DescribeSyntheticDataset:
         self.data_cols = data_cols
         self.data_dir = data_dir
         self.value_range = value_range
-        self.data, self.labels = load_synthetic_data(self.run_name, self.data_type,
-                                                     labels_dataset=labels_file, data_dir=data_dir)
+        self.data, self.labels = load_synthetic_data(self.run_name, self.data_type, data_dir=data_dir)
 
         if self.value_range is not None:  # needs to scale data first
             self.data = min_max_scaled_df(self.data, scale_range=self.value_range, columns=self.data_cols)
@@ -73,6 +70,14 @@ class DescribeSyntheticDataset:
         self.duration = self.end_date - self.start_date
         self.frequency = self.data[GeneralisedCols.datetime].dt.freq
         self.patterns = self.labels[SyntheticDataSegmentCols.pattern_id].unique().tolist()
+        self.n_patterns = len(self.patterns)
+        self.mae_stats = self.labels[SyntheticDataSegmentCols.mae].describe().round(3)
+        self.patterns_stats = self.labels[SyntheticDataSegmentCols.pattern_id].value_counts().describe().round(3)
+        value_counts_within_tol = self.labels[SyntheticDataSegmentCols.actual_within_tolerance].apply(
+            lambda x: all(x)).value_counts()
+
+        self.n_segment_within_tolerance = value_counts_within_tol[True] if True in value_counts_within_tol else 0
+        self.n_segment_outside_tolerance = value_counts_within_tol[False] if False in value_counts_within_tol else 0
 
         # absolute errors
         correlation_to_model_as_numpy = np.array(self.labels[SyntheticDataSegmentCols.correlation_to_model].to_list())
@@ -221,6 +226,7 @@ class DescribeSyntheticDataset:
         self.data_by_pattern_id = self.__create_dictionary_of_data_by_pattern_id()
 
     def __find_all_groups(self):
+        """ this only works if patterns to model are ideal! """
         # all combinations of patterns
         all_pattern_combinations = list(itertools.combinations_with_replacement(self.patterns, 2))
         pattern_models = {pid: self.labels[self.labels[SyntheticDataSegmentCols.pattern_id] == pid][
@@ -238,8 +244,8 @@ class DescribeSyntheticDataset:
             n_changes = 0
             for idx, value1 in enumerate(p1):
                 value2 = p2[idx]
-                # difference between the two values
-                n_changes += abs(value1 - value2)
+                # difference between the two values in ideal distance, that is why we round
+                n_changes += round(abs(value1 - value2), 0)
 
             # add pattern to the group with that number of changes
             groups[n_changes].append(combination)

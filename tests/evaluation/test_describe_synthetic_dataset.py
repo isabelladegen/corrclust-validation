@@ -3,7 +3,7 @@ import itertools
 import numpy as np
 from hamcrest import *
 
-from src.utils.load_synthetic_data import SyntheticDataSets, SyntheticFileTypes, SyntheticDataType
+from src.utils.load_synthetic_data import SyntheticDataSets, SyntheticDataType
 from src.utils.configurations import GeneralisedCols
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.evaluation.describe_synthetic_dataset import DescribeSyntheticDataset, DescribeSyntheticCols
@@ -45,7 +45,7 @@ group5_cluster_ids_to_compare = [(4, 17), (5, 25), (7, 23), (8, 13), (10, 23), (
 a_ds_name = "misty-forest-56"
 backend = Backends.none.value
 test_data_dir = TEST_DATA_DIR
-ds = DescribeSyntheticDataset(a_ds_name, backend=backend, data_dir=TEST_DATA_DIR)
+ds = DescribeSyntheticDataset(a_ds_name, data_dir=TEST_DATA_DIR, backend=backend)
 
 
 def test_describes_numeric_properties_of_synthetic_dataset():
@@ -54,11 +54,16 @@ def test_describes_numeric_properties_of_synthetic_dataset():
 
     assert_that(describe.number_of_variates, is_(3))
     assert_that(describe.number_of_observations, is_(1226400))
+    assert_that(describe.n_patterns, is_(23))
     assert_that(describe.number_of_segments, is_(100))
     assert_that(describe.start_date.isoformat(), is_("2017-06-23T00:00:00+00:00"))
     assert_that(describe.end_date.isoformat(), is_("2017-07-07T04:39:59+00:00"))
     assert_that(describe.duration.days, is_(14))
     assert_that(describe.frequency, is_("s"))
+
+    # check number of segments with one or more variate within or outside tolerance
+    assert_that(describe.n_segment_within_tolerance, is_(100))
+    assert_that(describe.n_segment_outside_tolerance, is_(0))
 
     # correlation descriptions
     correlation_patterns = describe.correlation_patterns_df
@@ -87,6 +92,20 @@ def test_describes_numeric_properties_of_synthetic_dataset():
                 contains_exactly(-1, -1, 1))
     assert_that(correlation_patterns.iloc[-1][SyntheticDataSegmentCols.length],
                 contains_exactly(10800, 10800, 10800, 3600))
+
+    # pattern id use stats of value counts
+    assert_that(describe.patterns_stats['mean'], is_(4.348))
+    assert_that(describe.patterns_stats['min'], is_(4.0))
+    assert_that(describe.patterns_stats['max'], is_(5.0))
+    assert_that(describe.patterns_stats['std'], is_(0.487))
+    assert_that(describe.patterns_stats['50%'], is_(4.0))
+
+    # mae stats (L1/Q) - use directly from labels file which was calculated on generation
+    assert_that(describe.mae_stats['mean'], is_(0.113))
+    assert_that(describe.mae_stats['min'], is_(0.0))
+    assert_that(describe.mae_stats['max'], is_(0.217))
+    assert_that(describe.mae_stats['std'], is_(0.104))
+    assert_that(describe.mae_stats['50%'], is_(0.21))
 
     # mean abs errors across all variates
     sum_mean_abs_error = describe.sum_mean_absolute_error_stats
@@ -134,6 +153,10 @@ def test_describes_numeric_properties_of_synthetic_dataset():
 
 
 def test_misty_forest_ds_description():
+    # check number of segments with one or more variate within or outside tolerance
+    assert_that(ds.n_segment_within_tolerance, is_(100))
+    assert_that(ds.n_segment_outside_tolerance, is_(0))
+
     correlation_patterns = ds.correlation_patterns_df
 
     # correlation description works for all pattern
@@ -293,8 +316,8 @@ def test_segment_pairs_for_each_group():
 
 def test_plot_actual_correlations_for_each_pattern():
     fig = ds.plot_correlation_matrix_for_each_pattern()
-    fig.savefig('images/correlation_for_patterns-misty-forest-56.png')
     assert_that(fig, is_not(None))
+    fig.savefig('images/correlation_for_patterns-misty-forest-56.png')
 
 
 def test_plot_description_of_subgroups():
@@ -304,26 +327,26 @@ def test_plot_description_of_subgroups():
     # expected order
     order = []  # default
     fig = ds.plot_example_correlation_matrix_for_each_subgroup(pattern_id=pattern_id, order_groups=order)
-    fig.savefig('images/subgroups-misty-forest-56.png')
     assert_that(fig, is_not(None))
+    fig.savefig('images/subgroups-misty-forest-56.png')
 
     # l1 norm order
     l1_order = [0, 1, 2, 3, 5, 4]
     fig = ds.plot_example_correlation_matrix_for_each_subgroup(pattern_id=pattern_id, order_groups=l1_order)
-    fig.savefig('images/l1-ordered-subgroups-misty-forest-56.png')
     assert_that(fig, is_not(None))
+    fig.savefig('images/l1-ordered-subgroups-misty-forest-56.png')
 
     # l2 norm order
     l2_order = [0, 1, 3, 2, 5, 4]
     fig = ds.plot_example_correlation_matrix_for_each_subgroup(pattern_id=pattern_id, order_groups=l2_order)
-    fig.savefig('images/l2-ordered-subgroups-misty-forest-56.png')
     assert_that(fig, is_not(None))
+    fig.savefig('images/l2-ordered-subgroups-misty-forest-56.png')
 
     # linf norm order
     linf_order = [0, 1, 3, 5, 2, 4]
     fig = ds.plot_example_correlation_matrix_for_each_subgroup(pattern_id=pattern_id, order_groups=linf_order)
-    fig.savefig('images/linf-ordered-subgroups-misty-forest-56.png')
     assert_that(fig, is_not(None))
+    fig.savefig('images/linf-ordered-subgroups-misty-forest-56.png')
 
 
 def test_return_modeled_correlation_as_x_matrix_and_label_as_y_vector():
@@ -348,7 +371,7 @@ def test_can_min_max_scale_the_data():
     max_v = 10.
     min_v = 0.
     value_range = (min_v, max_v)
-    ds_scaled = DescribeSyntheticDataset(a_ds_name, value_range=value_range, backend=backend)
+    ds_scaled = DescribeSyntheticDataset(a_ds_name, value_range=value_range, backend=backend, data_dir=TEST_DATA_DIR)
 
     # same number of columns as unscaled data
     assert_that(len(ds_scaled.data.columns), is_(len(ds.data.columns)))
@@ -361,9 +384,14 @@ def test_can_min_max_scale_the_data():
 
 def test_can_load_irregular_dataset():
     data_type = SyntheticDataType.irregular_p30_drop
-    irregular_30 = DescribeSyntheticDataset(run_name=a_ds_name, data_type=data_type, backend=backend, data_dir=test_data_dir)
+    irregular_30 = DescribeSyntheticDataset(run_name=a_ds_name, data_type=data_type, data_dir=test_data_dir,
+                                            backend=backend)
     irregular_30.correlation_patterns_df[DescribeSyntheticCols.sum_mean_abs_error].describe()
 
     # check that the irregular lengths are the same or shorter (given we're dropping samples)
     compare_lengths = irregular_30.labels[SyntheticDataSegmentCols.length] <= ds.labels[SyntheticDataSegmentCols.length]
     assert_that(all(list(compare_lengths)), is_(True))
+
+    # check tolerance
+    assert_that(irregular_30.n_segment_within_tolerance, is_(98))
+    assert_that(irregular_30.n_segment_outside_tolerance, is_(2))

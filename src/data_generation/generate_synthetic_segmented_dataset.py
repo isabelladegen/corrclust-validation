@@ -7,7 +7,7 @@ import pandas as pd
 from numpy.linalg import LinAlgError
 from tslearn.preprocessing import TimeSeriesScalerMinMax
 
-from src.utils.configurations import GeneralisedCols
+from src.utils.configurations import GeneralisedCols, SyntheticDataVariates
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.data_generation.generate_synthetic_correlated_data import GenerateData, calculate_spearman_correlation, \
     check_correlations_are_within_original_strength
@@ -30,6 +30,57 @@ def min_max_scaled_df(df: pd.DataFrame, scale_range: (), columns: []) -> pd.Data
     return df_
 
 
+def recalculate_labels_df_from_data(data_df, labels_df):
+    achieved_corrs = []
+    within_tols = []
+    # iterate through all segments and recalculate achieved correlation, keep data ordered by pattern_id
+    for idx, row in labels_df.iterrows():
+        start_idx = row[SyntheticDataSegmentCols.start_idx]
+        end_idx = row[SyntheticDataSegmentCols.end_idx]
+        length = row[SyntheticDataSegmentCols.length]
+
+        # select data
+        segment_df = data_df[SyntheticDataVariates.columns()].iloc[start_idx:end_idx + 1]
+        segment = segment_df.to_numpy()
+        assert segment.shape[0] == length, "Mistake with indexing dataframe"
+
+        # calculated
+        achieved_cor = calculate_spearman_correlation(segment)
+        within_tol = check_correlations_are_within_original_strength(row[SyntheticDataSegmentCols.correlation_to_model],
+                                                                     achieved_cor)
+
+        # store results
+        achieved_corrs.append(achieved_cor)
+        within_tols.append(within_tol)
+
+    # update df
+    labels_df[SyntheticDataSegmentCols.actual_correlation] = achieved_corrs
+    labels_df[SyntheticDataSegmentCols.actual_within_tolerance] = within_tols
+    labels_df[SyntheticDataSegmentCols.mae] = mean_absolute_error_from_labels_df(labels_df)
+    return labels_df
+
+
+def mean_absolute_error_from_labels_df(labels_df: pd.DataFrame, round_to: int = 3):
+    """Recalculate just the sum of absolute error between correlation to model and correlation achieved
+    for each segment
+    """
+    n = len(labels_df.loc[0, SyntheticDataSegmentCols.correlation_to_model])
+    canonical_pattern = np.array(labels_df[SyntheticDataSegmentCols.correlation_to_model].to_list())
+    achieved_correlation = np.array(labels_df[SyntheticDataSegmentCols.actual_correlation].to_list())
+    error = np.round(np.sum(abs(canonical_pattern - achieved_correlation), axis=1) / n, round_to)
+    return error
+
+
+def mean_absolute_error(canonical_patterns: [], achieved_correlations: [], round_to: int = 3):
+    """
+    Calculate the mean absolute error between canonical patterns and achieved correlations
+    """
+    n = len(canonical_patterns)
+    error = np.round(
+        np.sum(abs(np.array(canonical_patterns) - np.array(achieved_correlations)), axis=1) / n, round_to)
+    return error
+
+
 @dataclass
 class SyntheticDataSegmentCols:  # todo rename to labels cols
     segment_id = "id"
@@ -38,7 +89,7 @@ class SyntheticDataSegmentCols:  # todo rename to labels cols
     length = "length"
     pattern_id = "cluster_id"  # canonical pattern id
     correlation_to_model = "correlation to model"  # canonical pattern to model
-    regularisation = "cov regularisation"  # todo move to dataset level
+    regularisation = "corr regularisation"  # todo move to dataset level
     actual_correlation = "correlation achieved"  # this is spearman correlation
     mae = "MAE"  # between canonical pattern and achieved correlation
     actual_within_tolerance = "correlation achieved with tolerance"
@@ -71,16 +122,16 @@ class SyntheticSegmentedData:
         self.variate_names = variate_names
         self.n_variates = n_variates
         self.n_segments = n_segments
-        self.generated_df = None  # that is the final correlated df
+        self.non_normal_data_df = None  # that is the final AID like correlated df
         self.segment_data_generators: [GenerateData] = []
-        self.generated_segment_df = None  # TODO rename to labels_d
+        self.non_normal_labels_df = None
         self.resampled_data = None
-        self.resampled_segment_df = None
+        self.resampled_labels_df = None
 
     def generate(self):
-        self.generated_df = None
+        self.non_normal_data_df = None
         self.segment_data_generators = []
-        self.generated_segment_df = None
+        self.non_normal_labels_df = None
         generated_df = None
 
         # lists to store results
@@ -93,10 +144,7 @@ class SyntheticSegmentedData:
         regularisations = []  # only for cholesky
         actual_correlations = []
         actual_within_tols = []
-        distributions_to_model = []
-        distributions_args = []
-        distributiosn_kwargs = []
-        repeats = []
+        maes = []
 
         segment_start_idx = 0  # zero based indexing
         pattern_ids_to_model = list(self.patterns_to_model.keys())
@@ -177,14 +225,10 @@ class SyntheticSegmentedData:
             regularisations.append(regularisation)
             actual_correlations.append(correlations_achieved)
             actual_within_tols.append(within_tol)
-            distributions_to_model.append([dist.name for dist in distributions])
-            distributions_args.append(args)
-            distributiosn_kwargs.append(kwargs)
             start_indices.append(segment_start_idx)
             end_indices.append(segment_end_idx)
             pattern_ids.append(pattern_id)
             observation_count.append(n_observations)
-            repeats.append(repeated)
             segment_start_idx = segment_end_idx + 1  # next segment start idx
 
             # append data to generated_df
@@ -193,6 +237,7 @@ class SyntheticSegmentedData:
             else:
                 generated_df = pd.concat([generated_df, df], axis=0)
 
+        maes = mean_absolute_error(correlations_to_model, actual_correlations)
         segment_dict = {
             SyntheticDataSegmentCols.segment_id: segment_ids,
             SyntheticDataSegmentCols.start_idx: start_indices,
@@ -202,17 +247,14 @@ class SyntheticSegmentedData:
             SyntheticDataSegmentCols.correlation_to_model: correlations_to_model,
             SyntheticDataSegmentCols.actual_correlation: actual_correlations,
             SyntheticDataSegmentCols.actual_within_tolerance: actual_within_tols,
+            SyntheticDataSegmentCols.mae: maes,
             SyntheticDataSegmentCols.regularisation: regularisations,
-            SyntheticDataSegmentCols.distribution_to_model: distributions_to_model,
-            SyntheticDataSegmentCols.distribution_args: distributions_args,
-            SyntheticDataSegmentCols.distribution_kwargs: distributiosn_kwargs,
-            SyntheticDataSegmentCols.repeats: repeats,
         }
-        self.generated_segment_df = pd.DataFrame(segment_dict)  # segment id is the index of this df
+        self.non_normal_labels_df = pd.DataFrame(segment_dict)
 
         generated_df.reset_index(drop=True, inplace=True)
-        self.generated_df = self.__add_timestamp(generated_df)
-        return self.generated_df
+        self.non_normal_data_df = self.__add_timestamp(generated_df)
+        return self.non_normal_data_df
 
     def plot_distribution_for_segment(self, segment_id: int, backend=Backends.none.value):
         """ Segments id start with 0 to n_segments-1"""
@@ -242,63 +284,55 @@ class SyntheticSegmentedData:
         :param rule: pandas resample rule
         :return: pd.Dataframe
         """
-        resampled = self.generated_df.resample(rule, on=GeneralisedCols.datetime).mean()
+        resampled = self.non_normal_data_df.resample(rule, on=GeneralisedCols.datetime).mean()
         self.resampled_data = resampled
 
         # calculate new cluster segment df for resampled data
-        reduction_in_frequency = self.generated_df.shape[0] / self.resampled_data.shape[0]
-        resampled_segment_df = self.generated_segment_df.copy()
-        resampled_segment_df[SyntheticDataSegmentCols.length] = resampled_segment_df[
+        reduction_in_frequency = self.non_normal_data_df.shape[0] / self.resampled_data.shape[0]
+        resampled_labels_df = self.non_normal_labels_df.copy()
+        resampled_labels_df[SyntheticDataSegmentCols.length] = resampled_labels_df[
             SyntheticDataSegmentCols.length].div(reduction_in_frequency).astype(int)
         new_start_indices = [0]
         new_end_indices = []
-        for previous_idx in range(resampled_segment_df.shape[0] - 1):
-            previous_length = resampled_segment_df.iloc[previous_idx].length
+        for previous_idx in range(resampled_labels_df.shape[0] - 1):
+            previous_length = resampled_labels_df.iloc[previous_idx].length
             previous_start_idx = new_start_indices[previous_idx]
             new_idx = previous_start_idx + previous_length
             new_start_indices.append(new_idx)
             new_end_indices.append(new_idx - 1)
         # add last end index
-        new_end_indices.append(new_start_indices[-1] + resampled_segment_df.iloc[-1].length - 1)
-        # update dataframe
-        resampled_segment_df[SyntheticDataSegmentCols.start_idx] = new_start_indices
-        resampled_segment_df[SyntheticDataSegmentCols.end_idx] = new_end_indices
+        new_end_indices.append(new_start_indices[-1] + resampled_labels_df.iloc[-1].length - 1)
+
+        # update labels data
+        resampled_labels_df[SyntheticDataSegmentCols.start_idx] = new_start_indices
+        resampled_labels_df[SyntheticDataSegmentCols.end_idx] = new_end_indices
 
         # update actual correlation and correlation within tolerance
-        new_actual_correlations = []
-        new_cors_within_tol = []
-        for row in resampled_segment_df.iterrows():
-            start_idx = row[1][SyntheticDataSegmentCols.start_idx]
-            end_idx = row[1][SyntheticDataSegmentCols.end_idx]
+        resampled_labels_df = recalculate_labels_df_from_data(resampled, resampled_labels_df)
+        self.resampled_labels_df = resampled_labels_df
 
-            data = resampled.iloc[start_idx:end_idx + 1].to_numpy()
-            correlations = calculate_spearman_correlation(data)
+        return resampled, resampled_labels_df
 
-            original_cor = row[1][SyntheticDataSegmentCols.correlation_to_model]
-            within_tol = check_correlations_are_within_original_strength(original_cor, correlations)
-
-            new_actual_correlations.append(correlations)
-            new_cors_within_tol.append(within_tol)
-
-        resampled_segment_df[SyntheticDataSegmentCols.actual_correlation] = new_actual_correlations
-        resampled_segment_df[SyntheticDataSegmentCols.actual_within_tolerance] = new_cors_within_tol
-
-        self.resampled_segment_df = resampled_segment_df
-
-        return resampled, resampled_segment_df
-
-    def normal_generated_df(self):
-        """ Returns the normal data before it got correlated and distribution shifted"""
+    def raw_generated_data_labels_df(self):
+        """
+        Returns the normal data before it got correlated and distribution shifted
+        """
         normal_data = [g.normal_data for g in self.segment_data_generators]
         stacked_data = np.vstack(normal_data)
-        df = self.generated_df.copy()
+        df = self.non_normal_data_df.copy()
         df[self.variate_names] = stacked_data
-        return df
+        labels_df = self.non_normal_labels_df.copy()
+        labels_df = recalculate_labels_df_from_data(df, labels_df)
+        return df, labels_df
 
-    def normal_correlated_generated_df(self):
-        """ Returns the normal and correlated data before it got distribution shifted"""
+    def normal_correlated_generated_data_labels_df(self):
+        """
+        Returns the normal and correlated data before it got distribution shifted
+        """
         normal_cor_data = [g.normal_correlated_data for g in self.segment_data_generators]
         stacked_data = np.vstack(normal_cor_data)
-        df = self.generated_df.copy()
+        df = self.non_normal_data_df.copy()
         df[self.variate_names] = stacked_data
-        return df
+        labels_df = self.non_normal_labels_df.copy()
+        labels_df = recalculate_labels_df_from_data(df, labels_df)
+        return df, labels_df

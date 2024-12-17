@@ -9,6 +9,7 @@ tests/test_data/synthetic_data/normal/misty-forest-56-data.csv
 tests/test_data/synthetic_data/normal/splendid-sunset-12-data.csv
 tests/test_data/synthetic_data/raw/misty-forest-56-data.csv
 tests/test_data/synthetic_data/raw/splendid-sunset-12-data.csv
+tests/evaluation/results/*
 
 # don't check in private configruations
 private.yaml
@@ -180,3 +181,7 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
+**/test-run-data.csv
+**/test-run-labels.csv
+/tests/images/
+wandb/

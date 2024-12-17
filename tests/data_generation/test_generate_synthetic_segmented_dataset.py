@@ -1,10 +1,12 @@
 import itertools
 
+import numpy as np
 import pandas as pd
 from hamcrest import *
 from matplotlib import pyplot as plt
 from scipy.stats import genextreme, nbinom
 
+from src.data_generation.generate_synthetic_correlated_data import check_correlations_are_within_original_strength
 from src.utils.configurations import GeneralisedCols
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.data_generation.model_correlation_patterns import ModelCorrelationPatterns
@@ -67,37 +69,55 @@ def test_generates_two_segments_with_given_correlation():
                                        distributions_args, distributions_kwargs, short_segment_durations,
                                        long_segment_durations, correlations_to_model, variate_names)
     generator.generate()
-    segment_df = generator.generated_segment_df
-    assert_that(segment_df.shape[0], is_(number_of_segments))
+    non_normal_labels_df = generator.non_normal_labels_df
+    assert_that(non_normal_labels_df.shape[0], is_(number_of_segments))
 
     # cycle through patterns until number of segments are created
-    assert_that(segment_df.iloc[0][SyntheticDataSegmentCols.pattern_id], is_(1))
-    assert_that(segment_df.iloc[1][SyntheticDataSegmentCols.pattern_id], is_(2))
-    assert_that(segment_df.iloc[2][SyntheticDataSegmentCols.pattern_id], is_(3))
-    assert_that(segment_df.iloc[3][SyntheticDataSegmentCols.pattern_id], is_(4))
-    assert_that(segment_df.iloc[4][SyntheticDataSegmentCols.pattern_id], is_(1))
+    assert_that(non_normal_labels_df.iloc[0][SyntheticDataSegmentCols.pattern_id], is_(1))
+    assert_that(non_normal_labels_df.iloc[1][SyntheticDataSegmentCols.pattern_id], is_(2))
+    assert_that(non_normal_labels_df.iloc[2][SyntheticDataSegmentCols.pattern_id], is_(3))
+    assert_that(non_normal_labels_df.iloc[3][SyntheticDataSegmentCols.pattern_id], is_(4))
+    assert_that(non_normal_labels_df.iloc[4][SyntheticDataSegmentCols.pattern_id], is_(1))
 
-    assert_that(segment_df.iloc[0][SyntheticDataSegmentCols.correlation_to_model], is_(all_strong))
-    assert_that(segment_df.iloc[2][SyntheticDataSegmentCols.correlation_to_model], is_(weak_and_strong))
-    assert_that(segment_df.iloc[3][SyntheticDataSegmentCols.correlation_to_model], is_(negative_weak_and_strong))
+    assert_that(non_normal_labels_df.iloc[0][SyntheticDataSegmentCols.correlation_to_model], is_(all_strong))
+    assert_that(non_normal_labels_df.iloc[2][SyntheticDataSegmentCols.correlation_to_model], is_(weak_and_strong))
+    assert_that(non_normal_labels_df.iloc[3][SyntheticDataSegmentCols.correlation_to_model],
+                is_(negative_weak_and_strong))
 
-    assert_that(segment_df.iloc[0][SyntheticDataSegmentCols.regularisation], is_(0.1))
-    assert_that(segment_df.iloc[1][SyntheticDataSegmentCols.regularisation], is_(0.000001))
-    assert_that(segment_df.iloc[2][SyntheticDataSegmentCols.regularisation], is_(0.0001))
-    assert_that(segment_df.iloc[3][SyntheticDataSegmentCols.regularisation], is_(0.3))
-    assert_that(segment_df.iloc[4][SyntheticDataSegmentCols.regularisation], is_(0.1))
+    assert_that(non_normal_labels_df.iloc[0][SyntheticDataSegmentCols.regularisation], is_(0.1))
+    assert_that(non_normal_labels_df.iloc[1][SyntheticDataSegmentCols.regularisation], is_(0.000001))
+    assert_that(non_normal_labels_df.iloc[2][SyntheticDataSegmentCols.regularisation], is_(0.0001))
+    assert_that(non_normal_labels_df.iloc[3][SyntheticDataSegmentCols.regularisation], is_(0.3))
+    assert_that(non_normal_labels_df.iloc[4][SyntheticDataSegmentCols.regularisation], is_(0.1))
 
     # draw 4 short segments and one long in cyclical order
-    assert_that(segment_df.iloc[0][SyntheticDataSegmentCols.length], is_(15))
-    assert_that(segment_df.iloc[1][SyntheticDataSegmentCols.length], is_(60))
-    assert_that(segment_df.iloc[2][SyntheticDataSegmentCols.length], is_(15))
-    assert_that(segment_df.iloc[3][SyntheticDataSegmentCols.length], is_(60))
-    assert_that(segment_df.iloc[4][SyntheticDataSegmentCols.length], is_(360))
-    assert_that(segment_df.iloc[5][SyntheticDataSegmentCols.length], is_(15))
-    assert_that(segment_df.iloc[6][SyntheticDataSegmentCols.length], is_(60))
+    assert_that(non_normal_labels_df.iloc[0][SyntheticDataSegmentCols.length], is_(15))
+    assert_that(non_normal_labels_df.iloc[1][SyntheticDataSegmentCols.length], is_(60))
+    assert_that(non_normal_labels_df.iloc[2][SyntheticDataSegmentCols.length], is_(15))
+    assert_that(non_normal_labels_df.iloc[3][SyntheticDataSegmentCols.length], is_(60))
+    assert_that(non_normal_labels_df.iloc[4][SyntheticDataSegmentCols.length], is_(360))
+    assert_that(non_normal_labels_df.iloc[5][SyntheticDataSegmentCols.length], is_(15))
+    assert_that(non_normal_labels_df.iloc[6][SyntheticDataSegmentCols.length], is_(60))
+
+    # check that labels df for raw and correlated normal and non_normal are not the same
+    _, raw_labels = generator.raw_generated_data_labels_df()
+    _, normal_labels = generator.normal_correlated_generated_data_labels_df()
+
+    mae_nn = non_normal_labels_df.loc[0, SyntheticDataSegmentCols.mae]
+    mae_raw = raw_labels.loc[0, SyntheticDataSegmentCols.mae]
+    mae_n = normal_labels.loc[0, SyntheticDataSegmentCols.mae]
+    assert_that(mae_raw, greater_than(mae_nn))
+    assert_that(mae_raw, greater_than(mae_n))
+
+    nn_achieved_correlation = np.array(non_normal_labels_df.loc[0, SyntheticDataSegmentCols.actual_correlation])
+    raw_achieved_correlation = np.array(raw_labels.loc[0, SyntheticDataSegmentCols.actual_correlation])
+    n_achieved_correlation = np.array(normal_labels.loc[0, SyntheticDataSegmentCols.actual_correlation])
+    assert_that(np.array_equal(nn_achieved_correlation, raw_achieved_correlation), is_(False))
+    assert_that(np.array_equal(nn_achieved_correlation, n_achieved_correlation), is_(False))
+    assert_that(np.array_equal(raw_achieved_correlation, n_achieved_correlation), is_(False))
 
     # visualise data generated
-    df = generator.generated_df
+    df = generator.non_normal_data_df
     assert_that(df.shape[1], is_(number_of_variates + 1))
     assert_that(df.columns, contains_exactly(
         *(GeneralisedCols.datetime, GeneralisedCols.iob, GeneralisedCols.cob, GeneralisedCols.bg)))
@@ -128,7 +148,7 @@ def test_generates_all_patterns():
     generator.generate()
 
     # assert all patterns have been used
-    segment_df = generator.generated_segment_df
+    segment_df = generator.non_normal_labels_df
     assert_that(segment_df[SyntheticDataSegmentCols.pattern_id].unique(),
                 contains_exactly(*list(cholesky_patterns.keys())))
 
@@ -137,14 +157,7 @@ def test_generates_all_patterns():
     # 4 times all the short, 2 times the first long, 2 times the second long and then the first three shorts
     length = 4 * length_of_four_short + 2 * long_segment_durations[0] + 2 * long_segment_durations[
         1] + first_three_shorts
-    assert_that(generator.generated_df.shape[0], is_(length))
-
-    list_of_lists = segment_df[SyntheticDataSegmentCols.actual_within_tolerance].values
-    flat_results = list(itertools.chain.from_iterable(list_of_lists))
-    print("Number of failures:")
-    print(len(flat_results) - sum(flat_results))
-    print("Row with max repetitions:")
-    print(segment_df.iloc[segment_df[SyntheticDataSegmentCols.repeats].idxmax()])
+    assert_that(generator.non_normal_data_df.shape[0], is_(length))
 
 
 def test_downsample_generated_data_to_minutes_and_check_correlation_results():
@@ -160,7 +173,7 @@ def test_downsample_generated_data_to_minutes_and_check_correlation_results():
                                        long_segment_durations, cholesky_patterns, variate_names)
     generator.generate()
     # check original data is second sampled
-    assert_that(pd.infer_freq(generator.generated_df[GeneralisedCols.datetime]), is_("s"))
+    assert_that(pd.infer_freq(generator.non_normal_data_df[GeneralisedCols.datetime]), is_("s"))
 
     generator.resample(rule="1min")
 
@@ -168,12 +181,12 @@ def test_downsample_generated_data_to_minutes_and_check_correlation_results():
     assert_that(pd.infer_freq(generator.resampled_data.index), is_("min"))
 
     # we're loosing more of the correlations when downsampling
-    original_segment_df = generator.generated_segment_df
+    original_segment_df = generator.non_normal_labels_df
     list_of_lists = original_segment_df[SyntheticDataSegmentCols.actual_within_tolerance].values
     original_flat_results = list(itertools.chain.from_iterable(list_of_lists))
     original_failure = len(original_flat_results) - sum(original_flat_results)
 
-    down_sampled_segment_df = generator.resampled_segment_df
+    down_sampled_segment_df = generator.resampled_labels_df
     list_of_lists = down_sampled_segment_df[SyntheticDataSegmentCols.actual_within_tolerance].values
     down_sampled_flat_results = list(itertools.chain.from_iterable(list_of_lists))
     downsampled_failure = len(down_sampled_flat_results) - sum(down_sampled_flat_results)
@@ -198,17 +211,17 @@ def test_returns_scaled_version_of_dataset():
     generator.generate()
 
     scale = (-100, -50)  # move data totally out of current range
-    min_max_scaled_data = min_max_scaled_df(generator.generated_df, scale_range=scale, columns=variate_names)
+    min_max_scaled_data = min_max_scaled_df(generator.non_normal_data_df, scale_range=scale, columns=variate_names)
 
     # was complete nonsense so added visual check
-    generator.generated_df.plot(x=GeneralisedCols.datetime, y=GeneralisedCols.iob, title="original")
+    generator.non_normal_data_df.plot(x=GeneralisedCols.datetime, y=GeneralisedCols.iob, title="original")
     min_max_scaled_data.plot(x=GeneralisedCols.datetime, y=GeneralisedCols.iob, title="scaled")
     plt.show()
 
     for variate in variate_names:
         # unscaled values are outside the scale range
-        assert_that(generator.generated_df[variate].min(), is_(greater_than(scale[0])))  # min > -100
-        assert_that(generator.generated_df[variate].max(), is_(greater_than(scale[1])))  # max > -50
+        assert_that(generator.non_normal_data_df[variate].min(), is_(greater_than(scale[0])))  # min > -100
+        assert_that(generator.non_normal_data_df[variate].max(), is_(greater_than(scale[1])))  # max > -50
 
         # scaled values are within the scale range
         assert_that(round(min_max_scaled_data[variate].min(), 0), is_(scale[0]))
@@ -232,20 +245,9 @@ def test_ensure_segment_creation_stays_within_correlation_strength_given():
                                        long_segment_durations, loadings_patterns, variate_names, max_repetitions=300)
     generator.generate()
 
-    segment_df = generator.generated_segment_df
-    # ensure data generation for a segment is repeated to attempt to get the correlation specified
-    shortest_results = segment_df[segment_df[SyntheticDataSegmentCols.length] == shortest]
-    longest_results = segment_df[segment_df[SyntheticDataSegmentCols.length] == longest]
-    # shorter segments are harder to get within repetition
-    assert_that(sum(shortest_results[SyntheticDataSegmentCols.repeats]),
-                is_(greater_than(sum(longest_results[SyntheticDataSegmentCols.repeats]))))
+    segment_df = generator.non_normal_labels_df
 
     # check correlations stayed within tolerance
     list_of_lists = segment_df[SyntheticDataSegmentCols.actual_within_tolerance].values
     flat_results = list(itertools.chain.from_iterable(list_of_lists))
     assert_that(any(flat_results))  # some go to true
-
-    print("Number of failures:")
-    print(len(flat_results) - sum(flat_results))
-    print("Row with max repetitions:")
-    print(segment_df.iloc[segment_df[SyntheticDataSegmentCols.repeats].idxmax()])

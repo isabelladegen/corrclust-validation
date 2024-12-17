@@ -1,5 +1,3 @@
-from os import path
-
 from hamcrest import *
 from pandas.core.dtypes.common import is_datetime64_any_dtype
 

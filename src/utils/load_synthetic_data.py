@@ -45,18 +45,16 @@ class SyntheticFileTypes:
         return [self.data, self.normal_data, self.normal_correlated_data]
 
 
-def load_synthetic_data(run_id: str, data_type: str = SyntheticDataType.normal_correlated, labels_dataset: str = "",
+def load_synthetic_data(run_id: str, data_type: str = SyntheticDataType.normal_correlated,
                         data_dir: str = SYNTHETIC_DATA_DIR):
     """Returns data df and labels df for synthetic data with specified wandb run name
     :param run_id: name of run that generated the dataset
     :param data_type: select type from SyntheticDataType, defaults to normal correlated data
-    :param labels_dataset: name of the labels csv to load if not the same as the run_id, e.g to provide worse clustering,
     optional, if not given labels for run_id will be loaded
     :param data_dir: full path to directory where data is stored, defaults to SYNTHETIC_DATA_DIR
 
-    Data df is of has rows as observations and columns as time series. It has an additional column called datetime
+    Data df has rows as observations and columns as variants. It has an additional column called datetime
     Labels df is a segment value result df it has the columns specified in the SyntheticDataSegmentCols
-
     """
     data_file = SyntheticFileTypes.data
     labels_file = SyntheticFileTypes.labels
