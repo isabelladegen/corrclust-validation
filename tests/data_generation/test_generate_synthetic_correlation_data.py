@@ -15,7 +15,7 @@ from src.data_generation.generate_synthetic_correlated_data import GenerateData,
     calculate_correlation_error, is_pos_def, generate_observations, generate_correlation_matrix
 
 backend = Backends.none.value
-
+seed = 666
 
 def print_correlations_for(data):
     spear_cor = calculate_spearman_correlation(data=data)
@@ -73,8 +73,8 @@ def test_different_cholesky_correlation_patterns():
     distributions = [genextreme]
 
     generator = GenerateData(n, variates, correlations, distributions, args=args, kwargs=kwargs, method="Cholesky",
-                             covariance_regularisation=cov_reg)
-    generator.generate()
+                             regularisation=cov_reg)
+    generator.generate(seed=seed)
 
     # test resulting correlation
     gen_cor_errors = generator.calculate_correlation_error()
@@ -117,7 +117,7 @@ def test_different_loadings_correlation_patterns():
 
     for correlations in different_correlations:
         generator = GenerateData(n, variates, correlations, distributions, args=args, kwargs=kwargs, method="loadings")
-        generator.generate()
+        generator.generate(seed=seed)
 
         # test resulting correlation
         gen_cor_errors = generator.calculate_correlation_error()
@@ -145,7 +145,7 @@ def test_generate_synthetic_genextreme_correlated_data():
     distributions = [genextreme]
 
     generator = GenerateData(n, variates, correlations, distributions, args=args, kwargs=kwargs, method="loadings")
-    synthetic_data = generator.generate()
+    synthetic_data = generator.generate(seed=seed)
 
     # test resulting correlation
     gen_cor_errors = generator.calculate_correlation_error()
@@ -219,7 +219,7 @@ def test_can_generate_synthetic_correlated_data_for_different_distributions():
 
     generator = GenerateData(n, variates, correlations, distributions, args=ge_and_logn_args,
                              kwargs=ge_and_logn_kwargs)
-    generator.generate()
+    generator.generate(seed=seed)
 
     errors = generator.calculate_correlation_error()
 
@@ -247,7 +247,7 @@ def test_can_generate_synthetic_correlated_data_using_different_distributions_in
     distributions = [genextreme, nbinom]
 
     generator = GenerateData(n_obs, variates, correlations, distributions, args=args, kwargs=kwargs)
-    synthetic_data = generator.generate()
+    synthetic_data = generator.generate(seed=seed)
 
     errors = generator.calculate_correlation_error()
     print("Spearman's errors between specified and achieved cor")
@@ -312,7 +312,7 @@ def test_can_generate_different_shorter_segments_of_a_given_correlation_reliably
 
     # run 100 times
     for attempt in range(100):
-        generator.generate()
+        generator.generate(seed=seed)
         errors = generator.calculate_correlation_error()
 
         # test resulting correlation
@@ -342,8 +342,8 @@ def test_correlation_stays_within_strength_band_specified():
 
     # run 1: generate 5 observations (almost never stay within error)
     generator1 = GenerateData(15, variates, correlation1, distributions, args=args, kwargs=kwargs,
-                              covariance_regularisation=0.1)
-    generator1.generate()
+                              regularisation=0.1)
+    generator1.generate(seed=seed)
     within_strength1 = generator1.check_if_achieved_correlation_is_within_original_strengths()
     achieved_cors = generator1.achieved_correlations()
     expected_result = [abs(achieved_cors[0]) < 0.2, abs(achieved_cors[1]) >= 0.7, abs(achieved_cors[2] >= 0.7)]
@@ -353,8 +353,8 @@ def test_correlation_stays_within_strength_band_specified():
 
     # run 2: generate 1000 observations
     generator2 = GenerateData(1000, variates, correlation1, distributions, args=args, kwargs=kwargs,
-                              covariance_regularisation=0.1)
-    generator2.generate()
+                              regularisation=0.1)
+    generator2.generate(seed=seed)
     within_strength2 = generator2.check_if_achieved_correlation_is_within_original_strengths()
     achieved_cors2 = generator2.achieved_correlations()
     expected_result2 = [abs(achieved_cors2[0]) < 0.2, abs(achieved_cors2[1]) >= 0.7, abs(achieved_cors2[2] >= 0.7)]
@@ -376,7 +376,7 @@ def test_generated_data_has_regularly_sampled_time_stamps_for_a_given_frequency(
     distributions = [genextreme]
 
     generator = GenerateData(n, variates, correlations, distributions, args=args, kwargs=kwargs)
-    data = generator.generate()
+    data = generator.generate(seed=seed)
 
     # sampled at 1 second frequency
     delta = timedelta(seconds=1)
@@ -418,7 +418,7 @@ def test_difference_to_original_correlation_after_correlating_data_sampled_at_se
 
     # check mean correlation error when down sampling to minutes and five minutes
     for run in range(100):
-        data = generator.generate()
+        data = generator.generate(seed=seed+run)
         # sampled at 1 second frequency
         delta = timedelta(seconds=1)
         df = to_timeseries_df(data=data, delta=delta, columns=columns)
@@ -428,31 +428,31 @@ def test_difference_to_original_correlation_after_correlating_data_sampled_at_se
         assert_that(minute_sampled_df.shape[0], is_(15))
         min_sampled_data = minute_sampled_df[columns].to_numpy()
         min_errors = calculate_correlation_error(correlations, min_sampled_data)
-        min_cor_errors.append(mean(min_errors))
+        min_cor_errors.append(round(mean(min_errors), 3))
 
         # downsample to 5 minutes
         five_min_sampled_df = df.resample('5min', on=GeneralisedCols.datetime).mean()
         assert_that(five_min_sampled_df.shape[0], is_(3))
         five_min_sampled_data = five_min_sampled_df[columns].to_numpy()
         five_min_errors = calculate_correlation_error(correlations, five_min_sampled_data)
-        five_min_cor_errors.append(mean(five_min_errors))
+        five_min_cor_errors.append(round(mean(five_min_errors), 3))
 
     # calculate min, max, mean error over 100 runs
-    mean_min_error = mean(min_cor_errors)
+    mean_min_error = round(mean(min_cor_errors), 3)
     min_min_error = min(min_cor_errors)
     max_min_error = max(min_cor_errors)
 
-    mean_5min_error = mean(five_min_cor_errors)
+    mean_5min_error = round(mean(five_min_cor_errors), 3)
     min_5min_error = min(five_min_cor_errors)
     max_5min_error = max(five_min_cor_errors)
 
-    assert_that(mean_min_error, is_(less_than(0.15)))
-    assert_that(min_min_error, is_(less_than(0.05)))
-    assert_that(max_min_error, is_(less_than(0.6)))
+    assert_that(mean_min_error, is_(0.118))
+    assert_that(min_min_error, is_(0.019))
+    assert_that(max_min_error, is_(0.52))
 
-    assert_that(mean_5min_error, is_(less_than(0.45)))
-    assert_that(min_5min_error, is_(less_than(0.21)))
-    assert_that(max_5min_error, is_(less_than(1.4)))
+    assert_that(mean_5min_error, is_(0.361))
+    assert_that(min_5min_error, is_(0.2))
+    assert_that(max_5min_error, is_(1.267))
 
 
 @pytest.mark.skip(reason="takes a long time")
@@ -476,42 +476,41 @@ def test_difference_to_original_correlation_after_correlating_data_using_10000_s
 
     # check mean correlation error when down sampling to minutes and five minutes
     for run in range(100):
-        data = generator.generate()
+        data = generator.generate(seed=seed+run)
         # sampled at 1 second frequency
         delta = timedelta(milliseconds=1)
         df = to_timeseries_df(data=data, delta=delta, columns=columns)
         # downsample to minutes
         minute_sampled_df = df.resample('min', on=GeneralisedCols.datetime).mean()
         assert_that(minute_sampled_df.shape[0], is_(15))
+
         min_sampled_data = minute_sampled_df[columns].to_numpy()
-        min_cor = calculate_spearman_correlation(min_sampled_data)
-        min_errors = calculate_correlation_error(correlations, min_cor)
+        min_errors = calculate_correlation_error(correlations, min_sampled_data)
         min_cor_errors.append(mean(min_errors))
 
         # downsample to 5 minutes
         five_min_sampled_df = df.resample('5min', on=GeneralisedCols.datetime).mean()
         assert_that(five_min_sampled_df.shape[0], is_(3))
         five_min_sampled_data = five_min_sampled_df[columns].to_numpy()
-        five_min_cor = calculate_spearman_correlation(five_min_sampled_data)
-        five_min_errors = calculate_correlation_error(correlations, five_min_cor)
+        five_min_errors = calculate_correlation_error(correlations, five_min_sampled_data)
         five_min_cor_errors.append(mean(five_min_errors))
 
     # calculate min, max, mean error over 100 runs
-    mean_min_error = mean(min_cor_errors)
+    mean_min_error = round(mean(min_cor_errors), 3)
     min_min_error = min(min_cor_errors)
     max_min_error = max(min_cor_errors)
 
-    mean_5min_error = mean(five_min_cor_errors)
+    mean_5min_error = round(mean(five_min_cor_errors))
     min_5min_error = min(five_min_cor_errors)
     max_5min_error = max(five_min_cor_errors)
 
-    assert_that(mean_min_error, is_(less_than(0.15)))
-    assert_that(min_min_error, is_(less_than(0.05)))
-    assert_that(max_min_error, is_(less_than(0.5)))
+    assert_that(mean_min_error, is_(0.108))
+    assert_that(min_min_error, is_(0.012))
+    assert_that(max_min_error, is_(0.356))
 
-    assert_that(mean_5min_error, is_(less_than(0.45)))
-    assert_that(min_5min_error, is_(less_than(0.21)))
-    assert_that(max_5min_error, is_(less_than(1.4)))
+    assert_that(mean_5min_error, is_(0))
+    assert_that(min_5min_error, is_(0.2))
+    assert_that(max_5min_error, is_(1.3))
 
 
 def test_correlation_between_three_times_the_same_ts():
@@ -557,7 +556,7 @@ def test_correlation_between_three_times_the_same_ts():
 
 def test_correlation_calculation():
     # generate 2d data
-    data = generate_observations(norm, size=(10000000, 1), loc=0, scale=1)
+    data = generate_observations(seed=seed, distribution=norm, size=(10000000, 1), loc=0, scale=1)
     same_obs = np.column_stack((data, data))
     correlation = calculate_spearman_correlation(same_obs, 0)
     assert_that(correlation, is_([1]))

@@ -181,7 +181,7 @@ class SyntheticSegmentedData:
                 regularisation = pattern[1]
                 # cholesky decomposition correlation needs regularisation term
                 generator = GenerateData(n_observations, self.n_variates, correlations, distributions, args=args,
-                                         kwargs=kwargs, covariance_regularisation=regularisation,
+                                         kwargs=kwargs, regularisation=regularisation,
                                          method=self.cor_method)
             else:
                 # loadings correlation data doesn't need regularisation term

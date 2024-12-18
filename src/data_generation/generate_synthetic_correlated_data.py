@@ -1,5 +1,3 @@
-from datetime import datetime, timezone, timedelta
-
 import numpy as np
 from matplotlib import pyplot as plt
 from numpy.linalg import cholesky
@@ -12,7 +10,7 @@ from src.utils.plots.matplotlib_helper_functions import reset_matplotlib, Backen
 
 class GenerateData:
     def __init__(self, nobservation: int, nvariates: int, correlations: [float], distributions: [], args: [],
-                 kwargs: [], method="loadings", covariance_regularisation=0.0001):
+                 kwargs: [], method="loadings", regularisation=0.0001):
         """"
         Generate synthetic data for given distributions and parameters
         :param nobservation: Number of observations to generate
@@ -24,28 +22,31 @@ class GenerateData:
         :param kwargs: List of dictionaries of kwargs for each of the distributions given, e.g [{'loc': 0, 'scale': 1}]
         :param method: 'cholesky' decomposition or 'loadings' to correlate data, covariance regularisation is ignored
         when method is loadings
-        :param covariance_regularisation: small number to be added to digaonal of covariance matrix to ensure positive
-            definite matrix
+        :param regularisation: small number to be added to diagonal of covariance/correlation matrix to ensure matrix is
+        full rank and all eigenvalues are >0 and not too small to give numerical issues. Only needed for 'cholesky'
+        method
         """
         self.nobservation = nobservation
         self.nvariates = nvariates
         self.correlations = correlations
         self.distributions = distributions
         self.method = method.lower()
-        self.covariance_regulation = covariance_regularisation
+        self.covariance_regulation = regularisation
         self.args = args
         self.kwargs = kwargs
-        self.generated_data = None  # call generate to get new data #np.array
-        self.normal_data = None  # normal data before anything was applied
-        self.normal_correlated_data = None  # normal correlated data before distribution was shifted
+        self.generated_data = None  # call generate to get new data #np.array, this is the non normal correlated data
+        self.normal_data = None  # normal data before anything was applied (the raw data)
+        # normal correlated data before distribution was shifted
+        self.normal_correlated_data = None
 
-    def generate(self):
-        """"
+    def generate(self, seed: int):
+        """
         Generate synthetic data for given distributions and parameters
         Note the credit for the loadings methods to correlate data goes to Henry Reeves.
+        :param seed: random seed
         """
         self.generated_data = None
-        normal_data = generate_observations(norm, size=(self.nobservation, self.nvariates), loc=0, scale=1)
+        normal_data = generate_observations(seed, norm, size=(self.nobservation, self.nvariates), loc=0, scale=1)
         if self.method == "cholesky":
             cor_data = cholesky_correlate_data(data=normal_data, correlations=self.correlations,
                                                cov_reg=self.covariance_regulation)
@@ -157,15 +158,17 @@ def calculate_correlation_error(correlations, data, round_to: int = 3):
     return [abs(round(cor - actual_correlation[idx], round_to)) for idx, cor in enumerate(correlations)]
 
 
-def generate_observations(distribution, *args, **kwargs):
+def generate_observations(seed: int, distribution, *args, **kwargs):
     """ Generates random observations
-    :param distribution: name of the scipy.stats distribution function
+    :param seed: random seed
+    :param distribution: name of the scipy.stats distribution function, usually norm
     :param args: args for that distribution rvs function
     :param kwargs: kwargs for that distribution rvs function
 
     Example: generate_observations(genextreme, c, size=(10000, 3), loc=loc, scale=scale)
     """
-    # first take one distribution for all three ts, then see if we should have three different ones
+    np.random.seed(seed=seed)
+    # generate variates with same distributions
     data = distribution.rvs(*args, **kwargs)
     return data
 
