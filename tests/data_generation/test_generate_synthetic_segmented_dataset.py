@@ -190,6 +190,49 @@ def test_downsample_generated_data_to_minutes_and_check_correlation_results():
     print("Downsampled failures: " + str(downsampled_failure))
 
 
+def test_two_generations_with_a_different_seed_are_different():
+    number_of_variates = 3
+    number_of_segments = 23
+
+    short_segment_durations = [15 * 60, 60 * 60, 30 * 60, 80 * 60]  # in second
+    long_segment_durations = [360 * 60, 490 * 60]  # in seconds
+
+    generator = SyntheticSegmentedData(number_of_segments, number_of_variates,
+                                       distributions_for_variates,
+                                       distributions_args, distributions_kwargs, short_segment_durations,
+                                       long_segment_durations, cholesky_patterns, variate_names)
+
+    data1 = generator.generate(seed=10)
+    labels1 = generator.non_normal_labels_df
+    data2 = generator.generate(seed=10)
+    labels2 = generator.non_normal_labels_df
+    data3 = generator.generate(seed=666)
+    labels3 = generator.non_normal_labels_df
+
+    # labels 1 and 2 are the same but labels 3 is different
+    # pattern orders
+    labels1_patterns = labels1[SyntheticDataSegmentCols.pattern_id].tolist()
+    labels2_patterns = labels2[SyntheticDataSegmentCols.pattern_id].tolist()
+    labels3_patterns = labels3[SyntheticDataSegmentCols.pattern_id].tolist()
+    assert_that(labels1_patterns, contains_exactly(*labels2_patterns))
+    assert_that(labels1_patterns[0], is_not(labels3_patterns[0]))
+    assert_that(labels1_patterns[2], is_not(labels3_patterns[2]))
+    assert_that(labels1_patterns[20], is_not(labels3_patterns[20]))
+
+    # segment lengths
+    labels1_length = labels1[SyntheticDataSegmentCols.length].tolist()
+    labels2_length = labels2[SyntheticDataSegmentCols.length].tolist()
+    labels3_length = labels3[SyntheticDataSegmentCols.length].tolist()
+    assert_that(labels1_length, contains_exactly(*labels2_length))
+    assert_that(labels1_length[0], is_not(labels3_length[0]))
+    assert_that(labels1_length[2], is_not(labels3_length[2]))
+    assert_that(labels1_length[20], is_not(labels3_length[20]))
+
+    # observations
+    assert_that(data1.equals(data2))
+    assert_that(data1.equals(data3), is_(False))
+
+
 def test_returns_scaled_version_of_dataset():
     number_of_variates = 3
     number_of_segments = 23
