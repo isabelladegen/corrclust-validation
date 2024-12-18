@@ -99,6 +99,44 @@ class SyntheticDataSegmentCols:  # todo rename to labels cols
     repeats = 'repeated data generation'  # todo move to dataset level
 
 
+def random_segment_lengths(short_segment_durations, long_segment_durations, n_segments, seed):
+    """
+       Generates a list of segment lengths to use for n_segments. The order of the segment length is random based
+       on seed. We use each given segment length with a similar frequency. The short segments are used for 2/3 of the
+       segments, the long segments are used for 1/3 of the segments
+       :param short_segment_durations: list of short segments to use
+       :param long_segment_durations: list of long segments to use
+       :param n_segments: number of segments to generate
+       :return: list of pattern_ids of length n_segments
+       """
+    np.random.seed(seed)
+
+    n_short = len(short_segment_durations)  # number of short segment lengths
+    n_long = len(long_segment_durations)  # number of long segment lengths
+    n_short_segments = int(round(2 * n_segments / 3, 0))  # make 2/3 of segments short
+    n_long_segments = n_segments - n_short_segments  # make 1/3 long
+
+    # great least with approx same frequency for each segment length
+    n_short_per_pattern = n_short_segments // n_short
+    remainder_short = n_short_segments % n_short
+    short_list = short_segment_durations * n_short_per_pattern
+    if remainder_short:
+        short_list.extend(np.random.choice(short_segment_durations, remainder_short, replace=False))
+
+    n_long_per_pattern = n_long_segments // n_long
+    remainder_long = n_long_segments % n_long
+    long_list = long_segment_durations * n_long_per_pattern
+    if remainder_long:
+        long_list.extend(np.random.choice(long_segment_durations, remainder_long, replace=False))
+
+    # combine the list
+    result = short_list + long_list
+
+    # shuffle at random (with seed set
+    np.random.shuffle(result)
+    return result
+
+
 def random_list_of_patterns_for(pattern_ids_to_model: [], n_segments: int, seed: int):
     """
     Generates a list of patterns to use for n_segments. The order of the patterns is random.
@@ -151,7 +189,7 @@ def can_insert_at_idx_without_repetition(item, insert_in_list, idx):
     if idx == 0 and insert_in_list[idx] != item:
         return True
     else:
-        return insert_in_list[idx] != item and insert_in_list[idx-1] != item
+        return insert_in_list[idx] != item and insert_in_list[idx - 1] != item
 
 
 class SyntheticSegmentedData:
@@ -210,29 +248,12 @@ class SyntheticSegmentedData:
 
         pattern_ids_to_model = list(self.patterns_to_model.keys())
         patterns_list = random_list_of_patterns_for(pattern_ids_to_model, self.n_segments, seed)
-
-        short_seg_iter = cycle(self.short_segment_durations)
-        long_seg_iter = cycle(self.long_segment_durations)
-
-        drawn_short = 0
-        drawn_long = 0
+        segment_lengths = random_segment_lengths(self.short_segment_durations, self.long_segment_durations,
+                                                 self.n_segments, seed)
 
         # create segments
         for segment_id in range(self.n_segments):
-            repeated = 0
-            cov_repeat = 0
-            n_observations = 0
-            # figure out segment length
-            if drawn_short < self.n_draw_short:
-                n_observations = next(short_seg_iter)
-                drawn_short += 1
-            elif drawn_long < self.n_draw_long:
-                n_observations = next(long_seg_iter)
-                drawn_long += 1
-                # reset back to draw short ones
-                if drawn_long == self.n_draw_long:
-                    drawn_short = 0
-                    drawn_long = 0
+            n_observations = segment_lengths[segment_id]
 
             pattern_id = patterns_list[segment_id]
             pattern = self.patterns_to_model[pattern_id]

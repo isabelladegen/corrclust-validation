@@ -10,7 +10,7 @@ from src.utils.configurations import GeneralisedCols
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.data_generation.model_correlation_patterns import ModelCorrelationPatterns
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticSegmentedData, SyntheticDataSegmentCols, \
-    min_max_scaled_df, random_list_of_patterns_for
+    min_max_scaled_df, random_list_of_patterns_for, random_segment_lengths
 
 backend = Backends.none.value
 seed = 66666
@@ -90,11 +90,11 @@ def test_generates_two_segments_with_given_correlation():
     assert_that(non_normal_labels_df.iloc[4][SyntheticDataSegmentCols.regularisation], is_(0.1))
 
     # draw 4 short segments and one long in cyclical order
-    assert_that(non_normal_labels_df.iloc[0][SyntheticDataSegmentCols.length], is_(15))
+    assert_that(non_normal_labels_df.iloc[0][SyntheticDataSegmentCols.length], is_(360))
     assert_that(non_normal_labels_df.iloc[1][SyntheticDataSegmentCols.length], is_(60))
-    assert_that(non_normal_labels_df.iloc[2][SyntheticDataSegmentCols.length], is_(15))
-    assert_that(non_normal_labels_df.iloc[3][SyntheticDataSegmentCols.length], is_(60))
-    assert_that(non_normal_labels_df.iloc[4][SyntheticDataSegmentCols.length], is_(360))
+    assert_that(non_normal_labels_df.iloc[2][SyntheticDataSegmentCols.length], is_(490))
+    assert_that(non_normal_labels_df.iloc[3][SyntheticDataSegmentCols.length], is_(15))
+    assert_that(non_normal_labels_df.iloc[4][SyntheticDataSegmentCols.length], is_(60))
     assert_that(non_normal_labels_df.iloc[5][SyntheticDataSegmentCols.length], is_(15))
     assert_that(non_normal_labels_df.iloc[6][SyntheticDataSegmentCols.length], is_(60))
 
@@ -150,12 +150,7 @@ def test_generates_all_patterns():
     random_pattern_list = [20, 2, 15, 5, 12, 0, 18, 13, 3, 9, 11, 19, 24, 25, 8, 23, 17, 6, 7, 10, 4, 1, 21]
     assert_that(segment_df[SyntheticDataSegmentCols.pattern_id], contains_exactly(*random_pattern_list))
 
-    length_of_four_short = sum(short_segment_durations)
-    first_three_shorts = sum(short_segment_durations[:3])
-    # 4 times all the short, 2 times the first long, 2 times the second long and then the first three shorts
-    length = 4 * length_of_four_short + 2 * long_segment_durations[0] + 2 * long_segment_durations[
-        1] + first_three_shorts
-    assert_that(generator.non_normal_data_df.shape[0], is_(length))
+    assert_that(generator.non_normal_data_df.shape[0], is_(246600))
 
 
 def test_downsample_generated_data_to_minutes_and_check_correlation_results():
@@ -274,3 +269,24 @@ def test_generate_random_pattern_order_throws_exception_if_not_possible_to_not_h
         assert True is False, "Should have thrown an exception"
     except ValueError as err:
         assert_that(str(err), is_("No valid pattern placement found that does not cause repetition"))
+
+
+def test_generate_a_random_list_of_segment_lengths_for_each_segment():
+    short_segments = [100, 300, 400, 600]
+    long_segments = [8000, 16000]
+    length1 = 6
+    length2 = 2
+    length3 = 10
+    l1 = random_segment_lengths(short_segments, long_segments, length1, seed=1)
+    l2 = random_segment_lengths(short_segments, long_segments, length2, seed=1)
+    l3 = random_segment_lengths(short_segments, long_segments, length3, seed=1)
+
+    assert_that(len(l1), is_(length1))
+    assert_that(l1, contains_exactly(400, 300, 8000, 100, 600, 16000))  # each segment length used once
+
+    assert_that(len(l2), is_(length2))
+    assert_that(l2, contains_exactly(600, 8000))  # not all used
+
+    assert_that(len(l3), is_(length3))
+    # all short and long and 4 duplicates
+    assert_that(l3, contains_exactly(400, 600, 600, 16000, 300, 100, 100, 8000, 400, 8000))
