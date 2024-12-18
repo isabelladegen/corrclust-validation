@@ -23,7 +23,7 @@ class SyntheticDataConfig:
     wandb_project_name: str = WandbConfiguration.wandb_project_name
     wandb_entity: str = WandbConfiguration.wandb_entity
     wandb_mode: str = 'online'
-    wandb_notes = "creates synthetic data, uncorrelated, normal and correlated"
+    wandb_notes = "creates synthetic data, uncorrelated, correlated normal and non-normal"
     tags = ['Synthetic']
 
     correlation_model = "loadings"

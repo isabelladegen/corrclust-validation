@@ -25,7 +25,7 @@ def load_private_yaml():
 class SyntheticDataVariates:
     iob: str = 'iob'  # insulin on board
     cob: str = 'cob'  # carbs on board
-    ig: str = 'bg'  # interstitial glucose #todo change back to ig
+    ig: str = 'ig'  # interstitial glucose
 
     @staticmethod
     def columns():
@@ -53,7 +53,7 @@ class GeneralisedCols:
     # generalised configs across systems
     iob = 'iob'
     cob = 'cob'
-    bg = 'bg'
+    bg = 'ig'  # todo rename to ig
     id = 'id'
     mean_iob = iob + ' ' + Aggregators.mean
     mean_cob = cob + ' ' + Aggregators.mean
