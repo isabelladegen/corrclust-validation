@@ -13,6 +13,7 @@ from src.data_generation.generate_synthetic_segmented_dataset import SyntheticSe
     min_max_scaled_df
 
 backend = Backends.none.value
+seed = 66666
 
 variate_names = [GeneralisedCols.iob, GeneralisedCols.cob, GeneralisedCols.bg]
 distributions_for_variates = [genextreme, nbinom, genextreme]
@@ -67,7 +68,7 @@ def test_generates_two_segments_with_given_correlation():
                                        distributions_for_variates,
                                        distributions_args, distributions_kwargs, short_segment_durations,
                                        long_segment_durations, correlations_to_model, variate_names)
-    generator.generate()
+    generator.generate(seed=seed)
     non_normal_labels_df = generator.non_normal_labels_df
     assert_that(non_normal_labels_df.shape[0], is_(number_of_segments))
 
@@ -143,7 +144,7 @@ def test_generates_all_patterns():
                                        distributions_for_variates,
                                        distributions_args, distributions_kwargs, short_segment_durations,
                                        long_segment_durations, cholesky_patterns, variate_names)
-    generator.generate()
+    generator.generate(seed=seed)
 
     # assert all patterns have been used
     segment_df = generator.non_normal_labels_df
@@ -169,7 +170,7 @@ def test_downsample_generated_data_to_minutes_and_check_correlation_results():
                                        distributions_for_variates,
                                        distributions_args, distributions_kwargs, short_segment_durations,
                                        long_segment_durations, cholesky_patterns, variate_names)
-    generator.generate()
+    generator.generate(seed=seed)
     # check original data is second sampled
     assert_that(pd.infer_freq(generator.non_normal_data_df[GeneralisedCols.datetime]), is_("s"))
 
@@ -206,7 +207,7 @@ def test_returns_scaled_version_of_dataset():
                                        distributions_for_variates,
                                        distributions_args, distributions_kwargs, short_segment_durations,
                                        long_segment_durations, cholesky_patterns, variate_names)
-    generator.generate()
+    generator.generate(seed=seed)
 
     scale = (-100, -50)  # move data totally out of current range
     min_max_scaled_data = min_max_scaled_df(generator.non_normal_data_df, scale_range=scale, columns=variate_names)
@@ -241,7 +242,7 @@ def test_ensure_segment_creation_stays_within_correlation_strength_given():
                                        distributions_for_variates,
                                        distributions_args, distributions_kwargs, short_segment_durations,
                                        long_segment_durations, loadings_patterns, variate_names)
-    generator.generate()
+    generator.generate(seed=seed)
 
     segment_df = generator.non_normal_labels_df
 

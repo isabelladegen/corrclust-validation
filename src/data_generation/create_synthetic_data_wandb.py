@@ -85,7 +85,7 @@ def save_data_labels_to_file(data_dir, data_type, raw_data_df, raw_labels_df, ru
     raw_labels_df.to_csv(labels_file_name)
 
 
-def one_synthetic_creation_run(config: SyntheticDataConfig, seed: int = 10):
+def one_synthetic_creation_run(config: SyntheticDataConfig, seed: int = 66666):
     """
     Wandb generate synthetic data according to the config provided
     :param config: SyntheticDataConfig that configures the creation
@@ -134,7 +134,7 @@ def one_synthetic_creation_run(config: SyntheticDataConfig, seed: int = 10):
                                            distributions_args, distributions_kwargs, config.short_segment_durations,
                                            config.long_segment_durations, patterns, config.columns,
                                            config.correlation_model)
-        generator.generate()
+        generator.generate(seed=seed)
 
         print("2. DOWNSAMPLE")
         generator.resample(rule=config.downsampling_rule)

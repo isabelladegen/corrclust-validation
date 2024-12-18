@@ -126,7 +126,13 @@ class SyntheticSegmentedData:
         self.resampled_data = None
         self.resampled_labels_df = None
 
-    def generate(self):
+    def generate(self, seed: int):
+        """
+        Generates a whole dataset of multiple segments using the settings given
+        :param seed: random seed
+        :return: non normal correlated data (the raw, normal correlated, downsampled nn versions are also saved on
+        the class but not returned)
+        """
         self.non_normal_data_df = None
         self.segment_data_generators = []
         self.non_normal_labels_df = None
@@ -190,7 +196,7 @@ class SyntheticSegmentedData:
                 generator = GenerateData(n_observations, self.n_variates, correlations, distributions, args=args,
                                          kwargs=kwargs, method=self.cor_method)
 
-            generator.generate()
+            generator.generate(seed+segment_id)
 
             correlations_achieved = generator.achieved_correlations()
             within_tol = generator.check_if_achieved_correlation_is_within_original_strengths()
