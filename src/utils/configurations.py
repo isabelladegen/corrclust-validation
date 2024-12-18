@@ -5,6 +5,8 @@ from os import path
 
 ROOT_DIR = path.realpath(path.join(path.dirname(__file__), '../..'))
 PATTERNS_TO_MODEL_PATH = path.join(ROOT_DIR, 'src/data_generation/config/correlation_patterns_to_model.csv')
+DISTRIBUTION_PARAMS_TO_MODEL_PATH = path.join(ROOT_DIR,
+                                              'src/data_generation/config/n30_genextreme_nbinom_genextreme_params.csv')
 SYNTHETIC_DATA_DIR = path.join(ROOT_DIR, 'data/synthetic_data')
 
 
