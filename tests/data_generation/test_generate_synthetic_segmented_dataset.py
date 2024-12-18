@@ -10,7 +10,7 @@ from src.utils.configurations import GeneralisedCols
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.data_generation.model_correlation_patterns import ModelCorrelationPatterns
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticSegmentedData, SyntheticDataSegmentCols, \
-    min_max_scaled_df
+    min_max_scaled_df, random_list_of_patterns_for
 
 backend = Backends.none.value
 seed = 66666
@@ -73,21 +73,20 @@ def test_generates_two_segments_with_given_correlation():
     assert_that(non_normal_labels_df.shape[0], is_(number_of_segments))
 
     # cycle through patterns until number of segments are created
-    assert_that(non_normal_labels_df.iloc[0][SyntheticDataSegmentCols.pattern_id], is_(1))
-    assert_that(non_normal_labels_df.iloc[1][SyntheticDataSegmentCols.pattern_id], is_(2))
-    assert_that(non_normal_labels_df.iloc[2][SyntheticDataSegmentCols.pattern_id], is_(3))
-    assert_that(non_normal_labels_df.iloc[3][SyntheticDataSegmentCols.pattern_id], is_(4))
+    assert_that(non_normal_labels_df.iloc[0][SyntheticDataSegmentCols.pattern_id], is_(3))
+    assert_that(non_normal_labels_df.iloc[1][SyntheticDataSegmentCols.pattern_id], is_(4))
+    assert_that(non_normal_labels_df.iloc[2][SyntheticDataSegmentCols.pattern_id], is_(1))
+    assert_that(non_normal_labels_df.iloc[3][SyntheticDataSegmentCols.pattern_id], is_(2))
     assert_that(non_normal_labels_df.iloc[4][SyntheticDataSegmentCols.pattern_id], is_(1))
 
-    assert_that(non_normal_labels_df.iloc[0][SyntheticDataSegmentCols.correlation_to_model], is_(all_strong))
-    assert_that(non_normal_labels_df.iloc[2][SyntheticDataSegmentCols.correlation_to_model], is_(weak_and_strong))
-    assert_that(non_normal_labels_df.iloc[3][SyntheticDataSegmentCols.correlation_to_model],
-                is_(negative_weak_and_strong))
+    assert_that(non_normal_labels_df.iloc[0][SyntheticDataSegmentCols.correlation_to_model], is_(weak_and_strong))
+    assert_that(non_normal_labels_df.iloc[2][SyntheticDataSegmentCols.correlation_to_model], is_(all_strong))
+    assert_that(non_normal_labels_df.iloc[3][SyntheticDataSegmentCols.correlation_to_model], is_(all_weak))
 
-    assert_that(non_normal_labels_df.iloc[0][SyntheticDataSegmentCols.regularisation], is_(0.1))
-    assert_that(non_normal_labels_df.iloc[1][SyntheticDataSegmentCols.regularisation], is_(0.000001))
-    assert_that(non_normal_labels_df.iloc[2][SyntheticDataSegmentCols.regularisation], is_(0.0001))
-    assert_that(non_normal_labels_df.iloc[3][SyntheticDataSegmentCols.regularisation], is_(0.3))
+    assert_that(non_normal_labels_df.iloc[0][SyntheticDataSegmentCols.regularisation], is_(0.0001))
+    assert_that(non_normal_labels_df.iloc[1][SyntheticDataSegmentCols.regularisation], is_(0.3))
+    assert_that(non_normal_labels_df.iloc[2][SyntheticDataSegmentCols.regularisation], is_(0.1))
+    assert_that(non_normal_labels_df.iloc[3][SyntheticDataSegmentCols.regularisation], is_(0.000001))
     assert_that(non_normal_labels_df.iloc[4][SyntheticDataSegmentCols.regularisation], is_(0.1))
 
     # draw 4 short segments and one long in cyclical order
@@ -148,8 +147,8 @@ def test_generates_all_patterns():
 
     # assert all patterns have been used
     segment_df = generator.non_normal_labels_df
-    assert_that(segment_df[SyntheticDataSegmentCols.pattern_id].unique(),
-                contains_exactly(*list(cholesky_patterns.keys())))
+    random_pattern_list = [20, 2, 15, 5, 12, 0, 18, 13, 3, 9, 11, 19, 24, 25, 8, 23, 17, 6, 7, 10, 4, 1, 21]
+    assert_that(segment_df[SyntheticDataSegmentCols.pattern_id], contains_exactly(*random_pattern_list))
 
     length_of_four_short = sum(short_segment_durations)
     first_three_shorts = sum(short_segment_durations[:3])
@@ -214,8 +213,9 @@ def test_returns_scaled_version_of_dataset():
 
     # was complete nonsense so added visual check
     generator.non_normal_data_df.plot(x=GeneralisedCols.datetime, y=GeneralisedCols.iob, title="original")
-    min_max_scaled_data.plot(x=GeneralisedCols.datetime, y=GeneralisedCols.iob, title="scaled")
-    plt.show()
+    if backend == Backends.visible_tests.value:
+        min_max_scaled_data.plot(x=GeneralisedCols.datetime, y=GeneralisedCols.iob, title="scaled")
+        plt.show()
 
     for variate in variate_names:
         # unscaled values are outside the scale range
@@ -250,3 +250,27 @@ def test_ensure_segment_creation_stays_within_correlation_strength_given():
     list_of_lists = segment_df[SyntheticDataSegmentCols.actual_within_tolerance].values
     flat_results = list(itertools.chain.from_iterable(list_of_lists))
     assert_that(any(flat_results))  # some go to true
+
+
+def test_generate_a_randomly_ordered_list_of_pattern_ids_to_use_for_each_segment():
+    pattern_ids = [1, 2, 3, 4]
+    l1_length = 4
+    l2_length = 6
+    l1 = random_list_of_patterns_for(pattern_ids, l1_length, seed=1)
+    l2 = random_list_of_patterns_for(pattern_ids, l2_length, seed=1)
+    l3 = random_list_of_patterns_for(pattern_ids, l2_length, seed=2)
+
+    assert_that(len(l1), is_(l1_length))
+    assert_that(l1, contains_exactly(2, 1, 3, 4))  # checks that seed sets the order
+    assert_that(len(l2), is_(l2_length))
+    assert_that(l2, contains_exactly(3, 1, 4, 3, 4, 2))  # checks that seed sets the order
+    assert_that(l3, contains_exactly(1, 4, 3, 4, 2, 3))  # same length but different seed
+
+
+def test_generate_random_pattern_order_throws_exception_if_not_possible_to_not_have_repetitions():
+    pattern_ids = [1]
+    try:
+        random_list_of_patterns_for(pattern_ids, 3, seed=1)
+        assert True is False, "Should have thrown an exception"
+    except ValueError as err:
+        assert_that(str(err), is_("No valid pattern placement found that does not cause repetition"))

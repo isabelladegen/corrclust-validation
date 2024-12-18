@@ -99,6 +99,61 @@ class SyntheticDataSegmentCols:  # todo rename to labels cols
     repeats = 'repeated data generation'  # todo move to dataset level
 
 
+def random_list_of_patterns_for(pattern_ids_to_model: [], n_segments: int, seed: int):
+    """
+    Generates a list of patterns to use for n_segments. The order of the patterns is random.
+    :param pattern_ids_to_model: unique list of pattern ids that should all be present in equal frequency
+    :param n_segments: number of segments to generate
+    :return: list of pattern_ids of length n_segments
+    """
+    n_patterns = len(pattern_ids_to_model)
+    n_per_pattern = n_segments // n_patterns
+    remainder = n_segments % n_patterns
+
+    # create list of len n_segment starting with the even number of patterns making sure
+    # each pattern appears approx the same number of times
+    balanced_patterns = pattern_ids_to_model * n_per_pattern
+
+    # add remaining patterns randomly if n_segments isn't perfectly divisible
+    if remainder:
+        np.random.seed(seed)
+        balanced_patterns.extend(np.random.choice(pattern_ids_to_model, remainder, replace=False))
+
+    # create a random ordered list where the patterns are never consecutive
+    result = []
+    previous_pattern = None
+    for idx in range(n_segments):
+        np.random.seed(seed + idx)
+        random_selection = np.random.choice(balanced_patterns)
+
+        if previous_pattern == random_selection:  # run out of choices and they are still the same
+            # insert random selection at the first index that does not cause a repetition
+            inserted = False
+            for result_idx in range(len(result)):
+                if can_insert_at_idx_without_repetition(random_selection, result,
+                                                        result_idx):  # can insert at result_index
+                    previous_pattern = random_selection
+                    result.insert(result_idx, random_selection)
+                    balanced_patterns.remove(random_selection)
+                    inserted = True
+                    break
+            if not inserted:
+                raise ValueError("No valid pattern placement found that does not cause repetition")
+        else:  # found a pattern and can use it
+            previous_pattern = random_selection
+            result.append(random_selection)
+            balanced_patterns.remove(random_selection)
+
+    return result
+
+
+def can_insert_at_idx_without_repetition(item, insert_in_list, idx):
+    if idx == 0 and insert_in_list[idx] != item:
+        return True
+    else:
+        return insert_in_list[idx] != item and insert_in_list[idx-1] != item
+
+
 class SyntheticSegmentedData:
     def __init__(self, n_segments: int, n_variates: int,
                  distributions_for_variates: [],
@@ -128,7 +183,8 @@ class SyntheticSegmentedData:
 
     def generate(self, seed: int):
         """
-        Generates a whole dataset of multiple segments using the settings given
+        Generates a whole dataset of multiple segments using the settings given. For each segment the seed to generate
+        observations is changed by adding the segment id to the given seed.
         :param seed: random seed
         :return: non normal correlated data (the raw, normal correlated, downsampled nn versions are also saved on
         the class but not returned)
@@ -151,8 +207,10 @@ class SyntheticSegmentedData:
         maes = []
 
         segment_start_idx = 0  # zero based indexing
+
         pattern_ids_to_model = list(self.patterns_to_model.keys())
-        pattern_iter = cycle(pattern_ids_to_model)  # cycle through the patterns
+        patterns_list = random_list_of_patterns_for(pattern_ids_to_model, self.n_segments, seed)
+
         short_seg_iter = cycle(self.short_segment_durations)
         long_seg_iter = cycle(self.long_segment_durations)
 
@@ -176,7 +234,7 @@ class SyntheticSegmentedData:
                     drawn_short = 0
                     drawn_long = 0
 
-            pattern_id = next(pattern_iter)
+            pattern_id = patterns_list[segment_id]
             pattern = self.patterns_to_model[pattern_id]
             distributions = self.distributions_for_variates
             args = self.distributions_args
@@ -196,7 +254,7 @@ class SyntheticSegmentedData:
                 generator = GenerateData(n_observations, self.n_variates, correlations, distributions, args=args,
                                          kwargs=kwargs, method=self.cor_method)
 
-            generator.generate(seed+segment_id)
+            generator.generate(seed + segment_id)
 
             correlations_achieved = generator.achieved_correlations()
             within_tol = generator.check_if_achieved_correlation_is_within_original_strengths()
