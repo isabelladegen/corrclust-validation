@@ -9,6 +9,7 @@ from scipy.stats import genextreme, nbinom, lognorm
 import wandb
 from scipy.stats._distn_infrastructure import rv_generic
 
+from src.data_generation.model_distribution_params import ModelDistributionParams, DistParamsCols
 from src.evaluation.describe_synthetic_dataset import DescribeSyntheticDataset
 from src.utils.load_synthetic_data import SyntheticFileTypes, SyntheticDataType
 from src.utils.configurations import WandbConfiguration, SyntheticDataVariates, SYNTHETIC_DATA_DIR, \
@@ -252,9 +253,29 @@ def create_datasets(n: int = 2, tag: str = 'synthetic_creation'):
     config = SyntheticDataConfig()
     config.tags.append(tag)
 
+    # load distribution parameters
+    mpam = ModelDistributionParams()
+    c_iobs = mpam.get_params_for(DistParamsCols.c_iob)
+    loc_iobs = mpam.get_params_for(DistParamsCols.loc_iob)
+    scale_iobs = mpam.get_params_for(DistParamsCols.scale_iob)
+    n_cobs = mpam.get_params_for(DistParamsCols.n_cob)
+    c_igs = mpam.get_params_for(DistParamsCols.c_ig)
+    loc_igs = mpam.get_params_for(DistParamsCols.loc_ig)
+    scale_igs = mpam.get_params_for(DistParamsCols.scale_ig)
+
     for n in range(n):
         np.random.seed(66 + n)
         dataset_seed = np.random.randint(low=100, high=1000000)
+        # configure distribution params
+        index = n % len(c_iobs)
+        config.c_iob = c_iobs[index]
+        config.loc_iob = loc_iobs[index]
+        config.scale_iob = scale_iobs[index]
+        config.n_cob = n_cobs[index]
+        config.c_ig = c_igs[index]
+        config.loc_ig = loc_igs[index]
+        config.scale_ig = scale_igs[index]
+
         one_synthetic_creation_run(config, seed=dataset_seed)
 
 
