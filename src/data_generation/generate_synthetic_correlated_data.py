@@ -39,7 +39,7 @@ class GenerateData:
         # normal correlated data before distribution was shifted
         self.normal_correlated_data = None
 
-    def generate(self, seed: int):
+    def generate(self, seed: int, round_to:int=3):
         """
         Generate synthetic data for given distributions and parameters
         Note the credit for the loadings methods to correlate data goes to Henry Reeves.
@@ -55,7 +55,9 @@ class GenerateData:
             cor_data = loading_correlate_data(data=normal_data, correlations=self.correlations)
         else:
             assert False, "Unknown method '{}'".format(self.method)
+        cor_data = np.round(cor_data, decimals=round_to)
         dist_data = move_to_distributions(cor_data, self.distributions, self.args, self.kwargs)
+        dist_data = np.round(dist_data, decimals=round_to)
         self.normal_data = normal_data
         self.normal_correlated_data = cor_data
         self.generated_data = dist_data
@@ -170,7 +172,7 @@ def generate_observations(seed: int, distribution, *args, **kwargs):
     np.random.seed(seed=seed)
     # generate variates with same distributions
     data = distribution.rvs(*args, **kwargs)
-    return data
+    return np.round(data, decimals=3)
 
 
 def is_pos_def(x):

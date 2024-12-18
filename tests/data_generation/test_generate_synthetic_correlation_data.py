@@ -450,7 +450,7 @@ def test_difference_to_original_correlation_after_correlating_data_sampled_at_se
     assert_that(min_min_error, is_(0.019))
     assert_that(max_min_error, is_(0.52))
 
-    assert_that(mean_5min_error, is_(0.361))
+    assert_that(mean_5min_error, is_(0.363))
     assert_that(min_5min_error, is_(0.2))
     assert_that(max_5min_error, is_(1.267))
 
