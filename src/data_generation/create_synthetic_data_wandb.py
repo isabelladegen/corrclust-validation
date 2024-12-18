@@ -3,6 +3,7 @@ import traceback
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
 
+import numpy as np
 from scipy.stats import genextreme, nbinom, lognorm
 
 import wandb
@@ -74,6 +75,7 @@ class SyntheticDataLogKeys:
     raw_labels_table: str = "raw labels"
     generated_data_table: str = "generated data"
     downsampled_labels_table: str = "downsampled labels"
+    dataset_seed: str = "dataset seed"
 
 
 def save_data_labels_to_file(data_dir, data_type, raw_data_df, raw_labels_df, run_name):
@@ -89,7 +91,7 @@ def one_synthetic_creation_run(config: SyntheticDataConfig, seed: int = 66666):
     """
     Wandb generate synthetic data according to the config provided
     :param config: SyntheticDataConfig that configures the creation
-    :param seed: start seed to use for random
+    :param seed: base seed to use for random, the dataset will be using a random int
     :return: DescribeSyntheticData class
     """
     raw_desc, nc_desc, nn_desc, downsampled_desc = None, None, None, None
@@ -103,7 +105,6 @@ def one_synthetic_creation_run(config: SyntheticDataConfig, seed: int = 66666):
 
         # Save mode inputs and hyperparameters (this allows for sweep)
         # skip as not doing sweeps so config won't be rehydrated
-
         args_iob: tuple = (config.c_iob,)
         kwargs_iob = {'loc': config.loc_iob, 'scale': config.scale_iob}
         args_cob = (config.n_cob, config.p_cob)
@@ -114,6 +115,8 @@ def one_synthetic_creation_run(config: SyntheticDataConfig, seed: int = 66666):
         distributions_kwargs = [kwargs_iob, kwargs_cob, kwargs_ig]
 
         keys = SyntheticDataLogKeys()
+        wandb.log({keys.dataset_seed: seed})
+
         if config.correlation_model == "cholesky":
             patterns = ModelCorrelationPatterns().patterns_to_model()
         elif config.correlation_model == "loadings":
@@ -250,7 +253,9 @@ def create_datasets(n: int = 2, tag: str = 'synthetic_creation'):
     config.tags.append(tag)
 
     for n in range(n):
-        one_synthetic_creation_run(config)
+        np.random.seed(66 + n)
+        dataset_seed = np.random.randint(low=100, high=1000000)
+        one_synthetic_creation_run(config, seed=dataset_seed)
 
 
 if __name__ == "__main__":
