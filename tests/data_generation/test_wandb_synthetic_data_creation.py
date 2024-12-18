@@ -8,7 +8,6 @@ from src.utils.wandb_utils import set_test_configurations
 def test_wandb_synthetic_data_creation_with_loadings_correlation_method():
     config = SyntheticDataConfig()
     set_test_configurations(config)
-    config.max_repetitions = 1  # reduces time #todo remove as this makes no sense with seed
     config.number_of_segments = 10  # reduces time
 
     # evaluation is None if the run fails
@@ -34,11 +33,9 @@ def test_wandb_synthetic_data_creation_with_loadings_correlation_method():
 def test_wandb_synthetic_data_creation_works_for_cholesky_method_too():
     config = SyntheticDataConfig()
     set_test_configurations(config)
-    config.max_repetitions = 1  # reduces time
     config.number_of_segments = 5  # reduces time
     config.correlation_model = "cholesky"
     config.do_distribution_fit = True
-    config.max_repetitions = 1  # reduce time
 
     # returns none
     raw_describe, normal_correlated_describe, non_normal_describe, downsampled_1min_describe = one_synthetic_creation_run(

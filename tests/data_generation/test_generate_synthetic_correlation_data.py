@@ -14,7 +14,7 @@ from src.evaluation.distribution_fit import DistributionFit, distribution_col, a
 from src.data_generation.generate_synthetic_correlated_data import GenerateData, calculate_spearman_correlation, \
     calculate_correlation_error, is_pos_def, generate_observations, generate_correlation_matrix
 
-backend = Backends.visible_tests.value
+backend = Backends.none.value
 
 
 def print_correlations_for(data):

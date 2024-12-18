@@ -36,7 +36,6 @@ class SyntheticDataConfig:
     # data generation config
     number_of_variates: int = 3
     number_of_segments: int = 100
-    max_repetitions: int = 1000
     downsampling_rule: str = "1min"
     short_segment_durations: [int] = field(
         default_factory=lambda: [15 * 60, 20 * 60, 30 * 60, 60 * 60, 120 * 60, 180 * 60, 180 * 60, 180 * 60, 180 * 60,
@@ -134,8 +133,7 @@ def one_synthetic_creation_run(config: SyntheticDataConfig, seed: int = 10):
                                            config.distributions_for_variates,
                                            distributions_args, distributions_kwargs, config.short_segment_durations,
                                            config.long_segment_durations, patterns, config.columns,
-                                           config.correlation_model,
-                                           config.max_repetitions)
+                                           config.correlation_model)
         generator.generate()
 
         print("2. DOWNSAMPLE")

@@ -113,7 +113,7 @@ class DistributionFit:
         else:
             return None
 
-    def plot_results_for(self, distribution, backend: str = Backends.visible_tests.value):
+    def plot_results_for(self, distribution, backend: str = Backends.none.value):
         """Give actual scipy distribution, e.g. nbinom (not as string)"""
         # get result for distribution
         idx = self.distributions.index(distribution)

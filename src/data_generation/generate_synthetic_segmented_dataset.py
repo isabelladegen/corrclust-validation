@@ -103,8 +103,7 @@ class SyntheticSegmentedData:
     def __init__(self, n_segments: int, n_variates: int,
                  distributions_for_variates: [],
                  distributions_args: [], distributions_kwargs: [], short_segment_durations: [],
-                 long_segment_durations: [], patterns_to_model: {}, variate_names: [], cor_method: str = "loadings",
-                 max_repetitions: int = 100):
+                 long_segment_durations: [], patterns_to_model: {}, variate_names: [], cor_method: str = "loadings"):
         self.start_time = datetime(2017, 6, 23, hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc)
         self.time_delta = timedelta(seconds=1)  # sample at 1 second by default
         self.distributions_for_variates = distributions_for_variates
@@ -116,7 +115,6 @@ class SyntheticSegmentedData:
         # what method to use to create the correlations (loadings or cholesky)
         self.cor_method = cor_method
         # how many times we reattempt to generate a segment to avoid failures
-        self.max_repeats = max_repetitions
         self.long_segment_durations = long_segment_durations
         self.patterns_to_model = patterns_to_model
         self.variate_names = variate_names
@@ -192,26 +190,10 @@ class SyntheticSegmentedData:
                 generator = GenerateData(n_observations, self.n_variates, correlations, distributions, args=args,
                                          kwargs=kwargs, method=self.cor_method)
 
-            # repeat generation infinitely to get positive definite cov and max_repeat times for correlation
-            correlations_achieved = None
-            within_tol = None
-            while repeated < self.max_repeats:
-                while cov_repeat < self.max_repeats:
-                    try:
-                        generator.generate()
-                        cov_repeat += 1
-                    except LinAlgError:
-                        # usually happens if cov not positive definite
-                        # this will run forever if we cannot get a positiv definite matrix
-                        repeated = 0
-                        print("Generation failed, reattempting to generate segment with id " + str(segment_id))
+            generator.generate()
 
-                correlations_achieved = generator.achieved_correlations()
-                within_tol = generator.check_if_achieved_correlation_is_within_original_strengths()
-                if all(within_tol):
-                    break
-                else:
-                    repeated += 1
+            correlations_achieved = generator.achieved_correlations()
+            within_tol = generator.check_if_achieved_correlation_is_within_original_strengths()
 
             df = pd.DataFrame(data=generator.generated_data, columns=self.variate_names)
 

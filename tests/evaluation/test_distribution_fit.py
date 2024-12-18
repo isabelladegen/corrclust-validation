@@ -73,7 +73,7 @@ def test_show_pdf_for_lognormal_data():
     dist_fit = DistributionFit(lognorm_data, dists_, [lognorm_bounds])
     dist_fit.fit()
 
-    dist_fit.plot_results_for(dists_[0], backend=Backends.visible_tests.value)
+    dist_fit.plot_results_for(dists_[0], backend=backend)
 
 
 

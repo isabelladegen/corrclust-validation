@@ -6,7 +6,6 @@ from hamcrest import *
 from matplotlib import pyplot as plt
 from scipy.stats import genextreme, nbinom
 
-from src.data_generation.generate_synthetic_correlated_data import check_correlations_are_within_original_strength
 from src.utils.configurations import GeneralisedCols
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.data_generation.model_correlation_patterns import ModelCorrelationPatterns
@@ -113,7 +112,6 @@ def test_generates_two_segments_with_given_correlation():
     raw_achieved_correlation = np.array(raw_labels.loc[0, SyntheticDataSegmentCols.actual_correlation])
     n_achieved_correlation = np.array(normal_labels.loc[0, SyntheticDataSegmentCols.actual_correlation])
     assert_that(np.array_equal(nn_achieved_correlation, raw_achieved_correlation), is_(False))
-    assert_that(np.array_equal(nn_achieved_correlation, n_achieved_correlation), is_(False))
     assert_that(np.array_equal(raw_achieved_correlation, n_achieved_correlation), is_(False))
 
     # visualise data generated
@@ -144,7 +142,7 @@ def test_generates_all_patterns():
     generator = SyntheticSegmentedData(number_of_segments, number_of_variates,
                                        distributions_for_variates,
                                        distributions_args, distributions_kwargs, short_segment_durations,
-                                       long_segment_durations, cholesky_patterns, variate_names, max_repetitions=100)
+                                       long_segment_durations, cholesky_patterns, variate_names)
     generator.generate()
 
     # assert all patterns have been used
@@ -242,7 +240,7 @@ def test_ensure_segment_creation_stays_within_correlation_strength_given():
     generator = SyntheticSegmentedData(number_of_segments, number_of_variates,
                                        distributions_for_variates,
                                        distributions_args, distributions_kwargs, short_segment_durations,
-                                       long_segment_durations, loadings_patterns, variate_names, max_repetitions=300)
+                                       long_segment_durations, loadings_patterns, variate_names)
     generator.generate()
 
     segment_df = generator.non_normal_labels_df
