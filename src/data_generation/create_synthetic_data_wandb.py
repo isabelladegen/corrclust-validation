@@ -39,12 +39,13 @@ class SyntheticDataConfig:
     number_of_variates: int = 3
     number_of_segments: int = 100
     downsampling_rule: str = "1min"
+    # short events: minutes * 60 for seconds, think T1D events/activities duration
     short_segment_durations: [int] = field(
-        default_factory=lambda: [15 * 60, 20 * 60, 30 * 60, 60 * 60, 120 * 60, 180 * 60, 180 * 60, 180 * 60, 180 * 60,
-                                 240 * 60])  # * 60 for seconds
+        default_factory=lambda: [15 * 60, 20 * 60, 30 * 60, 60 * 60, 120 * 60, 180 * 60, 240 * 60, 300*60])
     long_segment_durations: [int] = field(
-        default_factory=lambda: [360 * 60, 480 * 60, 600 * 60, 720 * 60])  # * 60 for seconds
+        default_factory=lambda: [360 * 60, 480 * 60, 600 * 60])  # minutes * 60 for seconds
 
+    #NN Distribution settings
     distributions_for_variates: [rv_generic] = field(default_factory=lambda: [genextreme, nbinom, genextreme])
     # iob distribution parameters
     c_iob: float = -0.22
@@ -60,7 +61,6 @@ class SyntheticDataConfig:
 
     # EVALUATION
     backend: str = Backends.none.value
-    has_datetime_index: bool = True  # this will decide if datetime analysis is run
 
     def as_dict(self):
         return asdict(self)
@@ -185,22 +185,22 @@ def one_synthetic_creation_run(config: SyntheticDataConfig, seed: int = 66666):
 
         print("4. LOG RAW DESCRIPTION")
         raw_desc = DescribeSyntheticDataset(run_name, data_type=SyntheticDataType.raw, data_dir=config.data_dir)
-        log_dataset_description(raw_desc, "Raw")
+        log_dataset_description(raw_desc, "1. Raw")
 
         print("5. LOG NORMAL CORRELATED DESCRIPTION")
         nc_desc = DescribeSyntheticDataset(run_name, data_type=SyntheticDataType.normal_correlated,
                                            data_dir=config.data_dir)
-        log_dataset_description(raw_desc, "NC")
+        log_dataset_description(nc_desc, "2. NC")
 
         print("6. LOG NON-NORMAL CORRELATED DESCRIPTION")
-        nn_desc = DescribeSyntheticDataset(run_name, data_type=SyntheticDataType.non_normal_correlated,
+        nc_desc = DescribeSyntheticDataset(run_name, data_type=SyntheticDataType.non_normal_correlated,
                                            data_dir=config.data_dir)
-        log_dataset_description(raw_desc, "NN")
+        log_dataset_description(nc_desc, "3. NN")
 
         print("7. LOG DOWNSAMPLED DESCRIPTION")
-        downsampled_desc = DescribeSyntheticDataset(run_name, data_type=SyntheticDataType.downsampled_1min,
-                                                    data_dir=config.data_dir)
-        log_dataset_description(raw_desc, "DS")
+        nc_desc = DescribeSyntheticDataset(run_name, data_type=SyntheticDataType.downsampled_1min,
+                                           data_dir=config.data_dir)
+        log_dataset_description(nc_desc, "4. DS")
 
     except Exception as e:
         tb = traceback.format_exc()

@@ -150,7 +150,7 @@ def test_generates_all_patterns():
     random_pattern_list = [20, 2, 15, 5, 12, 0, 18, 13, 3, 9, 11, 19, 24, 25, 8, 23, 17, 6, 7, 10, 4, 1, 21]
     assert_that(segment_df[SyntheticDataSegmentCols.pattern_id], contains_exactly(*random_pattern_list))
 
-    assert_that(generator.non_normal_data_df.shape[0], is_(246600))
+    assert_that(generator.non_normal_data_df.shape[0], is_(201000))
 
 
 def test_downsample_generated_data_to_minutes_and_check_correlation_results():
@@ -225,7 +225,7 @@ def test_two_generations_with_a_different_seed_are_different():
     labels3_length = labels3[SyntheticDataSegmentCols.length].tolist()
     assert_that(labels1_length, contains_exactly(*labels2_length))
     assert_that(labels1_length[0], is_not(labels3_length[0]))
-    assert_that(labels1_length[2], is_not(labels3_length[2]))
+    assert_that(labels1_length[3], is_not(labels3_length[3]))
     assert_that(labels1_length[20], is_not(labels3_length[20]))
 
     # observations
@@ -328,8 +328,8 @@ def test_generate_a_random_list_of_segment_lengths_for_each_segment():
     assert_that(l1, contains_exactly(400, 300, 8000, 100, 600, 16000))  # each segment length used once
 
     assert_that(len(l2), is_(length2))
-    assert_that(l2, contains_exactly(600, 8000))  # not all used
+    assert_that(l2, contains_exactly(600, 400))  # only short ones used
 
     assert_that(len(l3), is_(length3))
     # all short and long and 4 duplicates
-    assert_that(l3, contains_exactly(400, 600, 600, 16000, 300, 100, 100, 8000, 400, 8000))
+    assert_that(l3, contains_exactly(400, 16000, 400, 100, 100, 600, 300, 600, 8000, 300))

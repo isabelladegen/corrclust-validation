@@ -113,8 +113,8 @@ def random_segment_lengths(short_segment_durations, long_segment_durations, n_se
 
     n_short = len(short_segment_durations)  # number of short segment lengths
     n_long = len(long_segment_durations)  # number of long segment lengths
-    n_short_segments = int(round(2 * n_segments / 3, 0))  # make 2/3 of segments short
-    n_long_segments = n_segments - n_short_segments  # make 1/3 long
+    n_short_segments = int(round((3 * n_segments) / 4, 0))  # make 3/4 of segments short
+    n_long_segments = n_segments - n_short_segments  # make 1/4 of segments long
 
     # great least with approx same frequency for each segment length
     n_short_per_pattern = n_short_segments // n_short
