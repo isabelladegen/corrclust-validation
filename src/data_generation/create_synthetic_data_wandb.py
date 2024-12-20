@@ -1,10 +1,9 @@
-import gc
 import traceback
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
 
 import numpy as np
-from scipy.stats import genextreme, nbinom, lognorm
+from scipy.stats import genextreme, nbinom
 
 import wandb
 from scipy.stats._distn_infrastructure import rv_generic
@@ -40,24 +39,20 @@ class SyntheticDataConfig:
     number_of_segments: int = 100
     resample_rule: str = "1min"
     # short events: minutes * 60 for seconds, think T1D events/activities duration
-    short_segment_durations: [int] = field(
+    segment_durations_short: [int] = field(
         default_factory=lambda: [15 * 60, 20 * 60, 30 * 60, 60 * 60, 120 * 60, 180 * 60, 240 * 60, 300 * 60])
-    long_segment_durations: [int] = field(
+    segment_durations_long: [int] = field(
         default_factory=lambda: [360 * 60, 480 * 60, 600 * 60])  # minutes * 60 for seconds
 
     # NN Distribution settings
     distributions_for_variates: [rv_generic] = field(default_factory=lambda: [genextreme, nbinom, genextreme])
-    # iob distribution parameters
-    c_iob: float = -0.22
-    loc_iob: float = 0.5
-    scale_iob: float = 1.52
-    # cob distribution parameters
-    n_cob: int = 1  # number of successes
-    p_cob: float = 0.05  # likelihood of success
-    # ig distribution parameters
-    c_ig: float = 0.04
-    loc_ig: float = 119.27
-    scale_ig: float = 39.40
+    # iob args (give in same order as the distribution methods will take
+    distributions_args_iob: () = field(default_factory=lambda: (-0.22,))
+    distributions_kwargs_iob: {str: float} = field(default_factory=lambda: {'loc': 0.5, 'scale': 1.52})
+    distributions_args_cob: () = field(default_factory=lambda: (1, 0.05))
+    distributions_kwargs_cob: {str: float} = field(default_factory=lambda: {})  # none, loc will be 0
+    distributions_args_ig: () = field(default_factory=lambda: (0.04,))
+    distributions_kwargs_ig: {str: float} = field(default_factory=lambda: {'loc': 119.27, 'scale': 39.40})
 
     # EVALUATION
     backend: str = Backends.none.value
@@ -103,16 +98,11 @@ def one_synthetic_creation_run(config: SyntheticDataConfig, seed: int = 66666):
                    tags=config.tags,
                    config=config.as_dict())
 
-        # Save mode inputs and hyperparameters (this allows for sweep)
-        # skip as not doing sweeps so config won't be rehydrated
-        args_iob: tuple = (config.c_iob,)
-        kwargs_iob = {'loc': config.loc_iob, 'scale': config.scale_iob}
-        args_cob = (config.n_cob, config.p_cob)
-        kwargs_cob = {}  # none, loc will be 0
-        args_ig = (config.c_ig,)
-        kwargs_ig = {'loc': config.loc_ig, 'scale': config.scale_ig}
-        distributions_args = [args_iob, args_cob, args_ig]
-        distributions_kwargs = [kwargs_iob, kwargs_cob, kwargs_ig]
+        # This won't work for sweeps as config won't be rehydrated but we're not doing sweps
+        distributions_args = [config.distributions_args_iob, config.distributions_args_cob,
+                              config.distributions_args_ig]
+        distributions_kwargs = [config.distributions_kwargs_iob, config.distributions_kwargs_cob,
+                                config.distributions_kwargs_ig]
 
         keys = SyntheticDataLogKeys()
         wandb.log({keys.dataset_seed: seed})
@@ -134,8 +124,8 @@ def one_synthetic_creation_run(config: SyntheticDataConfig, seed: int = 66666):
         print("1. GENERATING DATA")
         generator = SyntheticSegmentedData(config.number_of_segments, config.number_of_variates,
                                            config.distributions_for_variates,
-                                           distributions_args, distributions_kwargs, config.short_segment_durations,
-                                           config.long_segment_durations, patterns, config.columns,
+                                           distributions_args, distributions_kwargs, config.segment_durations_short,
+                                           config.segment_durations_long, patterns, config.columns,
                                            config.correlation_model)
         generator.generate(seed=seed)
 
@@ -162,7 +152,8 @@ def one_synthetic_creation_run(config: SyntheticDataConfig, seed: int = 66666):
         # nn
         save_data_labels_to_file(data_dir, SyntheticDataType.non_normal_correlated, nn_data_df, nn_labels_df, run_name)
         # resampled
-        save_data_labels_to_file(data_dir, SyntheticDataType().resample(config.resample_rule), rs_data_df, rs_labels_df, run_name)
+        save_data_labels_to_file(data_dir, SyntheticDataType().resample(config.resample_rule), rs_data_df, rs_labels_df,
+                                 run_name)
 
         print("...saving labels to wandb")
         # Non Normal labels
@@ -196,7 +187,8 @@ def one_synthetic_creation_run(config: SyntheticDataConfig, seed: int = 66666):
         log_dataset_description(nn_desc, "NN")
 
         print("7. LOG RESAMPLED DESCRIPTION")
-        rs_desc = DescribeSyntheticDataset(run_name, data_type=SyntheticDataType().resample(config.resample_rule), data_dir=config.data_dir)
+        rs_desc = DescribeSyntheticDataset(run_name, data_type=SyntheticDataType().resample(config.resample_rule),
+                                           data_dir=config.data_dir)
         log_dataset_description(rs_desc, "RS")
 
     except Exception as e:
@@ -256,6 +248,7 @@ def create_datasets(n: int = 2, tag: str = 'synthetic_creation'):
     loc_iobs = mpam.get_params_for(DistParamsCols.loc_iob)
     scale_iobs = mpam.get_params_for(DistParamsCols.scale_iob)
     n_cobs = mpam.get_params_for(DistParamsCols.n_cob)
+    p_cobs = mpam.get_params_for(DistParamsCols.p_cob)
     c_igs = mpam.get_params_for(DistParamsCols.c_ig)
     loc_igs = mpam.get_params_for(DistParamsCols.loc_ig)
     scale_igs = mpam.get_params_for(DistParamsCols.scale_ig)
@@ -265,13 +258,12 @@ def create_datasets(n: int = 2, tag: str = 'synthetic_creation'):
         dataset_seed = np.random.randint(low=100, high=1000000)
         # configure distribution params
         index = n % len(c_iobs)
-        config.c_iob = c_iobs[index]
-        config.loc_iob = loc_iobs[index]
-        config.scale_iob = scale_iobs[index]
-        config.n_cob = n_cobs[index]
-        config.c_ig = c_igs[index]
-        config.loc_ig = loc_igs[index]
-        config.scale_ig = scale_igs[index]
+        config.distributions_args_iob = (c_iobs[index],)
+        config.distributions_kwargs_iob = {'loc': loc_iobs[index], 'scale': scale_iobs[index]}
+        config.distributions_args_cob = (n_cobs[index], p_cobs[index])
+        config.distributions_kwargs_cob = {}  # none, loc will be 0
+        config.distributions_args_ig = (c_igs[index],)
+        config.distributions_kwargs_ig = {'loc': loc_igs[index], 'scale': scale_igs[index]}
 
         one_synthetic_creation_run(config, seed=dataset_seed)
 
