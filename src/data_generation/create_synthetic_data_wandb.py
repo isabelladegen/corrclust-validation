@@ -38,14 +38,14 @@ class SyntheticDataConfig:
     # data generation config
     number_of_variates: int = 3
     number_of_segments: int = 100
-    downsampling_rule: str = "1min"
+    resample_rule: str = "1min"
     # short events: minutes * 60 for seconds, think T1D events/activities duration
     short_segment_durations: [int] = field(
-        default_factory=lambda: [15 * 60, 20 * 60, 30 * 60, 60 * 60, 120 * 60, 180 * 60, 240 * 60, 300*60])
+        default_factory=lambda: [15 * 60, 20 * 60, 30 * 60, 60 * 60, 120 * 60, 180 * 60, 240 * 60, 300 * 60])
     long_segment_durations: [int] = field(
         default_factory=lambda: [360 * 60, 480 * 60, 600 * 60])  # minutes * 60 for seconds
 
-    #NN Distribution settings
+    # NN Distribution settings
     distributions_for_variates: [rv_generic] = field(default_factory=lambda: [genextreme, nbinom, genextreme])
     # iob distribution parameters
     c_iob: float = -0.22
@@ -74,8 +74,7 @@ class SyntheticDataLogKeys:
     nn_labels_table: str = "non normal labels"
     nc_labels_table: str = "normal labels"
     raw_labels_table: str = "raw labels"
-    generated_data_table: str = "generated data"
-    downsampled_labels_table: str = "downsampled labels"
+    rs_labels_table: str = "rs labels"
     dataset_seed: str = "dataset seed"
 
 
@@ -95,7 +94,7 @@ def one_synthetic_creation_run(config: SyntheticDataConfig, seed: int = 66666):
     :param seed: base seed to use for random, the dataset will be using a random int
     :return: DescribeSyntheticData class
     """
-    raw_desc, nc_desc, nn_desc, downsampled_desc = None, None, None, None
+    raw_desc, nc_desc, nn_desc, rs_desc = None, None, None, None
     try:
         wandb.init(project=config.wandb_project_name,
                    entity=config.wandb_entity,
@@ -140,8 +139,8 @@ def one_synthetic_creation_run(config: SyntheticDataConfig, seed: int = 66666):
                                            config.correlation_model)
         generator.generate(seed=seed)
 
-        print("2. DOWNSAMPLE")
-        generator.resample(rule=config.downsampling_rule)
+        print("2. RESAMPLE")
+        generator.resample(rule=config.resample_rule)
 
         print("3. SAVE LABELS DF ON WANDB")
         # get dataframes
@@ -150,8 +149,8 @@ def one_synthetic_creation_run(config: SyntheticDataConfig, seed: int = 66666):
         nn_data_df = generator.non_normal_data_df
         nn_labels_df = generator.non_normal_labels_df
         # reset index required to match other dfs as datetime was set as index for the resampling
-        downsampled_data_df = generator.resampled_data.reset_index()
-        downsampled_labels_df = generator.resampled_labels_df
+        rs_data_df = generator.resampled_data.reset_index()
+        rs_labels_df = generator.resampled_labels_df
 
         # data tables are too big to be logged on wandb, saving them directly to data_dir
         print("...saving generated data to local file storage")
@@ -162,9 +161,8 @@ def one_synthetic_creation_run(config: SyntheticDataConfig, seed: int = 66666):
         save_data_labels_to_file(data_dir, SyntheticDataType.normal_correlated, nc_data_df, nc_labels_df, run_name)
         # nn
         save_data_labels_to_file(data_dir, SyntheticDataType.non_normal_correlated, nn_data_df, nn_labels_df, run_name)
-        # downsampled
-        save_data_labels_to_file(data_dir, SyntheticDataType.downsampled_1min, downsampled_data_df,
-                                 downsampled_labels_df, run_name)
+        # resampled
+        save_data_labels_to_file(data_dir, SyntheticDataType.rs_1min, rs_data_df, rs_labels_df, run_name)
 
         print("...saving labels to wandb")
         # Non Normal labels
@@ -179,28 +177,27 @@ def one_synthetic_creation_run(config: SyntheticDataConfig, seed: int = 66666):
         raw_labels_table = wandb.Table(dataframe=raw_labels_df, allow_mixed_types=True)
         wandb.log({keys.raw_labels_table: raw_labels_table})
 
-        # Downsampled data
-        downsampled_labels_table = wandb.Table(dataframe=downsampled_labels_df, allow_mixed_types=True)
-        wandb.log({keys.downsampled_labels_table: downsampled_labels_table})
+        # Resampled data
+        resampled_labels_table = wandb.Table(dataframe=rs_labels_df, allow_mixed_types=True)
+        wandb.log({keys.rs_labels_table: resampled_labels_table})
 
         print("4. LOG RAW DESCRIPTION")
         raw_desc = DescribeSyntheticDataset(run_name, data_type=SyntheticDataType.raw, data_dir=config.data_dir)
-        log_dataset_description(raw_desc, "1. Raw")
+        log_dataset_description(raw_desc, "RAW")
 
         print("5. LOG NORMAL CORRELATED DESCRIPTION")
         nc_desc = DescribeSyntheticDataset(run_name, data_type=SyntheticDataType.normal_correlated,
                                            data_dir=config.data_dir)
-        log_dataset_description(nc_desc, "2. NC")
+        log_dataset_description(nc_desc, "NC")
 
         print("6. LOG NON-NORMAL CORRELATED DESCRIPTION")
-        nc_desc = DescribeSyntheticDataset(run_name, data_type=SyntheticDataType.non_normal_correlated,
+        nn_desc = DescribeSyntheticDataset(run_name, data_type=SyntheticDataType.non_normal_correlated,
                                            data_dir=config.data_dir)
-        log_dataset_description(nc_desc, "3. NN")
+        log_dataset_description(nc_desc, "NN")
 
-        print("7. LOG DOWNSAMPLED DESCRIPTION")
-        nc_desc = DescribeSyntheticDataset(run_name, data_type=SyntheticDataType.downsampled_1min,
-                                           data_dir=config.data_dir)
-        log_dataset_description(nc_desc, "4. DS")
+        print("7. LOG RESAMPLED DESCRIPTION")
+        rs_desc = DescribeSyntheticDataset(run_name, data_type=SyntheticDataType.rs_1min, data_dir=config.data_dir)
+        log_dataset_description(nc_desc, "RS")
 
     except Exception as e:
         tb = traceback.format_exc()
@@ -211,7 +208,7 @@ def one_synthetic_creation_run(config: SyntheticDataConfig, seed: int = 66666):
     gc.collect()
     if exit_code == 1:
         raise
-    return raw_desc, nc_desc, nn_desc, downsampled_desc
+    return {"raw": raw_desc, "nc": nc_desc, "nn": nn_desc, "rs": rs_desc}
 
 
 def log_dataset_description(describe: DescribeSyntheticDataset, key_id: str):
@@ -219,30 +216,30 @@ def log_dataset_description(describe: DescribeSyntheticDataset, key_id: str):
     Logs information about the dataset using key_id as a prefix for each key
     """
     wandb.log({
-        key_id + " n observations": describe.number_of_observations,
-        key_id + " n segments": describe.number_of_segments,
-        key_id + " n patterns": describe.n_patterns,
-        key_id + " n segments within tolerance": describe.n_segment_within_tolerance,
-        key_id + " n segments outside tolerance": describe.n_segment_outside_tolerance,
-        key_id + " mean MAE": describe.mae_stats['mean'],
-        key_id + " std MAE": describe.mae_stats['std'],
-        key_id + " median MAE": describe.mae_stats['50%'],
-        key_id + " min MAE": describe.mae_stats['min'],
-        key_id + " max MAE": describe.mae_stats['max'],
-        key_id + " mean pattern frequency": describe.patterns_stats['mean'],
-        key_id + " std pattern frequency": describe.patterns_stats['std'],
-        key_id + " median pattern frequency": describe.patterns_stats['50%'],
-        key_id + " min pattern frequency": describe.patterns_stats['min'],
-        key_id + " max pattern frequency": describe.patterns_stats['max'],
-        key_id + " mean segment length": describe.segment_length_stats['mean'],
-        key_id + " std segment length": describe.segment_length_stats['std'],
-        key_id + " median segment length": describe.segment_length_stats['50%'],
-        key_id + " min segment length": describe.segment_length_stats['min'],
-        key_id + " max segment length": describe.segment_length_stats['max'],
-        key_id + " frequency": describe.frequency,
-        key_id + " duration in days": describe.duration.days,
-        key_id + " start date": describe.start_date.isoformat(),
-        key_id + " end date": describe.end_date.isoformat(),
+        "n observations " + key_id: describe.number_of_observations,
+        "n segments " + key_id: describe.number_of_segments,
+        "n patterns " + key_id: describe.n_patterns,
+        "n segments within tolerance " + key_id: describe.n_segment_within_tolerance,
+        "n segments outside tolerance " + key_id: describe.n_segment_outside_tolerance,
+        "mean MAE " + key_id: describe.mae_stats['mean'],
+        "std MAE " + key_id: describe.mae_stats['std'],
+        "median MAE " + key_id: describe.mae_stats['50%'],
+        "min MAE " + key_id: describe.mae_stats['min'],
+        "max MAE " + key_id: describe.mae_stats['max'],
+        "mean pattern frequency " + key_id: describe.patterns_stats['mean'],
+        "std pattern frequency " + key_id: describe.patterns_stats['std'],
+        "median pattern frequency " + key_id: describe.patterns_stats['50%'],
+        "min pattern frequency " + key_id: describe.patterns_stats['min'],
+        "max pattern frequency " + key_id: describe.patterns_stats['max'],
+        "mean segment length " + key_id: describe.segment_length_stats['mean'],
+        "std segment length " + key_id: describe.segment_length_stats['std'],
+        "median segment length " + key_id: describe.segment_length_stats['50%'],
+        "min segment length " + key_id: describe.segment_length_stats['min'],
+        "max segment length " + key_id: describe.segment_length_stats['max'],
+        "frequency " + key_id: describe.frequency,
+        "duration in days " + key_id: describe.duration.days,
+        "start date " + key_id: describe.start_date.isoformat(),
+        "end date " + key_id: describe.end_date.isoformat(),
     })
 
 

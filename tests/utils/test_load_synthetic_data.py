@@ -99,9 +99,9 @@ def test_can_load_correlated_non_normal_data_and_labels():
     assert_that(labels.loc[0, SyntheticDataSegmentCols.actual_within_tolerance], contains_exactly(True, True, True))
 
 
-def test_can_load_downsampled_data_and_labels():
+def test_can_load_resampled_data_and_labels():
     run_name = "misty-forest-56"
-    data_type = SyntheticDataType.downsampled_1min
+    data_type = SyntheticDataType.rs_1min
     data, labels = load_synthetic_data(run_name, data_type=data_type, data_dir=test_data_dir)
 
     # check data structure

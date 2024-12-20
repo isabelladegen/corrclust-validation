@@ -28,7 +28,7 @@ class SyntheticDataType:
     non_normal_correlated: str = "non_normal"
     irregular_p30_drop: str = "irregular_p30"
     irregular_p90_drop: str = "irregular_p90"
-    downsampled_1min: str = "downsampled_1min"
+    rs_1min: str = "resampled_1min"
 
 
 @dataclass
