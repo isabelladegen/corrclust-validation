@@ -162,7 +162,7 @@ def one_synthetic_creation_run(config: SyntheticDataConfig, seed: int = 66666):
         # nn
         save_data_labels_to_file(data_dir, SyntheticDataType.non_normal_correlated, nn_data_df, nn_labels_df, run_name)
         # resampled
-        save_data_labels_to_file(data_dir, SyntheticDataType.rs_1min, rs_data_df, rs_labels_df, run_name)
+        save_data_labels_to_file(data_dir, SyntheticDataType().resample(config.resample_rule), rs_data_df, rs_labels_df, run_name)
 
         print("...saving labels to wandb")
         # Non Normal labels
@@ -196,7 +196,7 @@ def one_synthetic_creation_run(config: SyntheticDataConfig, seed: int = 66666):
         log_dataset_description(nn_desc, "NN")
 
         print("7. LOG RESAMPLED DESCRIPTION")
-        rs_desc = DescribeSyntheticDataset(run_name, data_type=SyntheticDataType.rs_1min, data_dir=config.data_dir)
+        rs_desc = DescribeSyntheticDataset(run_name, data_type=SyntheticDataType().resample(config.resample_rule), data_dir=config.data_dir)
         log_dataset_description(rs_desc, "RS")
 
     except Exception as e:

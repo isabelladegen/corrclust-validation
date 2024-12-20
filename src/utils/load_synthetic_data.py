@@ -30,6 +30,9 @@ class SyntheticDataType:
     irregular_p90_drop: str = "irregular_p90"
     rs_1min: str = "resampled_1min"
 
+    def resample(self, rule: str):
+        return "resampled_" + rule
+
 
 @dataclass
 class SyntheticFileTypes:
