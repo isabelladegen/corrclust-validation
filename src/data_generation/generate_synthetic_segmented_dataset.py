@@ -352,7 +352,8 @@ class SyntheticSegmentedData:
         :return: pd.Dataframe
         """
         resampled = self.non_normal_data_df.resample(rule, on=GeneralisedCols.datetime).mean()
-        self.resampled_data = resampled
+        # to make it consistent with the other df that the datetime is not automatically the index we reset the index
+        self.resampled_data = resampled.reset_index()
 
         # calculate new cluster segment df for resampled data
         reduction_in_frequency = self.non_normal_data_df.shape[0] / self.resampled_data.shape[0]

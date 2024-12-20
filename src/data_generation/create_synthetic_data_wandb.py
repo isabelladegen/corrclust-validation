@@ -139,7 +139,7 @@ def one_synthetic_creation_run(config: SyntheticDataConfig, seed: int = 66666):
         nn_data_df = generator.non_normal_data_df
         nn_labels_df = generator.non_normal_labels_df
         # reset index required to match other dfs as datetime was set as index for the resampling
-        rs_data_df = generator.resampled_data.reset_index()
+        rs_data_df = generator.resampled_data
         rs_labels_df = generator.resampled_labels_df
 
         # data tables are too big to be logged on wandb, saving them directly to data_dir

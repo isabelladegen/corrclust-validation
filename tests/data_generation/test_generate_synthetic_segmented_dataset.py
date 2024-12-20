@@ -171,7 +171,7 @@ def test_downsample_generated_data_to_minutes_and_check_correlation_results():
     generator.resample(rule="1min")
 
     # check down sampled data's frequency is minutes
-    assert_that(pd.infer_freq(generator.resampled_data.index), is_("min"))
+    assert_that(pd.infer_freq(generator.resampled_data[GeneralisedCols.datetime]), is_("min"))
 
     # we're loosing more of the correlations when downsampling
     original_segment_df = generator.non_normal_labels_df
