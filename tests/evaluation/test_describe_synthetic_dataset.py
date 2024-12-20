@@ -1,4 +1,5 @@
 import itertools
+from os import path
 
 import numpy as np
 from hamcrest import *
@@ -8,7 +9,7 @@ from src.utils.configurations import GeneralisedCols
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.evaluation.describe_synthetic_dataset import DescribeSyntheticDataset, DescribeSyntheticCols
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
-from tests.test_utils.configurations_for_testing import TEST_DATA_DIR
+from tests.test_utils.configurations_for_testing import TEST_DATA_DIR, TEST_IMAGES_DIR
 
 group1_cluster_ids_to_compare = [(0, 1), (0, 2), (0, 3), (0, 6), (0, 9), (1, 4), (0, 18), (1, 7), (1, 10), (1, 19),
                                  (2, 5), (2, 8), (2, 11), (2, 20), (3, 4), (3, 5), (3, 12), (3, 21), (4, 13), (5, 23),
@@ -45,6 +46,7 @@ group5_cluster_ids_to_compare = [(4, 17), (5, 25), (7, 23), (8, 13), (10, 23), (
 a_ds_name = "misty-forest-56"
 backend = Backends.none.value
 test_data_dir = TEST_DATA_DIR
+images_dir = TEST_IMAGES_DIR
 ds = DescribeSyntheticDataset(a_ds_name, data_dir=TEST_DATA_DIR, backend=backend)
 
 
@@ -317,7 +319,7 @@ def test_segment_pairs_for_each_group():
 def test_plot_actual_correlations_for_each_pattern():
     fig = ds.plot_correlation_matrix_for_each_pattern()
     assert_that(fig, is_not(None))
-    fig.savefig('images/correlation_for_patterns-misty-forest-56.png')
+    fig.savefig(path.join(images_dir, 'correlation_for_patterns-misty-forest-56.png'))
 
 
 def test_plot_description_of_subgroups():
@@ -328,25 +330,25 @@ def test_plot_description_of_subgroups():
     order = []  # default
     fig = ds.plot_example_correlation_matrix_for_each_subgroup(pattern_id=pattern_id, order_groups=order)
     assert_that(fig, is_not(None))
-    fig.savefig('images/subgroups-misty-forest-56.png')
+    fig.savefig(path.join(images_dir, 'subgroups-misty-forest-56.png'))
 
     # l1 norm order
     l1_order = [0, 1, 2, 3, 5, 4]
     fig = ds.plot_example_correlation_matrix_for_each_subgroup(pattern_id=pattern_id, order_groups=l1_order)
     assert_that(fig, is_not(None))
-    fig.savefig('images/l1-ordered-subgroups-misty-forest-56.png')
+    fig.savefig(path.join(images_dir, 'l1-ordered-subgroups-misty-forest-56.png'))
 
     # l2 norm order
     l2_order = [0, 1, 3, 2, 5, 4]
     fig = ds.plot_example_correlation_matrix_for_each_subgroup(pattern_id=pattern_id, order_groups=l2_order)
     assert_that(fig, is_not(None))
-    fig.savefig('images/l2-ordered-subgroups-misty-forest-56.png')
+    fig.savefig(path.join(images_dir, 'l2-ordered-subgroups-misty-forest-56.png'))
 
     # linf norm order
     linf_order = [0, 1, 3, 5, 2, 4]
     fig = ds.plot_example_correlation_matrix_for_each_subgroup(pattern_id=pattern_id, order_groups=linf_order)
     assert_that(fig, is_not(None))
-    fig.savefig('images/linf-ordered-subgroups-misty-forest-56.png')
+    fig.savefig(path.join(images_dir, 'linf-ordered-subgroups-misty-forest-56.png'))
 
 
 def test_return_modeled_correlation_as_x_matrix_and_label_as_y_vector():

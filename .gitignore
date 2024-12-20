@@ -185,3 +185,4 @@ cython_debug/
 **/test-run-labels.csv
 /tests/images/
 wandb/
+/tests/tables/
