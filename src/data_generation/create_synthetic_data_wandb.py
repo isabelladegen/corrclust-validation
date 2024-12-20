@@ -193,22 +193,22 @@ def one_synthetic_creation_run(config: SyntheticDataConfig, seed: int = 66666):
         print("6. LOG NON-NORMAL CORRELATED DESCRIPTION")
         nn_desc = DescribeSyntheticDataset(run_name, data_type=SyntheticDataType.non_normal_correlated,
                                            data_dir=config.data_dir)
-        log_dataset_description(nc_desc, "NN")
+        log_dataset_description(nn_desc, "NN")
 
         print("7. LOG RESAMPLED DESCRIPTION")
         rs_desc = DescribeSyntheticDataset(run_name, data_type=SyntheticDataType.rs_1min, data_dir=config.data_dir)
-        log_dataset_description(nc_desc, "RS")
+        log_dataset_description(rs_desc, "RS")
 
     except Exception as e:
         tb = traceback.format_exc()
         print(tb)  # try to get error into wandb log
         exit_code = 1
 
+    summary = dict(wandb.run.summary)
     wandb.finish(exit_code=exit_code)
-    gc.collect()
     if exit_code == 1:
         raise
-    return {"raw": raw_desc, "nc": nc_desc, "nn": nn_desc, "rs": rs_desc}
+    return {"raw": raw_desc, "nc": nc_desc, "nn": nn_desc, "rs": rs_desc}, summary
 
 
 def log_dataset_description(describe: DescribeSyntheticDataset, key_id: str):
