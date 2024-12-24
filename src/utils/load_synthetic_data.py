@@ -1,10 +1,12 @@
 import ast
+import glob
 from dataclasses import dataclass
 
 import pandas as pd
 
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
-from src.utils.configurations import SYNTHETIC_DATA_DIR, GeneralisedCols, dir_for_data_type
+from src.utils.configurations import SYNTHETIC_DATA_DIR, GeneralisedCols, dir_for_data_type, \
+    bad_partition_dir_for_data_type
 
 from pathlib import Path
 
@@ -69,9 +71,23 @@ def load_synthetic_data(run_id: str, data_type: str = SyntheticDataType.normal_c
     print("Load labels data file with name: " + str(labels_file_name))
 
     assert data_file_name.exists(), "No data files with name " + str(data_file_name)
-    assert labels_file_name.exists(), "No labels data files with name " + str(labels_file_name)
 
     # load labels file
+    labels_df = load_labels_file_for(labels_file_name)
+
+    # load data file
+    data_df = pd.read_csv(data_file_name, index_col=0)
+    data_df[GeneralisedCols.datetime] = pd.to_datetime(data_df[GeneralisedCols.datetime])
+
+    return data_df, labels_df
+
+
+def load_labels_file_for(labels_file_name: Path):
+    """Loads labels df from full path to file
+    """
+
+    assert labels_file_name.exists(), "No labels data files with name " + str(labels_file_name)
+
     labels_df = pd.read_csv(labels_file_name, index_col=0)
     # change types from string to arrays
     labels_df[SyntheticDataSegmentCols.correlation_to_model] = labels_df[
@@ -80,9 +96,34 @@ def load_synthetic_data(run_id: str, data_type: str = SyntheticDataType.normal_c
         SyntheticDataSegmentCols.actual_correlation].apply(lambda x: ast.literal_eval(x))
     labels_df[SyntheticDataSegmentCols.actual_within_tolerance] = labels_df[
         SyntheticDataSegmentCols.actual_within_tolerance].apply(lambda x: ast.literal_eval(x))
+    return labels_df
 
-    # load data file
-    data_df = pd.read_csv(data_file_name, index_col=0)
-    data_df[GeneralisedCols.datetime] = pd.to_datetime(data_df[GeneralisedCols.datetime])
 
-    return data_df, labels_df
+def load_synthetic_data_and_labels_for_bad_partitions(run_id: str,
+                                                      data_type: str = SyntheticDataType.non_normal_correlated,
+                                                      data_dir: str = SYNTHETIC_DATA_DIR, load_only: int = None):
+    """
+    Method to load ground truth data and labels and all bad-partition labels df for the given run id
+    :param run_id: which run id to load this data for
+    :param data_type: select type from SyntheticDataType, defaults to normal correlated data
+    optional, if not given labels for run_id will be loaded
+    :param data_dir: full path to directory where data is stored, defaults to SYNTHETIC_DATA_DIR
+    :param load_only: give numbers of partitions to load, None if all bad partitions should be loaded
+    :return: data_df np.DataFrame, labels_df np.DataFrame, bad_partition_labels {file_name : np.DataFrame}
+    """
+    # 1. load ground truth data and labels
+    gt_data, gt_labels = load_synthetic_data(run_id, data_type, data_dir)
+
+    # 2. load all bad partitions labels files for this run_id and data type
+    bad_partitions_dir = bad_partition_dir_for_data_type(data_type, data_dir)
+    bad_partitions_path = Path(bad_partitions_dir)
+    assert bad_partitions_path.exists(), "No bad partitions folder with name " + str(bad_partitions_path)
+    paths = glob.glob(str(bad_partitions_path) + "/" + run_id + "*-labels.csv")
+
+    # for test runs only load 3 datasets to speed up testing
+    if load_only is not None:
+        paths = paths[0:load_only]
+
+    results = {Path(file).name: load_labels_file_for(Path(file)) for file in paths}
+
+    return gt_data, gt_labels, results

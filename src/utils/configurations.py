@@ -15,6 +15,12 @@ def dir_for_data_type(data_type: str, data_dir: str = SYNTHETIC_DATA_DIR):
     return path.join(data_dir, data_type)
 
 
+def bad_partition_dir_for_data_type(data_type: str, data_dir: str = SYNTHETIC_DATA_DIR):
+    """ Returns the path to the bad partitions labels files for the given data type"""
+    main_dir = path.join(data_dir, data_type)
+    return path.join(main_dir, 'bad_partitions')
+
+
 def load_private_yaml():
     private_file = path.join(ROOT_DIR, 'private.yaml')
     assert (path.exists(private_file))

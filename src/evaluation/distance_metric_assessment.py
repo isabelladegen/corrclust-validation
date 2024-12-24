@@ -12,7 +12,8 @@ from tslearn.metrics import cdist_dtw
 from src.utils.configurations import Aggregators
 
 from src.utils.distance_measures import calculate_foerstner_matrices_distance_between, \
-    calculate_log_matrix_frobenius_distance_between
+    calculate_log_matrix_frobenius_distance_between, lp_with_reference_vector, lp_norm, dot_transformation, \
+    DistanceMeasures
 from src.utils.plots.matplotlib_helper_functions import reset_matplotlib, Backends, fontsize, display_legend, \
     use_latex_labels
 from src.utils.stats import ConfidenceIntervalCols, calculate_hi_lo_difference_ci, gaussian_critical_z_value_for, \
@@ -26,20 +27,20 @@ default_order = [0, 1, 2, 3, 4, 5]
 
 @dataclass
 class DistanceMeasureCols:
-    l1_with_ref = "L1 with ref"
-    l2_with_ref = "L2 with ref"
-    l5_with_ref = "L5 with ref"
-    l10_with_ref = "L10 with ref"
-    l50_with_ref = "L50 with ref"
-    l100_with_ref = "L100 with ref"
-    linf_with_ref = "Linf with ref"
-    l1_cor_dist: str = "L1 corr dist"
-    l2_cor_dist: str = "L2 corr dist"
-    l5_cor_dist: str = "L5 corr dist"
-    l10_cor_dist: str = "L10 corr dist"
-    l50_cor_dist: str = "L50 corr dist"
-    l100_cor_dist: str = "L100 corr dist"
-    linf_cor_dist: str = "Linf corr dist"
+    l1_with_ref = DistanceMeasures.l1_with_ref
+    l2_with_ref = DistanceMeasures.l2_with_ref
+    l5_with_ref = DistanceMeasures.l5_with_ref
+    l10_with_ref = DistanceMeasures.l10_with_ref
+    l50_with_ref = DistanceMeasures.l50_with_ref
+    l100_with_ref = DistanceMeasures.l100_with_ref
+    linf_with_ref = DistanceMeasures.linf_with_ref
+    l1_cor_dist: str = DistanceMeasures.l1_cor_dist
+    l2_cor_dist: str = DistanceMeasures.l2_cor_dist
+    l5_cor_dist: str = DistanceMeasures.l5_cor_dist
+    l10_cor_dist: str = DistanceMeasures.l10_cor_dist
+    l50_cor_dist: str = DistanceMeasures.l50_cor_dist
+    l100_cor_dist: str = DistanceMeasures.l100_cor_dist
+    linf_cor_dist: str = DistanceMeasures.linf_cor_dist
     cosine: str = "Cosine"
     dot_transform_linf: str = "Dot transf Linf corr"
     dot_transform_l1: str = "Dot transf L1 corr"
@@ -51,8 +52,8 @@ class DistanceMeasureCols:
     group: str = "group"
     pairs: str = "segment pairs"
     pattern_pairs: str = "pattern pairs"
-    log_frob_cor_dist: str = "Log Frobenious corr dist"
-    foerstner_cor_dist: str = "Foerstner corr dist"
+    log_frob_cor_dist: str = DistanceMeasures.log_frob_cor_dist
+    foerstner_cor_dist: str = DistanceMeasures.foerstner_cor_dist
     type: str = "distance measure"
     compared: str = "compared groups"
     effect_size: str = "Cohen's d"
@@ -82,40 +83,6 @@ def get_p_from_distance(measure):
     else:
         p = int(p_str)
     return p
-
-
-def dot_transformation(v):
-    """
-    To avoid mirror vectors having the same distance e.g. distance [0,0,1] to [0,1,0] naturally the same as
-    the distance[0,0,-1] to [0,1,0]. We calculate the dot product between the vector and the normed [1,1,1] reference
-    vector, add 1 to it to avoid mistaking -1 with +1 and divide it to 2 to make its max length 1
-    :param v: np_array
-    :return: np_array with rotation information one dimension added (e.g instead 3D it will be 4D) etc
-    """
-    dim = len(v)
-    ref = np.ones(dim) * 1 / np.sqrt(dim)
-    # difference between reference and v, +1 to make a difference between -1 and +1 (orientation), /2 to make it no longer than max 1
-    s = (np.dot(ref, v) + 1) / 2
-    v_d = np.append(v, s)
-    return v_d
-
-
-def lp_norm(v1, v2, p=2):
-    dist = np.linalg.norm(v1 - v2, ord=p)
-    return dist
-
-
-def lp_with_reference_vector(v1, v2, p=2):
-    # calculate distance between v1 and v2
-    dist = lp_norm(v1, v2, p)
-
-    # multiply distance with the sum of the distance to the reference vect
-    dim = len(v1)
-    ref = np.ones(dim) * 1 / np.sqrt(dim)
-    v1_ref = np.linalg.norm(ref - v1, ord=p)
-    v2_ref = np.linalg.norm(ref - v2, ord=p)
-    result_dist = dist * (v1_ref + v2_ref)
-    return result_dist
 
 
 class DistanceMetricAssessment:

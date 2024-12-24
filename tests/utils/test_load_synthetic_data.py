@@ -3,7 +3,8 @@ from pandas.core.dtypes.common import is_datetime64_any_dtype
 
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.utils.configurations import GeneralisedCols
-from src.utils.load_synthetic_data import load_synthetic_data, SyntheticDataType
+from src.utils.load_synthetic_data import load_synthetic_data, SyntheticDataType, \
+    load_synthetic_data_and_labels_for_bad_partitions
 from tests.test_utils.configurations_for_testing import TEST_DATA_DIR
 
 test_data_dir = TEST_DATA_DIR
@@ -191,6 +192,31 @@ def test_can_load_irregular_90_data_and_labels():
     assert_that(labels.loc[0, SyntheticDataSegmentCols.actual_within_tolerance], contains_exactly(True, True, True))
 
 
-def test_can_load_bad_partition_data_and_labels():
-    pass
-    # todo
+def test_can_load_bad_partition_data_and_labels_file():
+    # note for all bad partition the data stays the same it is just the labels files that change
+    run_name = "misty-forest-56"
+    data_type = SyntheticDataType.non_normal_correlated
+    orig_data, orig_label = load_synthetic_data(run_name, data_type, data_dir=test_data_dir)
+    data, gt_label, bad_partitions_labels = load_synthetic_data_and_labels_for_bad_partitions(run_name,
+                                                                                              data_type=data_type,
+                                                                                              data_dir=test_data_dir)
+    assert_that(data.equals(orig_data))  # the data does not change
+    assert_that(gt_label.equals(orig_label))  # the ground truth label are the same
+    assert_that(len(bad_partitions_labels), is_(66))  # number of bad partitions
+
+    a_partition = bad_partitions_labels[0]
+    # last segment has the same index in the bad partition and the ground truth
+    assert_that(a_partition.iloc[-1][SyntheticDataSegmentCols.end_idx],
+                is_(gt_label.iloc[-1][SyntheticDataSegmentCols.end_idx]))
+
+
+def test_can_restrict_how_many_partitions_are_loaded():
+    # note for all bad partition the data stays the same it is just the labels files that change
+    run_name = "misty-forest-56"
+    data_type = SyntheticDataType.non_normal_correlated
+    data, gt_label, bad_partitions_labels = load_synthetic_data_and_labels_for_bad_partitions(run_name,
+                                                                                              data_type=data_type,
+                                                                                              data_dir=test_data_dir,
+                                                                                              load_only=3)
+    assert_that(len(bad_partitions_labels), is_(3))  # number of bad partitions
+

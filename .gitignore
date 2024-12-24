@@ -1,5 +1,6 @@
 # don't check in the data - download from Zenodo
 data/
+test_data/
 
 # test data also too big for github
 tests/test_data/synthetic_data/irregular_p30/misty-forest-56-data.csv
@@ -186,3 +187,4 @@ cython_debug/
 /tests/images/
 wandb/
 /tests/tables/
+
