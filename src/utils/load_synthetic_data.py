@@ -40,14 +40,6 @@ class SyntheticDataType:
 class SyntheticFileTypes:
     data: str = "-data.csv"
     labels: str = "-labels.csv"
-    normal_data: str = "-normal-data.csv"
-    normal_correlated_data: str = "-normal-correlated-data.csv"
-    scaled_data: str = "-scaled-data.csv"
-    normal_scaled_data: str = "-normal-scaled-data.csv"
-    normal_correlated_scaled_data: str = "-normal-correlated-scaled-data.csv"
-
-    def all_data_types(self):
-        return [self.data, self.normal_data, self.normal_correlated_data]
 
 
 def load_synthetic_data(run_id: str, data_type: str = SyntheticDataType.normal_correlated,

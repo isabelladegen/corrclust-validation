@@ -2,7 +2,6 @@ import ast
 import random
 from dataclasses import dataclass
 
-import numpy as np
 import pandas as pd
 
 from src.utils.configurations import SYNTHETIC_DATA_DIR, SyntheticDataVariates

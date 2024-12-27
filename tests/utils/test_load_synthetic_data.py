@@ -202,9 +202,9 @@ def test_can_load_bad_partition_data_and_labels_file():
                                                                                               data_dir=test_data_dir)
     assert_that(data.equals(orig_data))  # the data does not change
     assert_that(gt_label.equals(orig_label))  # the ground truth label are the same
-    assert_that(len(bad_partitions_labels), is_(66))  # number of bad partitions
+    assert_that(len(bad_partitions_labels), is_(4))  # number of bad partitions
 
-    a_partition = bad_partitions_labels[0]
+    a_partition = list(bad_partitions_labels.values())[0]
     # last segment has the same index in the bad partition and the ground truth
     assert_that(a_partition.iloc[-1][SyntheticDataSegmentCols.end_idx],
                 is_(gt_label.iloc[-1][SyntheticDataSegmentCols.end_idx]))
@@ -219,4 +219,3 @@ def test_can_restrict_how_many_partitions_are_loaded():
                                                                                               data_dir=test_data_dir,
                                                                                               load_only=3)
     assert_that(len(bad_partitions_labels), is_(3))  # number of bad partitions
-

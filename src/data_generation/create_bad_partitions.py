@@ -4,20 +4,24 @@ from os import path
 import pandas as pd
 
 from src.data_generation.generate_synthetic_correlated_data import calculate_spearman_correlation
-from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
+from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols, \
+    recalculate_labels_df_from_data
 from src.data_generation.model_correlation_patterns import ModelCorrelationPatterns
-from src.utils.configurations import ROOT_DIR, SyntheticDataVariates
-from src.utils.load_synthetic_data import SyntheticFileTypes, load_synthetic_data
+from src.utils.configurations import ROOT_DIR, SyntheticDataVariates, SYNTHETIC_DATA_DIR
+from src.utils.load_synthetic_data import load_synthetic_data, SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
 
 
 class CreateBadSyntheticPartitions:
-    def __init__(self, run_name: str, data_type: str = SyntheticFileTypes.data,
-                 data_cols: [str] = SyntheticDataVariates.columns(), backend: str = Backends.none.value,
-                 seed: int = 666):
+    def __init__(self, run_name: str, data_type: str = SyntheticDataType.non_normal_correlated,
+                 data_cols: [str] = SyntheticDataVariates.columns(), data_dir: str = SYNTHETIC_DATA_DIR,
+                 backend: str = Backends.none.value, seed: int = 666):
         """
         :param run_name: the name of the wandb run that generated the dataset
-        :param data_type: data is the correlated distribution shifted version, you can also access versions
+        :param data_type: which data type to load, by default it will be non normal and correlated,
+        see SyntheticDataType for more types
+        :param data_cols: the list of column names for the time series variates
+        :param data_dir: the directory to load the original data set from
         before the distribution was shifted and correlation patterns implied
 
         """
@@ -25,7 +29,8 @@ class CreateBadSyntheticPartitions:
         self.__run_name = run_name
         self.__data_type = data_type
         self.__data_cols = data_cols
-        self.__data, self.labels, gt_labels = load_synthetic_data(self.__run_name, self.__data_type)
+        self.__data_dir = data_dir
+        self.__data, self.labels = load_synthetic_data(self.__run_name, self.__data_type, data_dir=self.__data_dir)
         self.__cluster_ids = self.labels[SyntheticDataSegmentCols.pattern_id].unique().tolist()
         self.__segments = self.labels[SyntheticDataSegmentCols.segment_id].unique().tolist()
         self.__seed = seed
@@ -62,10 +67,15 @@ class CreateBadSyntheticPartitions:
                 # update new labels df
                 idx_to_update = new_label_df.loc[new_label_df[SyntheticDataSegmentCols.segment_id] == seg_id].index[0]
                 new_label_df.loc[idx_to_update, SyntheticDataSegmentCols.pattern_id] = new_cluster_id
-                new_cor_to_model = self.__patterns_to_model_lookup[new_cluster_id]
-                new_label_df.loc[idx_to_update, SyntheticDataSegmentCols.correlation_to_model] = str(new_cor_to_model)
 
-            new_labels.append(new_label_df)
+            # update patterns to model
+            new_label_df[SyntheticDataSegmentCols.correlation_to_model] = new_label_df[
+                SyntheticDataSegmentCols.pattern_id].map(self.__patterns_to_model_lookup)
+
+            # recalculate labels df
+            updated_new_label = recalculate_labels_df_from_data(self.__data, new_label_df)
+
+            new_labels.append(updated_new_label)
 
         return new_labels
 
@@ -100,16 +110,10 @@ class CreateBadSyntheticPartitions:
                                                                                       labels_df.index[
                                                                                           -1], SyntheticDataSegmentCols.length] - add_obs
 
-            # update correlations achieved
-            new_start_indices = labels_df[SyntheticDataSegmentCols.start_idx].tolist()
-            new_end_indices = labels_df[SyntheticDataSegmentCols.end_idx].tolist()
-            new_correlations = []
-            for seg_id in range(len(new_start_indices)):
-                data = self.__data.loc[new_start_indices[seg_id]:new_end_indices[seg_id]][self.__data_cols].to_numpy()
-                new_correlations.append(calculate_spearman_correlation(data))
-            labels_df[SyntheticDataSegmentCols.actual_correlation] = new_correlations
+            # recalculate labels df (will recalculate correlations)
+            updated_new_label = recalculate_labels_df_from_data(self.__data, labels_df)
 
-            new_labels.append(labels_df)
+            new_labels.append(updated_new_label)
 
         return new_labels
 
@@ -117,12 +121,13 @@ class CreateBadSyntheticPartitions:
                                                            n_segments: [int]):
         """
         Creates new partitions by shifting all segments end index by n_observations. The correlations get updated
-        according to the new correlations. The cluster ids of n_segments get randomly changed.
+        according to the new correlations. The cluster ids of n_segments get randomly changed.The labels file
+        gets updated according to these changes
 
         :param n_partitions: number of new partitions to create
         :param n_observations: number of observations to shift end index by
         :param n_segments: list of segments to reassign to a random cluster
-        :return: a list of labels dataframes for the new partitions with updated correlations
+        :return: a list of updated labels dataframes for the new partitions
         """
 
         shifted_labels = self.shift_segments_end_index(n_partitions, n_observations)
@@ -133,7 +138,17 @@ class CreateBadSyntheticPartitions:
         for idx, new_label in enumerate(shifted_labels):
             new_cluster = new_cluster_labels[idx]
             new_label[SyntheticDataSegmentCols.pattern_id] = new_cluster[SyntheticDataSegmentCols.pattern_id]
-            new_labels.append(new_label)
+
+            # update patterns to model
+            new_label[SyntheticDataSegmentCols.correlation_to_model] = new_label[
+                SyntheticDataSegmentCols.pattern_id].map(
+                self.__patterns_to_model_lookup)
+
+            # recalculate labels df
+            updated_new_label = recalculate_labels_df_from_data(self.__data, new_label)
+
+            new_labels.append(updated_new_label)
+
         return new_labels
 
 
