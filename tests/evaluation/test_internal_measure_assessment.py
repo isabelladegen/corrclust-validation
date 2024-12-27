@@ -4,21 +4,23 @@ from src.evaluation.describe_bad_partitions import DescribeBadPartitions, Descri
 from src.utils.stats import ConfidenceIntervalCols
 from src.evaluation.distance_metric_assessment import DistanceMeasureCols
 from src.evaluation.internal_measure_assessment import InternalMeasureAssessment, InternalMeasureCols
+from tests.test_utils.configurations_for_testing import TEST_DATA_DIR
 
 ds1_name = "misty-forest-56"
 ds2_name = "twilight-fog-55"
 ds3_name = "playful-thunder-52"
 distance_measure = DistanceMeasureCols.l1_cor_dist
 internal_measures = [DescribeBadPartCols.silhouette_score, DescribeBadPartCols.pmb]
+test_data_dir = TEST_DATA_DIR
 
-bp1 = DescribeBadPartitions(ds1_name, distance_measure=distance_measure,
-                            internal_measures=internal_measures).summary_df.copy()
-bp2 = DescribeBadPartitions(ds2_name, distance_measure=distance_measure,
-                            internal_measures=internal_measures).summary_df.copy()
-bp3 = DescribeBadPartitions(ds3_name, distance_measure=distance_measure,
-                            internal_measures=internal_measures).summary_df.copy()
+bp1 = DescribeBadPartitions(ds1_name, distance_measure=distance_measure, internal_measures=internal_measures,
+                            data_dir=test_data_dir)
+bp2 = DescribeBadPartitions(ds2_name, distance_measure=distance_measure, internal_measures=internal_measures,
+                            data_dir=test_data_dir)
+bp3 = DescribeBadPartitions(ds3_name, distance_measure=distance_measure, internal_measures=internal_measures,
+                            data_dir=test_data_dir)
 
-ds = [bp1, bp2, bp3]
+ds = [bp1.summary_df, bp2.summary_df, bp3.summary_df]
 ia = InternalMeasureAssessment(distance_measure=distance_measure, internal_measures=internal_measures,
                                dataset_results=ds)
 
@@ -30,28 +32,28 @@ def test_calculate_correlation_between_internal_and_external_measures_for_each_d
     assert_that(df.iloc[0][InternalMeasureCols.name], is_(ds1_name))
     assert_that(df.iloc[1][InternalMeasureCols.name], is_(ds2_name))
     assert_that(df.iloc[2][InternalMeasureCols.name], is_(ds3_name))
-    assert_that(df.iloc[0][InternalMeasureCols.partitions], is_(4))
-    assert_that(df.iloc[1][InternalMeasureCols.partitions], is_(4))
-    assert_that(df.iloc[2][InternalMeasureCols.partitions], is_(4))
+    assert_that(df.iloc[0][InternalMeasureCols.partitions], is_(len(bp1.partitions) + 1))
+    assert_that(df.iloc[1][InternalMeasureCols.partitions], is_(len(bp2.partitions) + 1))
+    assert_that(df.iloc[2][InternalMeasureCols.partitions], is_(len(bp3.partitions) + 1))
     # assert sil score corr
     r_col_name = ia.measures_corr_col_names[0]
-    assert_that(df.iloc[0][r_col_name], is_(0.837))
-    assert_that(df.iloc[1][r_col_name], is_(0.944))
-    assert_that(df.iloc[2][r_col_name], is_(0.984))
+    assert_that(df.iloc[0][r_col_name], is_(0.98))
+    assert_that(df.iloc[1][r_col_name], is_(0.828))
+    assert_that(df.iloc[2][r_col_name], is_(0.899))
     p_col_name = ia.measures_p_col_names[0]
-    assert_that(df.iloc[0][p_col_name], is_(0.163))
-    assert_that(df.iloc[1][p_col_name], is_(0.056))
-    assert_that(df.iloc[2][p_col_name], is_(0.016))
+    assert_that(df.iloc[0][p_col_name], is_(0.003))
+    assert_that(df.iloc[1][p_col_name], is_(0.084))
+    assert_that(df.iloc[2][p_col_name], is_(0.038))
 
     # assert pmb score corr
     r_col_name = ia.measures_corr_col_names[1]
-    assert_that(df.iloc[0][r_col_name], is_(0.477))
-    assert_that(df.iloc[1][r_col_name], is_(0.398))
-    assert_that(df.iloc[2][r_col_name], is_(0.614))
+    assert_that(df.iloc[0][r_col_name], is_(0.491))
+    assert_that(df.iloc[1][r_col_name], is_(0.603))
+    assert_that(df.iloc[2][r_col_name], is_(0.444))
     p_col_name = ia.measures_p_col_names[1]
-    assert_that(df.iloc[0][p_col_name], is_(0.523))
-    assert_that(df.iloc[1][p_col_name], is_(0.602))
-    assert_that(df.iloc[2][p_col_name], is_(0.386))
+    assert_that(df.iloc[0][p_col_name], is_(0.401))
+    assert_that(df.iloc[1][p_col_name], is_(0.282))
+    assert_that(df.iloc[2][p_col_name], is_(0.454))
 
 
 def test_effect_size_d_of_difference_in_means_between_gt_and_worst_partition_for_sil():
@@ -59,10 +61,10 @@ def test_effect_size_d_of_difference_in_means_between_gt_and_worst_partition_for
         internal_measure=DescribeBadPartCols.silhouette_score,
         worst_ranked_by=DescribeBadPartCols.jaccard_index)
 
-    assert_that(round(effect_size, 3), is_(5.741))
-    assert_that(round(lo_ci, 3), is_(0.697))
-    assert_that(round(hi_ci, 3), is_(1.420))
-    assert_that(round(standard_error, 3), is_(0.184))
+    assert_that(round(effect_size, 3), is_(81.825))
+    assert_that(round(lo_ci, 3), is_(1.289))
+    assert_that(round(hi_ci, 3), is_(1.352))
+    assert_that(round(standard_error, 3), is_(0.016))
 
 
 def test_effect_size_d_of_difference_in_means_between_gt_and_worst_partition_for_pmb():
@@ -70,21 +72,21 @@ def test_effect_size_d_of_difference_in_means_between_gt_and_worst_partition_for
         internal_measure=DescribeBadPartCols.pmb,
         worst_ranked_by=DescribeBadPartCols.jaccard_index)
 
-    assert_that(round(effect_size, 3), is_(10.822))
-    assert_that(round(lo_ci, 3), is_(228.854))
-    assert_that(round(hi_ci, 3), is_(330.086))
-    assert_that(round(standard_error, 3), is_(25.824))
+    assert_that(round(effect_size, 3), is_(14.141))
+    assert_that(round(lo_ci, 3), is_(10.352))
+    assert_that(round(hi_ci, 3), is_(13.683))
+    assert_that(round(standard_error, 3), is_(0.85))
 
 
 def test_creates_df_of_effect_sizes():
     df = ia.differences_between_worst_and_best_partition()
 
     assert_that(df.shape[0], is_(len(internal_measures)))
-    assert_that(df.iloc[0][InternalMeasureCols.effect_size], is_(5.741))
-    assert_that(df.iloc[1][InternalMeasureCols.effect_size], is_(10.822))
-    assert_that(df.iloc[0][ConfidenceIntervalCols.ci_96lo], is_(0.697))
-    assert_that(df.iloc[0][ConfidenceIntervalCols.ci_96hi], is_(1.420))
-    assert_that(df.iloc[0][ConfidenceIntervalCols.standard_error], is_(0.184))
+    assert_that(df.iloc[0][InternalMeasureCols.effect_size], is_(81.825))
+    assert_that(df.iloc[1][InternalMeasureCols.effect_size], is_(14.141))
+    assert_that(df.iloc[0][ConfidenceIntervalCols.ci_96lo], is_(1.289))
+    assert_that(df.iloc[0][ConfidenceIntervalCols.ci_96hi], is_(1.352))
+    assert_that(df.iloc[0][ConfidenceIntervalCols.standard_error], is_(0.016))
 
 
 def test_calculate_mean_sd_count_for_each_internal_measures_correlation_with_external_measure():
@@ -96,14 +98,14 @@ def test_calculate_mean_sd_count_for_each_internal_measures_correlation_with_ext
     std = df.loc['std']
     minim = df.loc['min']
 
-    assert_that(mean[sil_col], is_(0.92))
-    assert_that(mean[pmb_col], is_(0.5))
+    assert_that(mean[sil_col], is_(0.9))
+    assert_that(mean[pmb_col], is_(0.51))
 
     assert_that(std[sil_col], is_(0.08))
-    assert_that(std[pmb_col], is_(0.11))
+    assert_that(std[pmb_col], is_(0.08))
 
-    assert_that(minim[sil_col], is_(0.84))
-    assert_that(minim[pmb_col], is_(0.4))
+    assert_that(minim[sil_col], is_(0.83))
+    assert_that(minim[pmb_col], is_(0.44))
 
 
 def test_calculate_ci_of_differences_between_mean_correlation_between_internal_measures():
@@ -115,40 +117,41 @@ def test_calculate_ci_of_differences_between_mean_correlation_between_internal_m
     hi_ci = df.loc[ConfidenceIntervalCols.ci_96hi]
     se = df.loc[ConfidenceIntervalCols.standard_error]
 
-    assert_that(lo_ci[col_name], is_(0.266))
-    assert_that(hi_ci[col_name], is_(0.574))
-    assert_that(se[col_name], is_(0.079))
+    assert_that(lo_ci[col_name], is_(0.262))
+    assert_that(hi_ci[col_name], is_(0.518))
+    assert_that(se[col_name], is_(0.065))
 
 
 def test_can_assess_different_distance_measures():
     l2 = DistanceMeasureCols.l2_cor_dist
-    bp1l2 = DescribeBadPartitions(ds1_name, distance_measure=l2, internal_measures=internal_measures).summary_df.copy()
-    bp2l2 = DescribeBadPartitions(ds2_name, distance_measure=l2,
-                                  internal_measures=internal_measures, ).summary_df.copy()
+    bp1l2 = DescribeBadPartitions(ds1_name, distance_measure=l2, internal_measures=internal_measures,
+                                  data_dir=test_data_dir)
+    bp2l2 = DescribeBadPartitions(ds2_name, distance_measure=l2, internal_measures=internal_measures,
+                                  data_dir=test_data_dir)
     ial2 = InternalMeasureAssessment(distance_measure=l2,
                                      internal_measures=internal_measures,
-                                     dataset_results=[bp1l2, bp2l2])
+                                     dataset_results=[bp1l2.summary_df, bp2l2.summary_df])
 
     df = ial2.correlation_summary
 
     assert_that(df.shape[0], is_(2))
     assert_that(df.iloc[0][InternalMeasureCols.name], is_(ds1_name))
     assert_that(df.iloc[1][InternalMeasureCols.name], is_(ds2_name))
-    assert_that(df.iloc[0][InternalMeasureCols.partitions], is_(4))
-    assert_that(df.iloc[1][InternalMeasureCols.partitions], is_(4))
+    assert_that(df.iloc[0][InternalMeasureCols.partitions], is_(len(bp1l2.partitions) + 1))
+    assert_that(df.iloc[1][InternalMeasureCols.partitions], is_(len(bp2l2.partitions) + 1))
 
     # assert sil score corr
     r_col_name = ial2.measures_corr_col_names[0]
-    assert_that(df.iloc[0][r_col_name], is_(0.814))
-    assert_that(df.iloc[1][r_col_name], is_(0.938))
+    assert_that(df.iloc[0][r_col_name], is_(0.981))
+    assert_that(df.iloc[1][r_col_name], is_(0.829))
     p_col_name = ial2.measures_p_col_names[0]
-    assert_that(df.iloc[0][p_col_name], is_(0.186))
-    assert_that(df.iloc[1][p_col_name], is_(0.062))
+    assert_that(df.iloc[0][p_col_name], is_(0.003))
+    assert_that(df.iloc[1][p_col_name], is_(0.082))
 
     # assert pmb score corr
     r_col_name = ial2.measures_corr_col_names[1]
     p_col_name = ial2.measures_p_col_names[1]
-    assert_that(df.iloc[0][r_col_name], is_(0.478))
-    assert_that(df.iloc[1][r_col_name], is_(0.403))
-    assert_that(df.iloc[0][p_col_name], is_(0.522))
-    assert_that(df.iloc[1][p_col_name], is_(0.597))
+    assert_that(df.iloc[0][r_col_name], is_(0.494))
+    assert_that(df.iloc[1][r_col_name], is_(0.603))
+    assert_that(df.iloc[0][p_col_name], is_(0.398))
+    assert_that(df.iloc[1][p_col_name], is_(0.282))

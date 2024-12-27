@@ -15,6 +15,8 @@ test_data_dir = TEST_DATA_DIR
 
 @pytest.mark.skip(reason="this is a once off calculation to bring old labels files into new format")
 def test_this_is_temporary_to_create_correct_labels_files():
+    # run_name = "twilight-fog-55"
+    # run_name = "playful-thunder-52"
     run_name = "misty-forest-56"
     # run_name = "splendid-sunset-12"
 
@@ -34,9 +36,11 @@ def test_this_is_temporary_to_create_correct_labels_files():
     recalculated_labels_df.to_csv(labels_file_name)
 
 
-@pytest.mark.skip(reason="this is a once off calculation to bring old labels files into new format")
+# @pytest.mark.skip(reason="this is a once off calculation to bring old labels files into new format")
 def test_this_is_temporary_to_create_correct_labels_files_for_bad_partitions():
     run_name = "misty-forest-56"
+    # run_name = "twilight-fog-55"
+    # run_name = "playful-thunder-52"
     # run_name = "splendid-sunset-12"
 
     data_type = SyntheticDataType.non_normal_correlated
