@@ -1,5 +1,7 @@
 import itertools
 from dataclasses import dataclass
+from os import path
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -7,8 +9,9 @@ from matplotlib import pyplot as plt
 import matplotlib as mpl
 from matplotlib.collections import EllipseCollection
 
-from src.utils.load_synthetic_data import load_synthetic_data, SyntheticDataType
-from src.utils.configurations import GeneralisedCols, SyntheticDataVariates, SYNTHETIC_DATA_DIR
+from src.utils.load_synthetic_data import load_synthetic_data, SyntheticDataType, load_labels_file_for
+from src.utils.configurations import GeneralisedCols, SyntheticDataVariates, SYNTHETIC_DATA_DIR, \
+    bad_partition_dir_for_data_type
 from src.utils.plots.matplotlib_helper_functions import reset_matplotlib, fontsize, Backends, use_latex_labels
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols, min_max_scaled_df
 
@@ -42,7 +45,7 @@ def to_correlation_matrix(corr_pairs: []):
 class DescribeSyntheticDataset:
     def __init__(self, run_name: str, data_type: str = SyntheticDataType.non_normal_correlated,
                  data_cols: [str] = SyntheticDataVariates.columns(), value_range: (float, float) = None,
-                 data_dir: str = SYNTHETIC_DATA_DIR, backend: str = Backends.none.value):
+                 data_dir: str = SYNTHETIC_DATA_DIR, backend: str = Backends.none.value, bad_partition_name: str = ""):
         """
         :param run_name: the name of the wandb run that generated the dataset
         :param data_type: which data variation to load, by default most AID like SyntheticDataType.non_normal_correlated
@@ -50,7 +53,10 @@ class DescribeSyntheticDataset:
         :param data_cols: which columns in the data df are the values excluding time
         :param value_range: if not None data will be min max scaled to the range provided before description
         :param data_dir: the root directory from which to read data, by default SYNTHETIC_DATA_DIR
+        :param backend: backend to use
+        :param bad_partition_name: file name for bad partition, will load data for run name and labels for bad partition
         """
+        self.bad_partition_name = bad_partition_name
         self.backend = backend
         self.run_name = run_name
         self.data_type = data_type
@@ -58,6 +64,11 @@ class DescribeSyntheticDataset:
         self.data_dir = data_dir
         self.value_range = value_range
         self.data, self.labels = load_synthetic_data(self.run_name, self.data_type, data_dir=data_dir)
+        if bad_partition_name is not "":
+            # load labels for bad partition and drops the previous one!!
+            bad_partitions_dir = bad_partition_dir_for_data_type(self.data_type, self.data_dir)
+            bad_file_full_path = path.join(bad_partitions_dir, self.bad_partition_name)
+            self.labels = load_labels_file_for(Path(bad_file_full_path))
 
         if self.value_range is not None:  # needs to scale data first
             self.data = min_max_scaled_df(self.data, scale_range=self.value_range, columns=self.data_cols)

@@ -397,3 +397,16 @@ def test_can_load_irregular_dataset():
     # check tolerance
     assert_that(irregular_30.n_segment_within_tolerance, is_(98))
     assert_that(irregular_30.n_segment_outside_tolerance, is_(2))
+
+
+def test_can_load_a_single_bad_partition():
+    data_type = SyntheticDataType.non_normal_correlated
+    bad_partition_name = "misty-forest-56-wrong-clusters-15-labels.csv"
+    ds_bad = DescribeSyntheticDataset(run_name=a_ds_name, data_type=data_type, data_dir=test_data_dir,
+                                      backend=backend, bad_partition_name=bad_partition_name)
+
+    assert_that(ds_bad.number_of_segments, is_(100))
+    # MAE is higher due to the wrong segments assigned to the wrong cluster
+    assert_that(ds_bad.mae_stats['mean'], greater_than(ds.mae_stats['mean']))
+    # pattern id of first segment is 15 not 0 as in original dataset
+    assert_that(ds_bad.labels.loc[0, SyntheticDataSegmentCols.pattern_id], is_(15))

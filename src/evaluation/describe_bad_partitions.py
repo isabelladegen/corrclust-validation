@@ -136,30 +136,10 @@ class DescribeBadPartitions:
             self.gt_label, self.partitions, selected_patterns, selected_segs = self.__drop_clusters_or_segments_from_data(
                 self.data, self.gt_label, self.partitions)
 
-        # Calculate distance matrix for ground truth
         # 1D np array of length n_segments
         self.gt_patterns = self.gt_label[SyntheticDataSegmentCols.pattern_id].to_numpy()
-        # 2D np array of dimension n_segments x n_segments with 0 diagonal and symmetric
-        self.gt_distance_matrix = calculate_distance_matrix_for(self.gt_label, self.distance_measure)
 
-        # Calculate various correlation based distances for ground truth:
         self.gt_data_np = self.data[self.__cols].to_numpy()
-        # np version of data with the segments shifted
-        # if self.__drop_clusters_or_segments():
-        #     self.gt_data_np = select_data_from_df(self.gt_data_np, self.gt_label)
-        self.data_centroid = calculate_overall_data_correlation(self.gt_data_np)
-        self.gt_cluster_centroids = calculate_cluster_centroids(self.gt_label, self.gt_data_np)
-        # distances between each segment to overall correlation of data
-        self.gt_dist_seg_overall_data = calculate_distance_between_segment_and_data_centroid(self.gt_label,
-                                                                                             self.data_centroid,
-                                                                                             self.distance_measure)
-        # distances between each segment to their cluster centroid
-        self.gt_dist_seg_cluster = calculate_distances_between_each_segment_and_its_cluster_centroid(self.gt_label,
-                                                                                                     self.gt_cluster_centroids,
-                                                                                                     self.distance_measure)
-        # distances between all cluster centroids
-        self.gt_dist_between_clusters = calculate_distances_between_cluster_centroids(self.gt_cluster_centroids,
-                                                                                      self.distance_measure)
 
         # Create overview description df that includes ground truth and all bad partitions
         file_names = []
@@ -186,10 +166,26 @@ class DescribeBadPartitions:
             jaccards.append(1)
 
         if DescribeBadPartCols.silhouette_score in self.__internal_measures:
+            # 2D np array of dimension n_segments x n_segments with 0 diagonal and symmetric
+            self.gt_distance_matrix = calculate_distance_matrix_for(self.gt_label, self.distance_measure)
             sil_avg = silhouette_avg_from_distances(self.gt_distance_matrix, self.gt_patterns)
             sils.append(sil_avg)
 
         if DescribeBadPartCols.pmb in self.__internal_measures:
+            self.data_centroid = calculate_overall_data_correlation(self.gt_data_np)
+            self.gt_cluster_centroids = calculate_cluster_centroids(self.gt_label, self.gt_data_np)
+
+            # distances between each segment to overall correlation of data
+            self.gt_dist_seg_overall_data = calculate_distance_between_segment_and_data_centroid(self.gt_label,
+                                                                                                 self.data_centroid,
+                                                                                                 self.distance_measure)
+            # distances between each segment to their cluster centroid
+            self.gt_dist_seg_cluster = calculate_distances_between_each_segment_and_its_cluster_centroid(self.gt_label,
+                                                                                                         self.gt_cluster_centroids,
+                                                                                                         self.distance_measure)
+            # distances between all cluster centroids
+            self.gt_dist_between_clusters = calculate_distances_between_cluster_centroids(self.gt_cluster_centroids,
+                                                                                          self.distance_measure)
             pmb = calculate_pmb(self.gt_dist_seg_overall_data, self.gt_dist_seg_cluster, self.gt_dist_between_clusters)
             pmbs.append(pmb)
 
@@ -198,8 +194,6 @@ class DescribeBadPartitions:
 
         for file_name, p_label in self.partitions.items():
             p_data_np = self.data[self.__cols].to_numpy()
-            # if self.__drop_clusters_or_segments():
-            #     p_data_np = select_data_from_df(p_data_np, p_label)
             p_mean_mae_error = round(p_label[SyntheticDataSegmentCols.mae].mean(), round_to)
             p_patterns = p_label[SyntheticDataSegmentCols.pattern_id].to_numpy()
 

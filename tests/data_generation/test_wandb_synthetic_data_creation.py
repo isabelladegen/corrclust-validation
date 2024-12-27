@@ -1,6 +1,6 @@
 from hamcrest import *
 
-from src.data_generation.create_synthetic_data_wandb import SyntheticDataConfig, one_synthetic_creation_run
+from src.data_generation.wandb_create_synthetic_data import SyntheticDataConfig, one_synthetic_creation_run
 
 from src.utils.wandb_utils import set_test_configurations
 

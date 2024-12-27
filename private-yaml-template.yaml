@@ -5,3 +5,4 @@
 # WANDB SYNTHETIC DATA GENERATION CONFIG
 wandb_project_name: ''
 wandb_entity: ''
+wandb_partitions_project_name: ''

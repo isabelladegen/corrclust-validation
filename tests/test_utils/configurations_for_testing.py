@@ -8,4 +8,6 @@ TEST_IMAGES_DIR = path.join(ROOT_DIR, 'tests/images/')
 Path(TEST_IMAGES_DIR).mkdir(parents=True, exist_ok=True)
 TEST_TABLES_DIR = path.join(ROOT_DIR, 'tests/tables/')
 Path(TEST_TABLES_DIR).mkdir(parents=True, exist_ok=True)
+TEST_GENERATED_DATASETS_FILE_PATH = path.join(ROOT_DIR, 'tests/test_data/config/test-create-bad-partitions.csv')
+
 
