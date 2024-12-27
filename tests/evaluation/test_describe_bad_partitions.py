@@ -1,7 +1,7 @@
 from hamcrest import *
 
 from src.evaluation.distance_metric_assessment import DistanceMeasureCols
-from src.evaluation.describe_bad_partitions import DescribeBadPartitions, DescribeBadPartCols
+from src.evaluation.describe_bad_partitions import DescribeBadPartitions, DescribeBadPartCols, select_data_from_df
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.utils.labels_utils import calculate_y_pred_from
 from tests.test_utils.configurations_for_testing import TEST_DATA_DIR
@@ -16,7 +16,7 @@ bp = DescribeBadPartitions(ds_name, distance_measure=distance_measure, internal_
 
 def test_describe_bad_partitions():
     # for test runs only 3 bad partitions are read
-    assert_that(bp.summary_df.shape[0], is_(4))
+    assert_that(bp.summary_df.shape[0], is_(5))
 
     # inserts results for gt at index 0
     gt_row = bp.summary_df.iloc[0]
@@ -26,7 +26,7 @@ def test_describe_bad_partitions():
     assert_that(gt_row[DescribeBadPartCols.n_observations], is_(1226400))
     assert_that(bp.data.shape[0], is_(1226400))
     assert_that(bp.gt_label[SyntheticDataSegmentCols.length].sum(), is_(1226400))
-    assert_that(gt_row[DescribeBadPartCols.errors].round(2), is_(7.9))
+    assert_that(gt_row[DescribeBadPartCols.errors].round(2), is_(0.11))
     assert_that(gt_row[DescribeBadPartCols.n_obs_shifted], is_(0))
     assert_that(gt_row[DescribeBadPartCols.n_wrong_clusters], is_(0))
 
@@ -48,40 +48,53 @@ def test_describe_bad_partition_returns_list_of_ground_truth_cluster_for_each_ob
 
 def test_calculates_jaccard_index_for_each_gt_and_partition():
     assert_that(bp.summary_df.iloc[0][DescribeBadPartCols.jaccard_index], is_(1))
-    assert_that(bp.summary_df.iloc[1][DescribeBadPartCols.jaccard_index], is_(0.96))
-    assert_that(bp.summary_df.iloc[2][DescribeBadPartCols.jaccard_index], is_(0.777))
-    assert_that(bp.summary_df.iloc[3][DescribeBadPartCols.jaccard_index], is_(0.976))
+    assert_that(bp.summary_df.iloc[1][DescribeBadPartCols.jaccard_index], is_(0.982))
+    assert_that(bp.summary_df.iloc[2][DescribeBadPartCols.jaccard_index], is_(0.377))
+    assert_that(bp.summary_df.iloc[3][DescribeBadPartCols.jaccard_index], is_(0.896))
+    assert_that(bp.summary_df.iloc[4][DescribeBadPartCols.jaccard_index], is_(0.293))
+
+    # mean MAE for comparision
+    assert_that(bp.summary_df.iloc[0][DescribeBadPartCols.errors], is_(0.112))
+    assert_that(bp.summary_df.iloc[1][DescribeBadPartCols.errors], is_(0.141))
+    assert_that(bp.summary_df.iloc[2][DescribeBadPartCols.errors], is_(0.558))
+    assert_that(bp.summary_df.iloc[3][DescribeBadPartCols.errors], is_(0.175))
+    assert_that(bp.summary_df.iloc[4][DescribeBadPartCols.errors], is_(0.612))
 
 
 def test_calculates_internal_measures_for_the_given_distance_measure():
-    assert_that(bp.summary_df.iloc[0][DescribeBadPartCols.silhouette_score], is_(0.969))
-    assert_that(bp.summary_df.iloc[1][DescribeBadPartCols.silhouette_score], is_(0.537))
-    assert_that(bp.summary_df.iloc[2][DescribeBadPartCols.silhouette_score], is_(0.363))
-    assert_that(bp.summary_df.iloc[3][DescribeBadPartCols.silhouette_score], is_(0.743))
+    assert_that(bp.summary_df.iloc[0][DescribeBadPartCols.silhouette_score], is_(0.797))
+    assert_that(bp.summary_df.iloc[1][DescribeBadPartCols.silhouette_score], is_(0.452))
+    assert_that(bp.summary_df.iloc[2][DescribeBadPartCols.silhouette_score], is_(-0.424))
+    assert_that(bp.summary_df.iloc[3][DescribeBadPartCols.silhouette_score], is_(0.427))
+    assert_that(bp.summary_df.iloc[4][DescribeBadPartCols.silhouette_score], is_(-0.492))
 
-    assert_that(bp.summary_df.iloc[0][DescribeBadPartCols.pmb], is_(225.913))
-    assert_that(bp.summary_df.iloc[1][DescribeBadPartCols.pmb], is_(1.218))
-    assert_that(bp.summary_df.iloc[2][DescribeBadPartCols.pmb], is_(0.199))
-    assert_that(bp.summary_df.iloc[3][DescribeBadPartCols.pmb], is_(3.610))
+    assert_that(bp.summary_df.iloc[0][DescribeBadPartCols.pmb], is_(10.111))
+    assert_that(bp.summary_df.iloc[1][DescribeBadPartCols.pmb], is_(0.347))
+    assert_that(bp.summary_df.iloc[2][DescribeBadPartCols.pmb], is_(0.001))
+    assert_that(bp.summary_df.iloc[3][DescribeBadPartCols.pmb], is_(0.052))
+    assert_that(bp.summary_df.iloc[4][DescribeBadPartCols.pmb], is_(0.001))
 
 
 def test_only_calculates_the_internal_measure_provided():
-    bp1 = DescribeBadPartitions(ds_name, distance_measure=distance_measure, internal_measures=[DescribeBadPartCols.pmb])
+    bp1 = DescribeBadPartitions(ds_name, distance_measure=distance_measure, internal_measures=[DescribeBadPartCols.pmb],
+                                data_dir=test_data_dir)
     columns = list(bp1.summary_df.columns)
     assert_that(DescribeBadPartCols.silhouette_score not in columns, is_(True))
 
 
-def test_randomly_selects_k_clusters_from_all_partitions():
-    n_clusters = 2
+def test_randomly_drops_n_clusters_from_all_partitions():
+    n_clusters = 20
     bp1 = DescribeBadPartitions(ds_name, distance_measure=distance_measure,
-                                internal_measures=[DescribeBadPartCols.silhouette_score], n_clusters=n_clusters)
+                                internal_measures=[DescribeBadPartCols.silhouette_score], drop_n_clusters=n_clusters,
+                                data_dir=test_data_dir)
 
-    data = bp1.data
     labels = bp1.gt_label
+    data = select_data_from_df(bp1.data, labels)
 
     # check data has been correctly updated
-    assert_that(len(labels[SyntheticDataSegmentCols.pattern_id].unique()), is_(n_clusters))
-    assert_that(labels.shape[0], is_(8))
+    assert_that(len(labels[SyntheticDataSegmentCols.pattern_id].unique()), is_(23 - n_clusters))
+    assert_that(labels.shape[0], is_(12))  # number of segments left
+    n_segments_left = labels.shape[0]
 
     length = sum(labels[SyntheticDataSegmentCols.length])
     assert_that(data.shape[0], is_(length))
@@ -94,20 +107,49 @@ def test_randomly_selects_k_clusters_from_all_partitions():
     assert_that(end_idx + 1 in indices, is_(False))
 
     df = bp1.summary_df
-    assert_that(df.shape[0], is_(4))
+    assert_that(df.shape[0], is_(len(bp1.partitions) + 1))  # test data partitions + gt
+    # all partitions should have gt_original_n_patterns - n_patterns left over, same for segments
+    assert_that((df[DescribeBadPartCols.n_patterns] <= 23 - n_clusters).all())
+    assert_that((df[DescribeBadPartCols.n_segments] <= n_segments_left).all())
+
+    # check ground truth row - for the ground truth we know exactly how many patterns and segment as no shifts
+    ground_truth = df.iloc[0]
+    assert_that(ground_truth[DescribeBadPartCols.n_observations], is_(length))
+    assert_that(ground_truth[DescribeBadPartCols.n_patterns], is_(23 - n_clusters))
+    assert_that(ground_truth[DescribeBadPartCols.n_segments], is_(n_segments_left))
+    assert_that(ground_truth[DescribeBadPartCols.n_wrong_clusters], is_(0))
+    assert_that(ground_truth[DescribeBadPartCols.n_obs_shifted], is_(0))
+
+    # check the same for the first partition
+    first_partition = df.iloc[1]
+    first_partition_length = sum(list(bp1.partitions.values())[0][SyntheticDataSegmentCols.length])
+    assert_that(first_partition[DescribeBadPartCols.n_observations], is_(first_partition_length))
+    assert_that(first_partition[DescribeBadPartCols.n_patterns], is_(23 - n_clusters))
+    assert_that(first_partition[DescribeBadPartCols.n_segments], is_(n_segments_left))
+    assert_that(first_partition[DescribeBadPartCols.n_wrong_clusters], is_(0))
+    assert_that(first_partition[DescribeBadPartCols.n_obs_shifted], greater_than(0))
+
+    # check the same for the second partition
+    second_partition = df.iloc[2]
+    second_partition_length = sum(list(bp1.partitions.values())[1][SyntheticDataSegmentCols.length])
+    assert_that(second_partition[DescribeBadPartCols.n_observations], is_(second_partition_length))
+    assert_that(second_partition[DescribeBadPartCols.n_patterns], is_(23 - n_clusters))
+    assert_that(second_partition[DescribeBadPartCols.n_segments], less_than(n_segments_left))
+    assert_that(second_partition[DescribeBadPartCols.n_wrong_clusters], greater_than(0))
+    assert_that(second_partition[DescribeBadPartCols.n_obs_shifted], greater_than(0))
 
 
-def test_randomly_selects_n_clusters_from_all_partitions():
-    n_segments = 10
+def test_randomly_drop_n_segments_from_all_partitions():
+    n_segments = 90
     bp1 = DescribeBadPartitions(ds_name, distance_measure=distance_measure, internal_measures=[DescribeBadPartCols.pmb],
-                                n_segments=n_segments)
+                                drop_n_segments=n_segments, data_dir=test_data_dir)
 
-    data = bp1.data
     labels = bp1.gt_label
+    data = select_data_from_df(bp1.data, labels)
 
     # check data has been correctly updated
+    assert_that(labels.shape[0], is_(100 - n_segments))
     assert_that(len(labels[SyntheticDataSegmentCols.pattern_id].unique()), is_(9))
-    assert_that(labels.shape[0], is_(n_segments))
 
     length = sum(labels[SyntheticDataSegmentCols.length])
     assert_that(data.shape[0], is_(length))
@@ -120,21 +162,51 @@ def test_randomly_selects_n_clusters_from_all_partitions():
     assert_that(end_idx + 1 in indices, is_(False))
 
     df = bp1.summary_df
-    assert_that(df.shape[0], is_(4))  # n test datasets
+    assert_that(df.shape[0], is_(len(bp1.partitions) + 1))  # test data partitions + gt
+    # all partitions should have gt_original_n_patterns - n_patterns left over, same for segments
+    assert_that((df[DescribeBadPartCols.n_patterns] <= 23).all())
+    assert_that((df[DescribeBadPartCols.n_segments] <= 100 - n_segments).all())
+
+    # check ground truth row - for the ground truth we know exactly how many patterns and segment as no shifts
+    ground_truth = df.iloc[0]
+    assert_that(ground_truth[DescribeBadPartCols.n_observations], is_(length))
+    assert_that(ground_truth[DescribeBadPartCols.n_patterns], is_(9))
+    assert_that(ground_truth[DescribeBadPartCols.n_segments], is_(100 - n_segments))
+    assert_that(ground_truth[DescribeBadPartCols.n_wrong_clusters], is_(0))
+    assert_that(ground_truth[DescribeBadPartCols.n_obs_shifted], is_(0))
+
+    # check the same for the first partition
+    first_partition = df.iloc[1]
+    first_partition_length = sum(list(bp1.partitions.values())[0][SyntheticDataSegmentCols.length])
+    assert_that(first_partition[DescribeBadPartCols.n_observations], is_(first_partition_length))
+    assert_that(first_partition[DescribeBadPartCols.n_patterns], is_(9))
+    assert_that(first_partition[DescribeBadPartCols.n_segments], is_(100 - n_segments))
+    assert_that(first_partition[DescribeBadPartCols.n_wrong_clusters], is_(0))
+    assert_that(first_partition[DescribeBadPartCols.n_obs_shifted], greater_than(0))
+
+    # check the same for the second partition
+    second_partition = df.iloc[2]
+    second_partition_length = sum(list(bp1.partitions.values())[1][SyntheticDataSegmentCols.length])
+    assert_that(second_partition[DescribeBadPartCols.n_observations], is_(second_partition_length))
+    assert_that(second_partition[DescribeBadPartCols.n_patterns], less_than(9))
+    assert_that(second_partition[DescribeBadPartCols.n_segments], is_(100 - n_segments))
+    assert_that(second_partition[DescribeBadPartCols.n_wrong_clusters], greater_than(0))
+    assert_that(second_partition[DescribeBadPartCols.n_obs_shifted], greater_than(0))
 
 
-def test_can_randomly_select_both_clusters_and_segments():
-    n_segments = 10
-    n_clusters = 3
+def test_can_randomly_drop_both_clusters_and_segments():
+    n_segments = 90
+    n_clusters = 20
     bp1 = DescribeBadPartitions(ds_name, distance_measure=distance_measure, internal_measures=[DescribeBadPartCols.pmb],
-                                n_clusters=3, n_segments=n_segments)
+                                drop_n_clusters=n_clusters, drop_n_segments=n_segments, data_dir=test_data_dir)
 
-    data = bp1.data
     labels = bp1.gt_label
+    # the data is the full data so to get just the observations that have been kept we need to first select them
+    data = select_data_from_df(bp1.data, labels)
 
     # check data has been correctly updated
-    assert_that(len(labels[SyntheticDataSegmentCols.pattern_id].unique()), is_(n_clusters))
-    assert_that(labels.shape[0], is_(n_segments))
+    assert_that(len(labels[SyntheticDataSegmentCols.pattern_id].unique()), is_(23 - n_clusters))
+    assert_that(labels.shape[0], is_(100 - n_segments))
 
     length = sum(labels[SyntheticDataSegmentCols.length])
     assert_that(data.shape[0], is_(length))
@@ -147,4 +219,33 @@ def test_can_randomly_select_both_clusters_and_segments():
     assert_that(end_idx + 1 in indices, is_(False))
 
     df = bp1.summary_df
-    assert_that(df.shape[0], is_(4))  # n test datasets
+    assert_that(df.shape[0], is_(len(bp1.partitions) + 1))  # test data partitions + gt
+    # all partitions should have gt_original_n_patterns - n_patterns left over, same for segments
+    assert_that((df[DescribeBadPartCols.n_patterns] <= 23 - n_clusters).all())
+    assert_that((df[DescribeBadPartCols.n_segments] <= 100 - n_segments).all())
+
+    # check ground truth row - for the ground truth we know exactly how many patterns and segment as no shifts
+    ground_truth = df.iloc[0]
+    assert_that(ground_truth[DescribeBadPartCols.n_observations], is_(length))
+    assert_that(ground_truth[DescribeBadPartCols.n_patterns], is_(23 - n_clusters))
+    assert_that(ground_truth[DescribeBadPartCols.n_segments], is_(100 - n_segments))
+    assert_that(ground_truth[DescribeBadPartCols.n_wrong_clusters], is_(0))
+    assert_that(ground_truth[DescribeBadPartCols.n_obs_shifted], is_(0))
+
+    # check the same for the first partition
+    first_partition = df.iloc[1]
+    first_partition_length = sum(list(bp1.partitions.values())[0][SyntheticDataSegmentCols.length])
+    assert_that(first_partition[DescribeBadPartCols.n_observations], is_(first_partition_length))
+    assert_that(first_partition[DescribeBadPartCols.n_patterns], is_(23 - n_clusters))
+    assert_that(first_partition[DescribeBadPartCols.n_segments], is_(100 - n_segments))
+    assert_that(first_partition[DescribeBadPartCols.n_wrong_clusters], is_(0))
+    assert_that(first_partition[DescribeBadPartCols.n_obs_shifted], greater_than(0))
+
+    # check the same for the second partition
+    second_partition = df.iloc[2]
+    second_partition_length = sum(list(bp1.partitions.values())[1][SyntheticDataSegmentCols.length])
+    assert_that(second_partition[DescribeBadPartCols.n_observations], is_(second_partition_length))
+    assert_that(second_partition[DescribeBadPartCols.n_patterns], is_(23 - n_clusters))
+    assert_that(second_partition[DescribeBadPartCols.n_segments], less_than(100 - n_segments))
+    assert_that(second_partition[DescribeBadPartCols.n_wrong_clusters], greater_than(0))
+    assert_that(second_partition[DescribeBadPartCols.n_obs_shifted], greater_than(0))

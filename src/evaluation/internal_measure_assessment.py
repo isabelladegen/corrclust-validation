@@ -7,11 +7,12 @@ import numpy as np
 import pandas as pd
 from scipy.stats import pearsonr
 
-from src.configurations import ROOT_DIR
-from src.stats import standardized_effect_size_of_mean_difference, calculate_hi_lo_difference_ci, ConfidenceIntervalCols
-from src.synthetic_assessment.distance_metric_assessment import DistanceMeasureCols
-from src.synthetic_data.describe_bad_partitions import default_external_measures, default_internal_measures, \
+from src.evaluation.describe_bad_partitions import default_internal_measures, default_external_measures, \
     DescribeBadPartCols, DescribeBadPartitions
+from src.evaluation.distance_metric_assessment import DistanceMeasureCols
+from src.utils.configurations import ROOT_DIR
+from src.utils.stats import standardized_effect_size_of_mean_difference, calculate_hi_lo_difference_ci, \
+    ConfidenceIntervalCols
 
 
 @dataclass
@@ -208,8 +209,8 @@ def evaluate_all_partitions(dir_name: str, distance_measure: str, internal_measu
         print(ds_name)
         # we don't vary the seed so all datasets will select the same clusters and segments
         sum_df = DescribeBadPartitions(ds_name=ds_name, distance_measure=distance_measure,
-                                       internal_measures=internal_measures, n_segments=n_segments,
-                                       n_clusters=n_clusters, test_run=False).summary_df.copy()
+                                       internal_measures=internal_measures, drop_n_segments=n_segments,
+                                       drop_n_clusters=n_clusters).summary_df.copy()
         sum_df.to_csv(directory + ds_name + '_measures_summary.csv')
         partitions.append(sum_df)
 

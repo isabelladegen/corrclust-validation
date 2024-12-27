@@ -5,8 +5,10 @@ from hamcrest import *
 from src.data_generation.create_bad_partitions import CreateBadSyntheticPartitions
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.evaluation.describe_synthetic_dataset import DescribeSyntheticDataset, DescribeSyntheticCols
+from tests.test_utils.configurations_for_testing import TEST_DATA_DIR
 
 ds_name = "misty-forest-56"
+test_data_dir = TEST_DATA_DIR
 bp = CreateBadSyntheticPartitions(run_name=ds_name)
 
 

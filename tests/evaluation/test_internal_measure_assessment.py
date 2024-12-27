@@ -1,9 +1,9 @@
 from hamcrest import *
 
+from src.evaluation.describe_bad_partitions import DescribeBadPartitions, DescribeBadPartCols
 from src.utils.stats import ConfidenceIntervalCols
 from src.evaluation.distance_metric_assessment import DistanceMeasureCols
 from src.evaluation.internal_measure_assessment import InternalMeasureAssessment, InternalMeasureCols
-from src.synthetic_data.describe_bad_partitions import DescribeBadPartitions, DescribeBadPartCols
 
 ds1_name = "misty-forest-56"
 ds2_name = "twilight-fog-55"
@@ -11,12 +11,12 @@ ds3_name = "playful-thunder-52"
 distance_measure = DistanceMeasureCols.l1_cor_dist
 internal_measures = [DescribeBadPartCols.silhouette_score, DescribeBadPartCols.pmb]
 
-bp1 = DescribeBadPartitions(ds1_name, distance_measure=distance_measure, internal_measures=internal_measures,
-                            test_run=True).summary_df.copy()
-bp2 = DescribeBadPartitions(ds2_name, distance_measure=distance_measure, internal_measures=internal_measures,
-                            test_run=True).summary_df.copy()
-bp3 = DescribeBadPartitions(ds3_name, distance_measure=distance_measure, internal_measures=internal_measures,
-                            test_run=True).summary_df.copy()
+bp1 = DescribeBadPartitions(ds1_name, distance_measure=distance_measure,
+                            internal_measures=internal_measures).summary_df.copy()
+bp2 = DescribeBadPartitions(ds2_name, distance_measure=distance_measure,
+                            internal_measures=internal_measures).summary_df.copy()
+bp3 = DescribeBadPartitions(ds3_name, distance_measure=distance_measure,
+                            internal_measures=internal_measures).summary_df.copy()
 
 ds = [bp1, bp2, bp3]
 ia = InternalMeasureAssessment(distance_measure=distance_measure, internal_measures=internal_measures,
@@ -122,10 +122,9 @@ def test_calculate_ci_of_differences_between_mean_correlation_between_internal_m
 
 def test_can_assess_different_distance_measures():
     l2 = DistanceMeasureCols.l2_cor_dist
-    bp1l2 = DescribeBadPartitions(ds1_name, distance_measure=l2, internal_measures=internal_measures,
-                                  test_run=True).summary_df.copy()
-    bp2l2 = DescribeBadPartitions(ds2_name, distance_measure=l2, internal_measures=internal_measures,
-                                  test_run=True).summary_df.copy()
+    bp1l2 = DescribeBadPartitions(ds1_name, distance_measure=l2, internal_measures=internal_measures).summary_df.copy()
+    bp2l2 = DescribeBadPartitions(ds2_name, distance_measure=l2,
+                                  internal_measures=internal_measures, ).summary_df.copy()
     ial2 = InternalMeasureAssessment(distance_measure=l2,
                                      internal_measures=internal_measures,
                                      dataset_results=[bp1l2, bp2l2])

@@ -7,7 +7,7 @@ from src.utils.distance_measures import DistanceMeasures
 from src.utils.labels_utils import calculate_y_pred_from, calculate_overall_data_correlation, \
     calculate_distance_between_segment_and_data_centroid, calculate_cluster_centroids, \
     calculate_distances_between_each_segment_and_its_cluster_centroid, calculate_distances_between_cluster_centroids, \
-    calculate_distance_matrix_for
+    calculate_distance_matrix_for, calculate_y_pred_and_updated_gt_y_pred_from
 from src.utils.load_synthetic_data import SyntheticDataType, load_synthetic_data_and_labels_for_bad_partitions
 from tests.test_utils.configurations_for_testing import TEST_DATA_DIR
 
@@ -50,6 +50,22 @@ def test_returns_y_pred_from_labels_df():
     s2_p1 = y_pred_p1[s2_p1_start:s2_p1_end + 1]  # np does not include end index
     assert_that(np.all(s2_p1 == s2_p1_pattern))  # the whole segment has the right pattern
     assert_that(len(s2_p1), is_(s2_p1_length))  # has right length
+
+
+def test_returns_y_pred_and_update_y_pred_from_labels_df_and_full_gt_y_pred_when_segments_have_been_dropped():
+    full_original_y_pred_gt = calculate_y_pred_from(gt_label)
+    p1_labels = list(bad_partitions_labels.values())[0]
+    # drop some segments from a bad partition
+    p1_labels = p1_labels.head(10)
+
+    # calculate y_pred from labels and update y_pred_gt to match p1_labels length
+    y_pred_p1, y_pred_gt = calculate_y_pred_and_updated_gt_y_pred_from(p1_labels, full_original_y_pred_gt)
+
+    # check length of y pred matches data
+    assert_that(len(full_original_y_pred_gt), is_(data.shape[0]))
+    p1_length = p1_labels[SyntheticDataSegmentCols.length].sum()
+    assert_that(len(y_pred_p1), is_(p1_length))
+    assert_that(len(y_pred_gt), is_(p1_length))
 
 
 def test_calculates_overall_data_centroid():

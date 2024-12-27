@@ -20,8 +20,8 @@ def calculate_pmb(distances_between_segments_to_overall_data: [], distances_betw
     # the sum of the distances of the segments of each cluster to their centroid
     e_k = sum(distances_between_segments_to_cluster)
     # largest distance between two cluster centroids
-    d_k = max(distances_between_cluster_centroids)
-    pmb = pow((d_k * e_1) / (no_cluster * e_k), 2)
+    d_k = max(distances_between_cluster_centroids.values())
+    pmb = pow((d_k * e_1) / (no_cluster * e_k), 2)  # pow raises to the power of
     return round(pmb, round_to)
 
 
@@ -62,5 +62,10 @@ def silhouette_avg_from_distances(distances: np.array, y_pred: [] = None, round_
     if not len(np.unique(y_pred)) < distances.shape[0]:
         print("Cannot use silhouette analysis as each remaining segment has a different cluster")
         return None
-    result = sk.metrics.silhouette_score(distances, y_pred, metric='precomputed')
+    try:
+        result = sk.metrics.silhouette_score(distances, y_pred, metric='precomputed')
+    except:
+        print(distances.shape)
+        return None
+
     return round(result, round_to)

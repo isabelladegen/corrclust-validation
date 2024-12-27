@@ -14,7 +14,8 @@ from src.utils.internal_measures import silhouette_avg_from_distances, calculate
 from src.utils.labels_utils import calculate_overall_data_correlation, \
     calculate_distance_between_segment_and_data_centroid, calculate_cluster_centroids, \
     calculate_distances_between_each_segment_and_its_cluster_centroid, calculate_distances_between_cluster_centroids, \
-    calculate_y_pred_from, calculate_distance_matrix_for
+    calculate_y_pred_from, calculate_distance_matrix_for, calculate_y_pred_and_updated_gt_y_pred_from, \
+    calculate_n_observations_for
 from src.utils.load_synthetic_data import SyntheticDataType, load_synthetic_data_and_labels_for_bad_partitions
 
 
@@ -27,7 +28,7 @@ class DescribeBadPartCols:
     n_patterns: str = "n patterns"
     n_segments: str = "n segments"
     n_observations: str = "n observations"
-    errors: str = "sum corr errors"
+    errors: str = "mean mae"
     n_wrong_clusters: str = "n wrong clusters"
     n_obs_shifted: str = "n obs shifted"
 
@@ -71,41 +72,42 @@ def recalculate_correlation_columns_in_labels(data_df, labels_df):
 def select_data_from_df(data: pd.DataFrame, label: pd.DataFrame):
     """
     Selects only the observations that are actually indexed in the label df
-    :param data: pd.DataFrame of the data (might have more columns than just observations
+    :param data: pd.DataFrame of the full dataset
     :param label: pd.DataFrame of the labels that should be used to select rows from the data
     """
     n_segments = label.shape[0]
 
     # select all observations still referenced in labels_df
-    updated_data = None
+    segments_data = []
     for seg in range(n_segments):
         start_idx = label.loc[seg, SyntheticDataSegmentCols.start_idx]
         end_idx = label.loc[seg, SyntheticDataSegmentCols.end_idx]
         length = label.loc[seg, SyntheticDataSegmentCols.length]
 
-        seg_data = data[start_idx:end_idx + 1, :]
+        seg_data = data.iloc[start_idx:end_idx + 1, :]
         assert seg_data.shape[0] == length, "Selected wrong indices"
+        segments_data.append(seg_data)
 
-        if updated_data is None:
-            updated_data = seg_data
-        else:
-            updated_data = np.concatenate((updated_data, seg_data), axis=0)
+    # we're leaving the index original to be able to know which bits of the datasets were selected
+    updated_data = pd.concat(segments_data, axis=0)
     return updated_data
 
 
-# todo: get rid of test run and instead just provide file with fewer datasets to load
 class DescribeBadPartitions:
     def __init__(self, ds_name, distance_measure: str, data_type: str = SyntheticDataType.non_normal_correlated,
                  internal_measures: [] = default_internal_measures, external_measures: [] = default_external_measures,
-                 data_cols: [str] = SyntheticDataVariates.columns(), n_clusters=None, n_segments=None, seed: int = 600,
+                 data_cols: [str] = SyntheticDataVariates.columns(), drop_n_clusters: int = 0, drop_n_segments: int = 0,
+                 seed: int = 600,
                  data_dir: str = SYNTHETIC_DATA_DIR, round_to: int = 3):
         self.ds_name = ds_name
         self.distance_measure = distance_measure
         self.__internal_measures = internal_measures
         self.__external_measures = external_measures
         self.__seed = seed
-        self.__n_clusters = n_clusters
-        self.__n_segments = n_segments
+        # number of clusters to drop, if None this is 0
+        self.__drop_n_clusters = drop_n_clusters
+        # number of segments to drop, if None this is 0
+        self.__drop_n_segments = drop_n_segments
         self.__data_dir = data_dir
         self.__data_type = data_type
         self.__cols = data_cols
@@ -120,13 +122,18 @@ class DescribeBadPartitions:
                                                                                        data_type=self.__data_type,
                                                                                        data_dir=self.__data_dir)
 
-        self.data = data  # time series data df
-        self.gt_label = gt_label  # ground truth labels df
+        self.data = data  # time series data df this will not be modified if we drop clusters or segments
+        self.gt_label = gt_label  # ground truth labels df this will be modified if we drop clusters or segments
         self.partitions = partitions  # dictionary of filename as key and bad partition labels_df as value
+
+        # calculate full y pred for ground truth before dropping segments or clusters, this is required for
+        # jaccard index of partitions where the indices have shifted we need to select the to original pattern
+        # of the new indices after some segments might have been dropped
+        full_gt_y_pred = calculate_y_pred_from(self.gt_label)
 
         # To reduce the number of clusters and segments in the data we can give a number of clusters or segments
         # to select. In that case clusters and segments get dropped. The data remains unchanged
-        if n_clusters is not None or n_segments is not None:
+        if self.__drop_clusters_or_segments():
             self.gt_label, self.partitions, selected_patterns, selected_segs = self.__drop_clusters_or_segments_from_data(
                 self.data, self.gt_label, self.partitions)
 
@@ -137,10 +144,12 @@ class DescribeBadPartitions:
         self.gt_distance_matrix = calculate_distance_matrix_for(self.gt_label, self.distance_measure)
 
         # Calculate various correlation based distances for ground truth:
-        self.gt_updated_data = select_data_from_df(self.data, gt_label)
-        data_np = self.gt_updated_data[self.__cols].to_numpy()
-        self.data_centroid = calculate_overall_data_correlation(data_np)
-        self.gt_cluster_centroids = calculate_cluster_centroids(self.gt_label, data_np)
+        self.gt_data_np = self.data[self.__cols].to_numpy()
+        # np version of data with the segments shifted
+        # if self.__drop_clusters_or_segments():
+        #     self.gt_data_np = select_data_from_df(self.gt_data_np, self.gt_label)
+        self.data_centroid = calculate_overall_data_correlation(self.gt_data_np)
+        self.gt_cluster_centroids = calculate_cluster_centroids(self.gt_label, self.gt_data_np)
         # distances between each segment to overall correlation of data
         self.gt_dist_seg_overall_data = calculate_distance_between_segment_and_data_centroid(self.gt_label,
                                                                                              self.data_centroid,
@@ -155,8 +164,8 @@ class DescribeBadPartitions:
 
         # Create overview description df that includes ground truth and all bad partitions
         file_names = []
-        n_patterns = []
-        n_segments = []
+        patterns_count = []
+        segments_count = []
         n_observations = []
         mean_mae = []
         n_wrong_clusters = []
@@ -167,9 +176,9 @@ class DescribeBadPartitions:
 
         # 1. add ground truth information to summary df
         file_names.append(ds_name)
-        n_patterns.append(len(self.gt_label[SyntheticDataSegmentCols.pattern_id].unique()))
-        n_segments.append(self.gt_label.shape[0])
-        n_observations.append(self.data.shape[0])
+        patterns_count.append(len(self.gt_label[SyntheticDataSegmentCols.pattern_id].unique()))
+        segments_count.append(self.gt_label.shape[0])
+        n_observations.append(calculate_n_observations_for(self.gt_label))
         mean_mae.append(round(self.gt_label[SyntheticDataSegmentCols.mae].mean(), round_to))
         n_wrong_clusters.append(0)
         n_obs_shifted.append(0)
@@ -185,23 +194,21 @@ class DescribeBadPartitions:
             pmb = calculate_pmb(self.gt_dist_seg_overall_data, self.gt_dist_seg_cluster, self.gt_dist_between_clusters)
             pmbs.append(pmb)
 
-        # calculate y pred for ground truth
-        gt_y_pred = calculate_y_pred_from(self.gt_label)
-
         # to calculate the shift
         gt_first_seg_end_idx = self.gt_label.loc[0, SyntheticDataSegmentCols.end_idx]
 
-        for file_name, p_label in self.partitions:
-            p_updated_data = select_data_from_df(self.data, p_label)
-            p_data_np = p_updated_data[self.__cols].to_numpy()
+        for file_name, p_label in self.partitions.items():
+            p_data_np = self.data[self.__cols].to_numpy()
+            # if self.__drop_clusters_or_segments():
+            #     p_data_np = select_data_from_df(p_data_np, p_label)
             p_mean_mae_error = round(p_label[SyntheticDataSegmentCols.mae].mean(), round_to)
             p_patterns = p_label[SyntheticDataSegmentCols.pattern_id].to_numpy()
 
             # calculate and add info to new df for this partition
             file_names.append(file_name)
-            n_patterns.append(len(p_patterns))
-            n_segments.append(p_label.shape[0])
-            n_observations.append(p_updated_data.shape[0])
+            patterns_count.append(len(set(p_patterns)))
+            segments_count.append(p_label.shape[0])
+            n_observations.append(calculate_n_observations_for(p_label))
             mean_mae.append(p_mean_mae_error)
 
             # calculate how many patterns were changed and how many observations shifted for the partition
@@ -211,14 +218,14 @@ class DescribeBadPartitions:
 
             # calculate external and internal measures
             if DescribeBadPartCols.jaccard_index in self.__external_measures:
-                p_y_pred = calculate_y_pred_from(p_label)
-                p_jacc = clustering_jaccard_coeff(p_y_pred, gt_y_pred, round_to)
+                p_y_pred, p_y_pred_gt = calculate_y_pred_and_updated_gt_y_pred_from(p_label, full_gt_y_pred)
+                p_jacc = clustering_jaccard_coeff(p_y_pred, p_y_pred_gt, round_to)
                 jaccards.append(p_jacc)
 
             if DescribeBadPartCols.silhouette_score in self.__internal_measures:
                 # 2D np array of dimension n_segments x n_segments with 0 diagonal and symmetric
                 p_distance_matrix = calculate_distance_matrix_for(p_label, self.distance_measure)
-                sil_avg = silhouette_avg_from_distances(p_distance_matrix, p_label)
+                sil_avg = silhouette_avg_from_distances(p_distance_matrix, p_patterns)
                 sils.append(sil_avg)
 
             if DescribeBadPartCols.pmb in self.__internal_measures:
@@ -242,8 +249,8 @@ class DescribeBadPartitions:
         # put summary df together
         self.summary_df = pd.DataFrame({
             DescribeBadPartCols.name: file_names,
-            DescribeBadPartCols.n_patterns: n_patterns,
-            DescribeBadPartCols.n_segments: n_segments,
+            DescribeBadPartCols.n_patterns: patterns_count,
+            DescribeBadPartCols.n_segments: segments_count,
             DescribeBadPartCols.n_observations: n_observations,
             DescribeBadPartCols.errors: mean_mae,
             DescribeBadPartCols.n_wrong_clusters: n_wrong_clusters,
@@ -259,6 +266,13 @@ class DescribeBadPartitions:
         if DescribeBadPartCols.pmb in self.__internal_measures:
             self.summary_df[DescribeBadPartCols.pmb] = pmbs
 
+    def __drop_clusters_or_segments(self):
+        """
+        Check if we need to drop clusters or segments from the data
+        :return: True if clusters, segments or both need to be dropped, otherwise False
+        """
+        return self.__drop_n_clusters > 0 or self.__drop_n_segments > 0
+
     def __drop_clusters_or_segments_from_data(self, data: pd.DataFrame, gt_labels: pd.DataFrame, part_labels: {}):
         """
             Selects at random a specific number of clusters and segments
@@ -273,28 +287,29 @@ class DescribeBadPartitions:
 
         # select at random but set seed
         random.seed(self.__seed)
+        total_clusters = len(gt_labels_[SyntheticDataSegmentCols.pattern_id].unique())
+        total_segments = gt_labels_.shape[0]
 
-        n_clusters = self.__n_clusters
-        n_segment = self.__n_segments
-        if self.__n_clusters is None:
-            n_clusters = len(gt_labels_[SyntheticDataSegmentCols.pattern_id].unique())
+        # clusters to select
+        n_clusters = total_clusters - self.__drop_n_clusters
+        assert n_clusters >= 2, "Min number of clusters to keep is 2 otherwise internal measures are not valid"
 
         # from pattern ids select n at random
         clusters = gt_labels_[SyntheticDataSegmentCols.pattern_id].unique().tolist()
         selected_patterns = random.sample(clusters, n_clusters)
 
-        # from the remaining segments select n segments
-        if self.__n_segments is None:
-            n_segment = gt_labels_.shape[0]
-
-        # from the leftover segment ids select n at random
-        segments = gt_labels_[gt_labels_[SyntheticDataSegmentCols.pattern_id].isin(selected_patterns)][
+        # segments to select
+        n_segment = total_segments - self.__drop_n_segments
+        # check how many segments that are left
+        segments_left = gt_labels_[gt_labels_[SyntheticDataSegmentCols.pattern_id].isin(selected_patterns)][
             SyntheticDataSegmentCols.segment_id].unique().tolist()
-        # if there are still sufficient segment lefts select n_segments from them
-        if n_segment < len(segments):
-            selected_segs = random.sample(segments, n_segment)
+
+        # if there are still sufficient segment lefts select n_segments from them (haven't been dropped by
+        # dropping clusters
+        if n_segment < len(segments_left):
+            selected_segs = random.sample(segments_left, n_segment)
         else:
-            selected_segs = segments
+            selected_segs = segments_left
 
         # update data and labels df accordingly
         gt_labels_, p_labels_ = self.__select_segments_and_patterns_from(data_, gt_labels_, part_labels,
@@ -318,18 +333,26 @@ class DescribeBadPartitions:
         # 1. Update all labels df to only contain selected segments and patterns
         gt_labels_ = update_labels_df(gt_labels_, selected_patterns, selected_segs)
         partitions_ = {file_name: update_labels_df(label, selected_patterns, selected_segs) for file_name, label in
-                       partitions}
+                       partitions.items()}
+
+        # ensure we have two clusters and 2 left
+        assert len(gt_labels_[SyntheticDataSegmentCols.pattern_id].unique()) > 1, "We need at least two clusters"
+        for file_name, p_labels in partitions_.items():
+            error_msg = "We need at least two clusters. Not the case for " + file_name
+            assert len(p_labels[SyntheticDataSegmentCols.pattern_id].unique()) > 1, error_msg
 
         # 2. Recalculate the actual correlations and mae
         gt_labels_ = recalculate_labels_df_from_data(data_, gt_labels_)
         updated_partitions = {file_name: recalculate_labels_df_from_data(data_, label) for file_name, label in
-                              partitions_}
+                              partitions_.items()}
 
         return gt_labels_, updated_partitions
 
 
 def update_labels_df(df, patterns, segments):
-    df = df[df[SyntheticDataSegmentCols.pattern_id].isin(patterns) & df[SyntheticDataSegmentCols.segment_id].isin(
-        segments)]
+    # first select patterns
+    df = df[df[SyntheticDataSegmentCols.pattern_id].isin(patterns)]
+    # from the left over df select the segments
+    df = df[df[SyntheticDataSegmentCols.segment_id].isin(segments)]
     df = df.reset_index(drop=True)
     return df
