@@ -8,10 +8,10 @@ from src.utils.plots.matplotlib_helper_functions import Backends
 from src.evaluation.partitions_assessment import PartitionAssessment
 from src.evaluation.describe_bad_partitions import DescribeBadPartCols
 from tests.test_utils.configurations_for_testing import TEST_IMAGES_DIR, TEST_GENERATED_DATASETS_FILE_PATH, \
-    TEST_RESULTS_DIR
+    TEST_ROOT_RESULTS_DIR
 
 images_dir = TEST_IMAGES_DIR
-results_dir = TEST_RESULTS_DIR
+results_dir = TEST_ROOT_RESULTS_DIR
 data_type = SyntheticDataType.normal_correlated
 overall_dataset_name = "test_stuff"
 l1ref_results_dir = internal_measure_results_dir_for_data_type_and_distance_measures(overall_dataset_name, data_type,

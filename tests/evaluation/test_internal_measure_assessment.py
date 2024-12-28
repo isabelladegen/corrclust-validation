@@ -13,7 +13,7 @@ from src.evaluation.internal_measure_assessment import InternalMeasureAssessment
     run_internal_measure_assessment__datasets, get_internal_measure_assessment_results_file_name, \
     get_full_filename_for_results_csv, IAResultsCSV
 from tests.test_utils.configurations_for_testing import TEST_DATA_DIR, TEST_GENERATED_DATASETS_FILE_PATH, \
-    TEST_RESULTS_DIR
+    TEST_ROOT_RESULTS_DIR
 
 ds1_name = "misty-forest-56"
 ds2_name = "twilight-fog-55"
@@ -171,7 +171,7 @@ def test_can_run_assessment_and_store_results_for_runs_with_all_clusters():
     overall_ds_name = "test_stuff"
     distance_measure = DistanceMeasures.l2_cor_dist
     data_type = SyntheticDataType.normal_correlated
-    test_results_dir = TEST_RESULTS_DIR
+    test_results_dir = TEST_ROOT_RESULTS_DIR
     run_internal_measure_assessment__datasets(overall_ds_name=overall_ds_name,
                                               generated_ds_csv=TEST_GENERATED_DATASETS_FILE_PATH,
                                               distance_measure=distance_measure,
@@ -213,7 +213,7 @@ def test_can_run_assessment_and_store_results_for_runs_with_dropping_clusters():
     overall_ds_name = "test_stuff"
     distance_measure = DistanceMeasures.l1_cor_dist
     data_type = SyntheticDataType.normal_correlated
-    test_results_dir = TEST_RESULTS_DIR
+    test_results_dir = TEST_ROOT_RESULTS_DIR
     run_internal_measure_assessment__datasets(overall_ds_name=overall_ds_name,
                                               generated_ds_csv=TEST_GENERATED_DATASETS_FILE_PATH,
                                               distance_measure=distance_measure,
@@ -257,7 +257,7 @@ def test_can_run_assessment_and_store_results_for_runs_with_dropping_segments():
     overall_ds_name = "test_stuff"
     distance_measure = DistanceMeasures.l1_cor_dist
     data_type = SyntheticDataType.normal_correlated
-    test_results_dir = TEST_RESULTS_DIR
+    test_results_dir = TEST_ROOT_RESULTS_DIR
     run_internal_measure_assessment__datasets(overall_ds_name=overall_ds_name,
                                               generated_ds_csv=TEST_GENERATED_DATASETS_FILE_PATH,
                                               distance_measure=distance_measure,

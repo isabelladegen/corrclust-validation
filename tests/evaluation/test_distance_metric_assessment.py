@@ -6,7 +6,7 @@ import numpy as np
 from hamcrest import *
 from scipy.linalg import eigvals
 
-from src.utils.configurations import Aggregators, ROOT_RESULTS_DIR, DISTANCE_MEASURE_ASSESSMENT_RESULTS_FOLDER_NAME
+from src.utils.configurations import Aggregators, DISTANCE_MEASURE_ASSESSMENT_RESULTS_FOLDER_NAME
 from src.utils.distance_measures import calculate_foerstner_matrices_distance_between
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.utils.stats import number_of_unique_two_combinations
@@ -14,7 +14,7 @@ from src.evaluation.distance_metric_assessment import DistanceMeasureCols, Dista
     default_order
 from src.evaluation.describe_synthetic_dataset import DescribeSyntheticDataset
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
-from tests.test_utils.configurations_for_testing import TEST_DATA_DIR, TEST_IMAGES_DIR
+from tests.test_utils.configurations_for_testing import TEST_DATA_DIR, TEST_IMAGES_DIR, TEST_ROOT_RESULTS_DIR
 
 backend = Backends.none.value
 # backend = Backends.visible_tests.value
@@ -22,7 +22,7 @@ a_ds_name = "misty-forest-56"
 test_data_dir = TEST_DATA_DIR
 images_dir = TEST_IMAGES_DIR
 # todo undo this when we store proper results for the distance measure assessment
-tables_dir = path.join(ROOT_RESULTS_DIR, DISTANCE_MEASURE_ASSESSMENT_RESULTS_FOLDER_NAME)
+tables_dir = path.join(TEST_ROOT_RESULTS_DIR, DISTANCE_MEASURE_ASSESSMENT_RESULTS_FOLDER_NAME)
 Path(tables_dir).mkdir(parents=True, exist_ok=True)
 ds = DescribeSyntheticDataset(a_ds_name, data_dir=test_data_dir)
 da = DistanceMetricAssessment(ds, backend=backend)
