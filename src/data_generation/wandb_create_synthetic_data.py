@@ -82,7 +82,7 @@ def save_data_labels_to_file(data_dir, data_type, raw_data_df, raw_labels_df, ru
     raw_labels_df.to_csv(labels_file_name)
 
 
-def one_synthetic_creation_run(config: SyntheticDataConfig, seed: int = 66666):
+def one_synthetic_creation_run(config: SyntheticDataConfig, seed: int = 6666):
     """
     Wandb generate synthetic data according to the config provided
     :param config: SyntheticDataConfig that configures the creation
@@ -254,7 +254,7 @@ def create_datasets(n: int = 2, tag: str = 'synthetic_creation'):
     scale_igs = mpam.get_params_for(DistParamsCols.scale_ig)
 
     for n in range(n):
-        np.random.seed(66 + n)
+        np.random.seed(666 + n)
         dataset_seed = np.random.randint(low=100, high=1000000)
         # configure distribution params
         index = n % len(c_iobs)
