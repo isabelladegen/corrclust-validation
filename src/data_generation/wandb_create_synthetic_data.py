@@ -269,4 +269,4 @@ def create_datasets(n: int = 2, tag: str = 'synthetic_creation'):
 
 
 if __name__ == "__main__":
-    create_datasets(2, '2_ds_creation')
+    create_datasets(30, '30_ds_creation')
