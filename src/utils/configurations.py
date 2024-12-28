@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import yaml
 from os import path
@@ -8,6 +9,10 @@ PATTERNS_TO_MODEL_PATH = path.join(ROOT_DIR, 'src/data_generation/config/correla
 DISTRIBUTION_PARAMS_TO_MODEL_PATH = path.join(ROOT_DIR,
                                               'src/data_generation/config/n30_genextreme_nbinom_genextreme_params.csv')
 SYNTHETIC_DATA_DIR = path.join(ROOT_DIR, 'data/synthetic_data')
+ROOT_RESULTS_DIR = path.join(ROOT_DIR, 'results')
+INTERNAL_ASSESSMENT_RESULTS_FOLDER_NAME = 'internal-assessment'
+DISTANCE_MEASURE_ASSESSMENT_RESULTS_FOLDER_NAME = 'distance-measures-assessment'
+IMAGES_FOLDER_NAME = 'images'
 GENERATED_DATASETS_FILE_PATH = path.join(ROOT_DIR, 'src/data_generation/config/n30_generated_datasets.csv')
 
 
@@ -19,7 +24,85 @@ def dir_for_data_type(data_type: str, data_dir: str = SYNTHETIC_DATA_DIR):
 def bad_partition_dir_for_data_type(data_type: str, data_dir: str = SYNTHETIC_DATA_DIR):
     """ Returns the path to the bad partitions labels files for the given data type"""
     main_dir = path.join(data_dir, data_type)
-    return path.join(main_dir, 'bad_partitions')
+    folder = path.join(main_dir, 'bad_partitions')
+    # creates the folder if it does not exist
+    Path(folder).mkdir(parents=True, exist_ok=True)
+    return folder
+
+
+def internal_measure_results_dir_for_data_type_and_distance_measures(overall_dataset_name: str, data_type: str,
+                                                                     results_dir: str, distance_measure: str,
+                                                                     drop_clusters: int = 0,
+                                                                     drop_segments: int = 0):
+    """
+    Returns directory for internal measures assessment results tables for the given data type and distance measure
+    :param overall_dataset_name: a name to identify the dataset overall e.g n30 or n2
+    :param data_type: the data type, see SyntheticDataType
+    :param results_dir: the directory for results, this is the main directory, the internal_assessment folder will be
+    added
+    :param distance_measure: the distance measures used for the internal assessment, see DistanceMeasures
+    :param drop_clusters: will create an additional folder for evaluating reduced numbers of clusters, if 0 and
+    n_dropped_segment is 0 no additional subfolder will be added
+    :param drop_segments: will create an additional folder for evaluating reduced numbers of segments
+    :return: the path name to the results folder e.g. results/internal_assessment/raw/L1/ or
+    results/internal_assessment/raw/n_dropped_clusters/L1 or results/internal_assessment/raw/n_dropped_segments/L1
+    or results/internal_assessment/raw/n_dropped_clusters_m_dropped_segments/L1
+    """
+    # put in folder internal_assessment
+    results_folder = path.join(results_dir, INTERNAL_ASSESSMENT_RESULTS_FOLDER_NAME)
+    # put in sub folder e.g. raw
+    results_folder = path.join(results_folder, data_type)
+    # put in sub folder e.g. n30
+    results_folder = path.join(results_folder, overall_dataset_name)
+    # put in sub folder e.g n_dropped_cluster if not evaluating all cluster
+    dropped = get_folder_name_for_dropped_clusters_and_segments(drop_clusters, drop_segments)
+    if dropped != "":
+        results_folder = path.join(results_folder, dropped)
+    # put in sub folder e.g. for distance measure
+    results_folder = path.join(results_folder, folder_name_for_distance_measure(distance_measure))
+    # creates the folder if it does not exist
+    Path(results_folder).mkdir(parents=True, exist_ok=True)
+    return results_folder
+
+
+def get_folder_name_for_dropped_clusters_and_segments(drop_clusters: int = 0, drop_segments: int = 0):
+    """ Returns a folder name including the number of dropped clusters and segments """
+    if drop_clusters == 0 and drop_segments == 0:
+        return ""
+    if drop_clusters > 0 and drop_segments == 0:
+        return str(drop_clusters) + "_dropped_clusters"
+    if drop_clusters == 0 and drop_segments > 0:
+        return str(drop_segments) + "_dropped_segments"
+    # both are not zero
+    return str(drop_clusters) + "_dropped_clusters_" + str(drop_segments) + "_dropped_segments"
+
+
+def get_image_results_path(results_dir: str, filename: str):
+    """ Return the path to where to safe the images. This will create the folder image in the result dir and
+    will return the full path the image will be saved to
+    :param results_dir: the results folder where to add the images folder to
+    :param filename: the name of the image file
+    :return: the full file name including path to save an image
+    """
+    folder = path.join(results_dir, IMAGES_FOLDER_NAME)
+    # creates the folder if it does not exist
+    Path(folder).mkdir(parents=True, exist_ok=True)
+    return path.join(folder, filename)
+
+
+def folder_name_for_distance_measure(distance_measure_name: str):
+    """Returns a space free version of the distance measure name that is used for folders
+    :param distance_measure_name: name of the distance measure, see DistanceMeasures
+    """
+    return distance_measure_name.replace(" ", "_")
+
+
+def get_internal_measure_assessment_results_file_name(ds_name: str):
+    """Returns the result name for the internal measure assessment for the given ds_nambe
+    :param ds_name: the name of the dataset
+    :return: the file name for the results csv
+    """
+    return ds_name + '_measures_summary.csv'
 
 
 def load_private_yaml():

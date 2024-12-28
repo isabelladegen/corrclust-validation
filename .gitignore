@@ -188,3 +188,4 @@ cython_debug/
 wandb/
 /tests/tables/
 
+/tests/results/

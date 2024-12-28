@@ -1,7 +1,6 @@
 import itertools
 import os
 from dataclasses import dataclass
-from os import path
 
 import numpy as np
 import pandas as pd
@@ -9,10 +8,30 @@ from scipy.stats import pearsonr
 
 from src.evaluation.describe_bad_partitions import default_internal_measures, default_external_measures, \
     DescribeBadPartCols, DescribeBadPartitions
-from src.evaluation.distance_metric_assessment import DistanceMeasureCols
-from src.utils.configurations import ROOT_DIR
+from src.utils.configurations import GENERATED_DATASETS_FILE_PATH, ROOT_RESULTS_DIR, \
+    internal_measure_results_dir_for_data_type_and_distance_measures, SYNTHETIC_DATA_DIR, \
+    get_internal_measure_assessment_results_file_name
+from src.utils.distance_measures import DistanceMeasures
+from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.stats import standardized_effect_size_of_mean_difference, calculate_hi_lo_difference_ci, \
     ConfidenceIntervalCols
+
+
+@dataclass
+class IAResultsCSV:
+    correlation_summary: str = "correlation_summary.csv"
+    effect_size_difference_worst_best: str = "effect_size_difference_of_worst_to_best_partition.csv"
+    descriptive_statistics_measure_summary: str = "descriptive_statistics_internal_measures_correlation.csv"
+    ci_of_differences_between_measures: str = "ci_differences_between_internal_measure_correlation.csv"
+
+
+def get_full_filename_for_results_csv(full_results_dir: str, csv_filename: str):
+    """ Returns the full filename to read or save a csv result
+    :param full_results_dir: the full path where to save the file or read the file from
+    :param csv_filename: the full filename to save or read, see InternalMeasureAssessmentCSV for options
+    :returns the full path to the csv file
+    """
+    return os.path.join(full_results_dir, csv_filename)
 
 
 @dataclass
@@ -182,78 +201,109 @@ class InternalMeasureAssessment:
         return result.round(self.__round_to)
 
 
-def save_results(distance_measure: str, partitions: [pd.DataFrame], internal_measures: [str], directory: str):
-    ia = InternalMeasureAssessment(distance_measure=distance_measure, internal_measures=internal_measures,
-                                   dataset_results=partitions)
+def calculate_internal_measures_for_all_partitions(dataset_names: [str], data_type: str, data_dir: str,
+                                                   store_results_dir: str,
+                                                   distance_measure: str,
+                                                   internal_measures: [str], drop_clusters=0, drop_segments=0):
+    """Calculate Internal Measures"""
+    partitions = []
+    for ds_name in dataset_names:
+        print(ds_name)
+        # we don't vary the seed so all datasets will select the same clusters and segments
+        sum_df = DescribeBadPartitions(ds_name=ds_name, data_type=data_type, data_dir=data_dir,
+                                       distance_measure=distance_measure,
+                                       internal_measures=internal_measures, drop_n_segments=drop_segments,
+                                       drop_n_clusters=drop_clusters).summary_df.copy()
+        file_name = get_internal_measure_assessment_results_file_name(ds_name)
+        results_full_path = os.path.join(store_results_dir, file_name)
+        sum_df.to_csv(results_full_path)
+        partitions.append(sum_df)
+
+    # assess internal measures
+    ia = InternalMeasureAssessment(distance_measure=distance_measure, dataset_results=partitions,
+                                   internal_measures=internal_measures)
 
     # correlation summary
-    ia.correlation_summary.to_csv(directory + 'correlation_summary_30_n_d_67_partitions.csv')
+    ia.correlation_summary.to_csv(
+        get_full_filename_for_results_csv(store_results_dir, IAResultsCSV.correlation_summary))
 
     # effect size between difference of mean correlation of worst and gt
     ia.differences_between_worst_and_best_partition().to_csv(
-        directory + 'effect_size_difference_of_worst_to_best_partition.csv')
+        get_full_filename_for_results_csv(store_results_dir, IAResultsCSV.effect_size_difference_worst_best))
 
     # descriptive statistics
     ia.descriptive_statistics_for_internal_measures_correlation().to_csv(
-        directory + 'descriptive_statistics_internal_measures_correlation.csv')
+        get_full_filename_for_results_csv(store_results_dir, IAResultsCSV.descriptive_statistics_measure_summary))
 
     # 95% CI of differences in mean correlation between internal measures
     ia.ci_of_differences_between_internal_measure_correlations().to_csv(
-        directory + 'ci_differences_between_internal_measure_correlation.csv')
+        get_full_filename_for_results_csv(store_results_dir, IAResultsCSV.ci_of_differences_between_measures))
 
 
-def evaluate_all_partitions(dir_name: str, distance_measure: str, internal_measures: [str], n_clusters=None,
-                            n_segments=None):
-    partitions = []
-    for ds_name in generated_ds:
-        print(ds_name)
-        # we don't vary the seed so all datasets will select the same clusters and segments
-        sum_df = DescribeBadPartitions(ds_name=ds_name, distance_measure=distance_measure,
-                                       internal_measures=internal_measures, drop_n_segments=n_segments,
-                                       drop_n_clusters=n_clusters).summary_df.copy()
-        sum_df.to_csv(directory + ds_name + '_measures_summary.csv')
-        partitions.append(sum_df)
+def run_internal_measure_assessment__datasets(overall_ds_name: str,
+                                              generated_ds_csv: str = GENERATED_DATASETS_FILE_PATH,
+                                              distance_measure: str = DistanceMeasures.l1_cor_dist,
+                                              data_type: str = SyntheticDataType.non_normal_correlated,
+                                              data_dir: str = SYNTHETIC_DATA_DIR,
+                                              results_dir: str = ROOT_RESULTS_DIR,
+                                              internal_measures: [str] = [DescribeBadPartCols.silhouette_score,
+                                                                          DescribeBadPartCols.pmb],
+                                              n_dropped_clusters: [int] = [],
+                                              n_dropped_segments: [int] = [],
+                                              ):
+    """ Runs the internal measure assessment on all ds in the csv files of the generated runs
+    :param overall_ds_name: a name for the dataset we're using e.g. n30 or n2
+    :param generated_ds_csv: full path to the csv file of the generated runs, using the names to locate the data
+    :param distance_measure: name of distance measure to run assessment for
+    :param data_type: which datatype to use see SyntheticDataType
+    :param data_dir: where to read the data from
+    :param results_dir: directory where to store the results, it will use a subdirectory based on the distance measure,
+    and the data type
+    :param internal_measures: list of internal measures to assess
+    :param n_dropped_clusters: list of the number of clusters to drop in each run, if empty then we run the assessment
+    on all the cluster
+    :param n_dropped_segments: list of the number of segments to drop in each run, if empty then we run the assessment
+    using all segments
+    """
+    # read file of which datasets to assess
+    dataset_names = pd.read_csv(generated_ds_csv)['Name'].tolist()
 
-    save_results(distance_measure=distance_measure, partitions=partitions, internal_measures=internal_measures,
-                 directory=dir_name)
+    # decide which assessment to run
+    if len(n_dropped_clusters) == 0 and len(n_dropped_segments) == 0:
+        store_results_in = internal_measure_results_dir_for_data_type_and_distance_measures(
+            overall_dataset_name=overall_ds_name,
+            data_type=data_type,
+            results_dir=results_dir,
+            distance_measure=distance_measure)
+        calculate_internal_measures_for_all_partitions(dataset_names, data_type, data_dir, store_results_in,
+                                                       distance_measure,
+                                                       internal_measures)
+    else:
+        # run evaluation for all dropped clusters and for all dropped segments separately
+        # for this we just do clusters first
+        for n_clus in n_dropped_clusters:
+            store_results_in = internal_measure_results_dir_for_data_type_and_distance_measures(
+                overall_dataset_name=overall_ds_name,
+                data_type=data_type,
+                results_dir=results_dir,
+                distance_measure=distance_measure,
+                drop_clusters=n_clus)
+            calculate_internal_measures_for_all_partitions(dataset_names, data_type, data_dir, store_results_in,
+                                                           distance_measure,
+                                                           internal_measures, drop_clusters=n_clus)
+        # and second we do segments
+        for n_seg in n_dropped_segments:
+            store_results_in = internal_measure_results_dir_for_data_type_and_distance_measures(
+                overall_dataset_name=overall_ds_name,
+                data_type=data_type,
+                results_dir=results_dir,
+                distance_measure=distance_measure,
+                drop_segments=n_seg)
+            calculate_internal_measures_for_all_partitions(dataset_names, data_type, data_dir, store_results_in,
+                                                           distance_measure,
+                                                           internal_measures, drop_segments=n_seg)
 
 
 if __name__ == "__main__":
-    # assess all 30 ds
-    csv_file = path.join(ROOT_DIR, 'experiments/evaluate/csv/synthetic-data/wandb_export_30_ds-creation.csv')
-    generated_ds = pd.read_csv(csv_file)['Name'].tolist()
-
-    subdirectory_names = {
-        DistanceMeasureCols.l1_with_ref: "L1ref/",
-        DistanceMeasureCols.l2_with_ref: "L2ref/",
-        DistanceMeasureCols.l1_cor_dist: "L1/",
-        DistanceMeasureCols.l2_cor_dist: "L2/",
-    }
-
-    # configurations
-    distance_measure = DistanceMeasureCols.l1_with_ref
-    directory = "tables/" + subdirectory_names[distance_measure]
-    internal_measures = [DescribeBadPartCols.silhouette_score, DescribeBadPartCols.pmb]
-    # if both lists are empty, we do the standard evaluation as before
-    n_clusters = [2, 4, 8, 12, 16, 20]  # add the number of clusters
-    n_segments = [10, 20, 40, 60, 80]  # add the number of segments
-
-    # for this we just do clusters
-    for n_clus in n_clusters:
-        dir_name = directory + "Clusters_" + str(n_clus) + "/"
-        # create dir if it does not exist
-        os.makedirs(dir_name, exist_ok=True)
-        # do evaluation
-        evaluate_all_partitions(dir_name, distance_measure, internal_measures, n_clusters=n_clus)
-
-    # we also do segments
-    for n_seg in n_segments:
-        dir_name = directory + "Segments_" + str(n_seg) + "/"
-        # create dir if it does not exist
-        os.makedirs(dir_name, exist_ok=True)
-        # do evaluation
-        evaluate_all_partitions(dir_name, distance_measure, internal_measures, n_segments=n_seg)
-
-    # if both lists are empty we do the evaluations as before with all clusters and all segments
-    if len(n_clusters) == 0 and len(n_segments) == 0:
-        evaluate_all_partitions(directory, distance_measure, internal_measures)
+    overall_ds_name = "n2"
+    run_internal_measure_assessment__datasets(overall_ds_name)

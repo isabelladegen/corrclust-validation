@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from itertools import combinations
 from typing import overload
 
 import numpy as np
@@ -7,7 +6,6 @@ import pandas as pd
 from scipy.linalg import eigvals, logm, norm
 
 from src.data_generation.generate_synthetic_correlated_data import generate_correlation_matrix
-from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 
 
 @dataclass

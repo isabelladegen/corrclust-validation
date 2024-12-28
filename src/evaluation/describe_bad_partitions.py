@@ -36,38 +36,6 @@ default_internal_measures = [DescribeBadPartCols.silhouette_score]
 default_external_measures = [DescribeBadPartCols.jaccard_index]
 
 
-# todo: delete
-def recalculate_correlation_columns_in_labels(data_df, labels_df):
-    achieved_corrs = []
-    within_tols = []
-    # iterate through all segments and recalculate achieved correlation, keep data ordered by pattern_id
-    for idx, row in labels_df.iterrows():
-        start_idx = row[SyntheticDataSegmentCols.start_idx]
-        end_idx = row[SyntheticDataSegmentCols.end_idx]
-        length = row[SyntheticDataSegmentCols.length]
-        original_cor = ast.literal_eval(row[SyntheticDataSegmentCols.correlation_to_model])
-
-        # select data
-        segment_df = data_df.iloc[start_idx:end_idx + 1]
-        segment = segment_df.to_numpy()
-        if segment.shape[0] != length:
-            print("Help")
-        assert segment.shape[0] == length, "Mistake with indexing dataframe"
-
-        # calculated
-        achieved_cor = calculate_spearman_correlation(segment)
-        within_tol = check_correlations_are_within_original_strength(original_cor, achieved_cor)
-
-        # store results
-        achieved_corrs.append(str(achieved_cor))
-        within_tols.append(str(within_tol))
-
-    # update df
-    labels_df[SyntheticDataSegmentCols.actual_correlation] = achieved_corrs
-    labels_df[SyntheticDataSegmentCols.actual_within_tolerance] = within_tols
-    return labels_df
-
-
 def select_data_from_df(data: pd.DataFrame, label: pd.DataFrame):
     """
     Selects only the observations that are actually indexed in the label df

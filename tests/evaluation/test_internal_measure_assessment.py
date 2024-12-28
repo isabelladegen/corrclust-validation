@@ -1,10 +1,19 @@
+import os
+
+import pytest
 from hamcrest import *
 
 from src.evaluation.describe_bad_partitions import DescribeBadPartitions, DescribeBadPartCols
+from src.utils.configurations import internal_measure_results_dir_for_data_type_and_distance_measures
+from src.utils.distance_measures import DistanceMeasures
+from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.stats import ConfidenceIntervalCols
 from src.evaluation.distance_metric_assessment import DistanceMeasureCols
-from src.evaluation.internal_measure_assessment import InternalMeasureAssessment, InternalMeasureCols
-from tests.test_utils.configurations_for_testing import TEST_DATA_DIR
+from src.evaluation.internal_measure_assessment import InternalMeasureAssessment, InternalMeasureCols, \
+    run_internal_measure_assessment__datasets, get_internal_measure_assessment_results_file_name, \
+    get_full_filename_for_results_csv, IAResultsCSV
+from tests.test_utils.configurations_for_testing import TEST_DATA_DIR, TEST_GENERATED_DATASETS_FILE_PATH, \
+    TEST_RESULTS_DIR
 
 ds1_name = "misty-forest-56"
 ds2_name = "twilight-fog-55"
@@ -155,3 +164,132 @@ def test_can_assess_different_distance_measures():
     assert_that(df.iloc[1][r_col_name], is_(0.603))
     assert_that(df.iloc[0][p_col_name], is_(0.398))
     assert_that(df.iloc[1][p_col_name], is_(0.282))
+
+
+def test_can_run_assessment_and_store_results_for_runs_with_all_clusters():
+    # run test_wandb_create_bad_partitions to create bad partitions if they don't exist for your configuration
+    overall_ds_name = "test_stuff"
+    distance_measure = DistanceMeasures.l2_cor_dist
+    data_type = SyntheticDataType.normal_correlated
+    test_results_dir = TEST_RESULTS_DIR
+    run_internal_measure_assessment__datasets(overall_ds_name=overall_ds_name,
+                                              generated_ds_csv=TEST_GENERATED_DATASETS_FILE_PATH,
+                                              distance_measure=distance_measure,
+                                              data_type=data_type,
+                                              data_dir=test_data_dir,
+                                              results_dir=test_results_dir,
+                                              internal_measures=[DescribeBadPartCols.silhouette_score,
+                                                                 DescribeBadPartCols.pmb],
+                                              n_dropped_clusters=[],
+                                              n_dropped_segments=[],
+                                              )
+
+    # check if the files have been created
+    results_folder = internal_measure_results_dir_for_data_type_and_distance_measures(
+        overall_dataset_name=overall_ds_name,
+        data_type=data_type,
+        results_dir=test_results_dir,
+        distance_measure=distance_measure)
+
+    # store partition assessment
+    ds_1 = get_internal_measure_assessment_results_file_name("misty-forest-56")
+    ds_2 = get_internal_measure_assessment_results_file_name("splendid-sunset-12")
+    assert_that(os.path.exists(os.path.join(results_folder, ds_1)))
+    assert_that(os.path.exists(os.path.join(results_folder, ds_2)))
+
+    # IA assessment results
+    assert_that(os.path.exists(get_full_filename_for_results_csv(results_folder, IAResultsCSV.correlation_summary)))
+    assert_that(os.path.exists(
+        get_full_filename_for_results_csv(results_folder, IAResultsCSV.effect_size_difference_worst_best)))
+    assert_that(os.path.exists(
+        get_full_filename_for_results_csv(results_folder, IAResultsCSV.descriptive_statistics_measure_summary)))
+    assert_that(os.path.exists(
+        get_full_filename_for_results_csv(results_folder, IAResultsCSV.ci_of_differences_between_measures)))
+
+
+@pytest.mark.skip(reason="Takes very long so disabling but here if needed")
+def test_can_run_assessment_and_store_results_for_runs_with_dropping_clusters():
+    # run test_wandb_create_bad_partitions to create bad partitions if they don't exist for your configuration
+    overall_ds_name = "test_stuff"
+    distance_measure = DistanceMeasures.l1_cor_dist
+    data_type = SyntheticDataType.normal_correlated
+    test_results_dir = TEST_RESULTS_DIR
+    run_internal_measure_assessment__datasets(overall_ds_name=overall_ds_name,
+                                              generated_ds_csv=TEST_GENERATED_DATASETS_FILE_PATH,
+                                              distance_measure=distance_measure,
+                                              data_type=data_type,
+                                              data_dir=test_data_dir,
+                                              results_dir=test_results_dir,
+                                              internal_measures=[DescribeBadPartCols.silhouette_score,
+                                                                 DescribeBadPartCols.pmb],
+                                              n_dropped_clusters=[5, 15],
+                                              n_dropped_segments=[],
+                                              )
+
+    # check if the files have been created
+    results_folder_cl15 = internal_measure_results_dir_for_data_type_and_distance_measures(
+        overall_dataset_name=overall_ds_name,
+        data_type=data_type,
+        results_dir=test_results_dir,
+        distance_measure=distance_measure,
+        drop_clusters=15)
+
+    # store partition assessment
+    ds_1 = get_internal_measure_assessment_results_file_name("misty-forest-56")
+    ds_2 = get_internal_measure_assessment_results_file_name("splendid-sunset-12")
+    assert_that(os.path.exists(os.path.join(results_folder_cl15, ds_1)))
+    assert_that(os.path.exists(os.path.join(results_folder_cl15, ds_2)))
+
+    # IA assessment results
+    assert_that(
+        os.path.exists(get_full_filename_for_results_csv(results_folder_cl15, IAResultsCSV.correlation_summary)))
+    assert_that(os.path.exists(
+        get_full_filename_for_results_csv(results_folder_cl15, IAResultsCSV.effect_size_difference_worst_best)))
+    assert_that(os.path.exists(
+        get_full_filename_for_results_csv(results_folder_cl15, IAResultsCSV.descriptive_statistics_measure_summary)))
+    assert_that(os.path.exists(
+        get_full_filename_for_results_csv(results_folder_cl15, IAResultsCSV.ci_of_differences_between_measures)))
+
+
+@pytest.mark.skip(reason="Takes very long so disabling but here if needed")
+def test_can_run_assessment_and_store_results_for_runs_with_dropping_segments():
+    # run test_wandb_create_bad_partitions to create bad partitions if they don't exist for your configuration
+    overall_ds_name = "test_stuff"
+    distance_measure = DistanceMeasures.l1_cor_dist
+    data_type = SyntheticDataType.normal_correlated
+    test_results_dir = TEST_RESULTS_DIR
+    run_internal_measure_assessment__datasets(overall_ds_name=overall_ds_name,
+                                              generated_ds_csv=TEST_GENERATED_DATASETS_FILE_PATH,
+                                              distance_measure=distance_measure,
+                                              data_type=data_type,
+                                              data_dir=test_data_dir,
+                                              results_dir=test_results_dir,
+                                              internal_measures=[DescribeBadPartCols.silhouette_score,
+                                                                 DescribeBadPartCols.pmb],
+                                              n_dropped_clusters=[],
+                                              n_dropped_segments=[50],
+                                              )
+
+    # check if the files have been created
+    results_folder_seg50 = internal_measure_results_dir_for_data_type_and_distance_measures(
+        overall_dataset_name=overall_ds_name,
+        data_type=data_type,
+        results_dir=test_results_dir,
+        distance_measure=distance_measure,
+        drop_segments=50)
+
+    # store partition assessment
+    ds_1 = get_internal_measure_assessment_results_file_name("misty-forest-56")
+    ds_2 = get_internal_measure_assessment_results_file_name("splendid-sunset-12")
+    assert_that(os.path.exists(os.path.join(results_folder_seg50, ds_1)))
+    assert_that(os.path.exists(os.path.join(results_folder_seg50, ds_2)))
+
+    # IA assessment results
+    assert_that(
+        os.path.exists(get_full_filename_for_results_csv(results_folder_seg50, IAResultsCSV.correlation_summary)))
+    assert_that(os.path.exists(
+        get_full_filename_for_results_csv(results_folder_seg50, IAResultsCSV.effect_size_difference_worst_best)))
+    assert_that(os.path.exists(
+        get_full_filename_for_results_csv(results_folder_seg50, IAResultsCSV.descriptive_statistics_measure_summary)))
+    assert_that(os.path.exists(
+        get_full_filename_for_results_csv(results_folder_seg50, IAResultsCSV.ci_of_differences_between_measures)))
