@@ -164,7 +164,15 @@ def random_list_of_patterns_for(pattern_ids_to_model: [], n_segments: int, seed:
         np.random.seed(seed + idx)
         random_selection = np.random.choice(balanced_patterns)
 
-        if previous_pattern == random_selection:  # run out of choices and they are still the same
+        # first two items are the same -> there will be no place to place the patter
+        if previous_pattern == random_selection and len(result) == 1:
+            for other_idx in range(n_segments):
+                random_selection = np.random.choice(balanced_patterns)
+                if random_selection != n_per_pattern:
+                    break  # picked another pattern that we can place
+
+        # run out of choices and they are still the same (this is at the end of the picking)
+        if previous_pattern == random_selection:
             # insert random selection at the first index that does not cause a repetition
             inserted = False
             for result_idx in range(len(result)):

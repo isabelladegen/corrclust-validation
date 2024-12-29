@@ -48,6 +48,14 @@ cholesky_patterns = ModelCorrelationPatterns().patterns_to_model()
 loadings_patterns = ModelCorrelationPatterns().ideal_correlations()
 
 
+def no_consecutive_duplicates(a_list: []):
+    # Compare each element with the next one using zip
+    for curr, next_item in zip(a_list, a_list[1:]):
+        if curr == next_item:
+            return False
+    return True
+
+
 def test_generates_two_segments_with_given_correlation():
     number_of_variates = 3
     number_of_segments = 7
@@ -303,6 +311,13 @@ def test_generate_a_randomly_ordered_list_of_pattern_ids_to_use_for_each_segment
     assert_that(len(l2), is_(l2_length))
     assert_that(l2, contains_exactly(3, 1, 4, 3, 4, 2))  # checks that seed sets the order
     assert_that(l3, contains_exactly(1, 4, 3, 4, 2, 3))  # same length but different seed
+
+
+def test_can_create_random_list_of_patterns_if_seed_selects_the_same_pattern_for_first_two_items():
+    pattern_ids = list(ModelCorrelationPatterns().ids_of_patterns_to_model())
+    random_order = random_list_of_patterns_for(pattern_ids, 100, seed=985417)
+    assert_that(len(random_order), is_(100))
+    assert_that(no_consecutive_duplicates(random_order))
 
 
 def test_generate_random_pattern_order_throws_exception_if_not_possible_to_not_have_repetitions():
