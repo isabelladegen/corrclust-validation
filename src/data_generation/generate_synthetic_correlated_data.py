@@ -222,7 +222,6 @@ def calculate_spearman_correlation(data: np.array, round_to: int = 2):
     :return: np.array of correlations ordered by np.triu_indices of the upper half of the correlation matrix
 
     """
-    return_result = []
     n = data.shape[1]
     result = spearmanr(data)
     if n == 2:

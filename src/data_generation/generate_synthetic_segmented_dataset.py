@@ -1,10 +1,8 @@
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
-from itertools import cycle
 
 import numpy as np
 import pandas as pd
-from numpy.linalg import LinAlgError
 from tslearn.preprocessing import TimeSeriesScalerMinMax
 
 from src.utils.configurations import GeneralisedCols, SyntheticDataVariates
@@ -56,6 +54,7 @@ def recalculate_labels_df_from_data(data_df, labels_df):
     # update df
     labels_df[SyntheticDataSegmentCols.actual_correlation] = achieved_corrs
     labels_df[SyntheticDataSegmentCols.actual_within_tolerance] = within_tols
+    # calculate MAE per segment
     labels_df[SyntheticDataSegmentCols.mae] = mean_absolute_error_from_labels_df(labels_df)
     return labels_df
 
@@ -83,20 +82,17 @@ def mean_absolute_error(canonical_patterns: [], achieved_correlations: [], round
 
 @dataclass
 class SyntheticDataSegmentCols:  # todo rename to labels cols
+    old_regular_id = "old id" # todo this really is a column of data not labels
     segment_id = "id"
     start_idx = "start idx"
     end_idx = "end idx"
     length = "length"
     pattern_id = "cluster_id"  # canonical pattern id
     correlation_to_model = "correlation to model"  # canonical pattern to model
-    regularisation = "corr regularisation"  # todo move to dataset level
+    regularisation = "corr regularisation"
     actual_correlation = "correlation achieved"  # this is spearman correlation
     mae = "MAE"  # between canonical pattern and achieved correlation
     actual_within_tolerance = "correlation achieved with tolerance"
-    distribution_to_model = 'distribution to model'  # todo move to dataset level
-    distribution_args = 'distribution args'  # todo move to dataset level
-    distribution_kwargs = 'distribution kwargs'  # todo move to dataset level
-    repeats = 'repeated data generation'  # todo move to dataset level
 
 
 def random_segment_lengths(short_segment_durations, long_segment_durations, n_segments, seed):
