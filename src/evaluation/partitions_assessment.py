@@ -1,12 +1,9 @@
-from os import path
-
 import pandas as pd
 from matplotlib import pyplot as plt
 
-from src.utils.configurations import ROOT_DIR, GENERATED_DATASETS_FILE_PATH, \
-    internal_measure_results_dir_for_data_type_and_distance_measures, get_internal_measure_assessment_results_file_name
+from src.utils.configurations import GENERATED_DATASETS_FILE_PATH
 from src.utils.plots.matplotlib_helper_functions import reset_matplotlib, Backends, fontsize, set_axis_label_font_size
-from src.evaluation.describe_bad_partitions import DescribeBadPartCols
+from src.evaluation.describe_bad_partitions import DescribeBadPartCols, read_internal_measures_calculation
 
 
 class PartitionAssessment:
@@ -19,29 +16,12 @@ class PartitionAssessment:
         self.distance_measure = distance_measure
         self.n_clusters = n_clusters
         self.n_segments = n_segments
-        # list of names of ds
-        self.generated_ds = pd.read_csv(generated_ds_csv)['Name'].tolist()
+        self.generated_ds_csv = generated_ds_csv
         # list of dfs of outcomes for each partition in each of the datasets
-        self.partition_outcomes = self.__read_internal_measure_summary()
-
-    def __read_internal_measure_summary(self):
-        """ Reads a list of N_D datasets measures summary csv calculated by internal assessment"""
-        partitions_summary = []
-        results_dir = internal_measure_results_dir_for_data_type_and_distance_measures(self.overall_dataset_name,
-                                                                                       self.data_type,
-                                                                                       self.root_results_dir,
-                                                                                       self.distance_measure,
-                                                                                       self.n_clusters,
-                                                                                       self.n_segments
-                                                                                       )
-        for ds_name in self.generated_ds:
-            file_name = get_internal_measure_assessment_results_file_name(ds_name)
-            df = pd.read_csv(path.join(results_dir, file_name), index_col=0)
-            # sort by Jaccard index
-            df = df.sort_values(by=DescribeBadPartCols.jaccard_index)
-            df.reset_index(drop=True, inplace=True)
-            partitions_summary.append(df)
-        return partitions_summary
+        self.partition_outcomes = read_internal_measures_calculation(self.overall_dataset_name, self.data_type,
+                                                                     self.root_results_dir, self.distance_measure,
+                                                                     self.n_clusters, self.n_segments,
+                                                                     self.generated_ds_csv)
 
     def calculate_describe_statistics_for_partitions(self, column=DescribeBadPartCols.jaccard_index):
         """

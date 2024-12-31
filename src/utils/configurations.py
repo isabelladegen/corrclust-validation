@@ -10,10 +10,15 @@ DISTRIBUTION_PARAMS_TO_MODEL_PATH = path.join(ROOT_DIR,
                                               'src/data_generation/config/n30_genextreme_nbinom_genextreme_params.csv')
 SYNTHETIC_DATA_DIR = path.join(ROOT_DIR, 'data/synthetic_data')
 ROOT_RESULTS_DIR = path.join(ROOT_DIR, 'results')
-INTERNAL_ASSESSMENT_RESULTS_FOLDER_NAME = 'internal-assessment'
 DISTANCE_MEASURE_ASSESSMENT_RESULTS_FOLDER_NAME = 'distance-measures-assessment'
 IMAGES_FOLDER_NAME = 'images'
 GENERATED_DATASETS_FILE_PATH = path.join(ROOT_DIR, 'src/data_generation/config/n30_generated_datasets.csv')
+
+
+@dataclass
+class ResultsType:
+    internal_measure_assessment: str = 'internal-measures-assessment'
+    internal_measures: str = 'internal-measures'
 
 
 def dir_for_data_type(data_type: str, data_dir: str = SYNTHETIC_DATA_DIR):
@@ -30,10 +35,30 @@ def bad_partition_dir_for_data_type(data_type: str, data_dir: str = SYNTHETIC_DA
     return folder
 
 
-def internal_measure_results_dir_for_data_type_and_distance_measures(overall_dataset_name: str, data_type: str,
-                                                                     results_dir: str, distance_measure: str,
-                                                                     drop_clusters: int = 0,
-                                                                     drop_segments: int = 0):
+def internal_measure_calculation_dir_for(overall_dataset_name: str, data_type: str, results_dir: str,
+                                         distance_measure: str, drop_clusters: int = 0, drop_segments: int = 0):
+    """
+          Returns directory for internal measures calculation on bad partitions
+          :param overall_dataset_name: a name to identify the dataset overall e.g n30 or n2
+          :param data_type: the data type, see SyntheticDataType
+          :param results_dir: the directory for results, this is the main directory, the internal_assessment folder will be
+          added
+          :param distance_measure: the distance measures used for the internal assessment, see DistanceMeasures
+          :param drop_clusters: will create an additional folder for evaluating reduced numbers of clusters, if 0 and
+          n_dropped_segment is 0 no additional subfolder will be added
+          :param drop_segments: will create an additional folder for evaluating reduced numbers of segments
+          :return: the path name to the results folder e.g. results/internal_assessment/raw/L1/ or
+          results/internal_assessment/raw/n_dropped_clusters/L1 or results/internal_assessment/raw/n_dropped_segments/L1
+          or results/internal_assessment/raw/n_dropped_clusters_m_dropped_segments/L1
+      """
+    return get_folder_name_for(results_type=ResultsType.internal_measures,
+                               overall_dataset_name=overall_dataset_name, data_type=data_type,
+                               distance_measure=distance_measure, results_dir=results_dir, drop_clusters=drop_clusters,
+                               drop_segments=drop_segments)
+
+
+def internal_measure_assessment_dir_for(overall_dataset_name: str, data_type: str, results_dir: str,
+                                        distance_measure: str, drop_clusters: int = 0, drop_segments: int = 0):
     """
     Returns directory for internal measures assessment results tables for the given data type and distance measure
     :param overall_dataset_name: a name to identify the dataset overall e.g n30 or n2
@@ -48,8 +73,32 @@ def internal_measure_results_dir_for_data_type_and_distance_measures(overall_dat
     results/internal_assessment/raw/n_dropped_clusters/L1 or results/internal_assessment/raw/n_dropped_segments/L1
     or results/internal_assessment/raw/n_dropped_clusters_m_dropped_segments/L1
     """
+    return get_folder_name_for(results_type=ResultsType.internal_measure_assessment,
+                               overall_dataset_name=overall_dataset_name, data_type=data_type,
+                               distance_measure=distance_measure, results_dir=results_dir, drop_clusters=drop_clusters,
+                               drop_segments=drop_segments)
+
+
+def get_folder_name_for(results_type: str, overall_dataset_name: str, data_type: str, results_dir: str,
+                        distance_measure: str,
+                        drop_clusters: int = 0,
+                        drop_segments: int = 0):
+    """
+        Returns directory for the given results type using
+        :param overall_dataset_name: a name to identify the dataset overall e.g n30 or n2
+        :param data_type: the data type, see SyntheticDataType
+        :param results_dir: the directory for results, this is the main directory, the internal_assessment folder will be
+        added
+        :param distance_measure: the distance measures used for the internal assessment, see DistanceMeasures
+        :param drop_clusters: will create an additional folder for evaluating reduced numbers of clusters, if 0 and
+        n_dropped_segment is 0 no additional subfolder will be added
+        :param drop_segments: will create an additional folder for evaluating reduced numbers of segments
+        :return: the path name to the results folder e.g. results/internal_assessment/raw/L1/ or
+        results/internal_assessment/raw/n_dropped_clusters/L1 or results/internal_assessment/raw/n_dropped_segments/L1
+        or results/internal_assessment/raw/n_dropped_clusters_m_dropped_segments/L1
+    """
     # put in folder internal_assessment
-    results_folder = path.join(results_dir, INTERNAL_ASSESSMENT_RESULTS_FOLDER_NAME)
+    results_folder = path.join(results_dir, results_type)
     # put in sub folder e.g. raw
     results_folder = path.join(results_folder, data_type)
     # put in sub folder e.g. n30
@@ -97,7 +146,7 @@ def folder_name_for_distance_measure(distance_measure_name: str):
     return distance_measure_name.replace(" ", "_")
 
 
-def get_internal_measure_assessment_results_file_name(ds_name: str):
+def get_internal_measures_summary_file_name(ds_name: str):
     """Returns the result name for the internal measure assessment for the given ds_nambe
     :param ds_name: the name of the dataset
     :return: the file name for the results csv

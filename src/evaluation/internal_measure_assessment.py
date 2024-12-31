@@ -7,10 +7,10 @@ import pandas as pd
 from scipy.stats import pearsonr
 
 from src.evaluation.describe_bad_partitions import default_internal_measures, default_external_measures, \
-    DescribeBadPartCols, DescribeBadPartitions
+    DescribeBadPartCols, DescribeBadPartitions, read_internal_measures_calculation
 from src.utils.configurations import GENERATED_DATASETS_FILE_PATH, ROOT_RESULTS_DIR, \
-    internal_measure_results_dir_for_data_type_and_distance_measures, SYNTHETIC_DATA_DIR, \
-    get_internal_measure_assessment_results_file_name
+    internal_measure_assessment_dir_for, SYNTHETIC_DATA_DIR, \
+    get_internal_measures_summary_file_name
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.stats import standardized_effect_size_of_mean_difference, calculate_hi_lo_difference_ci, \
@@ -201,43 +201,41 @@ class InternalMeasureAssessment:
         return result.round(self.__round_to)
 
 
-def calculate_internal_measures_for_all_partitions(dataset_names: [str], data_type: str, data_dir: str,
-                                                   store_results_dir: str,
-                                                   distance_measure: str,
-                                                   internal_measures: [str], drop_clusters=0, drop_segments=0):
-    """Calculate Internal Measures"""
-    partitions = []
-    for ds_name in dataset_names:
-        print(ds_name)
-        # we don't vary the seed so all datasets will select the same clusters and segments
-        sum_df = DescribeBadPartitions(ds_name=ds_name, data_type=data_type, data_dir=data_dir,
-                                       distance_measure=distance_measure,
-                                       internal_measures=internal_measures, drop_n_segments=drop_segments,
-                                       drop_n_clusters=drop_clusters).summary_df.copy()
-        file_name = get_internal_measure_assessment_results_file_name(ds_name)
-        results_full_path = os.path.join(store_results_dir, file_name)
-        sum_df.to_csv(results_full_path)
-        partitions.append(sum_df)
+def assess_internal_measures(overall_dataset_name, generated_ds_csv, data_type: str,
+                             root_results_dir: str,
+                             distance_measure: str,
+                             internal_measures: [str], n_clusters=0, n_segments=0):
+    # load all the internal measure calculation summaries
+    partitions = read_internal_measures_calculation(overall_dataset_name, data_type,
+                                                    root_results_dir, distance_measure,
+                                                    n_clusters, n_segments,
+                                                    generated_ds_csv)
 
-    # assess internal measures
     ia = InternalMeasureAssessment(distance_measure=distance_measure, dataset_results=partitions,
                                    internal_measures=internal_measures)
 
+    store_results_in = internal_measure_assessment_dir_for(
+        overall_dataset_name=overall_dataset_name,
+        data_type=data_type,
+        results_dir=root_results_dir,
+        distance_measure=distance_measure,
+        drop_segments=n_segments, drop_clusters=n_clusters)
+
     # correlation summary
     ia.correlation_summary.to_csv(
-        get_full_filename_for_results_csv(store_results_dir, IAResultsCSV.correlation_summary))
+        get_full_filename_for_results_csv(store_results_in, IAResultsCSV.correlation_summary))
 
     # effect size between difference of mean correlation of worst and gt
     ia.differences_between_worst_and_best_partition().to_csv(
-        get_full_filename_for_results_csv(store_results_dir, IAResultsCSV.effect_size_difference_worst_best))
+        get_full_filename_for_results_csv(store_results_in, IAResultsCSV.effect_size_difference_worst_best))
 
     # descriptive statistics
     ia.descriptive_statistics_for_internal_measures_correlation().to_csv(
-        get_full_filename_for_results_csv(store_results_dir, IAResultsCSV.descriptive_statistics_measure_summary))
+        get_full_filename_for_results_csv(store_results_in, IAResultsCSV.descriptive_statistics_measure_summary))
 
     # 95% CI of differences in mean correlation between internal measures
     ia.ci_of_differences_between_internal_measure_correlations().to_csv(
-        get_full_filename_for_results_csv(store_results_dir, IAResultsCSV.ci_of_differences_between_measures))
+        get_full_filename_for_results_csv(store_results_in, IAResultsCSV.ci_of_differences_between_measures))
 
 
 def run_internal_measure_assessment__datasets(overall_ds_name: str,
@@ -265,43 +263,26 @@ def run_internal_measure_assessment__datasets(overall_ds_name: str,
     :param n_dropped_segments: list of the number of segments to drop in each run, if empty then we run the assessment
     using all segments
     """
-    # read file of which datasets to assess
-    dataset_names = pd.read_csv(generated_ds_csv)['Name'].tolist()
-
     # decide which assessment to run
     if len(n_dropped_clusters) == 0 and len(n_dropped_segments) == 0:
-        store_results_in = internal_measure_results_dir_for_data_type_and_distance_measures(
-            overall_dataset_name=overall_ds_name,
-            data_type=data_type,
-            results_dir=results_dir,
-            distance_measure=distance_measure)
-        calculate_internal_measures_for_all_partitions(dataset_names, data_type, data_dir, store_results_in,
-                                                       distance_measure,
-                                                       internal_measures)
+
+        assess_internal_measures(overall_dataset_name=overall_ds_name, generated_ds_csv=generated_ds_csv,
+                                 data_type=data_type, root_results_dir=results_dir, distance_measure=distance_measure,
+                                 internal_measures=internal_measures)
     else:
         # run evaluation for all dropped clusters and for all dropped segments separately
         # for this we just do clusters first
         for n_clus in n_dropped_clusters:
-            store_results_in = internal_measure_results_dir_for_data_type_and_distance_measures(
-                overall_dataset_name=overall_ds_name,
-                data_type=data_type,
-                results_dir=results_dir,
-                distance_measure=distance_measure,
-                drop_clusters=n_clus)
-            calculate_internal_measures_for_all_partitions(dataset_names, data_type, data_dir, store_results_in,
-                                                           distance_measure,
-                                                           internal_measures, drop_clusters=n_clus)
+            assess_internal_measures(overall_dataset_name=overall_ds_name, generated_ds_csv=generated_ds_csv,
+                                     data_type=data_type, root_results_dir=results_dir,
+                                     distance_measure=distance_measure,
+                                     internal_measures=internal_measures, n_clusters=n_clus)
         # and second we do segments
         for n_seg in n_dropped_segments:
-            store_results_in = internal_measure_results_dir_for_data_type_and_distance_measures(
-                overall_dataset_name=overall_ds_name,
-                data_type=data_type,
-                results_dir=results_dir,
-                distance_measure=distance_measure,
-                drop_segments=n_seg)
-            calculate_internal_measures_for_all_partitions(dataset_names, data_type, data_dir, store_results_in,
-                                                           distance_measure,
-                                                           internal_measures, drop_segments=n_seg)
+            assess_internal_measures(overall_dataset_name=overall_ds_name, generated_ds_csv=generated_ds_csv,
+                                     data_type=data_type, root_results_dir=results_dir,
+                                     distance_measure=distance_measure,
+                                     internal_measures=internal_measures, n_segments=n_seg)
 
 
 if __name__ == "__main__":

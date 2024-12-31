@@ -1,10 +1,18 @@
+import os
+
+import pytest
 from hamcrest import *
 
 from src.evaluation.distance_metric_assessment import DistanceMeasureCols
-from src.evaluation.describe_bad_partitions import DescribeBadPartitions, DescribeBadPartCols, select_data_from_df
+from src.evaluation.describe_bad_partitions import DescribeBadPartitions, DescribeBadPartCols, select_data_from_df, \
+    run_internal_measure_calculation_for_dataset, read_internal_measures_calculation
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
+from src.utils.configurations import internal_measure_calculation_dir_for, get_internal_measures_summary_file_name
+from src.utils.distance_measures import DistanceMeasures
 from src.utils.labels_utils import calculate_y_pred_from
-from tests.test_utils.configurations_for_testing import TEST_DATA_DIR
+from src.utils.load_synthetic_data import SyntheticDataType
+from tests.test_utils.configurations_for_testing import TEST_DATA_DIR, TEST_ROOT_RESULTS_DIR, \
+    TEST_GENERATED_DATASETS_FILE_PATH
 
 ds_name = "misty-forest-56"
 internal_measures = [DescribeBadPartCols.silhouette_score, DescribeBadPartCols.pmb]
@@ -249,3 +257,103 @@ def test_can_randomly_drop_both_clusters_and_segments():
     assert_that(second_partition[DescribeBadPartCols.n_segments], less_than(100 - n_segments))
     assert_that(second_partition[DescribeBadPartCols.n_wrong_clusters], greater_than(0))
     assert_that(second_partition[DescribeBadPartCols.n_obs_shifted], greater_than(0))
+
+
+def test_can_run_calculation_for_internal_measures_on_all_datasets():
+    # run test_wandb_create_bad_partitions to create bad partitions if they don't exist for your configuration
+    overall_ds_name = "test_stuff"
+    # distance_measure = DistanceMeasures.l2_cor_dist
+    # distance_measure = DistanceMeasures.l1_with_ref
+    distance_measure = DistanceMeasures.l1_cor_dist
+    data_type = SyntheticDataType.normal_correlated
+    test_results_dir = TEST_ROOT_RESULTS_DIR
+    runs = TEST_GENERATED_DATASETS_FILE_PATH
+    run_internal_measure_calculation_for_dataset(overall_ds_name=overall_ds_name,
+                                                 generated_ds_csv=runs,
+                                                 distance_measure=distance_measure,
+                                                 data_type=data_type,
+                                                 data_dir=test_data_dir,
+                                                 results_dir=test_results_dir,
+                                                 internal_measures=[DescribeBadPartCols.silhouette_score,
+                                                                    DescribeBadPartCols.pmb],
+                                                 n_dropped_clusters=[],
+                                                 n_dropped_segments=[],
+                                                 )
+
+    # read the files from disk
+    datasets = read_internal_measures_calculation(overall_ds_name=overall_ds_name, data_type=data_type,
+                                                  root_results_dir=test_results_dir,
+                                                  distance_measure=distance_measure, generated_ds_csv=runs)
+
+    assert_that(len(datasets), is_(2))
+    assert_that(datasets[1][DescribeBadPartCols.name], has_item("misty-forest-56"))
+    assert_that(datasets[0][DescribeBadPartCols.name], has_item("splendid-sunset-12"))
+
+
+def test_can_run_calculation_for_internal_measures_on_all_datasets_when_dropping_clusters():
+    # run test_wandb_create_bad_partitions to create bad partitions if they don't exist for your configuration
+    overall_ds_name = "test_stuff"
+    distance_measure = DistanceMeasures.l1_cor_dist
+    data_type = SyntheticDataType.normal_correlated
+    test_results_dir = TEST_ROOT_RESULTS_DIR
+    runs = TEST_GENERATED_DATASETS_FILE_PATH
+    run_internal_measure_calculation_for_dataset(overall_ds_name=overall_ds_name,
+                                                 generated_ds_csv=runs,
+                                                 distance_measure=distance_measure,
+                                                 data_type=data_type,
+                                                 data_dir=test_data_dir,
+                                                 results_dir=test_results_dir,
+                                                 internal_measures=[DescribeBadPartCols.silhouette_score,
+                                                                    DescribeBadPartCols.pmb],
+                                                 n_dropped_clusters=[5, 15],
+                                                 n_dropped_segments=[],
+                                                 )
+
+    # read the files from disk
+    datasets_drop5 = read_internal_measures_calculation(overall_ds_name=overall_ds_name, data_type=data_type,
+                                                        root_results_dir=test_results_dir,
+                                                        distance_measure=distance_measure, n_dropped_clusters=5,
+                                                        generated_ds_csv=runs)
+
+    assert_that(len(datasets_drop5), is_(2))
+    assert_that(datasets_drop5[1][DescribeBadPartCols.name], has_item("misty-forest-56"))
+    assert_that(datasets_drop5[0][DescribeBadPartCols.name], has_item("splendid-sunset-12"))
+
+    datasets_drop15 = read_internal_measures_calculation(overall_ds_name=overall_ds_name, data_type=data_type,
+                                                         root_results_dir=test_results_dir,
+                                                         distance_measure=distance_measure, n_dropped_clusters=15,
+                                                         generated_ds_csv=runs)
+
+    assert_that(len(datasets_drop15), is_(2))
+    assert_that(datasets_drop15[1][DescribeBadPartCols.name], has_item("misty-forest-56"))
+    assert_that(datasets_drop15[0][DescribeBadPartCols.name], has_item("splendid-sunset-12"))
+
+
+def test_can_run_calculation_for_internal_measures_on_all_datasets_when_dropping_segments():
+    # run test_wandb_create_bad_partitions to create bad partitions if they don't exist for your configuration
+    overall_ds_name = "test_stuff"
+    distance_measure = DistanceMeasures.l1_cor_dist
+    data_type = SyntheticDataType.normal_correlated
+    test_results_dir = TEST_ROOT_RESULTS_DIR
+    runs = TEST_GENERATED_DATASETS_FILE_PATH
+    run_internal_measure_calculation_for_dataset(overall_ds_name=overall_ds_name,
+                                                 generated_ds_csv=runs,
+                                                 distance_measure=distance_measure,
+                                                 data_type=data_type,
+                                                 data_dir=test_data_dir,
+                                                 results_dir=test_results_dir,
+                                                 internal_measures=[DescribeBadPartCols.silhouette_score,
+                                                                    DescribeBadPartCols.pmb],
+                                                 n_dropped_clusters=[],
+                                                 n_dropped_segments=[50],
+                                                 )
+
+    # read the files from disk
+    datasets_drop50 = read_internal_measures_calculation(overall_ds_name=overall_ds_name, data_type=data_type,
+                                                         root_results_dir=test_results_dir,
+                                                         distance_measure=distance_measure, n_dropped_segments=50,
+                                                         generated_ds_csv=runs)
+
+    assert_that(len(datasets_drop50), is_(2))
+    assert_that(datasets_drop50[1][DescribeBadPartCols.name], has_item("misty-forest-56"))
+    assert_that(datasets_drop50[0][DescribeBadPartCols.name], has_item("splendid-sunset-12"))
