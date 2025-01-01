@@ -9,5 +9,6 @@ Path(TEST_IMAGES_DIR).mkdir(parents=True, exist_ok=True)
 TEST_ROOT_RESULTS_DIR = path.join(ROOT_DIR, 'tests/results')
 Path(TEST_ROOT_RESULTS_DIR).mkdir(parents=True, exist_ok=True)
 TEST_GENERATED_DATASETS_FILE_PATH = path.join(ROOT_DIR, 'tests/test_data/config/test-create-bad-partitions.csv')
+TEST_IRREGULAR_P90 = path.join(TEST_DATA_DIR, 'irregular_p90')
 
 

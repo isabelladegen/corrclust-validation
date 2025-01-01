@@ -8,6 +8,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 import matplotlib as mpl
 from matplotlib.collections import EllipseCollection
+from pandas._libs.tslibs import to_offset
 
 from src.utils.load_synthetic_data import load_synthetic_data, SyntheticDataType, load_labels_file_for
 from src.utils.configurations import GeneralisedCols, SyntheticDataVariates, SYNTHETIC_DATA_DIR, \
@@ -79,7 +80,10 @@ class DescribeSyntheticDataset:
         self.start_date = self.data.iloc[0][GeneralisedCols.datetime]
         self.end_date = self.data.iloc[-1][GeneralisedCols.datetime]
         self.duration = self.end_date - self.start_date
-        self.frequency = self.data[GeneralisedCols.datetime].dt.freq
+        # for irregular data the frequency is not so clear so we're using the median frequency
+        median_diff = pd.Series(self.data[GeneralisedCols.datetime]).diff().median()
+        freq = to_offset(median_diff)
+        self.frequency = freq.rule_code
         self.patterns = self.labels[SyntheticDataSegmentCols.pattern_id].unique().tolist()
         self.n_patterns = len(self.patterns)
         self.mae_stats = self.labels[SyntheticDataSegmentCols.mae].describe().round(3)

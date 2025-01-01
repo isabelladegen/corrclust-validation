@@ -1,13 +1,16 @@
+import pandas as pd
 from hamcrest import *
+from pandas._libs.tslibs import to_offset
 
 from src.data_generation.create_irregular_datasets import CreateIrregularDataset
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
-from src.utils.configurations import SyntheticDataVariates
-from src.utils.load_synthetic_data import SyntheticDataType
+from src.utils.configurations import SyntheticDataVariates, GeneralisedCols
+from src.utils.load_synthetic_data import SyntheticDataType, load_synthetic_data
 from tests.test_utils.configurations_for_testing import TEST_DATA_DIR
 
 ds_name = "misty-forest-56"
-irds = CreateIrregularDataset(run_name=ds_name, data_type=SyntheticDataType.non_normal_correlated,
+data_type = SyntheticDataType.raw
+irds = CreateIrregularDataset(run_name=ds_name, data_type=data_type,
                               data_dir=TEST_DATA_DIR, data_cols=SyntheticDataVariates.columns(), seed=1661)
 
 
@@ -30,7 +33,7 @@ def test_drop_observation_with_a_likelihood_p():
     # cols that needed changing (all the others should not appear in diff df as they have not been updated)
     changed_cols = [SyntheticDataSegmentCols.start_idx, SyntheticDataSegmentCols.end_idx,
                     SyntheticDataSegmentCols.length, SyntheticDataSegmentCols.actual_correlation,
-                    SyntheticDataSegmentCols.actual_within_tolerance, SyntheticDataSegmentCols.mae]
+                    SyntheticDataSegmentCols.mae]
     cols_with_differences = list(diff_df.columns.levels[0])
     for cols in changed_cols:
         assert_that(cols in cols_with_differences, is_(True))
@@ -73,3 +76,77 @@ def test_can_deal_with_segments_that_have_less_than_ncols_samples_left():
     # all observations in data are in the labels df (if a segment has less than 3 obs left we drop these
     # as we cannot calculate their correlations
     assert_that(labels[SyntheticDataSegmentCols.length].sum(), is_(data.shape[0]))
+
+
+def test_creates_same_irregular_version_for_ds_variation():
+    # this needs to be high enough so that resampling faces problems of not having a sample for all timestamps
+    # this makes some segment disappear and others have less than 3 samples
+    p = 0.998
+    raw_irr_data, raw_irr_labels = irds.drop_observation_with_likelihood(p)
+
+    # this method is not to redo the irregular calculation we already did
+    try:
+        irds.irregular_version_for_data_type(SyntheticDataType.raw, raw_irr_data, raw_irr_labels)
+        assert_that(False)
+    except Exception:
+        assert_that(True)
+
+    # NC IRREGULAR VERSION
+    nc_irr_data, nc = irds.irregular_version_for_data_type(SyntheticDataType.normal_correlated, raw_irr_data,
+                                                           raw_irr_labels)
+    # nc df have same shape
+    assert_that(nc_irr_data.shape, is_(raw_irr_data.shape))
+    assert_that(nc.shape, is_(raw_irr_labels.shape))
+
+    # labels dataframes only differ in correlation achieved, tolerance and mae
+    changed_labels_cols = [SyntheticDataSegmentCols.actual_correlation,
+                           SyntheticDataSegmentCols.actual_within_tolerance, SyntheticDataSegmentCols.mae]
+    check_that_the_following_columns_are_different(changed_labels_cols, raw_irr_labels, nc)
+
+    # data dataframes only differ in observations columns
+    changed_data_cols = SyntheticDataVariates.columns()
+    check_that_the_following_columns_are_different(changed_data_cols, raw_irr_data, nc_irr_data)
+
+    # NN IRREGULAR VERSION
+    nn_irr_data, nn_irr_labels = irds.irregular_version_for_data_type(SyntheticDataType.non_normal_correlated,
+                                                                      raw_irr_data,
+                                                                      raw_irr_labels)
+    # nn df have same shape
+    assert_that(nn_irr_data.shape, is_(raw_irr_data.shape))
+    assert_that(nn_irr_labels.shape, is_(raw_irr_labels.shape))
+
+    # labels dataframes only differ in correlation achieved, tolerance and mae
+    check_that_the_following_columns_are_different(changed_labels_cols, raw_irr_labels, nn_irr_labels)
+
+    # data dataframes only differ in observations columns
+    check_that_the_following_columns_are_different(changed_data_cols, raw_irr_data, nn_irr_data)
+
+    # RESAMPLED VERSION FROM NN
+    rs_irr_data, rs_irr_labels = irds.irregular_version_for_data_type(SyntheticDataType.rs_1min, nn_irr_data,
+                                                                      nn_irr_labels)
+
+    # check data is sampled at min, the timestamps are no longer consecutive
+    median_diff = pd.Series(rs_irr_data[GeneralisedCols.datetime]).diff().median()
+    freq = to_offset(median_diff)
+    assert_that(freq.rule_code, is_("min"))
+    assert_that(rs_irr_labels.iloc[0][SyntheticDataSegmentCols.start_idx], is_(0))
+    assert_that(rs_irr_labels.iloc[-1][SyntheticDataSegmentCols.end_idx], is_(rs_irr_data.shape[0] - 1))
+    assert_that(rs_irr_labels.columns,
+                contains_exactly(SyntheticDataSegmentCols.segment_id, SyntheticDataSegmentCols.start_idx,
+                                 SyntheticDataSegmentCols.end_idx, SyntheticDataSegmentCols.length,
+                                 SyntheticDataSegmentCols.pattern_id, SyntheticDataSegmentCols.correlation_to_model,
+                                 SyntheticDataSegmentCols.actual_correlation,
+                                 SyntheticDataSegmentCols.actual_within_tolerance, SyntheticDataSegmentCols.mae))
+
+    # resampled mae higher than nn mae
+    assert_that(rs_irr_labels.iloc[-1][SyntheticDataSegmentCols.mae],
+                greater_than(nn_irr_labels.iloc[-1][SyntheticDataSegmentCols.mae]))
+
+
+def check_that_the_following_columns_are_different(changed_cols, df_orig, df_new):
+    differences_df = df_orig.compare(df_new, result_names=("orig", "new"))
+    cols_with_differences = list(differences_df.columns.levels[0])
+    for cols in changed_cols:
+        assert_that(cols in cols_with_differences, is_(True))
+    assert_that(len(changed_cols), is_(len(cols_with_differences)))
+    return differences_df

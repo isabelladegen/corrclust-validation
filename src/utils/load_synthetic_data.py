@@ -24,7 +24,10 @@ class SyntheticDataSets:
 
 @dataclass
 class SyntheticDataType:
-    """ Don't change the string values as they have to match the dir name! """
+    """
+    Don't change the string values as they match the directory name!
+    The data loading will no longer work if you rename this unless you rename all data directories
+    """
     raw: str = "raw"
     normal_correlated: str = "normal"
     non_normal_correlated: str = "non_normal"
@@ -32,8 +35,13 @@ class SyntheticDataType:
     irregular_p90_drop: str = "irregular_p90"
     rs_1min: str = "resampled_1min"
 
-    def resample(self, rule: str):
+    @staticmethod
+    def resample(rule: str):
         return "resampled_" + rule
+
+    @staticmethod
+    def rule_from_resample_type(resample_type: str):
+        return resample_type.replace("resampled_", "")
 
 
 @dataclass

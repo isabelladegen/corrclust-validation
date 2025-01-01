@@ -5,6 +5,7 @@ from src.data_generation.wandb_create_synthetic_data import SyntheticDataConfig,
 from src.utils.wandb_utils import set_test_configurations
 
 
+
 def test_wandb_synthetic_data_creation_with_loadings_correlation_method():
     config = SyntheticDataConfig()
     set_test_configurations(config)
@@ -52,7 +53,6 @@ def test_wandb_synthetic_data_creation_with_loadings_correlation_method():
     assert_that(rs_1min_describe.frequency, is_("min"))  # minutes
     assert_that(summary["frequency RS"], is_("min"))
     assert_that(summary["max MAE RS"], is_(0.29))  # higher than any of the correlated version
-
 
 def test_wandb_synthetic_data_creation_works_for_cholesky_method_too():
     config = SyntheticDataConfig()

@@ -29,6 +29,10 @@ def min_max_scaled_df(df: pd.DataFrame, scale_range: (), columns: []) -> pd.Data
 
 
 def recalculate_labels_df_from_data(data_df, labels_df):
+    """
+    Returns a new labels df with updated achieved correlation, correlations within tolerance and
+    MAE columns calculated from the data_df provided
+    """
     achieved_corrs = []
     within_tols = []
     # iterate through all segments and recalculate achieved correlation, keep data ordered by pattern_id
@@ -52,11 +56,12 @@ def recalculate_labels_df_from_data(data_df, labels_df):
         within_tols.append(within_tol)
 
     # update df
-    labels_df[SyntheticDataSegmentCols.actual_correlation] = achieved_corrs
-    labels_df[SyntheticDataSegmentCols.actual_within_tolerance] = within_tols
+    new_labels_df = labels_df.copy()
+    new_labels_df[SyntheticDataSegmentCols.actual_correlation] = achieved_corrs
+    new_labels_df[SyntheticDataSegmentCols.actual_within_tolerance] = within_tols
     # calculate MAE per segment
-    labels_df[SyntheticDataSegmentCols.mae] = mean_absolute_error_from_labels_df(labels_df)
-    return labels_df
+    new_labels_df[SyntheticDataSegmentCols.mae] = mean_absolute_error_from_labels_df(new_labels_df)
+    return new_labels_df
 
 
 def mean_absolute_error_from_labels_df(labels_df: pd.DataFrame, round_to: int = 3):
@@ -82,7 +87,7 @@ def mean_absolute_error(canonical_patterns: [], achieved_correlations: [], round
 
 @dataclass
 class SyntheticDataSegmentCols:  # todo rename to labels cols
-    old_regular_id = "old id" # todo this really is a column of data not labels
+    old_regular_id = "old id"  # todo this really is a column of data not labels
     segment_id = "id"
     start_idx = "start idx"
     end_idx = "end idx"

@@ -87,7 +87,7 @@ def one_synthetic_creation_run(config: SyntheticDataConfig, seed: int = 6666):
     Wandb generate synthetic data according to the config provided
     :param config: SyntheticDataConfig that configures the creation
     :param seed: base seed to use for random, the dataset will be using a random int
-    :return: DescribeSyntheticData class
+    :return: dictionary of DescribeSyntheticData class for all data variations as well as wandb log summary dic
     """
     raw_desc, nc_desc, nn_desc, rs_desc = None, None, None, None
     try:

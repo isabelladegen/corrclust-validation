@@ -10,9 +10,7 @@ from dataclasses import dataclass, field, asdict
 
 from src.data_generation.create_bad_partitions import CreateBadSyntheticPartitions
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
-from src.data_generation.wandb_create_synthetic_data import log_dataset_description
 from src.evaluation.describe_bad_partitions import DescribeBadPartitions, DescribeBadPartCols
-from src.evaluation.describe_synthetic_dataset import DescribeSyntheticDataset
 from src.utils.configurations import WandbConfiguration, SYNTHETIC_DATA_DIR, SyntheticDataVariates, \
     GENERATED_DATASETS_FILE_PATH, bad_partition_dir_for_data_type
 from src.utils.load_synthetic_data import SyntheticDataType
@@ -21,7 +19,7 @@ from src.utils.plots.matplotlib_helper_functions import Backends
 
 @dataclass
 class CreateBadPartitionsConfig:
-    wandb_project_name: str = WandbConfiguration.wandb_project_name
+    wandb_project_name: str = WandbConfiguration.wandb_partitions_project_name
     wandb_entity: str = WandbConfiguration.wandb_entity
     wandb_mode: str = 'online'
     wandb_notes: str = "creates bad partitions of synthetic data"

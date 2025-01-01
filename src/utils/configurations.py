@@ -9,6 +9,8 @@ PATTERNS_TO_MODEL_PATH = path.join(ROOT_DIR, 'src/data_generation/config/correla
 DISTRIBUTION_PARAMS_TO_MODEL_PATH = path.join(ROOT_DIR,
                                               'src/data_generation/config/n30_genextreme_nbinom_genextreme_params.csv')
 SYNTHETIC_DATA_DIR = path.join(ROOT_DIR, 'data/synthetic_data')
+IRREGULAR_P30 = path.join(SYNTHETIC_DATA_DIR, 'irregular_p30')
+IRREGULAR_P90 = path.join(SYNTHETIC_DATA_DIR, 'irregular_p90')
 ROOT_RESULTS_DIR = path.join(ROOT_DIR, 'results')
 DISTANCE_MEASURE_ASSESSMENT_RESULTS_FOLDER_NAME = 'distance-measures-assessment'
 IMAGES_FOLDER_NAME = 'images'
@@ -294,4 +296,5 @@ class WandbConfiguration:
     # READ CONFIGURATIONS
     wandb_project_name: str = config['wandb_project_name']
     wandb_partitions_project_name: str = config['wandb_partitions_project_name']
+    wandb_irregular_project_name: str = config['wandb_irregular_project_name']
     wandb_entity: str = config['wandb_entity']
