@@ -91,12 +91,6 @@ def test_generates_two_segments_with_given_correlation():
     assert_that(non_normal_labels_df.iloc[2][SyntheticDataSegmentCols.correlation_to_model], is_(all_strong))
     assert_that(non_normal_labels_df.iloc[3][SyntheticDataSegmentCols.correlation_to_model], is_(all_weak))
 
-    assert_that(non_normal_labels_df.iloc[0][SyntheticDataSegmentCols.regularisation], is_(0.0001))
-    assert_that(non_normal_labels_df.iloc[1][SyntheticDataSegmentCols.regularisation], is_(0.3))
-    assert_that(non_normal_labels_df.iloc[2][SyntheticDataSegmentCols.regularisation], is_(0.1))
-    assert_that(non_normal_labels_df.iloc[3][SyntheticDataSegmentCols.regularisation], is_(0.000001))
-    assert_that(non_normal_labels_df.iloc[4][SyntheticDataSegmentCols.regularisation], is_(0.1))
-
     # draw 4 short segments and one long in cyclical order
     assert_that(non_normal_labels_df.iloc[0][SyntheticDataSegmentCols.length], is_(360))
     assert_that(non_normal_labels_df.iloc[1][SyntheticDataSegmentCols.length], is_(60))

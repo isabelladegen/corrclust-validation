@@ -71,17 +71,7 @@ def mean_absolute_error_from_labels_df(labels_df: pd.DataFrame, round_to: int = 
     n = len(labels_df.loc[0, SyntheticDataSegmentCols.correlation_to_model])
     canonical_pattern = np.array(labels_df[SyntheticDataSegmentCols.correlation_to_model].to_list())
     achieved_correlation = np.array(labels_df[SyntheticDataSegmentCols.actual_correlation].to_list())
-    error = np.round(np.sum(abs(canonical_pattern - achieved_correlation), axis=1) / n, round_to)
-    return error
-
-
-def mean_absolute_error(canonical_patterns: [], achieved_correlations: [], round_to: int = 3):
-    """
-    Calculate the mean absolute error between canonical patterns and achieved correlations
-    """
-    n = len(canonical_patterns)
-    error = np.round(
-        np.sum(abs(np.array(canonical_patterns) - np.array(achieved_correlations)), axis=1) / n, round_to)
+    error = np.round(np.sum(abs(np.array(canonical_pattern) - np.array(achieved_correlation)), axis=1) / n, round_to)
     return error
 
 
@@ -222,11 +212,9 @@ class SyntheticSegmentedData:
         self.variate_names = variate_names
         self.n_variates = n_variates
         self.n_segments = n_segments
-        self.non_normal_data_df = None  # that is the final AID like correlated df
         self.segment_data_generators: [GenerateData] = []
+        self.non_normal_data_df = None  # correlated and distribution shifted, most AID like version
         self.non_normal_labels_df = None
-        self.resampled_data = None
-        self.resampled_labels_df = None
 
     def generate(self, seed: int):
         """
@@ -236,33 +224,30 @@ class SyntheticSegmentedData:
         :return: non normal correlated data (the raw, normal correlated, downsampled nn versions are also saved on
         the class but not returned)
         """
-        self.non_normal_data_df = None
         self.segment_data_generators = []
+        self.non_normal_data_df = None
         self.non_normal_labels_df = None
-        generated_df = None
+
+        generated_nn_df = None
 
         # lists to store results
         segment_ids = []
         start_indices = []
         end_indices = []
         pattern_ids = []
-        observation_count = []
         correlations_to_model = []
         regularisations = []  # only for cholesky
-        actual_correlations = []
-        actual_within_tols = []
-        maes = []
 
         segment_start_idx = 0  # zero based indexing
-
         pattern_ids_to_model = list(self.patterns_to_model.keys())
         patterns_list = random_list_of_patterns_for(pattern_ids_to_model, self.n_segments, seed)
-        segment_lengths = random_segment_lengths(self.short_segment_durations, self.long_segment_durations,
-                                                 self.n_segments, seed)
+        create_segment_lengths = random_segment_lengths(self.short_segment_durations, self.long_segment_durations,
+                                                        self.n_segments, seed)
 
         # create segments
         for segment_id in range(self.n_segments):
-            n_observations = segment_lengths[segment_id]
+            # number of observations to created
+            n_observations = create_segment_lengths[segment_id]
 
             pattern_id = patterns_list[segment_id]
             pattern = self.patterns_to_model[pattern_id]
@@ -286,50 +271,51 @@ class SyntheticSegmentedData:
 
             generator.generate(seed + segment_id)
 
-            correlations_achieved = generator.achieved_correlations()
-            within_tol = generator.check_if_achieved_correlation_is_within_original_strengths()
-
-            df = pd.DataFrame(data=generator.generated_data, columns=self.variate_names)
+            nn_df = pd.DataFrame(data=generator.non_normal_correlated_data, columns=self.variate_names)
 
             # safe results
             self.segment_data_generators.append(generator)
 
-            # safe results for cluster segment df
-            segment_end_idx = segment_start_idx + (n_observations - 1)  # -1 as 0 based
+            # safe results to create labels df
             segment_ids.append(segment_id)
-            correlations_to_model.append(correlations)
-            regularisations.append(regularisation)
-            actual_correlations.append(correlations_achieved)
-            actual_within_tols.append(within_tol)
             start_indices.append(segment_start_idx)
+            segment_end_idx = segment_start_idx + (n_observations - 1)  # -1 as 0 based
             end_indices.append(segment_end_idx)
             pattern_ids.append(pattern_id)
-            observation_count.append(n_observations)
-            segment_start_idx = segment_end_idx + 1  # next segment start idx
+            correlations_to_model.append(correlations)
+
+            if self.cor_method == "cholesky":
+                regularisations.append(regularisation)
+
+            # next segment start idx
+            segment_start_idx = segment_end_idx + 1
 
             # append data to generated_df
-            if generated_df is None:
-                generated_df = df
+            if generated_nn_df is None:
+                generated_nn_df = nn_df
             else:
-                generated_df = pd.concat([generated_df, df], axis=0)
+                generated_nn_df = pd.concat([generated_nn_df, nn_df], axis=0)
 
-        maes = mean_absolute_error(correlations_to_model, actual_correlations)
-        segment_dict = {
+        # create nn_data
+        generated_nn_df.reset_index(drop=True, inplace=True)
+        nn_data_df = self.__add_timestamp(generated_nn_df)
+
+        labels_dict = {
             SyntheticDataSegmentCols.segment_id: segment_ids,
             SyntheticDataSegmentCols.start_idx: start_indices,
             SyntheticDataSegmentCols.end_idx: end_indices,
-            SyntheticDataSegmentCols.length: observation_count,
+            SyntheticDataSegmentCols.length: create_segment_lengths,
             SyntheticDataSegmentCols.pattern_id: pattern_ids,
             SyntheticDataSegmentCols.correlation_to_model: correlations_to_model,
-            SyntheticDataSegmentCols.actual_correlation: actual_correlations,
-            SyntheticDataSegmentCols.actual_within_tolerance: actual_within_tols,
-            SyntheticDataSegmentCols.mae: maes,
-            SyntheticDataSegmentCols.regularisation: regularisations,
         }
-        self.non_normal_labels_df = pd.DataFrame(segment_dict)
+        if self.cor_method == "cholesky":
+            labels_dict[SyntheticDataSegmentCols.regularisation] = regularisations
 
-        generated_df.reset_index(drop=True, inplace=True)
-        self.non_normal_data_df = self.__add_timestamp(generated_df)
+        nn_labels_df = pd.DataFrame(labels_dict)
+        # calculate correlations achieved, within tol and mae
+        self.non_normal_labels_df = recalculate_labels_df_from_data(nn_data_df, nn_labels_df)
+        self.non_normal_data_df = nn_data_df
+
         return self.non_normal_data_df
 
     def plot_distribution_for_segment(self, segment_id: int, backend=Backends.none.value):
@@ -394,8 +380,8 @@ class SyntheticSegmentedData:
         """
         Returns the normal data before it got correlated and distribution shifted
         """
-        normal_data = [g.normal_data for g in self.segment_data_generators]
-        stacked_data = np.vstack(normal_data)
+        raw_data = [g.raw_data for g in self.segment_data_generators]
+        stacked_data = np.vstack(raw_data)
         df = self.non_normal_data_df.copy()
         df[self.variate_names] = stacked_data
         labels_df = self.non_normal_labels_df.copy()

@@ -3,7 +3,8 @@ from hamcrest import *
 from pandas._libs.tslibs import to_offset
 
 from src.data_generation.create_irregular_datasets import CreateIrregularDataset
-from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
+from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols, \
+    recalculate_labels_df_from_data
 from src.utils.configurations import SyntheticDataVariates, GeneralisedCols
 from src.utils.load_synthetic_data import SyntheticDataType, load_synthetic_data
 from tests.test_utils.configurations_for_testing import TEST_DATA_DIR
@@ -141,6 +142,35 @@ def test_creates_same_irregular_version_for_ds_variation():
     # resampled mae higher than nn mae
     assert_that(rs_irr_labels.iloc[-1][SyntheticDataSegmentCols.mae],
                 greater_than(nn_irr_labels.iloc[-1][SyntheticDataSegmentCols.mae]))
+
+
+def test_compare_similarity_between_normal_and_non_normal_irregular_data():
+    seed = 1661
+    p = 0.5
+    run_name = "amber-glade-10"
+    nc_id = CreateIrregularDataset(run_name=run_name, data_type=SyntheticDataType.normal_correlated,
+                                   data_dir=TEST_DATA_DIR, data_cols=SyntheticDataVariates.columns(), seed=seed)
+    nc_data, nc_labels = nc_id.drop_observation_with_likelihood(p)
+
+    nn_id = CreateIrregularDataset(run_name=run_name, data_type=SyntheticDataType.non_normal_correlated,
+                                   data_dir=TEST_DATA_DIR, data_cols=SyntheticDataVariates.columns(), seed=seed)
+    nn_data, nn_labels = nc_id.drop_observation_with_likelihood(p)
+
+    orig_nc_data, orig_nc_labels = load_synthetic_data(run_name, SyntheticDataType.normal_correlated, data_dir=TEST_DATA_DIR)
+    orig_nn_data, orig_nn_labels = load_synthetic_data(run_name, SyntheticDataType.non_normal_correlated, data_dir=TEST_DATA_DIR)
+
+    orig_data_diff = orig_nc_data.compare(orig_nn_data, result_names=("orig", "new"))
+    orig_labels_diff = orig_nc_labels.compare(orig_nn_labels, result_names=("orig", "new"))
+    data_diff = nc_data.compare(nn_data, result_names=("orig", "new"))
+    label_diff = nc_labels.compare(nn_labels, result_names=("orig", "new"))
+
+    new_orig_nc_labels = recalculate_labels_df_from_data(orig_nc_data, orig_nc_labels)
+    new_orig_nn_labels = recalculate_labels_df_from_data(orig_nn_data, orig_nn_labels)
+
+    diff_nc_recalculated = orig_nc_labels.compare(new_orig_nc_labels, result_names=("orig", "new"))
+    diff_nn_recalculated = orig_nn_labels.compare(new_orig_nn_labels, result_names=("orig", "new"))
+
+    print("Compare labels")
 
 
 def check_that_the_following_columns_are_different(changed_cols, df_orig, df_new):

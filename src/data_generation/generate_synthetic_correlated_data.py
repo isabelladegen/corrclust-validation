@@ -34,38 +34,47 @@ class GenerateData:
         self.covariance_regulation = regularisation
         self.args = args
         self.kwargs = kwargs
-        self.generated_data = None  # call generate to get new data #np.array, this is the non normal correlated data
-        self.normal_data = None  # normal data before anything was applied (the raw data)
+        self.non_normal_correlated_data = None  # call generate to get new data #np.array
+        self.raw_data = None  # normal data before anything was applied (the raw data)
         # normal correlated data before distribution was shifted
         self.normal_correlated_data = None
 
-    def generate(self, seed: int, round_to:int=3):
+    def generate(self, seed: int, round_to: int = 3):
         """
         Generate synthetic data for given distributions and parameters
         Note the credit for the loadings methods to correlate data goes to Henry Reeves.
         :param seed: random seed
         """
-        self.generated_data = None
-        normal_data = generate_observations(seed, norm, size=(self.nobservation, self.nvariates), loc=0, scale=1)
+        self.non_normal_correlated_data = None
+        self.raw_data = None
+        self.normal_correlated_data = None
+        # generate raw data, normal distributed
+        raw_data = generate_observations(seed, norm, size=(self.nobservation, self.nvariates), loc=0, scale=1)
+
+        # correlate the variates
         if self.method == "cholesky":
-            cor_data = cholesky_correlate_data(data=normal_data, correlations=self.correlations,
+            correlated_normal_data = cholesky_correlate_data(data=raw_data, correlations=self.correlations,
                                                cov_reg=self.covariance_regulation)
         elif self.method == "loadings":
             # treated as approximate correlation
-            cor_data = loading_correlate_data(data=normal_data, correlations=self.correlations)
+            correlated_normal_data = loading_correlate_data(data=raw_data, correlations=self.correlations)
         else:
             assert False, "Unknown method '{}'".format(self.method)
-        cor_data = np.round(cor_data, decimals=round_to)
-        dist_data = move_to_distributions(cor_data, self.distributions, self.args, self.kwargs)
-        dist_data = np.round(dist_data, decimals=round_to)
-        self.normal_data = normal_data
-        self.normal_correlated_data = cor_data
-        self.generated_data = dist_data
-        return self.generated_data
+        correlated_normal_data = np.round(correlated_normal_data, decimals=round_to)
+
+        # shift distribution
+        non_normal_correlated_data = move_to_distributions(correlated_normal_data, self.distributions, self.args, self.kwargs)
+        non_normal_correlated_data = np.round(non_normal_correlated_data, decimals=round_to)
+
+        # update results
+        self.raw_data = raw_data
+        self.normal_correlated_data = correlated_normal_data
+        self.non_normal_correlated_data = non_normal_correlated_data
+        return self.non_normal_correlated_data
 
     def calculate_correlation_error(self, round_to: int = 3):
         """Calculate abs difference between specified correlation and achieved correlation in generated data"""
-        return calculate_correlation_error(self.correlations, self.generated_data, round_to)
+        return calculate_correlation_error(self.correlations, self.non_normal_correlated_data, round_to)
 
     def plot_pdf_and_histogram(self, title="PDF and histogram of data", backend=Backends.none.value):
         """ Plots pdf and histogram
@@ -96,7 +105,7 @@ class GenerateData:
         # plot each of the variates
         for col_idx in range(self.nvariates):
             ax = axs[0, col_idx]
-            x = self.generated_data[:, col_idx]
+            x = self.non_normal_correlated_data[:, col_idx]
 
             # get distribution settings for variate
             distribution = distributions[col_idx]
@@ -133,7 +142,7 @@ class GenerateData:
         """Attention the order of the variates sadly changes and cannot be fixed"""
         reset_matplotlib(backend)
         fig = plt.figure(figsize=(8, 5))
-        correlations = calculate_spearman_correlation(self.generated_data, round_to=3)
+        correlations = calculate_spearman_correlation(self.non_normal_correlated_data, round_to=3)
         correlation_matrix = generate_correlation_matrix(correlations)
         c = corrplot.Corrplot(correlation_matrix, compute_correlation=False)
         c.plot(fig=fig, fontsize=fontsize, lower="number", upper="ellipse", rotation=0)
@@ -143,7 +152,7 @@ class GenerateData:
         return fig
 
     def achieved_correlations(self):
-        return calculate_spearman_correlation(self.generated_data)
+        return calculate_spearman_correlation(self.non_normal_correlated_data)
 
     def check_if_achieved_correlation_is_within_original_strengths(self, strong_cor: float = 0.7, not_cor: float = 0.2):
         """Checks if the correlation achieved stays within the original "strengths" specified

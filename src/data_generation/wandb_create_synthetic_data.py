@@ -16,6 +16,7 @@ from src.utils.configurations import WandbConfiguration, SyntheticDataVariates, 
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.data_generation.model_correlation_patterns import ModelCorrelationPatterns
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticSegmentedData
+from tests.test_utils.configurations_for_testing import TEST_DATA_DIR
 
 
 @dataclass
@@ -241,6 +242,7 @@ def create_datasets(n: int = 2, tag: str = 'synthetic_creation'):
     """
     config = SyntheticDataConfig()
     config.tags.append(tag)
+    config.dataset_name = TEST_DATA_DIR # store this trial in test
 
     # load distribution parameters
     mpam = ModelDistributionParams()
@@ -269,4 +271,4 @@ def create_datasets(n: int = 2, tag: str = 'synthetic_creation'):
 
 
 if __name__ == "__main__":
-    create_datasets(30, '30_ds_creation')
+    create_datasets(2, '2_ds_creation')
