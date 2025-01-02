@@ -14,6 +14,8 @@ from src.utils.configurations import WandbConfiguration, SYNTHETIC_DATA_DIR, Syn
     GENERATED_DATASETS_FILE_PATH, bad_partition_dir_for_data_type
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
+from tests.test_utils.configurations_for_testing import TEST_DATA_DIR, TEST_GENERATED_DATASETS_FILE_PATH, \
+    TEST_GENERATED_DATASETS_FILE_PATH_1
 
 
 @dataclass
@@ -213,8 +215,13 @@ def create_bad_partitions(config: CreateBadPartitionsConfig, ds_name: str, idx: 
 
 if __name__ == "__main__":
     config = CreateBadPartitionsConfig()
-    csv_file = config.csv_of_runs
-    generated_ds = pd.read_csv(csv_file)['Name'].tolist()
+    config.data_type = SyntheticDataType.non_normal_correlated
+
+    # test config
+    # config.data_dir = TEST_DATA_DIR
+    # config.csv_of_runs = TEST_GENERATED_DATASETS_FILE_PATH_1
+
+    generated_ds = pd.read_csv(config.csv_of_runs)['Name'].tolist()
 
     n_datasets = len(generated_ds)
     n_partitions = config.n_partitions
