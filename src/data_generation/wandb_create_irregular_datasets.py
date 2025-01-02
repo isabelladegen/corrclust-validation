@@ -148,8 +148,8 @@ def create_irregular_datasets(config: CreateIrregularDSConfig, ds_name: str, see
 if __name__ == "__main__":
     config = CreateIrregularDSConfig()
     config.rs_rule = "1min"
-    config.p = 0.9
-    config.root_result_data_dir = IRREGULAR_P90  # ensure this matches your p!
+    config.p = 0.3
+    config.root_result_data_dir = IRREGULAR_P30  # ensure this matches your p!
     csv_of_runs: str = GENERATED_DATASETS_FILE_PATH  # what datasets to create irregular versions of
     # test config
     # config.root_result_data_dir = TEST_IRREGULAR_P90  # ensure this matches your p!
