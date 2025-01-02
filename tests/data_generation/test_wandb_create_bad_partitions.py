@@ -27,4 +27,11 @@ def test_wandb_create_bad_partitions():
     assert_that(bad_part_summary.loc[0, DescribeBadPartCols.n_wrong_clusters], is_(0))
     assert_that(bad_part_summary.loc[0, DescribeBadPartCols.n_obs_shifted], is_(0))
 
-
+    # test wandb log summary
+    assert_that(wandb_summary["mean n segments within tolerance"], is_(53.7))
+    assert_that(wandb_summary["median n segments outside tolerance"], is_(41.5))
+    assert_that(wandb_summary["median MAE"], is_(0.207))
+    assert_that(wandb_summary["std segment length"], is_(0))
+    assert_that(wandb_summary["min Jaccard"], is_(0.0))
+    assert_that(wandb_summary["mean n wrong clusters"], is_(35.3))
+    assert_that(wandb_summary["std n obs shifted"], is_(333.706))

@@ -15,12 +15,13 @@ from src.utils.labels_utils import calculate_overall_data_correlation, \
     calculate_distance_between_segment_and_data_centroid, calculate_cluster_centroids, \
     calculate_distances_between_each_segment_and_its_cluster_centroid, calculate_distances_between_cluster_centroids, \
     calculate_y_pred_from, calculate_distance_matrix_for, calculate_y_pred_and_updated_gt_y_pred_from, \
-    calculate_n_observations_for
+    calculate_n_observations_for, calculate_n_segments_within_tolerance_for, calculate_n_segments_outside_tolerance_for
 from src.utils.load_synthetic_data import SyntheticDataType, load_synthetic_data_and_labels_for_bad_partitions
 
 
 @dataclass
 class DescribeBadPartCols:
+    n_seg_outside_tol = "n segments outside tolerance"
     pmb: str = "PMB"
     silhouette_score: str = "SCW"
     jaccard_index: str = "Jaccard"
@@ -116,6 +117,7 @@ class DescribeBadPartitions:
         segments_count = []
         n_observations = []
         mean_mae = []
+        n_segments_outside_tolerance = []
         n_wrong_clusters = []
         n_obs_shifted = []
         jaccards = []
@@ -128,6 +130,7 @@ class DescribeBadPartitions:
         segments_count.append(self.gt_label.shape[0])
         n_observations.append(calculate_n_observations_for(self.gt_label))
         mean_mae.append(round(self.gt_label[SyntheticDataSegmentCols.mae].mean(), round_to))
+        n_segments_outside_tolerance.append(calculate_n_segments_outside_tolerance_for(self.gt_label))
         n_wrong_clusters.append(0)
         n_obs_shifted.append(0)
 
@@ -172,6 +175,7 @@ class DescribeBadPartitions:
             segments_count.append(p_label.shape[0])
             n_observations.append(calculate_n_observations_for(p_label))
             mean_mae.append(p_mean_mae_error)
+            n_segments_outside_tolerance.append(calculate_n_segments_outside_tolerance_for(p_label))
 
             # calculate how many patterns were changed and how many observations shifted for the partition
             n_wrong_clusters.append(sum(i != j for i, j in zip(self.gt_patterns, p_patterns)))
@@ -215,6 +219,7 @@ class DescribeBadPartitions:
             DescribeBadPartCols.n_segments: segments_count,
             DescribeBadPartCols.n_observations: n_observations,
             DescribeBadPartCols.errors: mean_mae,
+            DescribeBadPartCols.n_seg_outside_tol: n_segments_outside_tolerance,
             DescribeBadPartCols.n_wrong_clusters: n_wrong_clusters,
             DescribeBadPartCols.n_obs_shifted: n_obs_shifted,
         })
@@ -309,6 +314,58 @@ class DescribeBadPartitions:
                               partitions_.items()}
 
         return gt_labels_, updated_partitions
+
+    def n_segment_within_tolerance_stats(self, round_to: int = 3):
+        """ Calculate and return stats df across the partitions for the dataset"""
+        labels_dfs = list(self.partitions.values())
+        labels_dfs.append(self.gt_label)  # add ground truth
+        n_within_tolerance = [calculate_n_segments_within_tolerance_for(df) for df in labels_dfs]
+
+        return pd.Series(n_within_tolerance).describe().round(round_to)
+
+    def n_segment_outside_tolerance_stats(self, round_to: int = 3):
+        """ Calculate and return stats df across the partitions for the dataset"""
+        return self.summary_df[DescribeBadPartCols.n_seg_outside_tol].describe().round(round_to)
+
+    def mae_stats(self, round_to: int = 3):
+        """
+        Calculate and return mae stats df across the partitions for the dataset. We use the mean
+        value per partition to match what happens with the Jaccard Index that is already a per
+        partition measure.
+        """
+        labels_dfs = list(self.partitions.values())
+        labels_dfs.append(self.gt_label)  # add ground truth
+        partition_means = [df[SyntheticDataSegmentCols.mae].mean() for df in labels_dfs]
+        return pd.Series(partition_means).describe().round(round_to)
+
+    def segment_length_stats(self, round_to: int = 3):
+        """
+        Calculate and return segment length stats df across the partitions for the dataset. We use the mean
+        value per partition to match what happens with the Jaccard Index that is already a per
+        partition measure.
+        """
+        labels_dfs = list(self.partitions.values())
+        labels_dfs.append(self.gt_label)  # add ground truth
+        partition_means = [df[SyntheticDataSegmentCols.length].mean() for df in labels_dfs]
+        return pd.Series(partition_means).describe().round(round_to)
+
+    def jaccard_stats(self, round_to: int = 3):
+        """
+            Calculate and return jaccard stats df across the partitions for the dataset
+        """
+        return self.summary_df[DescribeBadPartCols.jaccard_index].describe().round(round_to)
+
+    def n_wrong_cluster_stats(self, round_to: int = 3):
+        """
+           Calculate and return n_wrong_clusters stats df across the partitions for the dataset
+        """
+        return self.summary_df[DescribeBadPartCols.n_wrong_clusters].describe().round(round_to)
+
+    def n_obs_shifted_stats(self, round_to: int = 3):
+        """
+           Calculate and return n obs shifted stats df across the partitions for the dataset
+        """
+        return self.summary_df[DescribeBadPartCols.n_obs_shifted].describe().round(round_to)
 
 
 def update_labels_df(df, patterns, segments):

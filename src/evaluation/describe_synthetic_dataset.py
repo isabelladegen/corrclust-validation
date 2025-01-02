@@ -10,6 +10,7 @@ import matplotlib as mpl
 from matplotlib.collections import EllipseCollection
 from pandas._libs.tslibs import to_offset
 
+from src.utils.labels_utils import calculate_n_segments_within_tolerance_for, calculate_n_segments_outside_tolerance_for
 from src.utils.load_synthetic_data import load_synthetic_data, SyntheticDataType, load_labels_file_for
 from src.utils.configurations import GeneralisedCols, SyntheticDataVariates, SYNTHETIC_DATA_DIR, \
     bad_partition_dir_for_data_type
@@ -88,11 +89,9 @@ class DescribeSyntheticDataset:
         self.n_patterns = len(self.patterns)
         self.mae_stats = self.labels[SyntheticDataSegmentCols.mae].describe().round(3)
         self.patterns_stats = self.labels[SyntheticDataSegmentCols.pattern_id].value_counts().describe().round(3)
-        value_counts_within_tol = self.labels[SyntheticDataSegmentCols.actual_within_tolerance].apply(
-            lambda x: all(x)).value_counts()
 
-        self.n_segment_within_tolerance = value_counts_within_tol[True] if True in value_counts_within_tol else 0
-        self.n_segment_outside_tolerance = value_counts_within_tol[False] if False in value_counts_within_tol else 0
+        self.n_segment_within_tolerance = calculate_n_segments_within_tolerance_for(self.labels)
+        self.n_segment_outside_tolerance = calculate_n_segments_outside_tolerance_for(self.labels)
 
         # absolute errors
         correlation_to_model_as_numpy = np.array(self.labels[SyntheticDataSegmentCols.correlation_to_model].to_list())

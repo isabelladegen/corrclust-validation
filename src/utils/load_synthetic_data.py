@@ -36,12 +36,28 @@ class SyntheticDataType:
     rs_1min: str = "resampled_1min"
 
     @staticmethod
+    def is_resample_type(data_type: str):
+        return "resampled_" in data_type
+
+    @staticmethod
     def resample(rule: str):
         return "resampled_" + rule
 
     @staticmethod
     def rule_from_resample_type(resample_type: str):
         return resample_type.replace("resampled_", "")
+
+    @staticmethod
+    def get_log_key_for_data_type(data_type: str):
+        if data_type == SyntheticDataType.raw:
+            return "RAW"
+        if data_type == SyntheticDataType.normal_correlated:
+            return "NC"
+        if data_type == SyntheticDataType.non_normal_correlated:
+            return "NN"
+        if SyntheticDataType.is_resample_type(data_type):
+            return "RS"
+        return data_type
 
 
 @dataclass

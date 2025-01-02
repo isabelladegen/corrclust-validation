@@ -8,6 +8,18 @@ from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDa
 from src.utils.distance_measures import distance_calculation_method_for
 
 
+def calculate_n_segments_within_tolerance_for(labels_df: pd.DataFrame):
+    # turn into a single true false per segment
+    counts = labels_df[SyntheticDataSegmentCols.actual_within_tolerance].apply(lambda x: all(x)).value_counts()
+    return counts[True] if True in counts else 0
+
+
+def calculate_n_segments_outside_tolerance_for(labels_df: pd.DataFrame):
+    # turn into a single true false per segment
+    counts = labels_df[SyntheticDataSegmentCols.actual_within_tolerance].apply(lambda x: all(x)).value_counts()
+    return counts[False] if False in counts else 0
+
+
 def calculate_n_observations_for(labels_df: pd.DataFrame):
     """Calculates the numbers of observations in the data based on the given labels df
     :param labels_df: a labels dataframe

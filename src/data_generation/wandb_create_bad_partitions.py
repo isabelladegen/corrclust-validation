@@ -1,4 +1,3 @@
-import os
 import traceback
 from os import path
 import random
@@ -48,6 +47,51 @@ class CreateBadPartitionsConfig:
         return asdict(self)
 
 
+def log_bad_partition_dataset_description(describe: DescribeBadPartitions):
+    """"
+    Logs information about the dataset using key_id as a prefix for each key
+    """
+    wandb.log({
+        "mean n segments within tolerance": describe.n_segment_within_tolerance_stats()['mean'],
+        "std n segments within tolerance": describe.n_segment_within_tolerance_stats()['std'],
+        "median n segments within tolerance": describe.n_segment_within_tolerance_stats()['50%'],
+        "min n segments within tolerance": describe.n_segment_within_tolerance_stats()['min'],
+        "max n segments within tolerance": describe.n_segment_within_tolerance_stats()['max'],
+        "mean n segments outside tolerance": describe.n_segment_outside_tolerance_stats()[
+            'mean'],
+        "std n segments outside tolerance": describe.n_segment_outside_tolerance_stats()['std'],
+        "median n segments outside tolerance": describe.n_segment_outside_tolerance_stats()[
+            '50%'],
+        "min n segments outside tolerance": describe.n_segment_outside_tolerance_stats()['min'],
+        "max n segments outside tolerance": describe.n_segment_outside_tolerance_stats()['max'],
+        "mean MAE": describe.mae_stats()['mean'],
+        "std MAE": describe.mae_stats()['std'],
+        "median MAE": describe.mae_stats()['50%'],
+        "min MAE": describe.mae_stats()['min'],
+        "max MAE": describe.mae_stats()['max'],
+        "mean segment length": describe.segment_length_stats()['mean'],
+        "std segment length": describe.segment_length_stats()['std'],
+        "median segment length": describe.segment_length_stats()['50%'],
+        "min segment length": describe.segment_length_stats()['min'],
+        "max segment length": describe.segment_length_stats()['max'],
+        "mean Jaccard": describe.jaccard_stats()['mean'],
+        "std Jaccard": describe.jaccard_stats()['std'],
+        "median Jaccard": describe.jaccard_stats()['50%'],
+        "min Jaccard": describe.jaccard_stats()['min'],
+        "max Jaccard": describe.jaccard_stats()['max'],
+        "mean n wrong clusters": describe.n_wrong_cluster_stats()['mean'],
+        "std n wrong clusters": describe.n_wrong_cluster_stats()['std'],
+        "median n wrong clusters": describe.n_wrong_cluster_stats()['50%'],
+        "min n wrong clusters": describe.n_wrong_cluster_stats()['min'],
+        "max n wrong clusters": describe.n_wrong_cluster_stats()['max'],
+        "mean n obs shifted": describe.n_obs_shifted_stats()['mean'],
+        "std n obs shifted": describe.n_obs_shifted_stats()['std'],
+        "median n obs shifted": describe.n_obs_shifted_stats()['50%'],
+        "min n obs shifted": describe.n_obs_shifted_stats()['min'],
+        "max n obs shifted": describe.n_obs_shifted_stats()['max'],
+    })
+
+
 def create_bad_partitions(config: CreateBadPartitionsConfig, ds_name: str, idx: int):
     """
     Wandb generate bad partitions according to the config provided
@@ -59,7 +103,7 @@ def create_bad_partitions(config: CreateBadPartitionsConfig, ds_name: str, idx: 
     summary = None
 
     try:
-        project_name = config.wandb_project_name + "_" + config.data_type
+        project_name = config.wandb_project_name + "_" + SyntheticDataType.get_log_key_for_data_type(config.data_type)
         wandb.init(project=project_name,
                    entity=config.wandb_entity,
                    name=ds_name,
@@ -150,6 +194,9 @@ def create_bad_partitions(config: CreateBadPartitionsConfig, ds_name: str, idx: 
         summary = bp.summary_df
         summary_table = wandb.Table(dataframe=summary, allow_mixed_types=True)
         wandb.log({"Summary Partitions " + ds_name: summary_table})
+
+        print("5. LOG SUMMARY OF RESULTS FOR DS")
+        log_bad_partition_dataset_description(bp)
 
 
     except Exception as e:
