@@ -1,12 +1,27 @@
+from dataclasses import dataclass
 from itertools import chain
+from os import path
 
 import pandas as pd
 
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
-from src.utils.configurations import SYNTHETIC_DATA_DIR
+from src.utils.configurations import SYNTHETIC_DATA_DIR, ROOT_RESULTS_DIR, dataset_description_dir, \
+    MULTIPLE_DS_SUMMARY_FILE
 from src.utils.labels_utils import calculate_n_segments_outside_tolerance_for
 from src.utils.load_synthetic_data import SyntheticDataType, load_labels
 from src.utils.plots.matplotlib_helper_functions import Backends
+
+
+@dataclass
+class SummaryStatistics:
+    mae = "mae"  # mean of each labels file across datasets
+    overall_mae = "overall mae"  # all maes
+    seg_outside_tol = "segments outside tolerance"
+    observations = "observations"
+    segments = "n segments"
+    patterns = "n patterns"
+    segment_lengths = "segment lengths"  # mean of each labels file across datasets
+    overall_segment_lengths = "overall segment lengths"  # all segment lengths
 
 
 class DescribeMultipleDatasets:
@@ -22,16 +37,19 @@ class DescribeMultipleDatasets:
     We will recalculate the number from the labels files
     """
 
-    def __init__(self, wandb_run_file: str, data_type: str = SyntheticDataType.non_normal_correlated,
+    def __init__(self, wandb_run_file: str, overall_ds_name: str,
+                 data_type: str = SyntheticDataType.non_normal_correlated,
                  data_dir: str = SYNTHETIC_DATA_DIR, backend: str = Backends.none.value, round_to: int = 3):
         """
         :param wandb_run_file: full path to the wandb run file
+        :param overall_ds_name: a string for the ds - this is mainly used to safe results in
         :param data_type: type of data to load all datasets for, see SyntheticDataType for options
         :param data_dir: directory where the data is stored
         :param backend: backend for matplotlib
         :param round_to: what to round the results to
         """
         self.__wandb_run_file = wandb_run_file
+        self.__overall_ds_name = overall_ds_name
         self.__data_type = data_type
         self.__data_dir = data_dir
         self.__backend = backend
@@ -115,3 +133,26 @@ class DescribeMultipleDatasets:
         values = [label[SyntheticDataSegmentCols.length] for label in self.labels.values()]
         values_flat = list(chain.from_iterable(values))
         return pd.Series(values_flat).describe().round(3)
+
+    def summary(self):
+        """Returns summary pd.Dataframe of all statistics
+        access like df[SummaryStatistics]['mean'], the second can be any value in pandas describe
+        """
+        return pd.DataFrame({
+            SummaryStatistics.mae: self.mae_stats(),
+            SummaryStatistics.overall_mae: self.overall_mae_stats(),
+            SummaryStatistics.seg_outside_tol: self.n_segments_outside_tolerance_stats(),
+            SummaryStatistics.observations: self.observations_stats(),
+            SummaryStatistics.segments: self.n_segments_stats(),
+            SummaryStatistics.patterns: self.n_patterns_stats(),
+            SummaryStatistics.segment_lengths: self.segment_length_stats(),
+            SummaryStatistics.overall_segment_lengths: self.overall_segment_length_stats()
+        })
+
+    def save_summary(self, root_results_dir: str = ROOT_RESULTS_DIR):
+        df = self.summary()
+
+        folder = dataset_description_dir(overall_dataset_name=self.__overall_ds_name, data_type=self.__data_type,
+                                          root_results_dir=root_results_dir)
+        file_name = path.join(folder, MULTIPLE_DS_SUMMARY_FILE)
+        df.to_csv(file_name)
