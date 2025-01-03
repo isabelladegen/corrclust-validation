@@ -5,21 +5,23 @@ from src.evaluation.describe_bad_partitions import DescribeBadPartCols
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.utils.wandb_utils import set_test_configurations
-from tests.test_utils.configurations_for_testing import TEST_GENERATED_DATASETS_FILE_PATH
+from tests.test_utils.configurations_for_testing import TEST_GENERATED_DATASETS_FILE_PATH, \
+    TEST_GENERATED_DATASETS_FILE_PATH_1
 
 
 def test_wandb_create_bad_partitions():
     config = CreateBadPartitionsConfig()
     # this sets it to test data dir
     set_test_configurations(config)
-    config.csv_of_runs = TEST_GENERATED_DATASETS_FILE_PATH
+    # don't use the other test ones otherwise all other tests start failing
+    config.csv_of_runs = TEST_GENERATED_DATASETS_FILE_PATH_1
     config.data_type = SyntheticDataType.normal_correlated  # we don't use this usually
     config.backend = Backends.none.value
     # Configure partition creation to make very few just for testing
     config.n_partitions = 3
     config.seed = 10
 
-    ds_name = "misty-forest-56"
+    ds_name = "amber-glade-10"
     bad_part_summary, wandb_summary = create_bad_partitions(config, ds_name=ds_name, idx=0)
 
     assert_that(bad_part_summary.shape[0], is_(10))
@@ -28,10 +30,10 @@ def test_wandb_create_bad_partitions():
     assert_that(bad_part_summary.loc[0, DescribeBadPartCols.n_obs_shifted], is_(0))
 
     # test wandb log summary
-    assert_that(wandb_summary["mean n segments within tolerance"], is_(53.7))
-    assert_that(wandb_summary["median n segments outside tolerance"], is_(41.5))
-    assert_that(wandb_summary["median MAE"], is_(0.207))
-    assert_that(wandb_summary["std segment length"], is_(0))
+    assert_that(wandb_summary["mean n segments within tolerance"], is_(51.0))
+    assert_that(wandb_summary["median n segments outside tolerance"], is_(43.5))
+    assert_that(wandb_summary["median MAE"], is_(0.249))
+    assert_that(wandb_summary["std segment length"], is_(0.0))
     assert_that(wandb_summary["min Jaccard"], is_(0.0))
     assert_that(wandb_summary["mean n wrong clusters"], is_(35.3))
     assert_that(wandb_summary["std n obs shifted"], is_(333.706))

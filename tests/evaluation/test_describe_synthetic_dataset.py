@@ -9,7 +9,7 @@ from src.utils.configurations import GeneralisedCols
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.evaluation.describe_synthetic_dataset import DescribeSyntheticDataset, DescribeSyntheticCols
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
-from tests.test_utils.configurations_for_testing import TEST_DATA_DIR, TEST_IMAGES_DIR
+from tests.test_utils.configurations_for_testing import TEST_DATA_DIR, TEST_IMAGES_DIR, TEST_IRREGULAR_P30
 
 group1_cluster_ids_to_compare = [(0, 1), (0, 2), (0, 3), (0, 6), (0, 9), (1, 4), (0, 18), (1, 7), (1, 10), (1, 19),
                                  (2, 5), (2, 8), (2, 11), (2, 20), (3, 4), (3, 5), (3, 12), (3, 21), (4, 13), (5, 23),
@@ -385,8 +385,8 @@ def test_can_min_max_scale_the_data():
 
 
 def test_can_load_irregular_dataset():
-    data_type = SyntheticDataType.irregular_p30_drop
-    irregular_30 = DescribeSyntheticDataset(run_name=a_ds_name, data_type=data_type, data_dir=test_data_dir,
+    data_type = SyntheticDataType.non_normal_correlated
+    irregular_30 = DescribeSyntheticDataset(run_name=a_ds_name, data_type=data_type, data_dir=TEST_IRREGULAR_P30,
                                             backend=backend)
     irregular_30.correlation_patterns_df[DescribeSyntheticCols.sum_mean_abs_error].describe()
 
@@ -395,8 +395,8 @@ def test_can_load_irregular_dataset():
     assert_that(all(list(compare_lengths)), is_(True))
 
     # check tolerance
-    assert_that(irregular_30.n_segment_within_tolerance, is_(98))
-    assert_that(irregular_30.n_segment_outside_tolerance, is_(2))
+    assert_that(irregular_30.n_segment_within_tolerance, is_(99))
+    assert_that(irregular_30.n_segment_outside_tolerance, is_(1))
 
 
 def test_can_load_a_single_bad_partition():

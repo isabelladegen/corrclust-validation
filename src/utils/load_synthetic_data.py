@@ -31,8 +31,6 @@ class SyntheticDataType:
     raw: str = "raw"
     normal_correlated: str = "normal"
     non_normal_correlated: str = "non_normal"
-    irregular_p30_drop: str = "irregular_p30"
-    irregular_p90_drop: str = "irregular_p90"
     rs_1min: str = "resampled_1min"
 
     @staticmethod

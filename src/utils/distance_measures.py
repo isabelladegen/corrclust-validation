@@ -91,7 +91,7 @@ def calculate_log_matrix_frobenius_distance_between(corr1, corr2):
     :param corr2: correlation matrix of shape (n_ts, n_ts) or vector of upper triu
     :return: Log(matrix) frobenius distance between the two correlation matrices of segments
     """
-    if hasattr(corr1, 'shape'):
+    if isinstance(corr1, np.ndarray) and len(corr1.shape) == 2:
         m1 = corr1
         m2 = corr2
     else:
@@ -129,7 +129,7 @@ def l1_distance_from_matrices(m1, m2):
         :param m1: DataFrame of first segment covariance matrix of shape (n_ts, n_ts)
         :param m2: DataFrame of second segment covariance matrix of shape (n_ts, n_ts)
     """
-    if hasattr(m1, 'shape'):
+    if isinstance(m1, np.ndarray) and len(m1.shape) == 2:
         matrix1 = m1
         matrix2 = m2
     else:
@@ -155,7 +155,7 @@ def l2_distance_from_matrices(corr1, corr2):
         :param corr2: DataFrame of first segment covariance matrix of shape (n_ts, n_ts) or upper triu vector
         :param corr2: DataFrame of second segment covariance matrix of shape (n_ts, n_ts) or upper triu vector
     """
-    if hasattr(corr1, 'shape'):
+    if isinstance(corr1, np.ndarray) and len(corr1.shape) == 2:
         m1 = corr1
         m2 = corr2
     else:
@@ -181,7 +181,7 @@ def linf_distance_from_matrices(corr1, corr2):
         :param corr1: DataFrame of first segment covariance matrix of shape (n_ts, n_ts) or upper triu vector
         :param corr2: DataFrame of second segment covariance matrix of shape (n_ts, n_ts) or upper triu vector
     """
-    if hasattr(corr1, 'shape'):
+    if isinstance(corr1, np.ndarray) and len(corr1.shape) == 2:
         m1 = corr1
         m2 = corr2
     else:
@@ -210,7 +210,7 @@ def l1_with_ref_distance_from_matrices(m1: pd.DataFrame, m2: pd.DataFrame):
         :param m1: DataFrame of first segment covariance matrix of shape (n_ts, n_ts) or list of upper triu
         :param m2: DataFrame of second segment covariance matrix of shape (n_ts, n_ts)
     """
-    if hasattr(m1, 'shape'):
+    if isinstance(m1, np.ndarray) and len(m1.shape) == 2:
         v1 = np.triu(m1, k=1)
         v2 = np.triu(m2, k=1)
     else:
@@ -236,7 +236,7 @@ def l2_with_ref_distance_from_matrices(m1, m2):
         :param m1: can be either list or 2d np array or dataframe for m1 matrix
         :param m2: can be either list or 2d np array or dataframe for m2 matrix
     """
-    if hasattr(m1, 'shape'):
+    if isinstance(m1, np.ndarray) and len(m1.shape) == 2:
         v1 = np.triu(m1, k=1)
         v2 = np.triu(m2, k=1)
     else:
@@ -259,7 +259,7 @@ def linf_with_ref_distance_from_matrices(m1, m2):
         :param m1: DataFrame of first segment covariance matrix of shape (n_ts, n_ts) or upper triu vector
         :param m2: DataFrame of second segment covariance matrix of shape (n_ts, n_ts) or upper triu vector
     """
-    if hasattr(m1, 'shape'):
+    if isinstance(m1, np.ndarray) and len(m1.shape) == 2:
         v1 = np.triu(m1, k=1)
         v2 = np.triu(m2, k=1)
     else:

@@ -21,6 +21,7 @@ GENERATED_DATASETS_FILE_PATH = path.join(SYNTHETIC_DATA_DIR, 'synthetic-correlat
 class ResultsType:
     internal_measure_assessment: str = 'internal-measures-assessment'
     internal_measures: str = 'internal-measures'
+    distance_measure_assessment: str = 'distance-measures-assessment'
 
 
 def dir_for_data_type(data_type: str, data_dir: str = SYNTHETIC_DATA_DIR):
@@ -35,6 +36,28 @@ def bad_partition_dir_for_data_type(data_type: str, data_dir: str = SYNTHETIC_DA
     # creates the folder if it does not exist
     Path(folder).mkdir(parents=True, exist_ok=True)
     return folder
+
+
+def distance_measure_assessment_dir_for(overall_dataset_name: str, data_type: str, results_dir: str,
+                                        distance_measure: str, drop_clusters: int = 0, drop_segments: int = 0):
+    """
+          Returns directory for distance measure assessments
+          :param overall_dataset_name: a name to identify the dataset overall e.g n30 or n2
+          :param data_type: the data type, see SyntheticDataType
+          :param results_dir: the directory for results, this is the main directory, the internal_assessment folder will be
+          added
+          :param distance_measure: the distance measures used for the internal assessment, see DistanceMeasures
+          :param drop_clusters: will create an additional folder for evaluating reduced numbers of clusters, if 0 and
+          n_dropped_segment is 0 no additional subfolder will be added
+          :param drop_segments: will create an additional folder for evaluating reduced numbers of segments
+          :return: the path name to the results folder e.g. results/distance-measures-assessment/raw/L1/ or
+          results/distance-measures-assessment/raw/n_dropped_clusters/L1 or results/distance-measures-assessment/raw/n_dropped_segments/L1
+          or results/distance-measures-assessment/raw/n_dropped_clusters_m_dropped_segments/L1
+      """
+    return get_folder_name_for(results_type=ResultsType.distance_measure_assessment,
+                               overall_dataset_name=overall_dataset_name, data_type=data_type,
+                               distance_measure=distance_measure, results_dir=results_dir, drop_clusters=drop_clusters,
+                               drop_segments=drop_segments)
 
 
 def internal_measure_calculation_dir_for(overall_dataset_name: str, data_type: str, results_dir: str,

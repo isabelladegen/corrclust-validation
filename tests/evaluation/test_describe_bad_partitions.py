@@ -1,13 +1,9 @@
-import os
-
-import pytest
 from hamcrest import *
 
 from src.evaluation.distance_metric_assessment import DistanceMeasureCols
 from src.evaluation.describe_bad_partitions import DescribeBadPartitions, DescribeBadPartCols, select_data_from_df, \
     run_internal_measure_calculation_for_dataset, read_internal_measures_calculation
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
-from src.utils.configurations import internal_measure_calculation_dir_for, get_internal_measures_summary_file_name
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.labels_utils import calculate_y_pred_from
 from src.utils.load_synthetic_data import SyntheticDataType
@@ -61,7 +57,7 @@ def test_calculates_jaccard_index_for_each_gt_and_partition():
     assert_that(describe.summary_df.iloc[3][DescribeBadPartCols.jaccard_index], is_(0.896))
     assert_that(describe.summary_df.iloc[4][DescribeBadPartCols.jaccard_index], is_(0.293))
 
-    # mean MAE for comparision
+    # mean MAE for comparison
     assert_that(describe.summary_df.iloc[0][DescribeBadPartCols.errors], is_(0.112))
     assert_that(describe.summary_df.iloc[1][DescribeBadPartCols.errors], is_(0.141))
     assert_that(describe.summary_df.iloc[2][DescribeBadPartCols.errors], is_(0.558))
@@ -70,11 +66,11 @@ def test_calculates_jaccard_index_for_each_gt_and_partition():
 
 
 def test_calculates_internal_measures_for_the_given_distance_measure():
-    assert_that(describe.summary_df.iloc[0][DescribeBadPartCols.silhouette_score], is_(0.797))
-    assert_that(describe.summary_df.iloc[1][DescribeBadPartCols.silhouette_score], is_(0.452))
-    assert_that(describe.summary_df.iloc[2][DescribeBadPartCols.silhouette_score], is_(-0.424))
-    assert_that(describe.summary_df.iloc[3][DescribeBadPartCols.silhouette_score], is_(0.427))
-    assert_that(describe.summary_df.iloc[4][DescribeBadPartCols.silhouette_score], is_(-0.492))
+    assert_that(describe.summary_df.iloc[0][DescribeBadPartCols.silhouette_score], is_(0.967))
+    assert_that(describe.summary_df.iloc[1][DescribeBadPartCols.silhouette_score], is_(0.808))
+    assert_that(describe.summary_df.iloc[2][DescribeBadPartCols.silhouette_score], is_(-0.326))
+    assert_that(describe.summary_df.iloc[3][DescribeBadPartCols.silhouette_score], is_(0.666))
+    assert_that(describe.summary_df.iloc[4][DescribeBadPartCols.silhouette_score], is_(-0.386))
 
     assert_that(describe.summary_df.iloc[0][DescribeBadPartCols.pmb], is_(10.111))
     assert_that(describe.summary_df.iloc[1][DescribeBadPartCols.pmb], is_(0.347))
@@ -286,8 +282,8 @@ def test_can_run_calculation_for_internal_measures_on_all_datasets():
                                                   distance_measure=distance_measure, generated_ds_csv=runs)
 
     assert_that(len(datasets), is_(2))
-    assert_that(datasets[1][DescribeBadPartCols.name], has_item("misty-forest-56"))
-    assert_that(datasets[0][DescribeBadPartCols.name], has_item("splendid-sunset-12"))
+    assert_that(datasets[0][DescribeBadPartCols.name], has_item("misty-forest-56"))
+    assert_that(datasets[1][DescribeBadPartCols.name], has_item("splendid-sunset-12"))
 
 
 def test_can_run_calculation_for_internal_measures_on_all_datasets_when_dropping_clusters():
@@ -316,8 +312,8 @@ def test_can_run_calculation_for_internal_measures_on_all_datasets_when_dropping
                                                         generated_ds_csv=runs)
 
     assert_that(len(datasets_drop5), is_(2))
-    assert_that(datasets_drop5[1][DescribeBadPartCols.name], has_item("misty-forest-56"))
-    assert_that(datasets_drop5[0][DescribeBadPartCols.name], has_item("splendid-sunset-12"))
+    assert_that(datasets_drop5[0][DescribeBadPartCols.name], has_item("misty-forest-56"))
+    assert_that(datasets_drop5[1][DescribeBadPartCols.name], has_item("splendid-sunset-12"))
 
     datasets_drop15 = read_internal_measures_calculation(overall_ds_name=overall_ds_name, data_type=data_type,
                                                          root_results_dir=test_results_dir,
@@ -325,8 +321,8 @@ def test_can_run_calculation_for_internal_measures_on_all_datasets_when_dropping
                                                          generated_ds_csv=runs)
 
     assert_that(len(datasets_drop15), is_(2))
-    assert_that(datasets_drop15[1][DescribeBadPartCols.name], has_item("misty-forest-56"))
-    assert_that(datasets_drop15[0][DescribeBadPartCols.name], has_item("splendid-sunset-12"))
+    assert_that(datasets_drop15[0][DescribeBadPartCols.name], has_item("misty-forest-56"))
+    assert_that(datasets_drop15[1][DescribeBadPartCols.name], has_item("splendid-sunset-12"))
 
 
 def test_can_run_calculation_for_internal_measures_on_all_datasets_when_dropping_segments():
@@ -355,8 +351,8 @@ def test_can_run_calculation_for_internal_measures_on_all_datasets_when_dropping
                                                          generated_ds_csv=runs)
 
     assert_that(len(datasets_drop50), is_(2))
-    assert_that(datasets_drop50[1][DescribeBadPartCols.name], has_item("misty-forest-56"))
-    assert_that(datasets_drop50[0][DescribeBadPartCols.name], has_item("splendid-sunset-12"))
+    assert_that(datasets_drop50[0][DescribeBadPartCols.name], has_item("misty-forest-56"))
+    assert_that(datasets_drop50[1][DescribeBadPartCols.name], has_item("splendid-sunset-12"))
 
 
 def test_calculates_n_segment_within_tolerance_stats():
