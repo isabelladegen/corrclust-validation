@@ -215,7 +215,7 @@ def create_bad_partitions(config: CreateBadPartitionsConfig, ds_name: str, idx: 
 
 if __name__ == "__main__":
     config = CreateBadPartitionsConfig()
-    config.data_type = SyntheticDataType.raw
+    config.data_type = SyntheticDataType.normal_correlated
 
     # test config
     # config.data_dir = TEST_DATA_DIR
