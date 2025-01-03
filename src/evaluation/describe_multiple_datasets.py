@@ -6,7 +6,7 @@ import pandas as pd
 
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.utils.configurations import SYNTHETIC_DATA_DIR, ROOT_RESULTS_DIR, dataset_description_dir, \
-    MULTIPLE_DS_SUMMARY_FILE
+    MULTIPLE_DS_SUMMARY_FILE, GENERATED_DATASETS_FILE_PATH, IRREGULAR_P30, IRREGULAR_P90
 from src.utils.labels_utils import calculate_n_segments_outside_tolerance_for
 from src.utils.load_synthetic_data import SyntheticDataType, load_labels
 from src.utils.plots.matplotlib_helper_functions import Backends
@@ -153,6 +153,34 @@ class DescribeMultipleDatasets:
         df = self.summary()
 
         folder = dataset_description_dir(overall_dataset_name=self.__overall_ds_name, data_type=self.__data_type,
-                                          root_results_dir=root_results_dir)
+                                         root_results_dir=root_results_dir)
         file_name = path.join(folder, MULTIPLE_DS_SUMMARY_FILE)
         df.to_csv(file_name)
+
+
+if __name__ == '__main__':
+    # create summary for a dataset variation
+    run_file = GENERATED_DATASETS_FILE_PATH
+    overall_ds_name = "n30"
+    results_dir = ROOT_RESULTS_DIR
+
+    dataset_types = [SyntheticDataType.raw, SyntheticDataType.normal_correlated,
+                     SyntheticDataType.non_normal_correlated, SyntheticDataType.rs_1min]
+
+    # do regular sampled ones
+    for ds_type in dataset_types:
+        ds = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=ds_type,
+                                      data_dir=SYNTHETIC_DATA_DIR)
+        ds.save_summary()
+
+    # do irregular p30 sampled ones
+    for ds_type in dataset_types:
+        ds = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=ds_type,
+                                      data_dir=IRREGULAR_P30)
+        ds.save_summary()
+
+    # do irregular p90 sampled ones
+    for ds_type in dataset_types:
+        ds = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=ds_type,
+                                      data_dir=IRREGULAR_P90)
+        ds.save_summary()
