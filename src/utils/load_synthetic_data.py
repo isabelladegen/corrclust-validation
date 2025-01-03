@@ -64,6 +64,29 @@ class SyntheticFileTypes:
     labels: str = "-labels.csv"
 
 
+def load_labels(run_id: str, data_type: str = SyntheticDataType.normal_correlated, data_dir: str = SYNTHETIC_DATA_DIR):
+    """Returns labels df for synthetic data with specified wandb run name
+    :param run_id: name of run that generated the dataset
+    :param data_type: select type from SyntheticDataType, defaults to normal correlated data
+    optional, if not given labels for run_id will be loaded
+    :param data_dir: full path to directory where data is stored, defaults to SYNTHETIC_DATA_DIR
+
+    Labels df has the columns specified in the SyntheticDataSegmentCols
+    """
+    labels_file = SyntheticFileTypes.labels
+    file_dir = dir_for_data_type(data_type, data_dir)
+    labels_file_name = Path(file_dir, run_id + labels_file)
+
+    print("Load labels data file with name: " + str(labels_file_name))
+
+    assert labels_file_name.exists(), "No labels files with name " + str(labels_file_name)
+
+    # load labels file
+    labels_df = load_labels_file_for(labels_file_name)
+
+    return labels_df
+
+
 def load_synthetic_data(run_id: str, data_type: str = SyntheticDataType.normal_correlated,
                         data_dir: str = SYNTHETIC_DATA_DIR):
     """Returns data df and labels df for synthetic data with specified wandb run name
@@ -76,18 +99,15 @@ def load_synthetic_data(run_id: str, data_type: str = SyntheticDataType.normal_c
     Labels df is a segment value result df it has the columns specified in the SyntheticDataSegmentCols
     """
     data_file = SyntheticFileTypes.data
-    labels_file = SyntheticFileTypes.labels
     file_dir = dir_for_data_type(data_type, data_dir)
     data_file_name = Path(file_dir, run_id + data_file)
-    labels_file_name = Path(file_dir, run_id + labels_file)
 
     print("Load data file with name: " + str(data_file_name))
-    print("Load labels data file with name: " + str(labels_file_name))
 
     assert data_file_name.exists(), "No data files with name " + str(data_file_name)
 
     # load labels file
-    labels_df = load_labels_file_for(labels_file_name)
+    labels_df = load_labels(run_id, data_type, data_dir)
 
     # load data file
     data_df = pd.read_csv(data_file_name, index_col=0)
