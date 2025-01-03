@@ -5,22 +5,20 @@ from src.evaluation.describe_bad_partitions import DescribeBadPartCols
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.utils.wandb_utils import set_test_configurations
-from tests.test_utils.configurations_for_testing import TEST_GENERATED_DATASETS_FILE_PATH, \
-    TEST_GENERATED_DATASETS_FILE_PATH_1
 
 
 def test_wandb_create_bad_partitions():
     config = CreateBadPartitionsConfig()
     # this sets it to test data dir
     set_test_configurations(config)
-    # don't use the other test ones otherwise all other tests start failing
-    config.csv_of_runs = TEST_GENERATED_DATASETS_FILE_PATH_1
+    # config.data_dir = TEST_IRREGULAR_P90
     config.data_type = SyntheticDataType.normal_correlated  # we don't use this usually
     config.backend = Backends.none.value
     # Configure partition creation to make very few just for testing
     config.n_partitions = 3
     config.seed = 10
 
+    # don't use misty-forest or splendid-sunrise otherwise other tests will start failing
     ds_name = "amber-glade-10"
     bad_part_summary, wandb_summary = create_bad_partitions(config, ds_name=ds_name, idx=0)
 

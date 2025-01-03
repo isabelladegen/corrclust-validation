@@ -1,3 +1,4 @@
+import re
 import traceback
 from os import path
 import random
@@ -11,7 +12,7 @@ from src.data_generation.create_bad_partitions import CreateBadSyntheticPartitio
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.evaluation.describe_bad_partitions import DescribeBadPartitions, DescribeBadPartCols
 from src.utils.configurations import WandbConfiguration, SYNTHETIC_DATA_DIR, SyntheticDataVariates, \
-    GENERATED_DATASETS_FILE_PATH, bad_partition_dir_for_data_type
+    GENERATED_DATASETS_FILE_PATH, bad_partition_dir_for_data_type, IRREGULAR_P30
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
 from tests.test_utils.configurations_for_testing import TEST_DATA_DIR, TEST_GENERATED_DATASETS_FILE_PATH, \
@@ -105,7 +106,12 @@ def create_bad_partitions(config: CreateBadPartitionsConfig, ds_name: str, idx: 
     summary = None
 
     try:
-        project_name = config.wandb_project_name + "_" + SyntheticDataType.get_log_key_for_data_type(config.data_type)
+        # check if data dir ends in _p<number>
+        match = re.search(r'(_p\d+)$', config.data_dir)
+        irr_name = match.group(1) if match else ""
+
+        project_name = config.wandb_project_name + "_" + SyntheticDataType.get_log_key_for_data_type(
+            config.data_type) + irr_name
         wandb.init(project=project_name,
                    entity=config.wandb_entity,
                    name=ds_name,
@@ -215,7 +221,9 @@ def create_bad_partitions(config: CreateBadPartitionsConfig, ds_name: str, idx: 
 
 if __name__ == "__main__":
     config = CreateBadPartitionsConfig()
-    config.data_type = SyntheticDataType.normal_correlated
+    # this will create bad partitions for irregular sampled version of the below data type
+    config.data_dir = IRREGULAR_P30
+    config.data_type = SyntheticDataType.non_normal_correlated
 
     # test config
     # config.data_dir = TEST_DATA_DIR
