@@ -10,11 +10,11 @@ from src.data_generation.create_irregular_datasets import CreateIrregularDataset
 from src.data_generation.wandb_create_synthetic_data import save_data_labels_to_file, log_dataset_description
 from src.evaluation.describe_synthetic_dataset import DescribeSyntheticDataset
 from src.utils.configurations import WandbConfiguration, GENERATED_DATASETS_FILE_PATH, \
-    SyntheticDataVariates, IRREGULAR_P30, SYNTHETIC_DATA_DIR, IRREGULAR_P90
+    SyntheticDataVariates, IRREGULAR_P30_DATA_DIR, SYNTHETIC_DATA_DIR, IRREGULAR_P90_DATA_DIR
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
-from tests.test_utils.configurations_for_testing import TEST_IRREGULAR_P30, TEST_DATA_DIR, \
-    TEST_GENERATED_DATASETS_FILE_PATH, TEST_IRREGULAR_P90
+from tests.test_utils.configurations_for_testing import TEST_IRREGULAR_P30_DATA_DIR, TEST_DATA_DIR, \
+    TEST_GENERATED_DATASETS_FILE_PATH, TEST_IRREGULAR_P90_DATA_DIR
 
 
 @dataclass
@@ -26,7 +26,7 @@ class CreateIrregularDSConfig:
     tags = ['Synthetic']
 
     # Store new data in dir
-    root_result_data_dir: str = IRREGULAR_P30
+    root_result_data_dir: str = IRREGULAR_P30_DATA_DIR
     # Load data from dir
     data_dir: str = SYNTHETIC_DATA_DIR
     # Runs to create irregular versions for
@@ -149,7 +149,7 @@ if __name__ == "__main__":
     config = CreateIrregularDSConfig()
     config.rs_rule = "1min"
     config.p = 0.3
-    config.root_result_data_dir = IRREGULAR_P30  # ensure this matches your p!
+    config.root_result_data_dir = IRREGULAR_P30_DATA_DIR  # ensure this matches your p!
     csv_of_runs: str = GENERATED_DATASETS_FILE_PATH  # what datasets to create irregular versions of
     # test config
     # config.root_result_data_dir = TEST_IRREGULAR_P90  # ensure this matches your p!

@@ -9,9 +9,11 @@ PATTERNS_TO_MODEL_PATH = path.join(ROOT_DIR, 'src/data_generation/config/correla
 DISTRIBUTION_PARAMS_TO_MODEL_PATH = path.join(ROOT_DIR,
                                               'src/data_generation/config/n30_genextreme_nbinom_genextreme_params.csv')
 SYNTHETIC_DATA_DIR = path.join(ROOT_DIR, 'data/synthetic_data')
-IRREGULAR_P30 = path.join(SYNTHETIC_DATA_DIR, 'irregular_p30')
-IRREGULAR_P90 = path.join(SYNTHETIC_DATA_DIR, 'irregular_p90')
+IRREGULAR_P30_DATA_DIR = path.join(SYNTHETIC_DATA_DIR, 'irregular_p30')
+IRREGULAR_P90_DATA_DIR = path.join(SYNTHETIC_DATA_DIR, 'irregular_p90')
 ROOT_RESULTS_DIR = path.join(ROOT_DIR, 'results')
+IRREGULAR_P30_ROOT_RESULTS_DIR = path.join(ROOT_RESULTS_DIR, 'irregular_p30')
+IRREGULAR_P90_ROOT_RESULTS_DIR = path.join(ROOT_RESULTS_DIR, 'irregular_p90')
 DISTANCE_MEASURE_ASSESSMENT_RESULTS_FOLDER_NAME = 'distance-measures-assessment'
 IMAGES_FOLDER_NAME = 'images'
 GENERATED_DATASETS_FILE_PATH = path.join(SYNTHETIC_DATA_DIR, 'synthetic-correlated-data-n30.csv')

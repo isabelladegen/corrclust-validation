@@ -4,7 +4,7 @@ from src.evaluation.distance_metric_assessment import DistanceMeasureCols
 from src.evaluation.knn_all_synthetic_datasets import KnnAllSyntheticDatasets, AssessSynthCols
 from src.utils.load_synthetic_data import SyntheticDataType
 from tests.test_utils.configurations_for_testing import TEST_GENERATED_DATASETS_FILE_PATH_1, TEST_ROOT_RESULTS_DIR, \
-    TEST_DATA_DIR, TEST_GENERATED_DATASETS_FILE_PATH, TEST_IRREGULAR_P30, TEST_IRREGULAR_P90
+    TEST_DATA_DIR, TEST_GENERATED_DATASETS_FILE_PATH, TEST_IRREGULAR_P30_DATA_DIR, TEST_IRREGULAR_P90_DATA_DIR
 
 overall_ds_name = "test-1"
 run_csv = TEST_GENERATED_DATASETS_FILE_PATH_1
@@ -38,7 +38,7 @@ def test_calculates_scores_some_measures_downsampled_and_irregular_datasets():
     knn = KnnAllSyntheticDatasets(measures, overall_ds_name='test_misty', save_confusion_matrix=True,
                                   data_type=SyntheticDataType.rs_1min,
                                   run_csv=TEST_GENERATED_DATASETS_FILE_PATH, root_results_dir=root_results_dir,
-                                  data_dir=TEST_IRREGULAR_P30)
+                                  data_dir=TEST_IRREGULAR_P30_DATA_DIR)
     scores = knn.scores_for_all_measures
     assert_that(scores.shape[0], is_(len(measures) * 2))
     assert_that(scores[AssessSynthCols.f1][0], is_(0.00))
@@ -73,7 +73,7 @@ def test_calculates_scores_for_all_measures_irregular_p_0_3_datasets():
     knn = KnnAllSyntheticDatasets(measures, overall_ds_name='test_misty', save_confusion_matrix=False,
                                   data_type=SyntheticDataType.normal_correlated,
                                   run_csv=TEST_GENERATED_DATASETS_FILE_PATH, root_results_dir=root_results_dir,
-                                  data_dir=TEST_IRREGULAR_P30)
+                                  data_dir=TEST_IRREGULAR_P30_DATA_DIR)
     scores = knn.scores_for_all_measures
     assert_that(scores.shape[0], is_(len(measures) * 2))
     assert_that(scores[AssessSynthCols.f1][0], is_(1))
@@ -85,7 +85,7 @@ def test_calculates_scores_for_all_measures_irregular_p_0_9_datasets():
     knn = KnnAllSyntheticDatasets(measures, overall_ds_name='test_misty', save_confusion_matrix=False,
                                   data_type=SyntheticDataType.non_normal_correlated,
                                   run_csv=TEST_GENERATED_DATASETS_FILE_PATH, root_results_dir=root_results_dir,
-                                  data_dir=TEST_IRREGULAR_P90)
+                                  data_dir=TEST_IRREGULAR_P90_DATA_DIR)
     scores = knn.scores_for_all_measures
     assert_that(scores.shape[0], is_(len(measures) * 2))
     assert_that(scores[AssessSynthCols.f1][0], is_(1))

@@ -12,7 +12,7 @@ from src.data_generation.create_bad_partitions import CreateBadSyntheticPartitio
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.evaluation.describe_bad_partitions import DescribeBadPartitions, DescribeBadPartCols
 from src.utils.configurations import WandbConfiguration, SYNTHETIC_DATA_DIR, SyntheticDataVariates, \
-    GENERATED_DATASETS_FILE_PATH, bad_partition_dir_for_data_type, IRREGULAR_P30, IRREGULAR_P90
+    GENERATED_DATASETS_FILE_PATH, bad_partition_dir_for_data_type, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
 from tests.test_utils.configurations_for_testing import TEST_DATA_DIR, TEST_GENERATED_DATASETS_FILE_PATH, \
@@ -222,7 +222,7 @@ def create_bad_partitions(config: CreateBadPartitionsConfig, ds_name: str, idx: 
 if __name__ == "__main__":
     config = CreateBadPartitionsConfig()
     # this will create bad partitions for irregular sampled version of the below data type
-    config.data_dir = IRREGULAR_P90
+    config.data_dir = IRREGULAR_P90_DATA_DIR
     config.data_type = SyntheticDataType.non_normal_correlated
 
     # test config

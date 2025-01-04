@@ -1,3 +1,4 @@
+import re
 from dataclasses import dataclass
 from itertools import chain
 from os import path
@@ -6,7 +7,8 @@ import pandas as pd
 
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.utils.configurations import SYNTHETIC_DATA_DIR, ROOT_RESULTS_DIR, dataset_description_dir, \
-    MULTIPLE_DS_SUMMARY_FILE, GENERATED_DATASETS_FILE_PATH, IRREGULAR_P30, IRREGULAR_P90
+    MULTIPLE_DS_SUMMARY_FILE, GENERATED_DATASETS_FILE_PATH, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR, \
+    IRREGULAR_P30_ROOT_RESULTS_DIR, IRREGULAR_P90_ROOT_RESULTS_DIR
 from src.utils.labels_utils import calculate_n_segments_outside_tolerance_for
 from src.utils.load_synthetic_data import SyntheticDataType, load_labels
 from src.utils.plots.matplotlib_helper_functions import Backends
@@ -149,8 +151,19 @@ class DescribeMultipleDatasets:
             SummaryStatistics.overall_segment_lengths: self.overall_segment_length_stats()
         })
 
-    def save_summary(self, root_results_dir: str = ROOT_RESULTS_DIR):
+    def save_summary(self, root_results_dir: str):
+        """
+        Saves summary df in the given root_result dir
+        :param root_results_dir: either ROOT_RESULTS_DIR or IRREGULAR_P30_ROOT_RESULTS_DIR or
+        IRREGULAR_P90_ROOT_RESULTS_DIR
+        """
         df = self.summary()
+        # check if result dir and root result dir match
+        data_dir_match = re.search(r'(_p\d+)$', self.__data_dir)
+        data_dir_irr_name = data_dir_match.group(1) if data_dir_match else ""
+        result_dir_match = re.search(r'(_p\d+)$', root_results_dir)
+        result_dir_irr_name = result_dir_match.group(1) if result_dir_match else ""
+        assert data_dir_irr_name == result_dir_irr_name, "Inconsistent between reading/writing irregular data"
 
         folder = dataset_description_dir(overall_dataset_name=self.__overall_ds_name, data_type=self.__data_type,
                                          root_results_dir=root_results_dir)
@@ -162,7 +175,6 @@ if __name__ == '__main__':
     # create summary for a dataset variation
     run_file = GENERATED_DATASETS_FILE_PATH
     overall_ds_name = "n30"
-    results_dir = ROOT_RESULTS_DIR
 
     dataset_types = [SyntheticDataType.raw, SyntheticDataType.normal_correlated,
                      SyntheticDataType.non_normal_correlated, SyntheticDataType.rs_1min]
@@ -171,16 +183,16 @@ if __name__ == '__main__':
     for ds_type in dataset_types:
         ds = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=ds_type,
                                       data_dir=SYNTHETIC_DATA_DIR)
-        ds.save_summary()
+        ds.save_summary(ROOT_RESULTS_DIR)
 
     # do irregular p30 sampled ones
     for ds_type in dataset_types:
         ds = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=ds_type,
-                                      data_dir=IRREGULAR_P30)
-        ds.save_summary()
+                                      data_dir=IRREGULAR_P30_DATA_DIR)
+        ds.save_summary(IRREGULAR_P30_ROOT_RESULTS_DIR)
 
     # do irregular p90 sampled ones
     for ds_type in dataset_types:
         ds = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=ds_type,
-                                      data_dir=IRREGULAR_P90)
-        ds.save_summary()
+                                      data_dir=IRREGULAR_P90_DATA_DIR)
+        ds.save_summary(IRREGULAR_P90_ROOT_RESULTS_DIR)

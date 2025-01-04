@@ -5,7 +5,7 @@ from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDa
 from src.utils.configurations import GeneralisedCols
 from src.utils.load_synthetic_data import load_synthetic_data, SyntheticDataType, \
     load_synthetic_data_and_labels_for_bad_partitions
-from tests.test_utils.configurations_for_testing import TEST_DATA_DIR, TEST_IRREGULAR_P90, TEST_IRREGULAR_P30
+from tests.test_utils.configurations_for_testing import TEST_DATA_DIR, TEST_IRREGULAR_P90_DATA_DIR, TEST_IRREGULAR_P30_DATA_DIR
 
 test_data_dir = TEST_DATA_DIR
 
@@ -133,7 +133,7 @@ def test_can_load_resampled_data_and_labels():
 def test_can_load_irregular_30_data_and_labels():
     run_name = "misty-forest-56"
     data_type = SyntheticDataType.non_normal_correlated
-    data, labels = load_synthetic_data(run_name, data_type=data_type, data_dir=TEST_IRREGULAR_P30)
+    data, labels = load_synthetic_data(run_name, data_type=data_type, data_dir=TEST_IRREGULAR_P30_DATA_DIR)
 
     # check data structure
     assert_that(data.shape, is_((858480, 5)))  # all data loaded
@@ -164,7 +164,7 @@ def test_can_load_irregular_30_data_and_labels():
 def test_can_load_nn_irregular_90_data_and_labels():
     run_name = "misty-forest-56"
     data_type = SyntheticDataType.non_normal_correlated
-    data, labels = load_synthetic_data(run_name, data_type=data_type, data_dir=TEST_IRREGULAR_P90)
+    data, labels = load_synthetic_data(run_name, data_type=data_type, data_dir=TEST_IRREGULAR_P90_DATA_DIR)
 
     # check data structure
     assert_that(data.shape, is_((122640, 5)))  # all data loaded

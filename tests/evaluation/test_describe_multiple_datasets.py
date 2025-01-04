@@ -3,11 +3,12 @@ from os import path
 import pandas as pd
 from hamcrest import *
 
+from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.evaluation.describe_multiple_datasets import DescribeMultipleDatasets, SummaryStatistics
-from src.utils.configurations import SYNTHETIC_DATA_DIR, GENERATED_DATASETS_FILE_PATH, IRREGULAR_P90, \
-    dataset_description_dir, MULTIPLE_DS_SUMMARY_FILE
+from src.utils.configurations import SYNTHETIC_DATA_DIR, GENERATED_DATASETS_FILE_PATH, IRREGULAR_P90_DATA_DIR, \
+    dataset_description_dir, MULTIPLE_DS_SUMMARY_FILE, IRREGULAR_P30_DATA_DIR
 from src.utils.load_synthetic_data import SyntheticDataType
-from tests.test_utils.configurations_for_testing import TEST_ROOT_RESULTS_DIR
+from tests.test_utils.configurations_for_testing import TEST_ROOT_RESULTS_DIR, TEST_IRREGULAR_P30_ROOT_RESULTS_DIR
 
 run_file = GENERATED_DATASETS_FILE_PATH
 data_dir = SYNTHETIC_DATA_DIR
@@ -64,7 +65,7 @@ def test_can_load_base_non_normal_datasets():
 def test_can_irregular_p90_non_normal_dataset():
     ds_irr_p90nn = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name,
                                             data_type=SyntheticDataType.non_normal_correlated,
-                                            data_dir=IRREGULAR_P90)
+                                            data_dir=IRREGULAR_P90_DATA_DIR)
 
     assert_that(len(ds_irr_p90nn.run_names), is_(30))  # 30 files
     assert_that(len(ds_irr_p90nn.labels), is_(30))  # 30 files
@@ -88,10 +89,23 @@ def test_creates_summary_df_of_statistics():
 
 
 def test_saves_summary_df_of_statistics_in_provide_results_root_using_ds_description():
+    # Save standard raw
     ds_raw.save_summary(root_results_dir=results_dir)
 
+    # save p30 raw
+    ds_p30_raw = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=raw,
+                                          data_dir=IRREGULAR_P30_DATA_DIR)
+    p30_root_results_dir = TEST_IRREGULAR_P30_ROOT_RESULTS_DIR
+    ds_p30_raw.save_summary(root_results_dir=p30_root_results_dir)
+
+    # read standard raw
     res_dir = dataset_description_dir(overall_ds_name, raw, results_dir)
     file_name = path.join(res_dir, MULTIPLE_DS_SUMMARY_FILE)
-    df = pd.read_csv(file_name, index_col=0)
-    assert_that(df[SummaryStatistics.mae]["count"], is_(30))
-    assert_that(df[SummaryStatistics.overall_mae]["count"], is_(30 * 100))
+    df_raw = pd.read_csv(file_name, index_col=0)
+    assert_that(df_raw[SummaryStatistics.overall_segment_lengths]["min"], is_(900))
+
+    # read p30 version
+    res_dir = dataset_description_dir(overall_ds_name, raw, p30_root_results_dir)
+    p30_file_name = path.join(res_dir, MULTIPLE_DS_SUMMARY_FILE)
+    df_raw_p30 = pd.read_csv(p30_file_name, index_col=0)
+    assert_that(df_raw_p30[SummaryStatistics.overall_segment_lengths]["min"], is_(592))

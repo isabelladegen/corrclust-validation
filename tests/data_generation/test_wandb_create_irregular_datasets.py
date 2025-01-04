@@ -4,13 +4,13 @@ from src.data_generation.wandb_create_irregular_datasets import create_irregular
 from src.evaluation.describe_synthetic_dataset import DescribeSyntheticDataset
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.wandb_utils import set_test_configurations
-from tests.test_utils.configurations_for_testing import TEST_IRREGULAR_P90
+from tests.test_utils.configurations_for_testing import TEST_IRREGULAR_P90_DATA_DIR
 
 
 def test_wandb_create_irregular_datasets_version_for_one_run():
     config = CreateIrregularDSConfig()
     set_test_configurations(config)
-    config.root_result_data_dir = TEST_IRREGULAR_P90
+    config.root_result_data_dir = TEST_IRREGULAR_P90_DATA_DIR
     config.p = 0.9
 
     # evaluation is None if the run fails
