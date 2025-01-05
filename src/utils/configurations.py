@@ -20,6 +20,7 @@ GENERATED_DATASETS_FILE_PATH = path.join(SYNTHETIC_DATA_DIR, 'synthetic-correlat
 
 MULTIPLE_DS_SUMMARY_FILE = 'multiple-datasets-summary.csv'
 OVERALL_SEGMENT_LENGTH_IMAGE = 'overall_segment_length_distributions.png'
+OVERALL_MAE_IMAGE = 'overall_mae_distributions.png'
 
 
 @dataclass

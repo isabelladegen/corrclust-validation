@@ -8,7 +8,7 @@ from matplotlib.gridspec import GridSpec
 
 from src.evaluation.describe_multiple_datasets import DescribeMultipleDatasets
 from src.utils.configurations import get_irregular_folder_name_from, base_dataset_result_folder_for_type, ResultsType, \
-    OVERALL_SEGMENT_LENGTH_IMAGE
+    OVERALL_SEGMENT_LENGTH_IMAGE, OVERALL_MAE_IMAGE
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import reset_matplotlib, Backends, fontsize
 
@@ -66,7 +66,7 @@ def create_violin_grid_log_scale_x_axis(data_dict: {}, figsize: tuple = (18, 15)
                 verticalalignment='center', horizontalalignment='center',
                 fontsize=fontsize, fontweight='bold')
 
-        # Add min/max annotations with adjusted positions for log scale
+        # Add min/max annotations with adjusted positions
         ax.text(min_val, y_pos - 0.15, f'min={int(min_val)}',
                 verticalalignment='center', horizontalalignment='center',
                 fontsize=fontsize)
@@ -78,7 +78,7 @@ def create_violin_grid_log_scale_x_axis(data_dict: {}, figsize: tuple = (18, 15)
     global_min = float('inf')
     global_max = float('-inf')
     for row_data in data_dict.values():
-        for col_name, col_data in row_data.items():
+        for col_data in row_data.values():
             global_min = min(global_min, np.min(col_data))
             global_max = max(global_max, np.max(col_data))
 
@@ -131,11 +131,135 @@ def create_violin_grid_log_scale_x_axis(data_dict: {}, figsize: tuple = (18, 15)
             else:
                 ax.set_xlabel('')
                 ax.set_xticklabels([])  # Hide x-tick labels
-                ax.set_xticks([])  # Remove x-axis ticks completely
+                ax.tick_params(axis='x', which='both', length=0)  # Hide tick marks but keep grid
+                # ax.set_xticks([])  # Remove x-axis ticks completely
 
             # Add prominent vertical grid lines
             ax.grid(True, axis='x', linestyle='-', alpha=0.3, which='both')
             ax.grid(True, axis='x', linestyle='-', alpha=0.6, which='major')
+
+            # Customize spines
+            sns.despine(ax=ax, left=True)
+
+            # Add statistics
+            add_stats(data, ax, 0)
+
+        axes.append(row_axes)
+
+    # Adjust layout
+    plt.tight_layout()
+    return fig
+
+
+def create_violin_grid(data_dict: {}, figsize: tuple = (12, 12), backend: str = Backends.none.value) -> plt.Figure:
+    """
+    Create a grid of horizontal violin plots with statistics using dictionary keys as labels.
+    Source - mostly claude with some modifications from me
+
+    :param data_dict : {str, {str, np.ndarray}} Nested dictionary containing data for each plot square
+        Format: {'row_name': {'column_name': data_array}}
+    :param figsize : tuple, optional Figure size in inches (width, height)
+    :returns: matplotlib.figure.Figure
+    Save like plt.savefig(save_path, dpi=dpi, bbox_inches='tight')
+    """
+
+    # Extract row and column names from dictionary structure
+    row_names = list(data_dict.keys())
+    # Get unique column names from all nested dictionaries
+    column_names = list(list(data_dict.values())[0].keys())
+
+    # Set the style for publication-quality figures
+    reset_matplotlib(backend)
+    # sns.set_context("paper", font_scale=1.2)
+
+    # Create figure with custom size
+    fig = plt.figure(figsize=figsize)
+    gs = GridSpec(len(row_names), len(column_names), figure=fig)
+    fig.subplots_adjust(hspace=0.5, wspace=0.3, left=0.15)
+
+    # Set up colors
+    colors = sns.color_palette("husl", n_colors=len(column_names))
+
+    def add_stats(data: np.ndarray, ax: plt.Axes, y_pos: float) -> None:
+        """Add statistical annotations to the plot."""
+        mean = np.mean(data)
+        min_val = np.min(data)
+        max_val = np.max(data)
+
+        # Add mean annotation centered above the box
+        ax.text(mean, y_pos + 0.2, f'μ={mean:.2f}',
+                verticalalignment='center', horizontalalignment='center',
+                fontsize=fontsize, fontweight='bold')
+
+        # Add min/max annotations with adjusted positions
+        ax.text(min_val, y_pos - 0.3, f'min={min_val:.2f}',
+                verticalalignment='center', horizontalalignment='left',
+                fontsize=fontsize)
+        ax.text(max_val, y_pos - 0.15, f'max={max_val:.2f}',
+                verticalalignment='center', horizontalalignment='left',
+                fontsize=fontsize)
+
+        # Find global min and max for shared x-axis
+
+    global_min = float('inf')
+    global_max = float('-inf')
+    for row_data in data_dict.values():
+        for col_data in row_data.values():
+            global_min = min(global_min, np.min(col_data))
+            global_max = max(global_max, np.max(col_data))
+
+    # Add padding to global limits (multiplicative for log scale)
+    global_min = global_min - 0.2
+    global_max = global_max + 0.2
+
+    # Plot each subplot
+    axes = []
+    for i, row in enumerate(row_names):
+        row_axes = []
+        for j, col in enumerate(column_names):
+            ax = fig.add_subplot(gs[i, j])
+            row_axes.append(ax)
+
+            try:
+                data = data_dict[row][col]
+            except KeyError:
+                print(f"Warning: No data found for condition: row='{row}', column='{col}'")
+                continue
+
+            # Create violin plot with cut=0 to prevent extending beyond data range
+            sns.violinplot(data=data, orient='h', color=colors[j], alpha=0.6, ax=ax, cut=0)
+
+            # Add box plot inside violin
+            sns.boxplot(data=data, orient='h', width=0.2, color='white',
+                        showfliers=False, ax=ax)
+
+            # Customize appearance
+            if i == 0:  # Add column titles only to the top row
+                ax.set_title(col, fontsize=fontsize, fontweight='bold')
+
+            # Set x-axis limits to be the same for all plots
+            ax.set_xlim(global_min, global_max)
+
+            # Format x-axis labels to be more readable
+            ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:,.0f}'.format(x)))
+
+            # Remove y-ticks and labels
+            ax.set_yticks([])
+            if j == 0:
+                ax.set_ylabel(row, fontsize=fontsize, fontweight='bold')
+
+            # Only show x-axis elements for bottom row
+            if i == len(row_names) - 1:
+                plt.setp(ax.get_xticklabels(), fontsize=fontsize)
+            else:
+                ax.set_xlabel('')
+                ax.set_xticklabels([])  # Hide x-tick labels
+                ax.tick_params(axis='x', which='both', length=0)  # Hide tick marks but keep grid
+
+            # Add prominent vertical grid lines
+            ax.grid(True, axis='x', linestyle='-', alpha=0.5, which='major', color='gray')  # major grid
+            ax.grid(True, axis='x', linestyle='--', alpha=0.3, which='minor', color='gray')  # minor grid
+            ax.xaxis.set_minor_locator(plt.MultipleLocator(0.2))  # minor grid spacing
 
             # Customize spines
             sns.despine(ax=ax, left=True)
@@ -201,4 +325,28 @@ class VisualiseMultipleDatasets:
         if save_fig:
             folder = base_dataset_result_folder_for_type(root_result_dir, ResultsType.dataset_description)
             fig.savefig(path.join(folder, OVERALL_SEGMENT_LENGTH_IMAGE), dpi=300, bbox_inches='tight')
+        return fig
+
+    def violin_plots_of_overall_mae(self, save_fig, root_result_dir):
+        """
+            Creates a plot of overall segment lengths, rows will be standard, irregular p 0.3, irregular p 0.9 and columns
+            will be "RAW/NC/NN" and "RS"
+            :param save_fig: whether to save the figure
+            :param root_result_dir: root result dir to save the figure this will be put in the dataset-description
+            :return: fig
+        """
+        # create data dict for mae, for this all ds are different so we plot all
+        data_dict = {}
+        for row, row_data in self.all_data.items():
+            row_dict = {}
+            for col, col_data in row_data.items():
+                row_dict[col] = col_data.all_mae_values()
+            data_dict[row] = row_dict
+
+        fig = create_violin_grid(data_dict=data_dict, backend=self.backend, figsize=(15, 10))
+        plt.show()
+
+        if save_fig:
+            folder = base_dataset_result_folder_for_type(root_result_dir, ResultsType.dataset_description)
+            fig.savefig(path.join(folder, OVERALL_MAE_IMAGE), dpi=300, bbox_inches='tight')
         return fig
