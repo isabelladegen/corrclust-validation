@@ -3,7 +3,6 @@ from itertools import chain
 from os import path
 
 import pandas as pd
-from pluggy._result import ResultType
 
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.utils.configurations import SYNTHETIC_DATA_DIR, ROOT_RESULTS_DIR, dataset_description_dir, \

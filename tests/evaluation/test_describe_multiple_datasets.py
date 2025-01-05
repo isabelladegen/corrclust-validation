@@ -130,3 +130,10 @@ def test_combines_all_datasets_into_one_table():
     assert_that(df[nn_ds_irr_p90][SummaryStatistics.overall_segment_lengths]['min'], is_(58))
     assert_that(df[nn_ds_rs_irr_p30][SummaryStatistics.overall_segment_lengths]['min'], is_(15))
     assert_that(df[nn_ds_rs_irr_p90][SummaryStatistics.overall_segment_lengths]['min'], is_(13))
+
+
+def test_plot_some_stuff():
+    df = combine_all_ds_variations_multiple_description_summary_dfs(result_root_dir=ROOT_RESULTS_DIR,
+                                                                    save_combined_results=False)
+    overall_seg_lengths = df.xs(SummaryStatistics.overall_segment_lengths, level=1, axis=1)
+    print('dough')
