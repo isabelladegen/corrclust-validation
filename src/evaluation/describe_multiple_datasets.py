@@ -110,9 +110,13 @@ class DescribeMultipleDatasets:
         :returns pandas describe series
         """
         # list of list
-        values = [label[SyntheticDataSegmentCols.mae] for label in self.labels.values()]
+        values = self.all_mae_values()
         values_flat = list(chain.from_iterable(values))
         return pd.Series(values_flat).describe().round(3)
+
+    def all_mae_values(self):
+        values = [label[SyntheticDataSegmentCols.mae] for label in self.labels.values()]
+        return values
 
     def n_segments_outside_tolerance_stats(self):
         """
@@ -167,9 +171,13 @@ class DescribeMultipleDatasets:
         :returns pandas describe series
         """
         # list of list
-        values = [label[SyntheticDataSegmentCols.length] for label in self.labels.values()]
+        values = self.all_segment_lengths_values()
         values_flat = list(chain.from_iterable(values))
         return pd.Series(values_flat).describe().round(3)
+
+    def all_segment_lengths_values(self):
+        values = [label[SyntheticDataSegmentCols.length] for label in self.labels.values()]
+        return values
 
     def summary(self):
         """Returns summary pd.Dataframe of all statistics
