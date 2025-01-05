@@ -8,16 +8,16 @@ from src.utils.plots.matplotlib_helper_functions import Backends
 from src.evaluation.partitions_assessment import PartitionAssessment
 from src.evaluation.describe_bad_partitions import DescribeBadPartCols
 from tests.test_utils.configurations_for_testing import TEST_IMAGES_DIR, TEST_GENERATED_DATASETS_FILE_PATH, \
-    TEST_ROOT_RESULTS_DIR
+    TEST_ROOT_RESULTS_DIR, TEST_DATA_DIR
 
 images_dir = TEST_IMAGES_DIR
 results_dir = TEST_ROOT_RESULTS_DIR
+data_dir = TEST_DATA_DIR
 data_type = SyntheticDataType.normal_correlated
 overall_dataset_name = "test_stuff"
-l1ref_results_dir = internal_measure_assessment_dir_for(overall_dataset_name, data_type,
-                                                        results_dir,
+l1ref_results_dir = internal_measure_assessment_dir_for(overall_dataset_name, data_type, results_dir, data_dir,
                                                         DistanceMeasures.l1_with_ref)
-pal1ref = PartitionAssessment(overall_dataset_name, data_type, results_dir, DistanceMeasures.l1_with_ref,
+pal1ref = PartitionAssessment(overall_dataset_name, data_type, results_dir, data_dir, DistanceMeasures.l1_with_ref,
                               generated_ds_csv=TEST_GENERATED_DATASETS_FILE_PATH)
 backend = Backends.none.value
 
@@ -102,11 +102,10 @@ def test_plot_describe_statistics_for_partitions():
 
 
 def test_plot_descriptive_statistics_for_partitions_for_column_for_l2_measure():
-    l2_results_dir = internal_measure_assessment_dir_for(overall_dataset_name, data_type,
-                                                         results_dir,
+    l2_results_dir = internal_measure_assessment_dir_for(overall_dataset_name, data_type, results_dir, data_dir,
                                                          DistanceMeasures.l2_cor_dist)
 
-    pal2 = PartitionAssessment(overall_dataset_name, data_type, results_dir, DistanceMeasures.l2_cor_dist,
+    pal2 = PartitionAssessment(overall_dataset_name, data_type, results_dir, data_dir, DistanceMeasures.l2_cor_dist,
                                generated_ds_csv=TEST_GENERATED_DATASETS_FILE_PATH)
     fig = pal2.plot_describe_statistics_for_partitions_for_column(column=DescribeBadPartCols.silhouette_score,
                                                                   backend=backend)
@@ -121,13 +120,11 @@ def test_plot_descriptive_statistics_for_partitions_for_column_for_l2_measure():
 
 def test_plot_descriptive_statistics_for_partitions_for_column_for_l1_measure():
     l1_results_dir = internal_measure_assessment_dir_for(overall_dataset_name, data_type,
-                                                         results_dir,
+                                                         results_dir, data_dir,
                                                          DistanceMeasures.l1_cor_dist)
 
-    pal1 = PartitionAssessment(overall_dataset_name, data_type,
-                               results_dir,
-                               DistanceMeasures.l1_cor_dist,
-                               generated_ds_csv=TEST_GENERATED_DATASETS_FILE_PATH)
+    pal1 = PartitionAssessment(overall_dataset_name, data_type, results_dir, data_dir,
+                               DistanceMeasures.l1_cor_dist, generated_ds_csv=TEST_GENERATED_DATASETS_FILE_PATH)
     fig = pal1.plot_describe_statistics_for_partitions_for_column(column=DescribeBadPartCols.silhouette_score,
                                                                   backend=backend)
     assert_that(fig, is_not(None))

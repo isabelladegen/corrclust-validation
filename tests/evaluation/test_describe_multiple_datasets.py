@@ -4,11 +4,12 @@ import pandas as pd
 from hamcrest import *
 
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
-from src.evaluation.describe_multiple_datasets import DescribeMultipleDatasets, SummaryStatistics
+from src.evaluation.describe_multiple_datasets import DescribeMultipleDatasets, SummaryStatistics, \
+    combine_all_ds_variations_multiple_description_summary_dfs
 from src.utils.configurations import SYNTHETIC_DATA_DIR, GENERATED_DATASETS_FILE_PATH, IRREGULAR_P90_DATA_DIR, \
-    dataset_description_dir, MULTIPLE_DS_SUMMARY_FILE, IRREGULAR_P30_DATA_DIR
+    dataset_description_dir, MULTIPLE_DS_SUMMARY_FILE, IRREGULAR_P30_DATA_DIR, ROOT_RESULTS_DIR
 from src.utils.load_synthetic_data import SyntheticDataType
-from tests.test_utils.configurations_for_testing import TEST_ROOT_RESULTS_DIR, TEST_IRREGULAR_P30_ROOT_RESULTS_DIR
+from tests.test_utils.configurations_for_testing import TEST_ROOT_RESULTS_DIR
 
 run_file = GENERATED_DATASETS_FILE_PATH
 data_dir = SYNTHETIC_DATA_DIR
@@ -95,17 +96,37 @@ def test_saves_summary_df_of_statistics_in_provide_results_root_using_ds_descrip
     # save p30 raw
     ds_p30_raw = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=raw,
                                           data_dir=IRREGULAR_P30_DATA_DIR)
-    p30_root_results_dir = TEST_IRREGULAR_P30_ROOT_RESULTS_DIR
-    ds_p30_raw.save_summary(root_results_dir=p30_root_results_dir)
+    ds_p30_raw.save_summary(root_results_dir=results_dir)
 
     # read standard raw
-    res_dir = dataset_description_dir(overall_ds_name, raw, results_dir)
+    res_dir = dataset_description_dir(overall_ds_name, raw, results_dir, data_dir)
     file_name = path.join(res_dir, MULTIPLE_DS_SUMMARY_FILE)
     df_raw = pd.read_csv(file_name, index_col=0)
     assert_that(df_raw[SummaryStatistics.overall_segment_lengths]["min"], is_(900))
 
     # read p30 version
-    res_dir = dataset_description_dir(overall_ds_name, raw, p30_root_results_dir)
+    res_dir = dataset_description_dir(overall_ds_name, raw, results_dir, IRREGULAR_P30_DATA_DIR)
     p30_file_name = path.join(res_dir, MULTIPLE_DS_SUMMARY_FILE)
     df_raw_p30 = pd.read_csv(p30_file_name, index_col=0)
     assert_that(df_raw_p30[SummaryStatistics.overall_segment_lengths]["min"], is_(592))
+
+
+def test_combines_all_datasets_into_one_table():
+    # given we read from the real result folder we don't want to save the result!
+    df = combine_all_ds_variations_multiple_description_summary_dfs(result_root_dir=ROOT_RESULTS_DIR,
+                                                                    save_combined_results=False)
+
+    # a few of the datasets
+    nn_ds = SyntheticDataType.get_dataset_variation_name(SyntheticDataType.non_normal_correlated, '')
+    nn_ds_rs = SyntheticDataType.get_dataset_variation_name(SyntheticDataType.rs_1min, '')
+    nn_ds_irr_p30 = SyntheticDataType.get_dataset_variation_name(SyntheticDataType.non_normal_correlated, 'p30')
+    nn_ds_irr_p90 = SyntheticDataType.get_dataset_variation_name(SyntheticDataType.non_normal_correlated, 'p90')
+    nn_ds_rs_irr_p30 = SyntheticDataType.get_dataset_variation_name(SyntheticDataType.rs_1min, 'p30')
+    nn_ds_rs_irr_p90 = SyntheticDataType.get_dataset_variation_name(SyntheticDataType.rs_1min, 'p90')
+
+    assert_that(df[nn_ds][SummaryStatistics.overall_segment_lengths]['min'], is_(900))
+    assert_that(df[nn_ds_rs][SummaryStatistics.overall_segment_lengths]['min'], is_(15))
+    assert_that(df[nn_ds_irr_p30][SummaryStatistics.overall_segment_lengths]['min'], is_(592))
+    assert_that(df[nn_ds_irr_p90][SummaryStatistics.overall_segment_lengths]['min'], is_(58))
+    assert_that(df[nn_ds_rs_irr_p30][SummaryStatistics.overall_segment_lengths]['min'], is_(15))
+    assert_that(df[nn_ds_rs_irr_p90][SummaryStatistics.overall_segment_lengths]['min'], is_(13))

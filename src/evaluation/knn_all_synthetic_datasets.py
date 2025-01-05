@@ -81,7 +81,7 @@ class KnnAllSyntheticDatasets:
 
         for measure in self.measures:
             results_folder = distance_measure_assessment_dir_for(self.__overall_ds_name, self.data_type,
-                                                                 self.__root_results_dir, measure)
+                                                                 self.__root_results_dir, self.data_dir, measure)
 
             knn_for_measure = KNNForSyntheticWrapper(measure=measure, n_neighbors=self.n_neighbours,
                                                      data_dir=self.data_dir, backend=self.backend)

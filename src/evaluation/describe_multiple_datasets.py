@@ -1,14 +1,14 @@
-import re
 from dataclasses import dataclass
 from itertools import chain
 from os import path
 
 import pandas as pd
+from pluggy._result import ResultType
 
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.utils.configurations import SYNTHETIC_DATA_DIR, ROOT_RESULTS_DIR, dataset_description_dir, \
     MULTIPLE_DS_SUMMARY_FILE, GENERATED_DATASETS_FILE_PATH, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR, \
-    IRREGULAR_P30_ROOT_RESULTS_DIR, IRREGULAR_P90_ROOT_RESULTS_DIR
+    get_irregular_folder_name_from, base_dataset_result_folder_for_type, ResultsType
 from src.utils.labels_utils import calculate_n_segments_outside_tolerance_for
 from src.utils.load_synthetic_data import SyntheticDataType, load_labels
 from src.utils.plots.matplotlib_helper_functions import Backends
@@ -24,6 +24,42 @@ class SummaryStatistics:
     patterns = "n patterns"
     segment_lengths = "segment lengths"  # mean of each labels file across datasets
     overall_segment_lengths = "overall segment lengths"  # all segment lengths
+
+
+def combine_all_ds_variations_multiple_description_summary_dfs(result_root_dir: str,
+                                                               overall_ds_name: str = "n30",
+                                                               dataset_types: [str] = [SyntheticDataType.raw,
+                                                                                       SyntheticDataType.normal_correlated,
+                                                                                       SyntheticDataType.non_normal_correlated,
+                                                                                       SyntheticDataType.rs_1min],
+                                                               data_dirs: str = [SYNTHETIC_DATA_DIR,
+                                                                                 IRREGULAR_P30_DATA_DIR,
+                                                                                 IRREGULAR_P90_DATA_DIR],
+                                                               save_combined_results: bool = True):
+    """Combines all the dataset description summaries for the given types and runs into one table
+    :param result_root_dir: root dir for the results - will write to the dataset-description folder in this dir,
+    create it if it does not exist
+    :param overall_ds_name: just a string to identify the results
+    :param dataset_types: list of dataset types to read, see SyntheticDataType
+    :param data_dirs: list of str of directories from which the data was read
+    :param save_combined_results: will save the combined resulting csv in dataset-description of the result root
+    dir
+    :return: MultiIndex pd.Dataframe, access results like e.g. combined_df['dataset_name']['n_segments']['mean']
+    """
+    results = {}
+    for data_dir in data_dirs:
+        irr_folder_str = get_irregular_folder_name_from(data_dir)
+        for ds_type in dataset_types:
+            folder = dataset_description_dir(overall_ds_name, ds_type, result_root_dir, data_dir)
+            file_name = path.join(folder, MULTIPLE_DS_SUMMARY_FILE)
+            df = pd.read_csv(file_name, index_col=0)
+            name = SyntheticDataType.get_dataset_variation_name(ds_type, irr_folder_str)
+            results[name] = df
+    combined_result = pd.concat(results, axis=1)
+    if save_combined_results:
+        folder = base_dataset_result_folder_for_type(result_root_dir, ResultsType.dataset_description)
+        combined_result.to_csv(path.join(folder, MULTIPLE_DS_SUMMARY_FILE))
+    return combined_result
 
 
 class DescribeMultipleDatasets:
@@ -154,19 +190,12 @@ class DescribeMultipleDatasets:
     def save_summary(self, root_results_dir: str):
         """
         Saves summary df in the given root_result dir
-        :param root_results_dir: either ROOT_RESULTS_DIR or IRREGULAR_P30_ROOT_RESULTS_DIR or
-        IRREGULAR_P90_ROOT_RESULTS_DIR
+        :param root_results_dir: directory where to save the results
         """
         df = self.summary()
-        # check if result dir and root result dir match
-        data_dir_match = re.search(r'(_p\d+)$', self.__data_dir)
-        data_dir_irr_name = data_dir_match.group(1) if data_dir_match else ""
-        result_dir_match = re.search(r'(_p\d+)$', root_results_dir)
-        result_dir_irr_name = result_dir_match.group(1) if result_dir_match else ""
-        assert data_dir_irr_name == result_dir_irr_name, "Inconsistent between reading/writing irregular data"
 
         folder = dataset_description_dir(overall_dataset_name=self.__overall_ds_name, data_type=self.__data_type,
-                                         root_results_dir=root_results_dir)
+                                         root_results_dir=root_results_dir, data_dir=self.__data_dir)
         file_name = path.join(folder, MULTIPLE_DS_SUMMARY_FILE)
         df.to_csv(file_name)
 
@@ -175,6 +204,7 @@ if __name__ == '__main__':
     # create summary for a dataset variation
     run_file = GENERATED_DATASETS_FILE_PATH
     overall_ds_name = "n30"
+    root_results_dir = ROOT_RESULTS_DIR
 
     dataset_types = [SyntheticDataType.raw, SyntheticDataType.normal_correlated,
                      SyntheticDataType.non_normal_correlated, SyntheticDataType.rs_1min]
@@ -183,16 +213,19 @@ if __name__ == '__main__':
     for ds_type in dataset_types:
         ds = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=ds_type,
                                       data_dir=SYNTHETIC_DATA_DIR)
-        ds.save_summary(ROOT_RESULTS_DIR)
+        ds.save_summary(root_results_dir)
 
     # do irregular p30 sampled ones
     for ds_type in dataset_types:
         ds = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=ds_type,
                                       data_dir=IRREGULAR_P30_DATA_DIR)
-        ds.save_summary(IRREGULAR_P30_ROOT_RESULTS_DIR)
+        ds.save_summary(root_results_dir)
 
     # do irregular p90 sampled ones
     for ds_type in dataset_types:
         ds = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=ds_type,
                                       data_dir=IRREGULAR_P90_DATA_DIR)
-        ds.save_summary(IRREGULAR_P90_ROOT_RESULTS_DIR)
+        ds.save_summary(root_results_dir)
+
+    # write combined results (this also reads all files and then writes a result)
+    combine_all_ds_variations_multiple_description_summary_dfs(result_root_dir=root_results_dir)

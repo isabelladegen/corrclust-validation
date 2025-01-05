@@ -202,12 +202,12 @@ class InternalMeasureAssessment:
 
 
 def assess_internal_measures(overall_dataset_name, generated_ds_csv, data_type: str,
-                             root_results_dir: str,
+                             root_results_dir: str, data_dir: str,
                              distance_measure: str,
                              internal_measures: [str], n_clusters=0, n_segments=0):
     # load all the internal measure calculation summaries
     partitions = read_internal_measures_calculation(overall_dataset_name, data_type,
-                                                    root_results_dir, distance_measure,
+                                                    root_results_dir, data_dir, distance_measure,
                                                     n_clusters, n_segments,
                                                     generated_ds_csv)
 
@@ -217,7 +217,7 @@ def assess_internal_measures(overall_dataset_name, generated_ds_csv, data_type: 
     store_results_in = internal_measure_assessment_dir_for(
         overall_dataset_name=overall_dataset_name,
         data_type=data_type,
-        results_dir=root_results_dir,
+        results_dir=root_results_dir, data_dir=data_dir,
         distance_measure=distance_measure,
         drop_segments=n_segments, drop_clusters=n_clusters)
 
@@ -267,20 +267,20 @@ def run_internal_measure_assessment__datasets(overall_ds_name: str,
     if len(n_dropped_clusters) == 0 and len(n_dropped_segments) == 0:
 
         assess_internal_measures(overall_dataset_name=overall_ds_name, generated_ds_csv=generated_ds_csv,
-                                 data_type=data_type, root_results_dir=results_dir, distance_measure=distance_measure,
+                                 data_type=data_type, root_results_dir=results_dir, data_dir=data_dir, distance_measure=distance_measure,
                                  internal_measures=internal_measures)
     else:
         # run evaluation for all dropped clusters and for all dropped segments separately
         # for this we just do clusters first
         for n_clus in n_dropped_clusters:
             assess_internal_measures(overall_dataset_name=overall_ds_name, generated_ds_csv=generated_ds_csv,
-                                     data_type=data_type, root_results_dir=results_dir,
+                                     data_type=data_type, root_results_dir=results_dir, data_dir=data_dir,
                                      distance_measure=distance_measure,
                                      internal_measures=internal_measures, n_clusters=n_clus)
         # and second we do segments
         for n_seg in n_dropped_segments:
             assess_internal_measures(overall_dataset_name=overall_ds_name, generated_ds_csv=generated_ds_csv,
-                                     data_type=data_type, root_results_dir=results_dir,
+                                     data_type=data_type, root_results_dir=results_dir, data_dir=data_dir,
                                      distance_measure=distance_measure,
                                      internal_measures=internal_measures, n_segments=n_seg)
 

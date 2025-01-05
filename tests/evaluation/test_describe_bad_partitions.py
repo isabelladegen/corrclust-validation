@@ -278,7 +278,7 @@ def test_can_run_calculation_for_internal_measures_on_all_datasets():
 
     # read the files from disk
     datasets = read_internal_measures_calculation(overall_ds_name=overall_ds_name, data_type=data_type,
-                                                  root_results_dir=test_results_dir,
+                                                  root_results_dir=test_results_dir, data_dir=test_data_dir,
                                                   distance_measure=distance_measure, generated_ds_csv=runs)
 
     assert_that(len(datasets), is_(2))
@@ -307,7 +307,7 @@ def test_can_run_calculation_for_internal_measures_on_all_datasets_when_dropping
 
     # read the files from disk
     datasets_drop5 = read_internal_measures_calculation(overall_ds_name=overall_ds_name, data_type=data_type,
-                                                        root_results_dir=test_results_dir,
+                                                        root_results_dir=test_results_dir,  data_dir=test_data_dir,
                                                         distance_measure=distance_measure, n_dropped_clusters=5,
                                                         generated_ds_csv=runs)
 
@@ -316,7 +316,7 @@ def test_can_run_calculation_for_internal_measures_on_all_datasets_when_dropping
     assert_that(datasets_drop5[1][DescribeBadPartCols.name], has_item("splendid-sunset-12"))
 
     datasets_drop15 = read_internal_measures_calculation(overall_ds_name=overall_ds_name, data_type=data_type,
-                                                         root_results_dir=test_results_dir,
+                                                         root_results_dir=test_results_dir, data_dir=test_data_dir,
                                                          distance_measure=distance_measure, n_dropped_clusters=15,
                                                          generated_ds_csv=runs)
 
@@ -346,7 +346,7 @@ def test_can_run_calculation_for_internal_measures_on_all_datasets_when_dropping
 
     # read the files from disk
     datasets_drop50 = read_internal_measures_calculation(overall_ds_name=overall_ds_name, data_type=data_type,
-                                                         root_results_dir=test_results_dir,
+                                                         root_results_dir=test_results_dir, data_dir=test_data_dir,
                                                          distance_measure=distance_measure, n_dropped_segments=50,
                                                          generated_ds_csv=runs)
 

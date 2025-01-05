@@ -189,7 +189,7 @@ def test_can_run_assessment_on_full_dataset_and_store_results_for_runs_with_all_
     results_folder = internal_measure_assessment_dir_for(
         overall_dataset_name=overall_ds_name,
         data_type=data_type,
-        results_dir=test_results_dir,
+        results_dir=test_results_dir, data_dir=test_data_dir,
         distance_measure=distance_measure)
 
     # IA assessment results
@@ -224,7 +224,7 @@ def test_can_run_assessment_and_store_results_for_runs_with_dropping_clusters():
     results_folder_cl15 = internal_measure_assessment_dir_for(
         overall_dataset_name=overall_ds_name,
         data_type=data_type,
-        results_dir=test_results_dir,
+        results_dir=test_results_dir, data_dir=test_data_dir,
         distance_measure=distance_measure,
         drop_clusters=15)
 
@@ -261,7 +261,7 @@ def test_can_run_assessment_and_store_results_for_runs_with_dropping_segments():
     results_folder_seg50 = internal_measure_assessment_dir_for(
         overall_dataset_name=overall_ds_name,
         data_type=data_type,
-        results_dir=test_results_dir,
+        results_dir=test_results_dir, data_dir=test_data_dir,
         distance_measure=distance_measure,
         drop_segments=50)
 

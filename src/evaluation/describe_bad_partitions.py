@@ -377,7 +377,7 @@ def update_labels_df(df, patterns, segments):
     return df
 
 
-def read_internal_measures_calculation(overall_ds_name: str, data_type: str, root_results_dir: str,
+def read_internal_measures_calculation(overall_ds_name: str, data_type: str, root_results_dir: str, data_dir: str,
                                        distance_measure: str, n_dropped_clusters=0, n_dropped_segments=0,
                                        generated_ds_csv: str = GENERATED_DATASETS_FILE_PATH):
     """ Reads the summary results files from the internal measure calculation for the datasets in the overall_ds_name
@@ -392,6 +392,7 @@ def read_internal_measures_calculation(overall_ds_name: str, data_type: str, roo
     results_dir = internal_measure_calculation_dir_for(overall_ds_name,
                                                        data_type,
                                                        root_results_dir,
+                                                       data_dir,
                                                        distance_measure,
                                                        n_dropped_clusters,
                                                        n_dropped_segments)
@@ -418,6 +419,7 @@ def calculate_internal_measures_for_all_partitions(overall_ds_name: str, dataset
         overall_dataset_name=overall_ds_name,
         data_type=data_type,
         results_dir=results_dir,
+        data_dir=data_dir,
         distance_measure=distance_measure,
         drop_clusters=drop_clusters,
         drop_segments=drop_segments)

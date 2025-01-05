@@ -7,19 +7,22 @@ from src.evaluation.describe_bad_partitions import DescribeBadPartCols, read_int
 
 
 class PartitionAssessment:
-    def __init__(self, overall_dataset_name: str, data_type: str, root_results_dir, distance_measure: str,
-                 n_clusters: int = 0, n_segments: int = 0, generated_ds_csv: str = GENERATED_DATASETS_FILE_PATH):
+    def __init__(self, overall_dataset_name: str, data_type: str, root_results_dir: str, data_dir: str,
+                 distance_measure: str, n_clusters: int = 0, n_segments: int = 0,
+                 generated_ds_csv: str = GENERATED_DATASETS_FILE_PATH):
 
         self.overall_dataset_name = overall_dataset_name
         self.data_type = data_type
         self.root_results_dir = root_results_dir
+        self.data_dir = data_dir
         self.distance_measure = distance_measure
         self.n_clusters = n_clusters
         self.n_segments = n_segments
         self.generated_ds_csv = generated_ds_csv
         # list of dfs of outcomes for each partition in each of the datasets
         self.partition_outcomes = read_internal_measures_calculation(self.overall_dataset_name, self.data_type,
-                                                                     self.root_results_dir, self.distance_measure,
+                                                                     self.root_results_dir, self.data_dir,
+                                                                     self.distance_measure,
                                                                      self.n_clusters, self.n_segments,
                                                                      self.generated_ds_csv)
 

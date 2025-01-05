@@ -1,3 +1,5 @@
+import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -12,8 +14,6 @@ SYNTHETIC_DATA_DIR = path.join(ROOT_DIR, 'data/synthetic_data')
 IRREGULAR_P30_DATA_DIR = path.join(SYNTHETIC_DATA_DIR, 'irregular_p30')
 IRREGULAR_P90_DATA_DIR = path.join(SYNTHETIC_DATA_DIR, 'irregular_p90')
 ROOT_RESULTS_DIR = path.join(ROOT_DIR, 'results')
-IRREGULAR_P30_ROOT_RESULTS_DIR = path.join(ROOT_RESULTS_DIR, 'irregular_p30')
-IRREGULAR_P90_ROOT_RESULTS_DIR = path.join(ROOT_RESULTS_DIR, 'irregular_p90')
 DISTANCE_MEASURE_ASSESSMENT_RESULTS_FOLDER_NAME = 'distance-measures-assessment'
 IMAGES_FOLDER_NAME = 'images'
 GENERATED_DATASETS_FILE_PATH = path.join(SYNTHETIC_DATA_DIR, 'synthetic-correlated-data-n30.csv')
@@ -27,6 +27,13 @@ class ResultsType:
     internal_measures: str = 'internal-measures'
     distance_measure_assessment: str = 'distance-measures-assessment'
     dataset_description: str = 'dataset-description'
+
+
+def get_irregular_folder_name_from(data_dir: str):
+    """Returns the irregular folder name from the data directory given, '' if standard data, 'p30' if irregular
+    p30, 'p90' if irregular p90"""
+    data_dir_match = re.search(r'_(p\d+)$', data_dir)
+    return data_dir_match.group(1) if data_dir_match else ""
 
 
 def dir_for_data_type(data_type: str, data_dir: str = SYNTHETIC_DATA_DIR):
@@ -43,29 +50,30 @@ def bad_partition_dir_for_data_type(data_type: str, data_dir: str = SYNTHETIC_DA
     return folder
 
 
-def dataset_description_dir(overall_dataset_name: str, data_type: str, root_results_dir: str, drop_clusters: int = 0,
-                            drop_segments: int = 0):
+def base_dataset_result_folder_for_type(root_result_dir: str, result_type: str):
+    """ Returns the base folder for the result type"""
+    return path.join(root_result_dir, result_type)
+
+
+def dataset_description_dir(overall_dataset_name: str, data_type: str, root_results_dir: str, data_dir: str):
     """
           Returns directory for dataset description results
           :param overall_dataset_name: a name to identify the dataset overall e.g n30 or n2
           :param data_type: the data type, see SyntheticDataType
-          :param root_results_dir: the directory for results, this is the main directory, the internal_assessment folder will be
-          added
-          :param drop_clusters: will create an additional folder for evaluating reduced numbers of clusters, if 0 and
-          n_dropped_segment is 0 no additional subfolder will be added
-          :param drop_segments: will create an additional folder for evaluating reduced numbers of segments
-          :return: the path name to the results folder e.g. results/distance-measures-assessment/raw/L1/ or
-          results/distance-measures-assessment/raw/n_dropped_clusters/L1 or results/distance-measures-assessment/raw/n_dropped_segments/L1
-          or results/distance-measures-assessment/raw/n_dropped_clusters_m_dropped_segments/L1
+          :param root_results_dir: the directory for results, this is the main directory, dataset-description will
+          be added to this
+          :param data_dir: the directory from which the data was read, this helps to determine if we save the results
+          in an e.g. irregular_p30 folder in the dataset-description folder
+          :return: the path name to the results folder e.g. results/dataset-description/raw/,
+          results/dataset-description/non_normal/, results/dataset-description/irregular_p30/raw
       """
     return get_folder_name_for(results_type=ResultsType.dataset_description,
                                overall_dataset_name=overall_dataset_name, data_type=data_type,
-                               distance_measure="", results_dir=root_results_dir,
-                               drop_clusters=drop_clusters,
-                               drop_segments=drop_segments)
+                               distance_measure="", results_dir=root_results_dir, data_dir=data_dir, drop_clusters=0,
+                               drop_segments=0)
 
 
-def distance_measure_assessment_dir_for(overall_dataset_name: str, data_type: str, results_dir: str,
+def distance_measure_assessment_dir_for(overall_dataset_name: str, data_type: str, results_dir: str, data_dir: str,
                                         distance_measure: str, drop_clusters: int = 0, drop_segments: int = 0):
     """
           Returns directory for distance measure assessments
@@ -73,6 +81,7 @@ def distance_measure_assessment_dir_for(overall_dataset_name: str, data_type: st
           :param data_type: the data type, see SyntheticDataType
           :param results_dir: the directory for results, this is the main directory, the internal_assessment folder will be
           added
+          :param data_dir: the directory from which the data was read to be able to add the irregular folder if required
           :param distance_measure: the distance measures used for the internal assessment, see DistanceMeasures
           :param drop_clusters: will create an additional folder for evaluating reduced numbers of clusters, if 0 and
           n_dropped_segment is 0 no additional subfolder will be added
@@ -82,12 +91,12 @@ def distance_measure_assessment_dir_for(overall_dataset_name: str, data_type: st
           or results/distance-measures-assessment/raw/n_dropped_clusters_m_dropped_segments/L1
       """
     return get_folder_name_for(results_type=ResultsType.distance_measure_assessment,
-                               overall_dataset_name=overall_dataset_name, data_type=data_type,
+                               overall_dataset_name=overall_dataset_name, data_type=data_type, data_dir=data_dir,
                                distance_measure=distance_measure, results_dir=results_dir, drop_clusters=drop_clusters,
                                drop_segments=drop_segments)
 
 
-def internal_measure_calculation_dir_for(overall_dataset_name: str, data_type: str, results_dir: str,
+def internal_measure_calculation_dir_for(overall_dataset_name: str, data_type: str, results_dir: str, data_dir: str,
                                          distance_measure: str, drop_clusters: int = 0, drop_segments: int = 0):
     """
           Returns directory for internal measures calculation on bad partitions
@@ -95,9 +104,10 @@ def internal_measure_calculation_dir_for(overall_dataset_name: str, data_type: s
           :param data_type: the data type, see SyntheticDataType
           :param results_dir: the directory for results, this is the main directory, the internal_assessment folder will be
           added
+          :param data_dir: the directory from which the data was read to be able to add the irregular folder if required
           :param distance_measure: the distance measures used for the internal assessment, see DistanceMeasures
           :param drop_clusters: will create an additional folder for evaluating reduced numbers of clusters, if 0 and
-          n_dropped_segment is 0 no additional subfolder will be added
+          n_dropped_segment is 0 no additional sub folder will be added
           :param drop_segments: will create an additional folder for evaluating reduced numbers of segments
           :return: the path name to the results folder e.g. results/internal_assessment/raw/L1/ or
           results/internal_assessment/raw/n_dropped_clusters/L1 or results/internal_assessment/raw/n_dropped_segments/L1
@@ -105,11 +115,11 @@ def internal_measure_calculation_dir_for(overall_dataset_name: str, data_type: s
       """
     return get_folder_name_for(results_type=ResultsType.internal_measures,
                                overall_dataset_name=overall_dataset_name, data_type=data_type,
-                               distance_measure=distance_measure, results_dir=results_dir, drop_clusters=drop_clusters,
-                               drop_segments=drop_segments)
+                               distance_measure=distance_measure, results_dir=results_dir, data_dir=data_dir,
+                               drop_clusters=drop_clusters, drop_segments=drop_segments)
 
 
-def internal_measure_assessment_dir_for(overall_dataset_name: str, data_type: str, results_dir: str,
+def internal_measure_assessment_dir_for(overall_dataset_name: str, data_type: str, results_dir: str, data_dir: str,
                                         distance_measure: str, drop_clusters: int = 0, drop_segments: int = 0):
     """
     Returns directory for internal measures assessment results tables for the given data type and distance measure
@@ -117,6 +127,7 @@ def internal_measure_assessment_dir_for(overall_dataset_name: str, data_type: st
     :param data_type: the data type, see SyntheticDataType
     :param results_dir: the directory for results, this is the main directory, the internal_assessment folder will be
     added
+    :param data_dir: the directory from which the data was read to be able to add the irregular folder if required
     :param distance_measure: the distance measures used for the internal assessment, see DistanceMeasures
     :param drop_clusters: will create an additional folder for evaluating reduced numbers of clusters, if 0 and
     n_dropped_segment is 0 no additional subfolder will be added
@@ -126,15 +137,13 @@ def internal_measure_assessment_dir_for(overall_dataset_name: str, data_type: st
     or results/internal_assessment/raw/n_dropped_clusters_m_dropped_segments/L1
     """
     return get_folder_name_for(results_type=ResultsType.internal_measure_assessment,
-                               overall_dataset_name=overall_dataset_name, data_type=data_type,
+                               overall_dataset_name=overall_dataset_name, data_type=data_type, data_dir=data_dir,
                                distance_measure=distance_measure, results_dir=results_dir, drop_clusters=drop_clusters,
                                drop_segments=drop_segments)
 
 
 def get_folder_name_for(results_type: str, overall_dataset_name: str, data_type: str, results_dir: str,
-                        distance_measure: str,
-                        drop_clusters: int = 0,
-                        drop_segments: int = 0):
+                        distance_measure: str, data_dir: str, drop_clusters: int = 0, drop_segments: int = 0):
     """
         Returns directory for the given results type using
         :param overall_dataset_name: a name to identify the dataset overall e.g n30 or n2
@@ -142,6 +151,7 @@ def get_folder_name_for(results_type: str, overall_dataset_name: str, data_type:
         :param results_dir: the directory for results, this is the main directory, the internal_assessment folder will be
         added
         :param distance_measure: the distance measures used for the internal assessment, see DistanceMeasures
+        :param data_dir: this is used to decide if creating an additional layer for e.g. irregular_p30
         :param drop_clusters: will create an additional folder for evaluating reduced numbers of clusters, if 0 and
         n_dropped_segment is 0 no additional subfolder will be added
         :param drop_segments: will create an additional folder for evaluating reduced numbers of segments
@@ -151,6 +161,11 @@ def get_folder_name_for(results_type: str, overall_dataset_name: str, data_type:
     """
     # put in folder internal_assessment
     results_folder = path.join(results_dir, results_type)
+    # check if irregular and if it is, add the irregular folder
+    data_dir_irr_name = get_irregular_folder_name_from(data_dir)
+    if data_dir_irr_name:  # the last folder name is an irregular one
+        last_folder = os.path.basename(data_dir)
+        results_folder = path.join(results_folder, last_folder)
     # put in sub folder e.g. raw
     results_folder = path.join(results_folder, data_type)
     # put in sub folder e.g. n30

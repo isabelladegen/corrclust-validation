@@ -57,6 +57,18 @@ class SyntheticDataType:
             return "RS"
         return data_type
 
+    @staticmethod
+    def get_dataset_variation_name(data_type: str, extension: str):
+        """
+        Returns the ds variation name for the given datatype. The extension is
+        p30 or p90 for irregular datasets. Values will be RAW if extensions is '' or RAW p30 if extension
+        'p30' or RS p30 1min or RS 1min, etc
+        """
+        resample_rule = SyntheticDataType.rule_from_resample_type(data_type) if SyntheticDataType.is_resample_type(
+            data_type) else ''
+        return " ".join(
+            filter(None, [SyntheticDataType.get_log_key_for_data_type(data_type), extension, resample_rule]))
+
 
 @dataclass
 class SyntheticFileTypes:
