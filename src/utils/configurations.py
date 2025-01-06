@@ -24,6 +24,21 @@ OVERALL_MAE_IMAGE = 'overall_mae_distributions.png'
 
 
 @dataclass
+class RunInformationCols:
+    ds_name: str = 'Name'
+    data_cols: str = 'columns'
+    distribution: str = 'distributions_for_variates'
+    distribution_args: str = 'distributions_args'
+    distribution_kwargs: str = 'distributions_kwargs'
+
+    def dist_args_for(self, variate: str) -> str:
+        return self.distribution_args + "_" + str(variate)
+
+    def dist_kwargs_for(self, variate: str) -> str:
+        return self.distribution_kwargs + "_" + str(variate)
+
+
+@dataclass
 class ResultsType:
     internal_measure_assessment: str = 'internal-measures-assessment'
     internal_measures: str = 'internal-measures'

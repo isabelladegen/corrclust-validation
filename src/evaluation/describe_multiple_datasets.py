@@ -1,16 +1,34 @@
+import ast
+import re
 from dataclasses import dataclass
 from itertools import chain
 from os import path
 
+import numpy as np
 import pandas as pd
+import scipy.stats as stats
 
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.utils.configurations import SYNTHETIC_DATA_DIR, ROOT_RESULTS_DIR, dataset_description_dir, \
     MULTIPLE_DS_SUMMARY_FILE, GENERATED_DATASETS_FILE_PATH, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR, \
-    get_irregular_folder_name_from, base_dataset_result_folder_for_type, ResultsType, SyntheticDataVariates
+    get_irregular_folder_name_from, base_dataset_result_folder_for_type, ResultsType, SyntheticDataVariates, \
+    RunInformationCols
 from src.utils.labels_utils import calculate_n_segments_outside_tolerance_for
 from src.utils.load_synthetic_data import SyntheticDataType, load_labels, load_synthetic_data
 from src.utils.plots.matplotlib_helper_functions import Backends
+
+
+@dataclass
+class DistParams:
+    method: str = 'method'
+    args: str = "args"  # what's this representative?
+    kwargs: str = "kwargs"
+    median_args: str = "median_args"
+    median_kwargs: str = "median_kwargs"
+    min_args: str = "min_args"
+    min_kwargs: str = "min_kwargs"
+    max_args: str = "max_args"
+    max_kwargs: str = "max-kwargs"
 
 
 @dataclass
@@ -76,15 +94,13 @@ class DescribeMultipleDatasets:
 
     def __init__(self, wandb_run_file: str, overall_ds_name: str,
                  data_type: str = SyntheticDataType.non_normal_correlated, data_dir: str = SYNTHETIC_DATA_DIR,
-                 load_data: bool = False, data_columns: [str] = SyntheticDataVariates.columns(),
-                 backend: str = Backends.none.value, round_to: int = 3):
+                 load_data: bool = False, backend: str = Backends.none.value, round_to: int = 3):
         """
         :param wandb_run_file: full path to the wandb run file
         :param overall_ds_name: a string for the ds - this is mainly used to safe results in
         :param data_type: type of data to load all datasets for, see SyntheticDataType for options
         :param data_dir: directory where the data is stored
         :param load_data: whether to just load the labels files (False - default) or the labels and data (True)
-        :param data_columns: list of data columns for data df, only relevant when loading data
         :param backend: backend for matplotlib
         :param round_to: what to round the results to
         """
@@ -93,12 +109,13 @@ class DescribeMultipleDatasets:
         self.__data_type = data_type
         self.__data_dir = data_dir
         self.__load_data = load_data
-        self.__data_columns = data_columns
         self.__backend = backend
         self.__round_to = round_to
 
         # dictionary with key run name and value labels file for the run
-        self.run_names = pd.read_csv(wandb_run_file)['Name'].tolist()
+        self.__run_information = pd.read_csv(wandb_run_file, index_col=RunInformationCols.ds_name)
+        self.run_names = self.__run_information.index.tolist()
+        self.ts_variates = ast.literal_eval(self.__run_information.at[self.run_names[0], RunInformationCols.data_cols])
         self.label_dfs = {}
         self.data_dfs = {}
         if self.__load_data:  # load both labels and data
@@ -220,13 +237,116 @@ class DescribeMultipleDatasets:
         file_name = path.join(folder, MULTIPLE_DS_SUMMARY_FILE)
         df.to_csv(file_name)
 
-    def get_data_as_xtrain(self, ds_name):
+    def get_data_as_xtrain(self, ds_name: str) -> np.array:
         """
         Returns the data for the given dataset name as 2d numpy array
         This is only possible if you loaded the data.
         """
         assert self.__load_data, "You need to load the data to be able to use this function. Set load_data to True!"
-        return self.data_dfs[ds_name][self.__data_columns].to_numpy()
+        return self.data_dfs[ds_name][self.ts_variates].to_numpy()
+
+    def get_list_all_datasets_data(self) -> []:
+        """
+        Returns a list of xtrain np arrays for all datasets loaded
+        """
+        return [self.get_data_as_xtrain(run_name) for run_name in self.run_names]
+
+    def get_median_min_max_distribution_parameters(self):
+        """
+        Return median, min, max distribution parameters for the loaded datasets (from run_file)
+        We assume that all datasets have the same columns (time series variates) and for the same time series variate
+        use the same distribution, the parameters of that distribution might vary
+        :return dictionary of dictionaries e.g:
+        dist_params = {'iob':
+            {
+                'method': stats.genextreme,
+                'args': (0.1,),  # shape parameter c
+                'kwargs': {'loc': 2, 'scale': 3},  # location and scale
+                'median_args': (0.1,),
+                'median_kwargs': {'loc': 2, 'scale': 3},
+                'min_args': (0.08,),
+                'min_kwargs': {'loc': 1.8, 'scale': 2.8},
+                'max_args': (0.12,),
+                'max_kwargs': {'loc': 2.2, 'scale': 3.2}
+            },
+            'cob': {
+                'method': ...
+            }
+            ...
+        """
+        # create an empty dict for each ts variate
+        dist_params = {variate: {} for variate in self.ts_variates}
+
+        # theoretical column names
+        args_base_cols = [RunInformationCols().dist_args_for(variate) for variate in self.ts_variates]
+        kwargs_base_cols = [RunInformationCols().dist_kwargs_for(variate) for variate in self.ts_variates]
+
+        # find all columns that actually exist for each variate
+        args_cols = {variate: [] for variate in self.ts_variates}  # if no args stays empty
+        kwargs_cols = {variate: [] for variate in self.ts_variates}  # if no kwargs stays empty
+        existing_cols = self.__run_information.columns
+        # create dictionaries of dictionaries, here the values of the column dictionaries are empty lists
+        # args: { 'iob' : {'distributions_args_iob' : (<tuples of args>)}...}
+        # kwargs: { 'iob' : {'distributions_kwargs_iob.loc' : [values], 'distributions_kwargs_iob.scale': [values]}...}
+        for idx, variate in enumerate(self.ts_variates):
+            args_cols[variate] = {col: [] for col in existing_cols if col == args_base_cols[idx]}
+            kwargs_cols[variate] = {col: [] for col in existing_cols if col.startswith(kwargs_base_cols[idx])}
+
+        # load the data for each column into the empty lists
+        for idx, variate in enumerate(self.ts_variates):
+            arg_column_names = list(args_cols[variate].keys())
+            # args - should just have one column with all the args
+            error_msg = "We unexpectedly have multiple arg columns for variate: " + variate + ". Cols: " + str(
+                arg_column_names)
+            assert len(arg_column_names) <= 1, error_msg
+            for col in arg_column_names:
+                # these are lists of args
+                args_cols[variate][col] = self.__run_information[col].apply(ast.literal_eval).to_list()
+            # kwargs
+            kwarg_column_names = list(kwargs_cols[variate].keys())
+            for col in kwarg_column_names:
+                # these are single numbers so we can just read
+                kwargs_cols[variate][col] = self.__run_information[col].to_list()
+
+        # get first datasets distribution - we assume the same dist is used for all datasets
+        distributions = ast.literal_eval(self.__run_information.at[self.run_names[0], RunInformationCols.distribution])
+
+        # for each variate calculate the values
+        for idx, variate in enumerate(self.ts_variates):
+            # distribution
+            dist_params[variate][DistParams.method] = extract_distribution(distributions[idx])
+            # min, max, median of distribution args
+            # 2d numpy array with columns being the different args and rows being the different datasets
+            args_for_variate = np.array(list(args_cols[variate].values())[0])
+            dist_params[variate][DistParams.median_args] = tuple(np.median(args_for_variate, axis=0))
+            dist_params[variate][DistParams.min_args] = tuple(np.min(args_for_variate, axis=0))
+            dist_params[variate][DistParams.max_args] = tuple(np.max(args_for_variate, axis=0))
+            # min, max, median of each kwargs
+            kwargs_min = {}
+            kwargs_max = {}
+            kwargs_median = {}
+            # go through all keywords and calculate min, max, median for each
+            for col_name, values in kwargs_cols[variate].items():
+                kw_name = col_name.split('.')[-1]
+                kwargs_min[kw_name] = np.min(values)
+                kwargs_max[kw_name] = np.max(values)
+                kwargs_median[kw_name] = np.median(values)
+            dist_params[variate][DistParams.median_kwargs] = kwargs_median
+            dist_params[variate][DistParams.min_kwargs] = kwargs_min
+            dist_params[variate][DistParams.max_kwargs] = kwargs_max
+
+        return dist_params
+
+
+def extract_distribution(log_string: str):
+    """Gets scipy distributio form log string"""
+    match = re.search(r'scipy\.stats\._\w+distns\.(\w+)_gen', log_string)
+
+    if match:
+        dist_name = match.group(1)
+        return getattr(stats, dist_name)
+    else:
+        assert False, "Could not match distribution in log string: " + log_string
 
 
 if __name__ == '__main__':
@@ -242,19 +362,19 @@ if __name__ == '__main__':
     for ds_type in dataset_types:
         ds = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=ds_type,
                                       data_dir=SYNTHETIC_DATA_DIR)
-        ds.save_summary(root_results_dir)
+    ds.save_summary(root_results_dir)
 
     # do irregular p30 sampled ones
     for ds_type in dataset_types:
         ds = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=ds_type,
                                       data_dir=IRREGULAR_P30_DATA_DIR)
-        ds.save_summary(root_results_dir)
+    ds.save_summary(root_results_dir)
 
     # do irregular p90 sampled ones
     for ds_type in dataset_types:
         ds = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=ds_type,
                                       data_dir=IRREGULAR_P90_DATA_DIR)
-        ds.save_summary(root_results_dir)
+    ds.save_summary(root_results_dir)
 
     # write combined results (this also reads all files and then writes a result)
     combine_all_ds_variations_multiple_description_summary_dfs(result_root_dir=root_results_dir)

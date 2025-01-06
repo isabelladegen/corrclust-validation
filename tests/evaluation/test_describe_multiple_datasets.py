@@ -1,12 +1,14 @@
 from os import path
 
+import numpy as np
 import pandas as pd
 from hamcrest import *
+import scipy.stats as stats
 
 from src.evaluation.describe_multiple_datasets import DescribeMultipleDatasets, SummaryStatistics, \
-    combine_all_ds_variations_multiple_description_summary_dfs
+    combine_all_ds_variations_multiple_description_summary_dfs, DistParams
 from src.utils.configurations import SYNTHETIC_DATA_DIR, GENERATED_DATASETS_FILE_PATH, IRREGULAR_P90_DATA_DIR, \
-    dataset_description_dir, MULTIPLE_DS_SUMMARY_FILE, IRREGULAR_P30_DATA_DIR, ROOT_RESULTS_DIR
+    dataset_description_dir, MULTIPLE_DS_SUMMARY_FILE, IRREGULAR_P30_DATA_DIR, ROOT_RESULTS_DIR, SyntheticDataVariates
 from src.utils.load_synthetic_data import SyntheticDataType
 from tests.test_utils.configurations_for_testing import TEST_ROOT_RESULTS_DIR
 
@@ -131,6 +133,62 @@ def test_combines_all_datasets_into_one_table():
     assert_that(df[nn_ds_rs_irr_p90][SummaryStatistics.overall_segment_lengths]['min'], is_(13))
 
 
+def test_loads_distribution_parameters_from_run_file():
+    dist_params = ds_raw.get_median_min_max_distribution_parameters()
+
+    # check it is "iob", "cob", "ig"
+    assert_that(list(dist_params.keys()), contains_exactly(*SyntheticDataVariates.columns()))
+
+    # check iob params
+    iob_params = dist_params[SyntheticDataVariates.columns()[0]]
+    assert_that(iob_params[DistParams.method], is_(stats.genextreme))
+    assert_that(iob_params[DistParams.median_args], is_((-0.2237,)))
+    assert_that(iob_params[DistParams.min_args], is_((-0.5206,)))
+    assert_that(iob_params[DistParams.max_args], is_((0.0664,)))
+
+    assert_that(iob_params[DistParams.median_kwargs].keys(), contains_exactly("loc", "scale"))
+    assert_that(iob_params[DistParams.min_kwargs].keys(), contains_exactly("loc", "scale"))
+    assert_that(iob_params[DistParams.min_kwargs].keys(), contains_exactly("loc", "scale"))
+
+    assert_that(iob_params[DistParams.median_kwargs]["loc"], is_(0.49035))
+    assert_that(iob_params[DistParams.max_kwargs]["loc"], is_(1.489))
+    assert_that(iob_params[DistParams.min_kwargs]["loc"], is_(0.0955))
+
+    assert_that(iob_params[DistParams.median_kwargs]["scale"], is_(1.0751))
+    assert_that(iob_params[DistParams.max_kwargs]["scale"], is_(3.219))
+    assert_that(iob_params[DistParams.min_kwargs]["scale"], is_(0.3602))
+
+    # check cob params
+    cob_params = dist_params[SyntheticDataVariates.columns()[1]]
+    assert_that(cob_params[DistParams.method], is_(stats.nbinom))
+    assert_that(cob_params[DistParams.median_args], is_((1.0, 0.10264999999999999)))
+    assert_that(cob_params[DistParams.min_args], is_((1.0, 0.0464)))
+    assert_that(cob_params[DistParams.max_args], is_((1.0, 0.4031)))
+
+    assert_that(len(cob_params[DistParams.median_kwargs].keys()), is_(0))
+    assert_that(len(cob_params[DistParams.min_kwargs].keys()), is_(0))
+    assert_that(len(cob_params[DistParams.min_kwargs].keys()), is_(0))
+
+    # check ig params
+    ig_params = dist_params[SyntheticDataVariates.columns()[2]]
+    assert_that(ig_params[DistParams.method], is_(stats.genextreme))
+    assert_that(ig_params[DistParams.median_args], is_((0.0,)))
+    assert_that(ig_params[DistParams.min_args], is_((0.0,)))
+    assert_that(ig_params[DistParams.max_args], is_((0.0782,)))
+
+    assert_that(ig_params[DistParams.median_kwargs].keys(), contains_exactly("loc", "scale"))
+    assert_that(ig_params[DistParams.min_kwargs].keys(), contains_exactly("loc", "scale"))
+    assert_that(ig_params[DistParams.min_kwargs].keys(), contains_exactly("loc", "scale"))
+
+    assert_that(ig_params[DistParams.median_kwargs]["loc"], is_(116.64075))
+    assert_that(ig_params[DistParams.max_kwargs]["loc"], is_(131.9869))
+    assert_that(ig_params[DistParams.min_kwargs]["loc"], is_(88.7941))
+
+    assert_that(ig_params[DistParams.median_kwargs]["scale"], is_(33.59955))
+    assert_that(ig_params[DistParams.max_kwargs]["scale"], is_(53.5276))
+    assert_that(ig_params[DistParams.min_kwargs]["scale"], is_(17.8245))
+
+
 def test_can_load_data_if_required():
     full_data_ds = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=raw,
                                             data_dir=data_dir, load_data=True)
@@ -139,6 +197,10 @@ def test_can_load_data_if_required():
     assert_that(full_data_ds.data_dfs.keys(), is_(full_data_ds.label_dfs.keys()))
 
     last_df_name = list(full_data_ds.data_dfs.keys())[-1]
-    data = full_data_ds.get_data_as_xtrain(ds_name=last_df_name)
-    assert_that(data.shape[1], is_(3))  # 3 timeseries
-    assert_that(data.shape[0], greater_than(1240000))  # the big version
+    last_data = full_data_ds.get_data_as_xtrain(ds_name=last_df_name)
+    assert_that(last_data.shape[1], is_(3))  # 3 timeseries
+    assert_that(last_data.shape[0], greater_than(1240000))  # the big version
+
+    all_datasets = full_data_ds.get_list_all_datasets_data()
+    assert_that(len(all_datasets), is_(30))
+    assert_that(np.array_equal(all_datasets[-1], last_data))
