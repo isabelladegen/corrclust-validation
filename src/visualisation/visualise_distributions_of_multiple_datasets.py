@@ -59,7 +59,6 @@ def plot_standard_distributions(datasets: {}, dist_params: {}, fontsize=20, figs
     # Create figure and grid
     fig = plt.figure(figsize=figsize)
     gs = GridSpec(n_timeseries, n_variations, figure=fig)
-    fig.suptitle('Distribution Fits Across Dataset Variations', fontsize=fontsize + 4)
 
     # Store x axis limits for consistency
     xlims = {ts_name: {'min': float('inf'), 'max': float('-inf')}
@@ -140,6 +139,42 @@ def plot_standard_distributions(datasets: {}, dist_params: {}, fontsize=20, figs
                 'max': max(pmf_median.max(), pmf_min.max(), pmf_max.max())
             }
 
+    # Add after the xlims dictionary definition
+    qq_lims = {ts_name: {'min': float('inf'), 'max': float('-inf')}
+               for ts_name in ts_names}
+
+    # First pass for QQ plot limits
+    for ts_idx, ts_name in enumerate(ts_names):
+        for variation in variations:
+            data = datasets[variation]
+            all_values = np.concatenate([d[:, ts_idx] for d in data])
+            dist_method = dist_params[ts_name][DistParams.method]
+
+            if dist_method.name in stats._continuous_distns._distn_names:
+                p = np.linspace(0.01, 0.99, 100)
+                theoretical_quantiles = dist_method.ppf(
+                    p,
+                    *dist_params[ts_name][DistParams.median_args],
+                    **dist_params[ts_name][DistParams.median_kwargs]
+                )
+                empirical_quantiles = np.percentile(all_values, p * 100)
+            else:  # discrete case
+                unique_values = np.unique(np.floor(all_values).astype(int))
+                probs = np.linspace(0.01, 0.99, len(unique_values))
+                theoretical_quantiles = dist_method.ppf(
+                    probs,
+                    *dist_params[ts_name][DistParams.median_args],
+                    **dist_params[ts_name][DistParams.median_kwargs]
+                )
+                empirical_quantiles = np.percentile(all_values, probs * 100)
+
+            qq_lims[ts_name]['min'] = min(qq_lims[ts_name]['min'],
+                                          theoretical_quantiles.min(),
+                                          empirical_quantiles.min())
+            qq_lims[ts_name]['max'] = max(qq_lims[ts_name]['max'],
+                                          theoretical_quantiles.max(),
+                                          empirical_quantiles.max())
+
     # Create plots
     for ts_idx, ts_name in enumerate(ts_names):
         for var_idx, variation in enumerate(variations):
@@ -174,25 +209,14 @@ def plot_standard_distributions(datasets: {}, dist_params: {}, fontsize=20, figs
                     *dist_params[ts_name][DistParams.median_args],
                     **dist_params[ts_name][DistParams.median_kwargs]
                 )
-                ax.plot(x, pdf_median, 'r-', lw=2, label='Distribution (Median Parameters)')
-
-                # Plot confidence bands
-                pdf_min = dist_method.pdf(
-                    x,
-                    *dist_params[ts_name][DistParams.min_args],
-                    **dist_params[ts_name][DistParams.min_kwargs]
-                )
-                pdf_max = dist_method.pdf(
-                    x,
-                    *dist_params[ts_name][DistParams.max_args],
-                    **dist_params[ts_name][DistParams.max_kwargs]
-                )
-                ax.fill_between(x, pdf_min, pdf_max, alpha=0.2, color='r',
-                                label='Distribution (Parameter Range)')
+                ax.plot(x, pdf_median, 'r-', lw=2, label='PDF/PMF Median NN Parameters')
 
             elif dist_method.name in stats._discrete_distns._distn_names:
                 # For discrete distributions
-                discrete_values = np.unique(np.floor(all_values).astype(int))
+                discrete_values = np.arange(
+                    int(np.floor(xlims[ts_name]['min'])),
+                    int(np.ceil(xlims[ts_name]['max'])) + 1
+                )
                 x = discrete_values
 
                 # Plot median PMF
@@ -201,27 +225,12 @@ def plot_standard_distributions(datasets: {}, dist_params: {}, fontsize=20, figs
                     *dist_params[ts_name][DistParams.median_args],
                     **dist_params[ts_name][DistParams.median_kwargs]
                 )
-                ax.bar(x, pmf_median, alpha=0.5, color='r', label='Distribution (Median Parameters)')
-
-                # Plot confidence bands for discrete distribution
-                pmf_min = dist_method.pmf(
-                    x,
-                    *dist_params[ts_name][DistParams.min_args],
-                    **dist_params[ts_name][DistParams.min_kwargs]
-                )
-                pmf_max = dist_method.pmf(
-                    x,
-                    *dist_params[ts_name][DistParams.max_args],
-                    **dist_params[ts_name][DistParams.max_kwargs]
-                )
-                # Visualize confidence band for discrete distribution
-                ax.fill_between(x, pmf_min, pmf_max, alpha=0.2, color='r',
-                                label='Distribution (Parameter Range)')
+                ax.bar(x, pmf_median, alpha=0.5, color='r', label='PDF/PMF Median Parameters')
             else:
                 raise ValueError(f"Unsupported distribution type: {dist_method.name}")
 
             # Create inset for QQ plot
-            axins = ax.inset_axes([0.65, 0.65, 0.3, 0.3])
+            axins = ax.inset_axes([0.65, 0.6, 0.3, 0.3])
 
             # Determine distribution type for QQ plot
             if dist_method.name in stats._continuous_distns._distn_names:
@@ -237,9 +246,9 @@ def plot_standard_distributions(datasets: {}, dist_params: {}, fontsize=20, figs
                 axins.scatter(theoretical_quantiles, empirical_quantiles, alpha=0.5, s=10)
 
                 # Add diagonal line and confidence bands to QQ plot
-                qq_min = min(theoretical_quantiles.min(), empirical_quantiles.min())
-                qq_max = max(theoretical_quantiles.max(), empirical_quantiles.max())
-                axins.plot([qq_min, qq_max], [qq_min, qq_max], 'r--', alpha=0.8)
+                axins.plot([qq_lims[ts_name]['min'], qq_lims[ts_name]['max']],
+                           [qq_lims[ts_name]['min'], qq_lims[ts_name]['max']],
+                           'r--', alpha=0.8)
 
                 # Add confidence bands to QQ plot
                 theoretical_min = dist_method.ppf(
@@ -252,9 +261,12 @@ def plot_standard_distributions(datasets: {}, dist_params: {}, fontsize=20, figs
                     *dist_params[ts_name][DistParams.max_args],
                     **dist_params[ts_name][DistParams.max_kwargs]
                 )
-                axins.fill_between(theoretical_quantiles,
-                                   theoretical_min, theoretical_max,
+                x_range = np.linspace(qq_lims[ts_name]['min'], qq_lims[ts_name]['max'], 100)
+                axins.fill_between(x_range, x_range + (theoretical_min - theoretical_quantiles),
+                                   x_range + (theoretical_max - theoretical_quantiles),
                                    alpha=0.1, color='r')
+                axins.set_xlim(qq_lims[ts_name]['min'], qq_lims[ts_name]['max'])
+                axins.set_ylim(qq_lims[ts_name]['min'], qq_lims[ts_name]['max'])
 
             elif dist_method.name in stats._discrete_distns._distn_names:
                 # For discrete distributions
@@ -272,9 +284,9 @@ def plot_standard_distributions(datasets: {}, dist_params: {}, fontsize=20, figs
                 axins.scatter(theoretical_quantiles, empirical_quantiles, alpha=0.5, s=10)
 
                 # Add diagonal line
-                qq_min = min(theoretical_quantiles.min(), empirical_quantiles.min())
-                qq_max = max(theoretical_quantiles.max(), empirical_quantiles.max())
-                axins.plot([qq_min, qq_max], [qq_min, qq_max], 'r--', alpha=0.8)
+                axins.plot([qq_lims[ts_name]['min'], qq_lims[ts_name]['max']],
+                           [qq_lims[ts_name]['min'], qq_lims[ts_name]['max']],
+                           'r--', alpha=0.8)
 
                 # Add confidence bands to QQ plot for discrete distribution
                 theoretical_min = dist_method.ppf(
@@ -287,9 +299,13 @@ def plot_standard_distributions(datasets: {}, dist_params: {}, fontsize=20, figs
                     *dist_params[ts_name][DistParams.max_args],
                     **dist_params[ts_name][DistParams.max_kwargs]
                 )
-                axins.fill_between(theoretical_quantiles,
-                                   theoretical_min, theoretical_max,
+                x_range = np.linspace(qq_lims[ts_name]['min'], qq_lims[ts_name]['max'], len(unique_values))
+                axins.fill_between(x_range,
+                                   theoretical_min,
+                                   theoretical_max,
                                    alpha=0.1, color='r')
+                axins.set_xlim(qq_lims[ts_name]['min'], qq_lims[ts_name]['max'])
+                axins.set_ylim(qq_lims[ts_name]['min'], qq_lims[ts_name]['max'])
             else:
                 raise ValueError(f"Unsupported distribution type: {dist_method.name}")
 
@@ -303,6 +319,9 @@ def plot_standard_distributions(datasets: {}, dist_params: {}, fontsize=20, figs
                 ax.set_title(variation, fontsize=fontsize)
             if var_idx == 0:
                 ax.set_ylabel(f'{ts_name}\nDensity', fontsize=fontsize)
+            else:
+                # For all other columns, remove the label completely
+                ax.set_ylabel('')
 
             # Disable y-axis labels for subsequent columns in the same row
             if var_idx > 0:
@@ -314,9 +333,8 @@ def plot_standard_distributions(datasets: {}, dist_params: {}, fontsize=20, figs
             # Add legend to the last subplot in the first row
             if ts_idx == n_timeseries - 1 and var_idx == n_variations - 1:
                 # Place legend outside the plot on the right side
-                ax.legend(fontsize=fontsize - 4, title='Distribution',
-                          title_fontsize=fontsize - 4,
-                          bbox_to_anchor=(1.05, 0), loc='lower left')
+                ax.legend(fontsize=fontsize - 4, title_fontsize=fontsize - 4, bbox_to_anchor=(1.05, 0),
+                          loc='lower left')
 
     plt.tight_layout()
     return fig
@@ -350,7 +368,7 @@ class VisualiseDistributionsOfMultipleDatasets:
         else:
             dist_params = list(self.dataset_variates.values())[0].get_median_min_max_distribution_parameters()
 
-        fig = plot_standard_distributions(datasets=datasets, dist_params=dist_params, figsize=(20, 15),
+        fig = plot_standard_distributions(datasets=datasets, dist_params=dist_params, figsize=(20, 12),
                                           backend=self.backend)
         plt.show()
         return fig
