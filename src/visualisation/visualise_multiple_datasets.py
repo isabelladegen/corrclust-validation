@@ -156,7 +156,7 @@ def create_violin_grid_log_scale_x_axis(data_dict: {}, figsize: tuple = (18, 15)
 def create_violin_grid(data_dict: {}, figsize: tuple = (12, 12), backend: str = Backends.none.value) -> plt.Figure:
     """
     Create a grid of horizontal violin plots with statistics using dictionary keys as labels.
-    Source - mostly claude with some modifications from me
+    Source: developed with the help of claude and a lot of input from me
 
     :param data_dict : {str, {str, np.ndarray}} Nested dictionary containing data for each plot square
         Format: {'row_name': {'column_name': data_array}}

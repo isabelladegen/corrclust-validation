@@ -3,7 +3,6 @@ from os import path
 import pandas as pd
 from hamcrest import *
 
-from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.evaluation.describe_multiple_datasets import DescribeMultipleDatasets, SummaryStatistics, \
     combine_all_ds_variations_multiple_description_summary_dfs
 from src.utils.configurations import SYNTHETIC_DATA_DIR, GENERATED_DATASETS_FILE_PATH, IRREGULAR_P90_DATA_DIR, \
@@ -23,8 +22,8 @@ ds_raw = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overa
 # these tests read real data, but they save results in a test result folder!
 def test_can_load_base_raw_datasets_and_return_ds_variation_mae():
     assert_that(len(ds_raw.run_names), is_(30))  # 30 files
-    assert_that(len(ds_raw.labels), is_(30))  # 30 files
-    assert_that(ds_raw.labels[ds_raw.run_names[0]].shape[0], is_(100))  # loaded the data properly
+    assert_that(len(ds_raw.label_dfs), is_(30))  # 30 files
+    assert_that(ds_raw.label_dfs[ds_raw.run_names[0]].shape[0], is_(100))  # loaded the data properly
 
     mae_stats = ds_raw.mae_stats()
     assert_that(mae_stats["mean"], is_(0.613))
@@ -55,8 +54,8 @@ def test_can_load_base_non_normal_datasets():
                                      data_dir=data_dir)
 
     assert_that(len(ds_nn.run_names), is_(30))  # 30 files
-    assert_that(len(ds_nn.labels), is_(30))  # 30 files
-    assert_that(ds_nn.labels[ds_nn.run_names[0]].shape[0], is_(100))  # loaded the data properly
+    assert_that(len(ds_nn.label_dfs), is_(30))  # 30 files
+    assert_that(ds_nn.label_dfs[ds_nn.run_names[0]].shape[0], is_(100))  # loaded the data properly
 
     mae_stats = ds_nn.mae_stats()
     assert_that(mae_stats["mean"], is_(0.116))
@@ -69,8 +68,8 @@ def test_can_irregular_p90_non_normal_dataset():
                                             data_dir=IRREGULAR_P90_DATA_DIR)
 
     assert_that(len(ds_irr_p90nn.run_names), is_(30))  # 30 files
-    assert_that(len(ds_irr_p90nn.labels), is_(30))  # 30 files
-    assert_that(ds_irr_p90nn.labels[ds_irr_p90nn.run_names[0]].shape[0], is_(100))  # loaded the data properly
+    assert_that(len(ds_irr_p90nn.label_dfs), is_(30))  # 30 files
+    assert_that(ds_irr_p90nn.label_dfs[ds_irr_p90nn.run_names[0]].shape[0], is_(100))  # loaded the data properly
 
     mae_stats = ds_irr_p90nn.mae_stats()
     assert_that(mae_stats["mean"], is_(0.123))
@@ -132,8 +131,14 @@ def test_combines_all_datasets_into_one_table():
     assert_that(df[nn_ds_rs_irr_p90][SummaryStatistics.overall_segment_lengths]['min'], is_(13))
 
 
-def test_plot_some_stuff():
-    df = combine_all_ds_variations_multiple_description_summary_dfs(result_root_dir=ROOT_RESULTS_DIR,
-                                                                    save_combined_results=False)
-    overall_seg_lengths = df.xs(SummaryStatistics.overall_segment_lengths, level=1, axis=1)
-    print('dough')
+def test_can_load_data_if_required():
+    full_data_ds = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=raw,
+                                            data_dir=data_dir, load_data=True)
+    assert_that(len(full_data_ds.data_dfs), is_(30))
+    assert_that(len(full_data_ds.label_dfs), is_(30))
+    assert_that(full_data_ds.data_dfs.keys(), is_(full_data_ds.label_dfs.keys()))
+
+    last_df_name = list(full_data_ds.data_dfs.keys())[-1]
+    data = full_data_ds.get_data_as_xtrain(ds_name=last_df_name)
+    assert_that(data.shape[1], is_(3))  # 3 timeseries
+    assert_that(data.shape[0], greater_than(1240000))  # the big version

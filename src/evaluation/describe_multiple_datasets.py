@@ -7,9 +7,9 @@ import pandas as pd
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.utils.configurations import SYNTHETIC_DATA_DIR, ROOT_RESULTS_DIR, dataset_description_dir, \
     MULTIPLE_DS_SUMMARY_FILE, GENERATED_DATASETS_FILE_PATH, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR, \
-    get_irregular_folder_name_from, base_dataset_result_folder_for_type, ResultsType
+    get_irregular_folder_name_from, base_dataset_result_folder_for_type, ResultsType, SyntheticDataVariates
 from src.utils.labels_utils import calculate_n_segments_outside_tolerance_for
-from src.utils.load_synthetic_data import SyntheticDataType, load_labels
+from src.utils.load_synthetic_data import SyntheticDataType, load_labels, load_synthetic_data
 from src.utils.plots.matplotlib_helper_functions import Backends
 
 
@@ -75,13 +75,16 @@ class DescribeMultipleDatasets:
     """
 
     def __init__(self, wandb_run_file: str, overall_ds_name: str,
-                 data_type: str = SyntheticDataType.non_normal_correlated,
-                 data_dir: str = SYNTHETIC_DATA_DIR, backend: str = Backends.none.value, round_to: int = 3):
+                 data_type: str = SyntheticDataType.non_normal_correlated, data_dir: str = SYNTHETIC_DATA_DIR,
+                 load_data: bool = False, data_columns: [str] = SyntheticDataVariates.columns(),
+                 backend: str = Backends.none.value, round_to: int = 3):
         """
         :param wandb_run_file: full path to the wandb run file
         :param overall_ds_name: a string for the ds - this is mainly used to safe results in
         :param data_type: type of data to load all datasets for, see SyntheticDataType for options
         :param data_dir: directory where the data is stored
+        :param load_data: whether to just load the labels files (False - default) or the labels and data (True)
+        :param data_columns: list of data columns for data df, only relevant when loading data
         :param backend: backend for matplotlib
         :param round_to: what to round the results to
         """
@@ -89,18 +92,29 @@ class DescribeMultipleDatasets:
         self.__overall_ds_name = overall_ds_name
         self.__data_type = data_type
         self.__data_dir = data_dir
+        self.__load_data = load_data
+        self.__data_columns = data_columns
         self.__backend = backend
         self.__round_to = round_to
+
         # dictionary with key run name and value labels file for the run
         self.run_names = pd.read_csv(wandb_run_file)['Name'].tolist()
-        self.labels = {name: load_labels(name, self.__data_type, self.__data_dir) for name in self.run_names}
+        self.label_dfs = {}
+        self.data_dfs = {}
+        if self.__load_data:  # load both labels and data
+            for name in self.run_names:
+                data_df, labels_df = load_synthetic_data(name, self.__data_type, self.__data_dir)
+                self.data_dfs[name] = data_df
+                self.label_dfs[name] = labels_df
+        else:  # load just labels
+            self.label_dfs = {name: load_labels(name, self.__data_type, self.__data_dir) for name in self.run_names}
 
     def mae_stats(self):
         """ Return stats for mae
         This is to see variations across the different datasets, therefore we use the mean of each dataset
         :returns pandas describe series
         """
-        mean_values = [label[SyntheticDataSegmentCols.mae].mean() for label in self.labels.values()]
+        mean_values = [label[SyntheticDataSegmentCols.mae].mean() for label in self.label_dfs.values()]
         return pd.Series(mean_values).describe().round(3)
 
     def overall_mae_stats(self):
@@ -115,7 +129,7 @@ class DescribeMultipleDatasets:
         return pd.Series(values_flat).describe().round(3)
 
     def all_mae_values(self):
-        values = [label[SyntheticDataSegmentCols.mae] for label in self.labels.values()]
+        values = [label[SyntheticDataSegmentCols.mae] for label in self.label_dfs.values()]
         return values
 
     def n_segments_outside_tolerance_stats(self):
@@ -124,7 +138,7 @@ class DescribeMultipleDatasets:
         This is naturally a per dataset number
         :returns pandas describe series
         """
-        values = [calculate_n_segments_outside_tolerance_for(label) for label in self.labels.values()]
+        values = [calculate_n_segments_outside_tolerance_for(label) for label in self.label_dfs.values()]
         return pd.Series(values).describe().round(3)
 
     def observations_stats(self):
@@ -133,7 +147,7 @@ class DescribeMultipleDatasets:
         This is naturally a per dataset number
         :returns pandas describe series
         """
-        values = [label[SyntheticDataSegmentCols.length].sum() for label in self.labels.values()]
+        values = [label[SyntheticDataSegmentCols.length].sum() for label in self.label_dfs.values()]
         return pd.Series(values).describe().round(3)
 
     def n_patterns_stats(self):
@@ -143,7 +157,7 @@ class DescribeMultipleDatasets:
         This is naturally a per dataset number
         :returns pandas describe series
         """
-        values = [len(label[SyntheticDataSegmentCols.pattern_id].unique()) for label in self.labels.values()]
+        values = [len(label[SyntheticDataSegmentCols.pattern_id].unique()) for label in self.label_dfs.values()]
         return pd.Series(values).describe().round(3)
 
     def n_segments_stats(self):
@@ -152,7 +166,7 @@ class DescribeMultipleDatasets:
         This is naturally a per dataset number
         :returns pandas describe series
         """
-        values = [label.shape[0] for label in self.labels.values()]
+        values = [label.shape[0] for label in self.label_dfs.values()]
         return pd.Series(values).describe().round(3)
 
     def segment_length_stats(self):
@@ -161,7 +175,7 @@ class DescribeMultipleDatasets:
         of the mean. For many variations the mean will be the same but this might not be true for all
         :returns pandas describe series
         """
-        values = [label[SyntheticDataSegmentCols.length].mean() for label in self.labels.values()]
+        values = [label[SyntheticDataSegmentCols.length].mean() for label in self.label_dfs.values()]
         return pd.Series(values).describe().round(3)
 
     def overall_segment_length_stats(self):
@@ -176,7 +190,7 @@ class DescribeMultipleDatasets:
         return pd.Series(values_flat).describe().round(3)
 
     def all_segment_lengths_values(self):
-        values = [label[SyntheticDataSegmentCols.length] for label in self.labels.values()]
+        values = [label[SyntheticDataSegmentCols.length] for label in self.label_dfs.values()]
         return values
 
     def summary(self):
@@ -205,6 +219,14 @@ class DescribeMultipleDatasets:
                                          root_results_dir=root_results_dir, data_dir=self.__data_dir)
         file_name = path.join(folder, MULTIPLE_DS_SUMMARY_FILE)
         df.to_csv(file_name)
+
+    def get_data_as_xtrain(self, ds_name):
+        """
+        Returns the data for the given dataset name as 2d numpy array
+        This is only possible if you loaded the data.
+        """
+        assert self.__load_data, "You need to load the data to be able to use this function. Set load_data to True!"
+        return self.data_dfs[ds_name][self.__data_columns].to_numpy()
 
 
 if __name__ == '__main__':
