@@ -146,6 +146,8 @@ def create_violin_grid_log_scale_x_axis(data_dict: {}, figsize: tuple = (18, 15)
 
         axes.append(row_axes)
 
+    fig.supxlabel("x-axes log scale", fontsize=fontsize)
+
     # Adjust layout
     plt.tight_layout()
     return fig

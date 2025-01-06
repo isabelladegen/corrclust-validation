@@ -24,10 +24,10 @@ def test_can_visualise_overall_segment_lengths_distributions():
     assert_that(vds.col_names, contains_exactly(*column_names))
     assert_that(vds.row_names, contains_exactly('Standard', 'Irregular p 0.3', 'Irregular p 0.9'))
 
-    fig = vds.violin_plots_of_overall_segment_lengths(save_fig=True, root_result_dir=ROOT_RESULTS_DIR)
+    fig = vds.violin_plots_of_overall_segment_lengths(save_fig=False, root_result_dir=ROOT_RESULTS_DIR)
     assert_that(fig, is_not(None))
 
 
 def test_can_visualise_overall_mae_distributions():
-    fig = vds.violin_plots_of_overall_mae(save_fig=True, root_result_dir=ROOT_RESULTS_DIR)
+    fig = vds.violin_plots_of_overall_mae(save_fig=False, root_result_dir=ROOT_RESULTS_DIR)
     assert_that(fig, is_not(None))
