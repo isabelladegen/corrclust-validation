@@ -172,7 +172,6 @@ def create_violin_grid(data_dict: {}, figsize: tuple = (12, 12), backend: str = 
 
     # Set the style for publication-quality figures
     reset_matplotlib(backend)
-    # sns.set_context("paper", font_scale=1.2)
 
     # Create figure with custom size
     fig = plt.figure(figsize=figsize)

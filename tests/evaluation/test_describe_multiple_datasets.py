@@ -201,6 +201,6 @@ def test_can_load_data_if_required():
     assert_that(last_data.shape[1], is_(3))  # 3 timeseries
     assert_that(last_data.shape[0], greater_than(1240000))  # the big version
 
-    all_datasets = full_data_ds.get_list_all_datasets_data()
+    all_datasets = full_data_ds.get_list_of_xtrain_of_all_datasets()
     assert_that(len(all_datasets), is_(30))
     assert_that(np.array_equal(all_datasets[-1], last_data))

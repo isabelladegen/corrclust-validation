@@ -245,7 +245,7 @@ class DescribeMultipleDatasets:
         assert self.__load_data, "You need to load the data to be able to use this function. Set load_data to True!"
         return self.data_dfs[ds_name][self.ts_variates].to_numpy()
 
-    def get_list_all_datasets_data(self) -> []:
+    def get_list_of_xtrain_of_all_datasets(self) -> []:
         """
         Returns a list of xtrain np arrays for all datasets loaded
         """
