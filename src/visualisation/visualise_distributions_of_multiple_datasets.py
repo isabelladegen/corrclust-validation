@@ -243,28 +243,30 @@ def plot_standard_distributions(datasets: {}, dist_params: {}, fontsize=20, figs
                 )
                 empirical_quantiles = np.percentile(all_values, p * 100)
 
+                # Plot the empirical vs theoretical points for this variation
                 axins.scatter(theoretical_quantiles, empirical_quantiles, alpha=0.5, s=10)
 
-                # Add diagonal line and confidence bands to QQ plot
+                # Add diagonal line using the common limits for this row
                 axins.plot([qq_lims[ts_name]['min'], qq_lims[ts_name]['max']],
                            [qq_lims[ts_name]['min'], qq_lims[ts_name]['max']],
                            'r--', alpha=0.8)
 
-                # Add confidence bands to QQ plot
+                # Calculate confidence bands based on NN case parameters
+                x_range = np.linspace(qq_lims[ts_name]['min'], qq_lims[ts_name]['max'], 100)
+                theoretical_quantiles_nn = x_range  # This is our reference line
                 theoretical_min = dist_method.ppf(
-                    p,
+                    dist_method.cdf(x_range, *dist_params[ts_name][DistParams.median_args]),
                     *dist_params[ts_name][DistParams.min_args],
                     **dist_params[ts_name][DistParams.min_kwargs]
                 )
                 theoretical_max = dist_method.ppf(
-                    p,
+                    dist_method.cdf(x_range, *dist_params[ts_name][DistParams.median_args]),
                     *dist_params[ts_name][DistParams.max_args],
                     **dist_params[ts_name][DistParams.max_kwargs]
                 )
-                x_range = np.linspace(qq_lims[ts_name]['min'], qq_lims[ts_name]['max'], 100)
-                axins.fill_between(x_range, x_range + (theoretical_min - theoretical_quantiles),
-                                   x_range + (theoretical_max - theoretical_quantiles),
+                axins.fill_between(x_range, theoretical_min, theoretical_max,
                                    alpha=0.1, color='r')
+
                 axins.set_xlim(qq_lims[ts_name]['min'], qq_lims[ts_name]['max'])
                 axins.set_ylim(qq_lims[ts_name]['min'], qq_lims[ts_name]['max'])
 
@@ -272,8 +274,6 @@ def plot_standard_distributions(datasets: {}, dist_params: {}, fontsize=20, figs
                 # For discrete distributions
                 unique_values = np.unique(np.floor(all_values).astype(int))
                 probs = np.linspace(0.01, 0.99, len(unique_values))
-
-                # Generate theoretical quantiles for discrete distribution
                 theoretical_quantiles = dist_method.ppf(
                     probs,
                     *dist_params[ts_name][DistParams.median_args],
@@ -281,29 +281,33 @@ def plot_standard_distributions(datasets: {}, dist_params: {}, fontsize=20, figs
                 )
                 empirical_quantiles = np.percentile(all_values, probs * 100)
 
+                # Plot the empirical vs theoretical points for this variation
                 axins.scatter(theoretical_quantiles, empirical_quantiles, alpha=0.5, s=10)
 
-                # Add diagonal line
+                # Add diagonal line using the common limits for this row
                 axins.plot([qq_lims[ts_name]['min'], qq_lims[ts_name]['max']],
                            [qq_lims[ts_name]['min'], qq_lims[ts_name]['max']],
                            'r--', alpha=0.8)
 
-                # Add confidence bands to QQ plot for discrete distribution
+                # Calculate confidence bands based on NN case parameters
+                x_range = np.arange(
+                    int(np.floor(qq_lims[ts_name]['min'])),
+                    int(np.ceil(qq_lims[ts_name]['max'])) + 1
+                )
+                theoretical_quantiles_nn = x_range  # This is our reference line
                 theoretical_min = dist_method.ppf(
-                    probs,
+                    dist_method.cdf(x_range, *dist_params[ts_name][DistParams.median_args]),
                     *dist_params[ts_name][DistParams.min_args],
                     **dist_params[ts_name][DistParams.min_kwargs]
                 )
                 theoretical_max = dist_method.ppf(
-                    probs,
+                    dist_method.cdf(x_range, *dist_params[ts_name][DistParams.median_args]),
                     *dist_params[ts_name][DistParams.max_args],
                     **dist_params[ts_name][DistParams.max_kwargs]
                 )
-                x_range = np.linspace(qq_lims[ts_name]['min'], qq_lims[ts_name]['max'], len(unique_values))
-                axins.fill_between(x_range,
-                                   theoretical_min,
-                                   theoretical_max,
+                axins.fill_between(x_range, theoretical_min, theoretical_max,
                                    alpha=0.1, color='r')
+
                 axins.set_xlim(qq_lims[ts_name]['min'], qq_lims[ts_name]['max'])
                 axins.set_ylim(qq_lims[ts_name]['min'], qq_lims[ts_name]['max'])
             else:
