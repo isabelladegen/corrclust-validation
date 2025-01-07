@@ -204,13 +204,12 @@ def plot_standard_distributions(datasets: {}, dist_params: {}, reference_key: st
                 # For continuous distributions
                 x = np.linspace(xlims[ts_name]['min'], xlims[ts_name]['max'], 1000)
                 pdf_median = dist_method.pdf(x, *median_args, **median_kwargs)
-                ax.plot(x, pdf_median, 'r-', lw=2, label='PDF/PMF Median target distribution')
-
+                ax.plot(x, pdf_median, 'r-', lw=2, label='PDF/PMF Median Target Distribution')
             else:
                 # For discrete distributions
                 x = np.arange(int(np.floor(xlims[ts_name]['min'])), int(np.ceil(xlims[ts_name]['max'])) + 1)
                 pmf_median = dist_method.pmf(x, *median_args, **median_kwargs)
-                ax.bar(x, pmf_median, alpha=0.5, color='r', label='PDF/PMF Median target distribution')
+                ax.bar(x, pmf_median, alpha=0.5, color='r', label='PDF/PMF Median Target Distribution')
 
             # Create inset for QQ plot
             axins = ax.inset_axes([0.55, 0.51, 0.4, 0.4])  # x, y, width, height
@@ -227,35 +226,21 @@ def plot_standard_distributions(datasets: {}, dist_params: {}, reference_key: st
             # Set title
             axins.set_title('Q-Q Plot', fontsize=fontsize - 8)
 
-            # Calculate probs and x_range for continuous or discrete case
+            # Calculate probs for continuous or discrete case
             if is_continuous:
-                # For continuous distributions
-                probs = np.linspace(0.01, 0.99, 100)
-                # Calculate confidence bands based on NN case parameters
-                x_range = np.linspace(qq_lims[ts_name]['min'], qq_lims[ts_name]['max'], 100)
+                probs = np.linspace(0.001, 0.999, 100)
             else:
-                # For discrete distributions
                 unique_values = np.unique(np.floor(all_values_for_ts).astype(int))
-                probs = np.linspace(0.01, 0.99, len(unique_values))
-                # Calculate confidence bands based on NN case parameters
-                x_range = np.arange(int(np.floor(qq_lims[ts_name]['min'])), int(np.ceil(qq_lims[ts_name]['max'])) + 1)
+                probs = np.linspace(0.001, 0.999, len(unique_values))
 
-            theoretical_quantiles = dist_method.ppf(probs, *median_args, **median_kwargs)
+            # Calculate empirical quantiles
             empirical_quantiles = np.percentile(all_values_for_ts, probs * 100)
-            theoretical_min = dist_method.ppf(
-                dist_method.cdf(x_range, *median_args),
-                *dist_params[ts_name][DistParams.min_args],
-                **dist_params[ts_name][DistParams.min_kwargs]
-            )
-            theoretical_max = dist_method.ppf(
-                dist_method.cdf(x_range, *dist_params[ts_name][DistParams.median_args]),
-                *dist_params[ts_name][DistParams.max_args],
-                **dist_params[ts_name][DistParams.max_kwargs]
-            )
 
-            # Plot the empirical vs theoretical values as scatter
+            # Calculate main diagonal (median parameters) as before
+            theoretical_quantiles = dist_method.ppf(probs, *median_args, **median_kwargs)
+
+            # Plot QQ points
             axins.scatter(theoretical_quantiles, empirical_quantiles, alpha=0.5, s=10)
-            axins.fill_between(x_range, theoretical_min, theoretical_max, alpha=0.1, color='r')
 
             # Set dataset variation as title
             if ts_idx == 0:
