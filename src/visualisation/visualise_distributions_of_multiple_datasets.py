@@ -9,9 +9,9 @@ from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends, reset_matplotlib
 
 
-def get_distribution_bounds(dist_info: {}, data: np.ndarray, confidence_bounds: () = (0.001, 0.999)):
+def get_x_values_distribution_bounds(dist_info: {}, data: np.ndarray, confidence_bounds: () = (0.001, 0.999)):
     """
-    Calculate bounds for plotting considering both theoretical and empirical data.
+    Calculate x value bounds for plotting considering both theoretical and empirical data and return min and max.
     """
     lower_theoretical = dist_info[DistParams.method].ppf(
         confidence_bounds[0],
@@ -31,25 +31,95 @@ def get_distribution_bounds(dist_info: {}, data: np.ndarray, confidence_bounds: 
             max(upper_theoretical, upper_empirical))
 
 
-def plot_standard_distributions(datasets: {}, dist_params: {}, fontsize=20, figsize: () = (20, 15),
-                                backend: str = Backends.none.value):
+def get_y_value_bounds(dist_info: {}, data: np.ndarray, dist_method):
+    """ Bounds for y values for plotting, only considering theoretical distribution"""
+    is_continuous = dist_method.name in stats._continuous_distns._distn_names
+    if not is_continuous:  # should be discrete otherwise throw error
+        error_msg = "Unsupported distribution with name: " + str(dist_method)
+        assert dist_method.name in stats._discrete_distns._distn_names, error_msg
+
+    if is_continuous:
+        # For continuous distributions, calculate PDF bounds
+        x = np.linspace(*get_x_values_distribution_bounds(dist_info, data), 1000)
+        theoretical_min = dist_method.pdf(
+            x,
+            *dist_info[DistParams.min_args],
+            **dist_info[DistParams.min_kwargs]
+        )
+        theoretical_max = dist_method.pdf(
+            x,
+            *dist_info[DistParams.max_args],
+            **dist_info[DistParams.max_kwargs]
+        )
+    else:
+        # For discrete distributions
+        discrete_values = np.unique(np.floor(data).astype(int))
+        # Calculate PMF at different parameter sets
+        theoretical_min = dist_method.pmf(
+            discrete_values,
+            *dist_info[DistParams.min_args],
+            **dist_info[DistParams.min_kwargs]
+        )
+        theoretical_max = dist_method.pmf(
+            discrete_values,
+            *dist_info[DistParams.max_args],
+            **dist_info[DistParams.max_kwargs]
+        )
+    return 0, max(theoretical_min.max(), theoretical_max.max())  # pmf, pdf start at 0
+
+
+def get_qq_plots_bounds(dist_info: {}, data: np.ndarray, dist_method):
+    """
+    Calculate y value bounds for plotting considering both theoretical and empirical data and return min and max.
+    Using either ppf or pmf to estimate bound
+    """
+    is_continuous = dist_method.name in stats._continuous_distns._distn_names
+    if not is_continuous:  # should be discrete otherwise throw error
+        error_msg = "Unsupported distribution with name: " + str(dist_method)
+        assert dist_method.name in stats._discrete_distns._distn_names, error_msg
+
+    if is_continuous:
+        p = np.linspace(0.01, 0.99, 100)
+        theoretical_quantiles = dist_method.ppf(
+            p,
+            *dist_info[DistParams.median_args],
+            **dist_info[DistParams.median_kwargs]
+        )
+        empirical_quantiles = np.percentile(data, p * 100)
+    else:  # discrete case
+        unique_values = np.unique(np.floor(data).astype(int))
+        probs = np.linspace(0.01, 0.99, len(unique_values))
+        theoretical_quantiles = dist_method.ppf(
+            probs,
+            *dist_info[DistParams.median_args],
+            **dist_info[DistParams.median_kwargs]
+        )
+        empirical_quantiles = np.percentile(data, probs * 100)
+    return (min(theoretical_quantiles.min(), empirical_quantiles.min()),
+            max(theoretical_quantiles.max(), empirical_quantiles.max()))
+
+
+def plot_standard_distributions(datasets: {}, dist_params: {}, reference_key: str = "NN", fontsize=20,
+                                figsize: () = (20, 15), backend: str = Backends.none.value):
     """
     Create a grid of distribution plots with QQ plot insets.
 
-    Parameters:
-    datasets: Dict where keys are variations ('RAW', 'NN', 'NC', 'RS') and values are lists of 2D numpy arrays
+    :param datasets: Dict where keys are variations ('RAW', 'NN', 'NC', 'RS') and values are lists of 2D numpy arrays
              Each array has shape (n_observations, n_timeseries)
-    dist_params: Dict of distribution parameters for each time series
+    :param dist_params: Dict of distribution parameters for each time series
                  First level: time series name ('iob', 'cob', 'ig')
                  Second level: distribution parameters
-    fontsize: int, font size for labels and titles
-    figsize: tuple, figure size (width, height)
+    :param reference_key: key for data in datasets from which the dist_params are. Will be used to plot theoretical
+    distribution and the bands in each square to visualise how far from the reference distribution the other
+    variates are
+    :param fontsize: int, font size for labels and titles
+    :param figsize: tuple, figure size (width, height)
     """
-    # Get dimensions and keys
-    variations = list(datasets.keys())  # columns
+    # Get dimensions and keys - columns
+    variations = list(datasets.keys())
     n_variations = len(variations)
 
-    # Get time series names
+    # Get time series names - rows
     ts_names = list(dist_params.keys())
     n_timeseries = len(ts_names)
 
@@ -60,120 +130,45 @@ def plot_standard_distributions(datasets: {}, dist_params: {}, fontsize=20, figs
     fig = plt.figure(figsize=figsize)
     gs = GridSpec(n_timeseries, n_variations, figure=fig)
 
-    # Store x axis limits for consistency
+    # Concatenate data values for each dataset and each variation
+    all_data = {}  # keys variation, values 2d concatenated np.array
+    for variation in variations:
+        # concatenate all values from all datasets in this variation
+        all_data[variation] = np.concatenate([d for d in datasets[variation]])
+
+    # Calculate various axes limits - allows comparing columns
+    # Keep x and y axes  and qq plot size and axes consistent for each ts variate (rows)
+    # Default limits
     xlims = {ts_name: {'min': float('inf'), 'max': float('-inf')}
              for ts_name in ts_names}
-
-    # First pass to determine consistent x-axis limits
-    for ts_idx, ts_name in enumerate(ts_names):
-        for variation in variations:
-            data = datasets[variation]
-            # Get all values for this time series from all datasets
-            all_values = np.concatenate([d[:, ts_idx] for d in data])
-            bounds = get_distribution_bounds(dist_params[ts_name], all_values)
-            xlims[ts_name]['min'] = min(xlims[ts_name]['min'], bounds[0])
-            xlims[ts_name]['max'] = max(xlims[ts_name]['max'], bounds[1])
-
-    # Store y-axis limits for consistency
     ylims = {ts_name: {'min': float('inf'), 'max': float('-inf')}
              for ts_name in ts_names}
-
-    # First pass to determine consistent y-axis limits
-    for ts_idx, ts_name in enumerate(ts_names):
-        # Use all values from the NN variation
-        nn_data = datasets['NN']
-        nn_all_values = np.concatenate([d[:, ts_idx] for d in nn_data])
-
-        # Determine if distribution is continuous or discrete
-        dist_method = dist_params[ts_name][DistParams.method]
-
-        if dist_method.name in stats._continuous_distns._distn_names:
-            # For continuous distributions, calculate PDF bounds
-            x = np.linspace(*get_distribution_bounds(dist_params[ts_name], nn_all_values), 1000)
-
-            # Calculate PDF at different parameter sets
-            pdf_median = dist_method.pdf(
-                x,
-                *dist_params[ts_name][DistParams.median_args],
-                **dist_params[ts_name][DistParams.median_kwargs]
-            )
-            pdf_min = dist_method.pdf(
-                x,
-                *dist_params[ts_name][DistParams.min_args],
-                **dist_params[ts_name][DistParams.min_kwargs]
-            )
-            pdf_max = dist_method.pdf(
-                x,
-                *dist_params[ts_name][DistParams.max_args],
-                **dist_params[ts_name][DistParams.max_kwargs]
-            )
-
-            ylims[ts_name] = {
-                'min': 0,  # Density always starts at 0
-                'max': max(pdf_median.max(), pdf_min.max(), pdf_max.max())
-            }
-
-        elif dist_method.name in stats._discrete_distns._distn_names:
-            # For discrete distributions
-            discrete_values = np.unique(np.floor(nn_all_values).astype(int))
-
-            # Calculate PMF at different parameter sets
-            pmf_median = dist_method.pmf(
-                discrete_values,
-                *dist_params[ts_name][DistParams.median_args],
-                **dist_params[ts_name][DistParams.median_kwargs]
-            )
-            pmf_min = dist_method.pmf(
-                discrete_values,
-                *dist_params[ts_name][DistParams.min_args],
-                **dist_params[ts_name][DistParams.min_kwargs]
-            )
-            pmf_max = dist_method.pmf(
-                discrete_values,
-                *dist_params[ts_name][DistParams.max_args],
-                **dist_params[ts_name][DistParams.max_kwargs]
-            )
-
-            ylims[ts_name] = {
-                'min': 0,  # Density always starts at 0
-                'max': max(pmf_median.max(), pmf_min.max(), pmf_max.max())
-            }
-
-    # Add after the xlims dictionary definition
     qq_lims = {ts_name: {'min': float('inf'), 'max': float('-inf')}
                for ts_name in ts_names}
 
-    # First pass for QQ plot limits
+    # First pass to determine limits
     for ts_idx, ts_name in enumerate(ts_names):
+        reference_values_for_ts = all_data[reference_key][:, ts_idx]
+        # Determine if distribution is continuous or discrete, throw error if neither
+        dist_method = dist_params[ts_name][DistParams.method]
+
+        # Calculate y-lims - this is only done on reference distribution values so some empirical values
+        # might lay outside the y axis
+        y_bounds = get_y_value_bounds(dist_params[ts_name], reference_values_for_ts, dist_method)
+        ylims[ts_name]['min'] = y_bounds[0]
+        ylims[ts_name]['max'] = y_bounds[1]
+
         for variation in variations:
-            data = datasets[variation]
-            all_values = np.concatenate([d[:, ts_idx] for d in data])
-            dist_method = dist_params[ts_name][DistParams.method]
+            # Calculate x lims
+            all_values_for_ts = all_data[variation][:, ts_idx]
+            x_bounds = get_x_values_distribution_bounds(dist_params[ts_name], all_values_for_ts)
+            xlims[ts_name]['min'] = min(xlims[ts_name]['min'], x_bounds[0])
+            xlims[ts_name]['max'] = max(xlims[ts_name]['max'], x_bounds[1])
 
-            if dist_method.name in stats._continuous_distns._distn_names:
-                p = np.linspace(0.01, 0.99, 100)
-                theoretical_quantiles = dist_method.ppf(
-                    p,
-                    *dist_params[ts_name][DistParams.median_args],
-                    **dist_params[ts_name][DistParams.median_kwargs]
-                )
-                empirical_quantiles = np.percentile(all_values, p * 100)
-            else:  # discrete case
-                unique_values = np.unique(np.floor(all_values).astype(int))
-                probs = np.linspace(0.01, 0.99, len(unique_values))
-                theoretical_quantiles = dist_method.ppf(
-                    probs,
-                    *dist_params[ts_name][DistParams.median_args],
-                    **dist_params[ts_name][DistParams.median_kwargs]
-                )
-                empirical_quantiles = np.percentile(all_values, probs * 100)
-
-            qq_lims[ts_name]['min'] = min(qq_lims[ts_name]['min'],
-                                          theoretical_quantiles.min(),
-                                          empirical_quantiles.min())
-            qq_lims[ts_name]['max'] = max(qq_lims[ts_name]['max'],
-                                          theoretical_quantiles.max(),
-                                          empirical_quantiles.max())
+            # Calculate qq lims
+            qq_bounds = get_qq_plots_bounds(dist_params[ts_name], all_values_for_ts, dist_method)
+            qq_lims[ts_name]['min'] = min(qq_lims[ts_name]['min'], qq_bounds[0])
+            qq_lims[ts_name]['max'] = max(qq_lims[ts_name]['max'], qq_bounds[1])
 
     # Create plots
     for ts_idx, ts_name in enumerate(ts_names):
@@ -187,10 +182,10 @@ def plot_standard_distributions(datasets: {}, dist_params: {}, fontsize=20, figs
 
             # Get all values for this time series from current variation
             data = datasets[variation]
-            all_values = np.concatenate([d[:, ts_idx] for d in data])
+            all_values_for_ts = np.concatenate([d[:, ts_idx] for d in data])
 
             # Plot histogram of actual values
-            sns.histplot(all_values, stat='density', alpha=0.5, ax=ax, label='Empirical Distribution')
+            sns.histplot(all_values_for_ts, stat='density', alpha=0.5, ax=ax, label='Empirical Distribution')
 
             # Set y-axis limits consistently
             ax.set_ylim(0, ylims[ts_name]['max'])
@@ -241,7 +236,7 @@ def plot_standard_distributions(datasets: {}, dist_params: {}, fontsize=20, figs
                     *dist_params[ts_name][DistParams.median_args],
                     **dist_params[ts_name][DistParams.median_kwargs]
                 )
-                empirical_quantiles = np.percentile(all_values, p * 100)
+                empirical_quantiles = np.percentile(all_values_for_ts, p * 100)
 
                 # Plot the empirical vs theoretical points for this variation
                 axins.scatter(theoretical_quantiles, empirical_quantiles, alpha=0.5, s=10)
@@ -272,14 +267,14 @@ def plot_standard_distributions(datasets: {}, dist_params: {}, fontsize=20, figs
 
             elif dist_method.name in stats._discrete_distns._distn_names:
                 # For discrete distributions
-                unique_values = np.unique(np.floor(all_values).astype(int))
+                unique_values = np.unique(np.floor(all_values_for_ts).astype(int))
                 probs = np.linspace(0.01, 0.99, len(unique_values))
                 theoretical_quantiles = dist_method.ppf(
                     probs,
                     *dist_params[ts_name][DistParams.median_args],
                     **dist_params[ts_name][DistParams.median_kwargs]
                 )
-                empirical_quantiles = np.percentile(all_values, probs * 100)
+                empirical_quantiles = np.percentile(all_values_for_ts, probs * 100)
 
                 # Plot the empirical vs theoretical points for this variation
                 axins.scatter(theoretical_quantiles, empirical_quantiles, alpha=0.5, s=10)
