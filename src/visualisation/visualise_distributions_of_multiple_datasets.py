@@ -180,151 +180,97 @@ def plot_standard_distributions(datasets: {}, dist_params: {}, reference_key: st
             else:
                 ax = fig.add_subplot(gs[ts_idx, var_idx], sharey=row_ax)
 
+            # Set x and y axes limits consistently
+            ax.set_ylim(ylims[ts_name]['min'], ylims[ts_name]['max'])
+            ax.set_xlim(xlims[ts_name]['min'], xlims[ts_name]['max'])
+
             # Get all values for this time series from current variation
-            data = datasets[variation]
-            all_values_for_ts = np.concatenate([d[:, ts_idx] for d in data])
+            all_values_for_ts = all_data[variation][:, ts_idx]
 
-            # Plot histogram of actual values
-            sns.histplot(all_values_for_ts, stat='density', alpha=0.5, ax=ax, label='Empirical Distribution')
+            # Plot density histogram of empirical values
+            sns.histplot(all_values_for_ts, stat='density', alpha=0.5, ax=ax, label='Empirical')
 
-            # Set y-axis limits consistently
-            ax.set_ylim(0, ylims[ts_name]['max'])
-
-            # Determine if distribution is continuous or discrete
+            # Plot theoretical distribution for median parameters
             dist_method = dist_params[ts_name][DistParams.method]
+            is_continuous = dist_method.name in stats._continuous_distns._distn_names
+            if not is_continuous:  # should be discrete otherwise throw error
+                error_msg = "Unsupported distribution with name: " + str(dist_method)
+                assert dist_method.name in stats._discrete_distns._distn_names, error_msg
 
-            # Prepare x values differently for continuous and discrete distributions
-            if dist_method.name in stats._continuous_distns._distn_names:
+            median_args = dist_params[ts_name][DistParams.median_args]
+            median_kwargs = dist_params[ts_name][DistParams.median_kwargs]
+
+            if is_continuous:
                 # For continuous distributions
                 x = np.linspace(xlims[ts_name]['min'], xlims[ts_name]['max'], 1000)
+                pdf_median = dist_method.pdf(x, *median_args, **median_kwargs)
+                ax.plot(x, pdf_median, 'r-', lw=2, label='PDF/PMF Median target distribution')
 
-                # Plot median distribution
-                pdf_median = dist_method.pdf(
-                    x,
-                    *dist_params[ts_name][DistParams.median_args],
-                    **dist_params[ts_name][DistParams.median_kwargs]
-                )
-                ax.plot(x, pdf_median, 'r-', lw=2, label='PDF/PMF Median NN Parameters')
-
-            elif dist_method.name in stats._discrete_distns._distn_names:
-                # For discrete distributions
-                discrete_values = np.arange(
-                    int(np.floor(xlims[ts_name]['min'])),
-                    int(np.ceil(xlims[ts_name]['max'])) + 1
-                )
-                x = discrete_values
-
-                # Plot median PMF
-                pmf_median = dist_method.pmf(
-                    x,
-                    *dist_params[ts_name][DistParams.median_args],
-                    **dist_params[ts_name][DistParams.median_kwargs]
-                )
-                ax.bar(x, pmf_median, alpha=0.5, color='r', label='PDF/PMF Median Parameters')
             else:
-                raise ValueError(f"Unsupported distribution type: {dist_method.name}")
+                # For discrete distributions
+                x = np.arange(int(np.floor(xlims[ts_name]['min'])), int(np.ceil(xlims[ts_name]['max'])) + 1)
+                pmf_median = dist_method.pmf(x, *median_args, **median_kwargs)
+                ax.bar(x, pmf_median, alpha=0.5, color='r', label='PDF/PMF Median target distribution')
 
             # Create inset for QQ plot
-            axins = ax.inset_axes([0.65, 0.6, 0.3, 0.3])
+            axins = ax.inset_axes([0.55, 0.51, 0.4, 0.4])  # x, y, width, height
 
-            # Determine distribution type for QQ plot
-            if dist_method.name in stats._continuous_distns._distn_names:
+            # Add diagonal line using the common limits for this row - theoretical distribution
+            axins.plot([qq_lims[ts_name]['min'], qq_lims[ts_name]['max']],
+                       [qq_lims[ts_name]['min'], qq_lims[ts_name]['max']],
+                       'r--', alpha=0.8)
+
+            # Set same axis limits based on bounds
+            axins.set_xlim(qq_lims[ts_name]['min'], qq_lims[ts_name]['max'])
+            axins.set_ylim(qq_lims[ts_name]['min'], qq_lims[ts_name]['max'])
+
+            # Set title
+            axins.set_title('Q-Q Plot', fontsize=fontsize - 8)
+
+            # Calculate probs and x_range for continuous or discrete case
+            if is_continuous:
                 # For continuous distributions
-                p = np.linspace(0.01, 0.99, 100)
-                theoretical_quantiles = dist_method.ppf(
-                    p,
-                    *dist_params[ts_name][DistParams.median_args],
-                    **dist_params[ts_name][DistParams.median_kwargs]
-                )
-                empirical_quantiles = np.percentile(all_values_for_ts, p * 100)
-
-                # Plot the empirical vs theoretical points for this variation
-                axins.scatter(theoretical_quantiles, empirical_quantiles, alpha=0.5, s=10)
-
-                # Add diagonal line using the common limits for this row
-                axins.plot([qq_lims[ts_name]['min'], qq_lims[ts_name]['max']],
-                           [qq_lims[ts_name]['min'], qq_lims[ts_name]['max']],
-                           'r--', alpha=0.8)
-
+                probs = np.linspace(0.01, 0.99, 100)
                 # Calculate confidence bands based on NN case parameters
                 x_range = np.linspace(qq_lims[ts_name]['min'], qq_lims[ts_name]['max'], 100)
-                theoretical_quantiles_nn = x_range  # This is our reference line
-                theoretical_min = dist_method.ppf(
-                    dist_method.cdf(x_range, *dist_params[ts_name][DistParams.median_args]),
-                    *dist_params[ts_name][DistParams.min_args],
-                    **dist_params[ts_name][DistParams.min_kwargs]
-                )
-                theoretical_max = dist_method.ppf(
-                    dist_method.cdf(x_range, *dist_params[ts_name][DistParams.median_args]),
-                    *dist_params[ts_name][DistParams.max_args],
-                    **dist_params[ts_name][DistParams.max_kwargs]
-                )
-                axins.fill_between(x_range, theoretical_min, theoretical_max,
-                                   alpha=0.1, color='r')
-
-                axins.set_xlim(qq_lims[ts_name]['min'], qq_lims[ts_name]['max'])
-                axins.set_ylim(qq_lims[ts_name]['min'], qq_lims[ts_name]['max'])
-
-            elif dist_method.name in stats._discrete_distns._distn_names:
+            else:
                 # For discrete distributions
                 unique_values = np.unique(np.floor(all_values_for_ts).astype(int))
                 probs = np.linspace(0.01, 0.99, len(unique_values))
-                theoretical_quantiles = dist_method.ppf(
-                    probs,
-                    *dist_params[ts_name][DistParams.median_args],
-                    **dist_params[ts_name][DistParams.median_kwargs]
-                )
-                empirical_quantiles = np.percentile(all_values_for_ts, probs * 100)
-
-                # Plot the empirical vs theoretical points for this variation
-                axins.scatter(theoretical_quantiles, empirical_quantiles, alpha=0.5, s=10)
-
-                # Add diagonal line using the common limits for this row
-                axins.plot([qq_lims[ts_name]['min'], qq_lims[ts_name]['max']],
-                           [qq_lims[ts_name]['min'], qq_lims[ts_name]['max']],
-                           'r--', alpha=0.8)
-
                 # Calculate confidence bands based on NN case parameters
-                x_range = np.arange(
-                    int(np.floor(qq_lims[ts_name]['min'])),
-                    int(np.ceil(qq_lims[ts_name]['max'])) + 1
-                )
-                theoretical_quantiles_nn = x_range  # This is our reference line
-                theoretical_min = dist_method.ppf(
-                    dist_method.cdf(x_range, *dist_params[ts_name][DistParams.median_args]),
-                    *dist_params[ts_name][DistParams.min_args],
-                    **dist_params[ts_name][DistParams.min_kwargs]
-                )
-                theoretical_max = dist_method.ppf(
-                    dist_method.cdf(x_range, *dist_params[ts_name][DistParams.median_args]),
-                    *dist_params[ts_name][DistParams.max_args],
-                    **dist_params[ts_name][DistParams.max_kwargs]
-                )
-                axins.fill_between(x_range, theoretical_min, theoretical_max,
-                                   alpha=0.1, color='r')
+                x_range = np.arange(int(np.floor(qq_lims[ts_name]['min'])), int(np.ceil(qq_lims[ts_name]['max'])) + 1)
 
-                axins.set_xlim(qq_lims[ts_name]['min'], qq_lims[ts_name]['max'])
-                axins.set_ylim(qq_lims[ts_name]['min'], qq_lims[ts_name]['max'])
-            else:
-                raise ValueError(f"Unsupported distribution type: {dist_method.name}")
+            theoretical_quantiles = dist_method.ppf(probs, *median_args, **median_kwargs)
+            empirical_quantiles = np.percentile(all_values_for_ts, probs * 100)
+            theoretical_min = dist_method.ppf(
+                dist_method.cdf(x_range, *median_args),
+                *dist_params[ts_name][DistParams.min_args],
+                **dist_params[ts_name][DistParams.min_kwargs]
+            )
+            theoretical_max = dist_method.ppf(
+                dist_method.cdf(x_range, *dist_params[ts_name][DistParams.median_args]),
+                *dist_params[ts_name][DistParams.max_args],
+                **dist_params[ts_name][DistParams.max_kwargs]
+            )
 
-            axins.set_title('Q-Q Plot', fontsize=fontsize - 8)
+            # Plot the empirical vs theoretical values as scatter
+            axins.scatter(theoretical_quantiles, empirical_quantiles, alpha=0.5, s=10)
+            axins.fill_between(x_range, theoretical_min, theoretical_max, alpha=0.1, color='r')
 
-            # Set consistent x-axis limits
-            ax.set_xlim(xlims[ts_name]['min'], xlims[ts_name]['max'])
-
-            # Labels and titles
+            # Set dataset variation as title
             if ts_idx == 0:
-                ax.set_title(variation, fontsize=fontsize)
-            if var_idx == 0:
-                ax.set_ylabel(f'{ts_name}\nDensity', fontsize=fontsize)
-            else:
-                # For all other columns, remove the label completely
-                ax.set_ylabel('')
+                ax.set_title(variation, fontsize=fontsize, fontweight='bold')
 
-            # Disable y-axis labels for subsequent columns in the same row
-            if var_idx > 0:
+            # Set y labels for first column only
+            if var_idx == 0:
+                ax.set_ylabel(ts_name.upper(), fontsize=fontsize, fontweight='bold')
+                # if is_continuous:
+                #     ax.set_ylabel(f'{ts_name}\nDensity f(x)', fontsize=fontsize)
+                # else:
+                #     ax.set_ylabel(f'{ts_name}\nProbability P(X=x)', fontsize=fontsize)
+            else:
                 plt.setp(ax.get_yticklabels(), visible=False)
+                ax.set_ylabel('')
 
             ax.tick_params(labelsize=fontsize - 4)
             axins.tick_params(labelsize=fontsize - 8)
