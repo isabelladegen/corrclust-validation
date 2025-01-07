@@ -6,13 +6,20 @@ from pathlib import Path
 import yaml
 from os import path
 
+
+@dataclass
+class ExtensionNames:
+    irregular_p30: str = 'irregular_p30'
+    irregular_p90: str = 'irregular_p90'
+
+
 ROOT_DIR = path.realpath(path.join(path.dirname(__file__), '../..'))
 PATTERNS_TO_MODEL_PATH = path.join(ROOT_DIR, 'src/data_generation/config/correlation_patterns_to_model.csv')
 DISTRIBUTION_PARAMS_TO_MODEL_PATH = path.join(ROOT_DIR,
                                               'src/data_generation/config/n30_genextreme_nbinom_genextreme_params.csv')
 SYNTHETIC_DATA_DIR = path.join(ROOT_DIR, 'data/synthetic_data')
-IRREGULAR_P30_DATA_DIR = path.join(SYNTHETIC_DATA_DIR, 'irregular_p30')
-IRREGULAR_P90_DATA_DIR = path.join(SYNTHETIC_DATA_DIR, 'irregular_p90')
+IRREGULAR_P30_DATA_DIR = path.join(SYNTHETIC_DATA_DIR, ExtensionNames.irregular_p30)
+IRREGULAR_P90_DATA_DIR = path.join(SYNTHETIC_DATA_DIR, ExtensionNames.irregular_p90)
 ROOT_RESULTS_DIR = path.join(ROOT_DIR, 'results')
 DISTANCE_MEASURE_ASSESSMENT_RESULTS_FOLDER_NAME = 'distance-measures-assessment'
 IMAGES_FOLDER_NAME = 'images'
@@ -21,6 +28,7 @@ GENERATED_DATASETS_FILE_PATH = path.join(SYNTHETIC_DATA_DIR, 'synthetic-correlat
 MULTIPLE_DS_SUMMARY_FILE = 'multiple-datasets-summary.csv'
 OVERALL_SEGMENT_LENGTH_IMAGE = 'overall_segment_length_distributions.png'
 OVERALL_MAE_IMAGE = 'overall_mae_distributions.png'
+OVERALL_DISTRIBUTION_IMAGE = 'overall_distributions.png'
 
 
 @dataclass
@@ -44,6 +52,14 @@ class ResultsType:
     internal_measures: str = 'internal-measures'
     distance_measure_assessment: str = 'distance-measures-assessment'
     dataset_description: str = 'dataset-description'
+
+
+def get_image_name_based_on_data_dir(image_base_name: str, data_dir: str) -> str:
+    """ If the data dir is irregular_p30 it attaches an irregular_p30 to the image name"""
+    irr_folder_extension = get_irregular_folder_name_from(data_dir)
+    if irr_folder_extension:  # avoids a leading _ if irr folder extension is ''
+        irr_folder_extension = irr_folder_extension + "_"
+    return irr_folder_extension + image_base_name
 
 
 def get_irregular_folder_name_from(data_dir: str):

@@ -328,12 +328,12 @@ class VisualiseMultipleDatasets:
             fig.savefig(path.join(folder, OVERALL_SEGMENT_LENGTH_IMAGE), dpi=300, bbox_inches='tight')
         return fig
 
-    def violin_plots_of_overall_mae(self, save_fig, root_result_dir):
+    def violin_plots_of_overall_mae(self, root_result_dir:str, save_fig=False):
         """
             Creates a plot of overall segment lengths, rows will be standard, irregular p 0.3, irregular p 0.9 and columns
             will be "RAW/NC/NN" and "RS"
-            :param save_fig: whether to save the figure
             :param root_result_dir: root result dir to save the figure this will be put in the dataset-description
+            :param save_fig: whether to save the figure
             :return: fig
         """
         # create data dict for mae, for this all ds are different so we plot all

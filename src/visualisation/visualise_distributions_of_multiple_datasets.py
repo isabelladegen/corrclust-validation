@@ -1,3 +1,5 @@
+from os import path
+
 import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt
@@ -5,6 +7,8 @@ from matplotlib.gridspec import GridSpec
 from scipy import stats
 
 from src.evaluation.describe_multiple_datasets import DescribeMultipleDatasets, DistParams
+from src.utils.configurations import base_dataset_result_folder_for_type, ResultsType, get_image_name_based_on_data_dir, \
+    OVERALL_DISTRIBUTION_IMAGE
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends, reset_matplotlib
 
@@ -249,10 +253,6 @@ def plot_standard_distributions(datasets: {}, dist_params: {}, reference_key: st
             # Set y labels for first column only
             if var_idx == 0:
                 ax.set_ylabel(ts_name.upper(), fontsize=fontsize, fontweight='bold')
-                # if is_continuous:
-                #     ax.set_ylabel(f'{ts_name}\nDensity f(x)', fontsize=fontsize)
-                # else:
-                #     ax.set_ylabel(f'{ts_name}\nProbability P(X=x)', fontsize=fontsize)
             else:
                 plt.setp(ax.get_yticklabels(), visible=False)
                 ax.set_ylabel('')
@@ -290,7 +290,16 @@ class VisualiseDistributionsOfMultipleDatasets:
         # dataset variate names
         self.col_names = [SyntheticDataType.get_log_key_for_data_type(ds_type) for ds_type in dataset_types]
 
-    def plot_as_standard_distribution(self):
+    def plot_as_standard_distribution(self, root_result_dir: str, save_fig: bool = False):
+        """
+            Creates a plot of the dataset variation as columns (RAW, NC, NN, RS) and the time series as rows (IOB, COB,
+            IG). Each square show the theoretical PDF/PMF distribution of the median parameters for the distribution
+            we shifted to in NN, the empirical observations in density space and a QQ-plot inset. We can see
+            what the ds variations do to the specified distribution for NN.
+            :param root_result_dir: root result dir to save the figure this will be put in the dataset-description
+            :param save_fig: whether to save the figure
+            :return: fig
+        """
         datasets = {key: value.get_list_of_xtrain_of_all_datasets() for key, value in self.dataset_variates.items()}
         nn_col_name = SyntheticDataType.get_log_key_for_data_type(SyntheticDataType.non_normal_correlated)
         if nn_col_name in self.dataset_variates.keys():
@@ -301,4 +310,7 @@ class VisualiseDistributionsOfMultipleDatasets:
         fig = plot_standard_distributions(datasets=datasets, dist_params=dist_params, figsize=(20, 12),
                                           backend=self.backend)
         plt.show()
+        if save_fig:
+            folder = base_dataset_result_folder_for_type(root_result_dir, ResultsType.dataset_description)
+            fig.savefig(path.join(folder, get_image_name_based_on_data_dir(OVERALL_DISTRIBUTION_IMAGE, self.data_dir)), dpi=300, bbox_inches='tight')
         return fig
