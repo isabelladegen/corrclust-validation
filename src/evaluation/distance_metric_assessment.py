@@ -26,13 +26,11 @@ class DistanceMeasureCols:
     pair1: str = "Pattern pair 1"
     pair2: str = "Pattern pair 2"
     alpha: str = "alpha"
-    group: str = "group"
+    level_set: str = "level set"
     pairs: str = "segment pairs"
     pattern_pairs: str = "pattern pairs"
-    log_frob_cor_dist: str = DistanceMeasures.log_frob_cor_dist
-    foerstner_cor_dist: str = DistanceMeasures.foerstner_cor_dist
     type: str = "distance measure"
-    compared: str = "compared groups"
+    compared: str = "compared level sets"
     effect_size: str = "Cohen's d"
     stat_diff: str = "Stat diff"
     mean_diff: str = "Mean diff"
@@ -69,43 +67,21 @@ class DistanceMetricAssessment:
         self.__ds = ds
         self.backend = backend
         self.__measures = measures
-        self.measure_names = {
-            DistanceMeasures.l1_with_ref: "L1 cor with ref",
-            DistanceMeasures.l5_with_ref: "L5 cor with ref",
-            DistanceMeasures.l2_with_ref: "L2 cor with ref",
-            DistanceMeasures.l10_with_ref: "L10 cor with ref",
-            DistanceMeasures.l50_with_ref: "L50 cor with ref",
-            DistanceMeasures.l100_with_ref: "L100 cor with ref",
-            DistanceMeasures.linf_with_ref: "Linf cor with ref",
-            DistanceMeasures.l1_cor_dist: "L1 cor",
-            DistanceMeasures.l5_cor_dist: "L5 cor",
-            DistanceMeasures.l2_cor_dist: "L2 cor",
-            DistanceMeasures.l10_cor_dist: "L10 cor",
-            DistanceMeasures.l50_cor_dist: "L50 cor",
-            DistanceMeasures.l100_cor_dist: "L100 cor",
-            DistanceMeasures.linf_cor_dist: "Linf cor",
-            DistanceMeasures.log_frob_cor_dist: "Log Frobenious cor",
-            DistanceMeasures.foerstner_cor_dist: "Förstner cor",
-            DistanceMeasures.dot_transform_l1: "Dot t L1 cor",
-            DistanceMeasures.dot_transform_l2: "Dot t L2 cor",
-            DistanceMeasures.dot_transform_linf: "Dot t Linf cor",
-            DistanceMeasures.cosine: "Cosine cor",
-        }
         self.segment_pair_distance_df = self.__calculate_distances_between_segment_pairs_per_level_set()
-        self.groups = self.segment_pair_distance_df[DistanceMeasureCols.group].unique().tolist()
-        self.per_group_distance_statistics_df = self.__calculate_per_group_distance_statistics()
-        self.effect_sizes_between_groups_df = self.__calculate_effect_size_for_difference_between_groups()
-        self.ci_for_mean_differences, self.alpha_for_ci = self.__calculate_ci_for_mean_differences_between_groups()
+        self.level_sets = self.segment_pair_distance_df[DistanceMeasureCols.level_set].unique().tolist()
+        self.per_level_set_distance_statistics_df = self.__calculate_per_level_sets_distance_statistics()
+        self.effect_sizes_between_level_sets_df = self.__calculate_effect_size_for_difference_between_level_sets()
+        self.ci_for_mean_differences, self.alpha_for_ci = self.__calculate_ci_for_mean_differences_between_level_sets()
 
         # cached variables
         # dictionary of key (alpha, bonferroni, two-sided) and value being a df of the ci of mean differences
-        self.__ci_mean_differences_between_pattern_pairs_per_group = {}
+        self.__ci_mean_differences_between_pattern_pairs_per_level_sets = {}
 
         self.__colors = {'overlap': 'teal', 'lower': 'deeppink', 'higher': 'dodgerblue'}
 
     def distances_statistics_for_each_pattern(self):
         """Calculates the distances statistics between each pattern combination"""
-        dist_df = self.segment_pair_distance_df[self.segment_pair_distance_df[DistanceMeasureCols.group] == 0]
+        dist_df = self.segment_pair_distance_df[self.segment_pair_distance_df[DistanceMeasureCols.level_set] == 0]
         segments_in_pattern = self.__ds.segments_for_each_pattern
         stats_dfs = []
         for pattern in self.__ds.patterns:
@@ -123,9 +99,9 @@ class DistanceMetricAssessment:
         """Calculates df of ci for the stats provided
         :param stats: df of "pattern_id, mean, std, etc for distances between segments in each pattern"""
         patterns_to_compare = list(itertools.combinations(stats[SyntheticDataSegmentCols.pattern_id].unique(), 2))
-        a, ci_mean_diff_df = self.calculate_ci_of_mean_differences_between_groups(patterns_to_compare, stats,
-                                                                                  SyntheticDataSegmentCols.pattern_id,
-                                                                                  alpha, bonferroni, two_tailed)
+        a, ci_mean_diff_df = self.calculate_ci_of_mean_differences_between_level_sets(patterns_to_compare, stats,
+                                                                                      SyntheticDataSegmentCols.pattern_id,
+                                                                                      alpha, bonferroni, two_tailed)
         return ci_mean_diff_df, a
 
     def __calculate_distances_between_segment_pairs_per_level_set(self):
@@ -159,7 +135,7 @@ class DistanceMetricAssessment:
                 results_levelset_names.append(level_set_name)
                 results_segpairs.append(pair)
 
-        result_dic = {DistanceMeasureCols.group: results_levelset_names,
+        result_dic = {DistanceMeasureCols.level_set: results_levelset_names,
                       DistanceMeasureCols.pairs: results_segpairs,
                       DistanceMeasureCols.pattern_pairs: results_patternpairs
                       }
@@ -168,69 +144,69 @@ class DistanceMetricAssessment:
         segment_pair_distances_df = pd.DataFrame(result_dic)
         return segment_pair_distances_df
 
-    def __calculate_per_group_distance_statistics(self):
+    def __calculate_per_level_sets_distance_statistics(self):
         dist_df = self.segment_pair_distance_df
 
         stats_dfs = []
         for distance_measure in self.__measures:
-            for group in self.groups:
-                stats_df = dist_df[dist_df[DistanceMeasureCols.group] == group][
+            for level_set in self.level_sets:
+                stats_df = dist_df[dist_df[DistanceMeasureCols.level_set] == level_set][
                     distance_measure].describe().to_frame().T
-                stats_df.insert(0, DistanceMeasureCols.group, group)
+                stats_df.insert(0, DistanceMeasureCols.level_set, level_set)
                 stats_dfs.append(stats_df)
         result = pd.concat(stats_dfs).reset_index(names=DistanceMeasureCols.type)
         return result
 
-    def __calculate_effect_size_for_difference_between_groups(self):
-        stats = self.per_group_distance_statistics_df
-        group_combinations = itertools.combinations(self.groups, 2)
-        compared_groups = []
+    def __calculate_effect_size_for_difference_between_level_sets(self):
+        stats = self.per_level_set_distance_statistics_df
+        level_set_combinations = itertools.combinations(self.level_sets, 2)
+        compared_level_sets = []
         dist_measures = []
         effect_sizes = []
-        for group1, group2 in group_combinations:
-            g1 = stats[stats[DistanceMeasureCols.group] == group1]
-            g2 = stats[stats[DistanceMeasureCols.group] == group2]
+        for level_set1, level_set2 in level_set_combinations:
+            g1 = stats[stats[DistanceMeasureCols.level_set] == level_set1]
+            g2 = stats[stats[DistanceMeasureCols.level_set] == level_set2]
             d = cohens_d(g1[Aggregators.mean].to_numpy(), g2[Aggregators.mean].to_numpy(),
                          g1[Aggregators.std].to_numpy(), g2[Aggregators.std].to_numpy())
             measures = g1[DistanceMeasureCols.type].tolist()
             n_measures = len(measures)
-            compared_groups.append([(group1, group2)] * n_measures)
+            compared_level_sets.append([(level_set1, level_set2)] * n_measures)
             effect_sizes.append(d)
             dist_measures.append(measures)
 
         result = pd.DataFrame({
-            DistanceMeasureCols.compared: list(itertools.chain.from_iterable(compared_groups)),
+            DistanceMeasureCols.compared: list(itertools.chain.from_iterable(compared_level_sets)),
             DistanceMeasureCols.effect_size: list(itertools.chain.from_iterable(effect_sizes)),
             DistanceMeasureCols.type: list(itertools.chain.from_iterable(dist_measures))
         })
         return result
 
-    def ordered_groups_and_mean_distances_by_smallest_first(self, distance_measure: str):
-        df = self.per_group_distance_statistics_df[
-            self.per_group_distance_statistics_df[DistanceMeasureCols.type] == distance_measure]
+    def ordered_level_sets_and_mean_distances_by_smallest_first(self, distance_measure: str):
+        df = self.per_level_set_distance_statistics_df[
+            self.per_level_set_distance_statistics_df[DistanceMeasureCols.type] == distance_measure]
         sorted_df = df.sort_values(by=Aggregators.mean)
-        return sorted_df[DistanceMeasureCols.group].tolist(), sorted_df[Aggregators.mean].tolist()
+        return sorted_df[DistanceMeasureCols.level_set].tolist(), sorted_df[Aggregators.mean].tolist()
 
-    def __calculate_ci_for_mean_differences_between_groups(self, alpha: float = 0.05, bonferroni: bool = True,
-                                                           two_tailed: bool = True):
-        stats = self.per_group_distance_statistics_df
-        group_combinations = list(itertools.combinations(self.groups, 2))
-        a, ci_mean_diff_df = self.calculate_ci_of_mean_differences_between_groups(group_combinations, stats,
-                                                                                  DistanceMeasureCols.group, alpha,
-                                                                                  bonferroni, two_tailed)
+    def __calculate_ci_for_mean_differences_between_level_sets(self, alpha: float = 0.05, bonferroni: bool = True,
+                                                               two_tailed: bool = True):
+        stats = self.per_level_set_distance_statistics_df
+        level_set_combinations = list(itertools.combinations(self.level_sets, 2))
+        a, ci_mean_diff_df = self.calculate_ci_of_mean_differences_between_level_sets(level_set_combinations, stats,
+                                                                                      DistanceMeasureCols.level_set, alpha,
+                                                                                      bonferroni, two_tailed)
         return ci_mean_diff_df, a
 
-    def calculate_ci_of_mean_differences_between_groups(self, combinations, stats: pd.DataFrame, group_selector: str,
-                                                        alpha: float = 0.05,
-                                                        bonferroni: bool = True,
-                                                        two_tailed: bool = True):
-        """ Calculates the ci of mean differences between various combinations of groups
+    def calculate_ci_of_mean_differences_between_level_sets(self, combinations, stats: pd.DataFrame, level_set_selector: str,
+                                                            alpha: float = 0.05,
+                                                            bonferroni: bool = True,
+                                                            two_tailed: bool = True):
+        """ Calculates the ci of mean differences between various combinations of level sets
         :param combinations: list of tuples that need to be compared [(g1, g2)]
-        :param stats: dataframe with the stats, must have columns: group_selector, Aggregators.count, Aggregators.mean
+        :param stats: dataframe with the stats, must have columns: level-set_selector, Aggregators.count, Aggregators.mean
         Aggregators.std
-        :param group_selector: name of the column in the stats dataframe for that group
+        :param level_set_selector: name of the column in the stats dataframe for that level set
         """
-        compared_groups = []
+        compared_level_sets = []
         dist_measures = []
         mean_diffs = []
         lo_diffs = []
@@ -242,9 +218,9 @@ class DistanceMetricAssessment:
         if bonferroni:
             a = alpha / len(combinations)
         z_alpha = gaussian_critical_z_value_for(a, two_tailed=two_tailed)
-        for group1, group2 in combinations:
-            g1 = stats[stats[group_selector] == group1]
-            g2 = stats[stats[group_selector] == group2]
+        for level_set1, level_set2 in combinations:
+            g1 = stats[stats[level_set_selector] == level_set1]
+            g2 = stats[stats[level_set_selector] == level_set2]
             n1 = g1[Aggregators.count].reset_index(drop=True)
             n2 = g2[Aggregators.count].reset_index(drop=True)
             m1 = g1[Aggregators.mean].reset_index(drop=True)
@@ -258,7 +234,7 @@ class DistanceMetricAssessment:
             for idx in range(len(lo_ci)):
                 stat_diff.append(compare_ci_for_differences(lo_ci[idx], hi_ci[idx]))
 
-            compared_groups.append([(group1, group2)] * len(lo_ci))
+            compared_level_sets.append([(level_set1, level_set2)] * len(lo_ci))
             dist_measures.append(g1[DistanceMeasureCols.type])
             mean_diffs.append(diff_ms)
             lo_diffs.append(lo_ci)
@@ -267,7 +243,7 @@ class DistanceMetricAssessment:
             ci_widths.append(ci_width)
             standard_errors.append(standard_error)
         ci_mean_diff_df = pd.DataFrame(
-            {DistanceMeasureCols.compared: list(itertools.chain.from_iterable(compared_groups)),
+            {DistanceMeasureCols.compared: list(itertools.chain.from_iterable(compared_level_sets)),
              DistanceMeasureCols.type: list(itertools.chain.from_iterable(dist_measures)),
              DistanceMeasureCols.stat_diff: list(itertools.chain.from_iterable(stat_diffs)),
              DistanceMeasureCols.mean_diff: list(itertools.chain.from_iterable(mean_diffs)),
@@ -279,11 +255,11 @@ class DistanceMetricAssessment:
              })
         return a, ci_mean_diff_df
 
-    def plot_ci_of_differences_between_groups_for_measures(self, measures: [], show_title=True):
-        title = r'95\% CI diff in means for each group $d_i$ compared to $d_j$; $i=0,\ldots,4$, $j=i+1,\ldots,5$, $\alpha=' + str(
+    def plot_ci_of_differences_between_level_sets_for_measures(self, measures: [], show_title=True):
+        title = r'95\% CI diff in means for each level set $d_i$ compared to $d_j$; $i=0,\ldots,4$, $j=i+1,\ldots,5$, $\alpha=' + str(
             round(self.alpha_for_ci, 3)) + '$'
 
-        columns = [0, 1, 2, 3, 4]  # comparison between this group and the other ones
+        columns = [0, 1, 2, 3, 4]  # comparison between this level set and the other ones
         # setup figure
         reset_matplotlib(self.backend)
         use_latex_labels()
@@ -303,24 +279,24 @@ class DistanceMetricAssessment:
         # data
         df = self.ci_for_mean_differences[self.ci_for_mean_differences[DistanceMeasureCols.type].isin(measures)]
 
-        # y labels, use the y's for 0 group that is compared with all others
-        compared_groups = df[DistanceMeasureCols.compared].unique().tolist()
-        y_groups = [item for item in compared_groups if item[0] == 0]
-        y_ticks = range(1, len(y_groups) + 1)
+        # y labels, use the y's for 0 level set that is compared with all others
+        compared_level_sets = df[DistanceMeasureCols.compared].unique().tolist()
+        y_level_sets = [item for item in compared_level_sets if item[0] == 0]
+        y_ticks = range(1, len(y_level_sets) + 1)
         # create y ticks a gap apart for each measure
 
-        # columns are each group compared to its supposedly higher groups
+        # columns are each level set compared to its supposedly higher level sets
         for cdx, column in enumerate(columns):
-            col_y_groups = [item for item in compared_groups if item[0] == column]
-            # data for groups
-            df_for_group = df[df[DistanceMeasureCols.compared].isin(col_y_groups)]
+            col_y_level_sets = [item for item in compared_level_sets if item[0] == column]
+            # data for level_sets
+            df_for_level_set = df[df[DistanceMeasureCols.compared].isin(col_y_level_sets)]
 
             # plot measures on different row to highlight differences better
             for rdx, measure in enumerate(measures):
                 ax = axs[rdx][cdx]
                 # for each new measure add a gap
-                y = y_ticks[:len(col_y_groups)]
-                df_measure = df_for_group[df_for_group[DistanceMeasureCols.type] == measure]
+                y = y_ticks[:len(col_y_level_sets)]
+                df_measure = df_for_level_set[df_for_level_set[DistanceMeasureCols.type] == measure]
                 # plot mean and annotate value
                 mean_values = df_measure[DistanceMeasureCols.mean_diff]
                 ax.scatter(mean_values, y, c=color, marker='P')
@@ -333,7 +309,7 @@ class DistanceMetricAssessment:
                 ci_lo = df_measure[ConfidenceIntervalCols.ci_96lo]
                 ax.hlines(y=y, xmin=ci_lo, xmax=ci_hi, colors=color, ls='solid', lw=4)
 
-                ax.set_yticks(y_ticks[:len(col_y_groups)], col_y_groups)
+                ax.set_yticks(y_ticks[:len(col_y_level_sets)], col_y_level_sets)
                 min_y = 1 - gap
                 max_y = y_ticks[-1] + 2 * gap
                 ax.set_ylim(bottom=min_y, top=max_y)
@@ -345,24 +321,24 @@ class DistanceMetricAssessment:
 
         # overall row labels
         for ax, measure in zip(axs[:, 0], measures):
-            ax.set_ylabel(self.measure_names[measure], rotation=90, size=fontsize)
+            ax.set_ylabel(measure, rotation=90, size=fontsize)
 
         # overall column labels
-        for group_id in columns:
-            ax = axs[len(measures) - 1, group_id]
-            label = "$d_" + str(group_id) + "$"
+        for level_set_id in columns:
+            ax = axs[len(measures) - 1, level_set_id]
+            label = "$d_" + str(level_set_id) + "$"
             ax.set_xlabel(label, rotation=0, size=fontsize)
 
         plt.tight_layout()
         plt.show()
         return fig
 
-    def plot_ci_per_group_for_pattern_pairs_where_distances_do_not_agree(self, measures: [] = [],
-                                                                         show_title: bool = True):
+    def plot_ci_per_level_set_for_pattern_pairs_where_distances_do_not_agree(self, measures: [] = [],
+                                                                             show_title: bool = True):
         """
-        Plots the ci for within pattern differences for each of the measures (rows) and each of the groups (groups)
+        Plots the ci for within pattern differences for each of the measures (rows) and each of the level sets (level sets)
         but only when the ci don't agree between the measures (e.g. one overlap, another higher or lower).
-        Only the first 10 pattern pairs are plotted. If a group has no differences it is not plotted
+        Only the first 10 pattern pairs are plotted. If a level set has no differences it is not plotted
         """
         title = r'95\% CI of difference in means for each pattern pair in $d_i$ where the distance measure disagree in significance of difference'
 
@@ -370,15 +346,15 @@ class DistanceMetricAssessment:
         if len(measures) is 0:
             measures = self.__measures
 
-        pairs_with_differences = self.find_within_group_differences_where_the_distances_dont_agree(measures=measures)
-        groups = [key for key, value in pairs_with_differences.items() if len(value) > 0]
+        pairs_with_differences = self.find_within_level_set_differences_where_the_distances_dont_agree(measures=measures)
+        level_sets = [key for key, value in pairs_with_differences.items() if len(value) > 0]
 
         # setup figure
         reset_matplotlib(self.backend)
         use_latex_labels()
         fig_size = (15, 10)
         fig, axs = plt.subplots(nrows=len(measures),
-                                ncols=len(groups),
+                                ncols=len(level_sets),
                                 sharey=False,
                                 sharex=False,
                                 figsize=fig_size, squeeze=0)
@@ -389,10 +365,10 @@ class DistanceMetricAssessment:
         gap = 0.2
 
         # data
-        data = self.calculate_ci_mean_differences_between_pattern_pairs_for_each_group()
+        data = self.calculate_ci_mean_differences_between_pattern_pairs_for_each_level_set()
         # only keep the measures we want
         data = data[data[DistanceMeasureCols.type].isin(measures)]
-        # only keep first 10 pairs for each group
+        # only keep first 10 pairs for each level set
         n_plot = 10
         shortened_pairs = [pairs[:n_plot] for pairs in pairs_with_differences.values()]
         # flatten list
@@ -402,25 +378,25 @@ class DistanceMetricAssessment:
         data["compared"] = list(zip(data[DistanceMeasureCols.pair1], data[DistanceMeasureCols.pair2]))
         filtered_data = data[data["compared"].isin(shortened_pairs)]
 
-        # groups are each group, y-axis for each column is the pairs, x-axis the CI
-        for cdx, column in enumerate(groups):
-            data_group = filtered_data[filtered_data[DistanceMeasureCols.group] == column]
+        # level sets are each level set, y-axis for each column is the pairs, x-axis the CI
+        for cdx, column in enumerate(level_sets):
+            data_level_set = filtered_data[filtered_data[DistanceMeasureCols.level_set] == column]
 
-            # y labels for group is the pattern pairs within that group, these are: g1 (pattern1, pattern2) and g2
+            # y labels for level sets is the pattern pairs within that level set, these are: g1 (pattern1, pattern2) and g2
             # (pattern 1, pattern 2). These will be the same for all measures
-            data_group_measure = data_group[data_group[DistanceMeasureCols.type] == measures[0]]
-            group_pair1 = list(data_group_measure[DistanceMeasureCols.pair1])
-            group_pair2 = list(data_group_measure[DistanceMeasureCols.pair2])
-            y_groups = [
+            data_level_set_measure = data_level_set[data_level_set[DistanceMeasureCols.type] == measures[0]]
+            level_set_pair1 = list(data_level_set_measure[DistanceMeasureCols.pair1])
+            level_set_pair2 = list(data_level_set_measure[DistanceMeasureCols.pair2])
+            y_level_sets = [
                 str(p1).replace('(', '').replace(')', '').replace(" ", '') + "/"
                 + str(p2).replace('(', '').replace(')', '').replace(" ", '')
-                for p1, p2 in zip(group_pair1, group_pair2)]
-            y_ticks = range(1, len(y_groups) + 1)
+                for p1, p2 in zip(level_set_pair1, level_set_pair2)]
+            y_ticks = range(1, len(y_level_sets) + 1)
             # create y ticks a gap apart for each measure
 
             # plot measures on different row to highlight differences better
             for rdx, measure in enumerate(measures):
-                data_for_measure = data_group[data_group[DistanceMeasureCols.type] == measure]
+                data_for_measure = data_level_set[data_level_set[DistanceMeasureCols.type] == measure]
                 ax = axs[rdx][cdx]
 
                 # plot mean and annotate value
@@ -435,7 +411,7 @@ class DistanceMetricAssessment:
                     ci_lo = data_for_measure[ConfidenceIntervalCols.ci_96lo]
                     ax.hlines(y=y_ticks, xmin=ci_lo, xmax=ci_hi, colors=color, ls='solid', lw=4)
 
-                    ax.set_yticks(y_ticks, y_groups)
+                    ax.set_yticks(y_ticks, y_level_sets)
                     min_y = 1 - gap
                     max_y = y_ticks[-1] + 2 * gap
                     ax.set_ylim(bottom=min_y, top=max_y)
@@ -447,22 +423,22 @@ class DistanceMetricAssessment:
 
         # overall row labels
         for ax, row in zip(axs[:, 0], measures):
-            ax.set_ylabel(self.measure_names[row], rotation=90, size=fontsize)
+            ax.set_ylabel(row, rotation=90, size=fontsize)
 
         # overall column labels
-        for idx, group_id in enumerate(groups):
+        for idx, level_set_id in enumerate(level_sets):
             ax = axs[len(measures) - 1, idx]
-            label = r'$d_' + str(group_id) + '$'
+            label = r'$d_' + str(level_set_id) + '$'
             ax.set_xlabel(label, rotation=0, size=fontsize)
 
         plt.tight_layout()
         plt.show()
         return fig
 
-    def plot_ci_for_ordered_groups_for_measures(self, measures: [], show_title=True):
+    def plot_ci_for_ordered_level_sets_for_measures(self, measures: [], show_title=True):
         """
         Plots the confidence intervals for the provided measures but only the comparison between
-        the groups in order of their mean difference. One plot per distance measure as columns.
+        the level sets in order of their mean difference. One plot per distance measure as columns.
         """
         # setup figure
         reset_matplotlib(self.backend)
@@ -475,7 +451,7 @@ class DistanceMetricAssessment:
                                 figsize=fig_size, squeeze=0)
 
         if show_title:
-            title = r'95\% CI diff in means between the groups ordered from smallest to biggest distance, $\alpha=' + str(
+            title = r'95\% CI diff in means between the level sets ordered from smallest to biggest distance, $\alpha=' + str(
                 round(self.alpha_for_ci, 3)) + '$'
             fig.suptitle(title, fontsize=fontsize)
 
@@ -484,8 +460,8 @@ class DistanceMetricAssessment:
 
         # data
         df = self.ci_for_mean_differences[self.ci_for_mean_differences[DistanceMeasureCols.type].isin(measures)]
-        distance_df = self.per_group_distance_statistics_df[
-            self.per_group_distance_statistics_df[DistanceMeasureCols.type].isin(measures)]
+        distance_df = self.per_level_set_distance_statistics_df[
+            self.per_level_set_distance_statistics_df[DistanceMeasureCols.type].isin(measures)]
         # y ticks: each measure has 5 comparisons
         y_ci = [1.5, 2.5, 3.5, 4.5, 5.5]
         y_distances = [1, 2, 3, 4, 5, 6]
@@ -495,27 +471,27 @@ class DistanceMetricAssessment:
             ax = axs[0][cdx]
 
             # ordered distances for measure
-            groups_ordered = self.ordered_groups_and_mean_distances_by_smallest_first(measure)[0]
-            # groups compared in order
+            level_sets_ordered = self.ordered_level_sets_and_mean_distances_by_smallest_first(measure)[0]
+            # level sets compared in order
             y_tuples = []
-            for i in range(len(groups_ordered) - 1):
-                y_tuples.append((groups_ordered[i], groups_ordered[i + 1]))
+            for i in range(len(level_sets_ordered) - 1):
+                y_tuples.append((level_sets_ordered[i], level_sets_ordered[i + 1]))
             y_labels = [(min(g1, g2), max(g1, g2)) for g1, g2 in y_tuples]
 
             # data
             df_measure = df[df[DistanceMeasureCols.type] == measure]
             data = df_measure[df_measure[DistanceMeasureCols.compared].isin(y_labels)]
-            # sort the data in order of the smallest group first and the biggest last
+            # sort the data in order of the smallest level set first and the biggest last
             data[DistanceMeasureCols.compared] = data[DistanceMeasureCols.compared].astype("category")
             data[DistanceMeasureCols.compared] = data[DistanceMeasureCols.compared].cat.set_categories(y_labels)
             sorted_data = data.sort_values(DistanceMeasureCols.compared)
 
             distance_data = distance_df[distance_df[DistanceMeasureCols.type] == measure]
-            # sort the data by the group
-            distance_data[DistanceMeasureCols.group] = distance_data[DistanceMeasureCols.group].astype("category")
-            distance_data[DistanceMeasureCols.group] = distance_data[DistanceMeasureCols.group].cat.set_categories(
-                groups_ordered)
-            sorted_distance = distance_data.sort_values(DistanceMeasureCols.group)
+            # sort the data by the level set
+            distance_data[DistanceMeasureCols.level_set] = distance_data[DistanceMeasureCols.level_set].astype("category")
+            distance_data[DistanceMeasureCols.level_set] = distance_data[DistanceMeasureCols.level_set].cat.set_categories(
+                level_sets_ordered)
+            sorted_distance = distance_data.sort_values(DistanceMeasureCols.level_set)
 
             # plot mean and annotate value
             mean_values = sorted_data[DistanceMeasureCols.mean_diff]
@@ -524,7 +500,7 @@ class DistanceMetricAssessment:
                 ax.annotate(xy=(mean, y_ci[idx]), text=round(mean, 1), xytext=(0, gap), textcoords='offset points',
                             va='bottom', color=colors[measure], fontsize=fontsize, ha='center')
 
-            # plot distance for group
+            # plot distance for level set
             distances = sorted_distance[Aggregators.mean]
             ax.scatter(distances, y_distances, c='dimgrey', marker='*')
             for idx, dist in enumerate(distances):
@@ -540,7 +516,7 @@ class DistanceMetricAssessment:
             # plot labels
             # combine both y ticks and labels into one list
             ys = list(sum(zip(y_distances, y_ci + [0]), ())[:-1])
-            distance_labels = ['d' + str(group) for group in groups_ordered]
+            distance_labels = ['d' + str(level_set) for level_set in level_sets_ordered]
             ys_labels = list(sum(zip(distance_labels, y_labels + [0]), ())[:-1])
             ax.set_yticks(ys, ys_labels)
             min_y = 1 - gap
@@ -555,19 +531,19 @@ class DistanceMetricAssessment:
             ax.hlines(y=y_distances, xmin=x_min, xmax=x_max, color='lightgray', linestyle='dotted')
 
         for ax, measure in zip(axs[0, :], measures):
-            ax.set_xlabel(self.measure_names[measure], rotation=0, size=fontsize)
+            ax.set_xlabel(measure, rotation=0, size=fontsize)
 
         plt.tight_layout()
         plt.show()
         return fig
 
-    def plot_correlation_matrices_of_biggest_distances_for_groups(self, g1: int, g2: int, plot_diagonal=False,
+    def plot_correlation_matrices_of_biggest_distances_for_level_sets(self, g1: int, g2: int, plot_diagonal=False,
                                                                   what: str = "biggest",
                                                                   measure=DistanceMeasures.l2_cor_dist,
                                                                   show_title: bool = True):
-        """Plots correlation matrices of patterns compared in the two groups given
-        :param g1: index of group plotted on row 1, 0-5
-        :param g2: index of group plotted on row 2, 0-5
+        """Plots correlation matrices of patterns compared in the two level sets given
+        :param g1: index of level sets plotted on row 1, 0-5
+        :param g2: index of level sets plotted on row 2, 0-5
         :param plot_diagonal: whether to plot the diagonal 1 correlation or not
         :param what: "biggest" or "smallest" selects the pattern with either the 2 biggest or smallest distances
         between segments
@@ -588,21 +564,21 @@ class DistanceMetricAssessment:
         cmap = "bwr"
         normed_colour = mpl.colors.Normalize(-1, 1)
 
-        title = "Visualisation of the patterns of the segment pair with the " + what + " distances for each group"
+        title = "Visualisation of the patterns of the segment pair with the " + what + " distances for each level set"
         if show_title:
             fig.suptitle(title, fontsize=fontsize)
 
         # data
-        group1 = self.segment_pair_distance_df[self.segment_pair_distance_df[DistanceMeasureCols.group] == g1]
-        group2 = self.segment_pair_distance_df[self.segment_pair_distance_df[DistanceMeasureCols.group] == g2]
+        level_set1 = self.segment_pair_distance_df[self.segment_pair_distance_df[DistanceMeasureCols.level_set] == g1]
+        level_set2 = self.segment_pair_distance_df[self.segment_pair_distance_df[DistanceMeasureCols.level_set] == g2]
 
-        # get segment pairs for each of the two groups
+        # get segment pairs for each of the two level sets
         if what == "biggest":
-            seg1pair = group1.loc[group1[measure].idxmax()][DistanceMeasureCols.pairs]
-            seg2pair = group2.loc[group2[measure].idxmax()][DistanceMeasureCols.pairs]
+            seg1pair = level_set1.loc[level_set1[measure].idxmax()][DistanceMeasureCols.pairs]
+            seg2pair = level_set2.loc[level_set2[measure].idxmax()][DistanceMeasureCols.pairs]
         elif what == "smallest":
-            seg1pair = group1.loc[group1[measure].idxmin()][DistanceMeasureCols.pairs]
-            seg2pair = group2.loc[group2[measure].idxmin()][DistanceMeasureCols.pairs]
+            seg1pair = level_set1.loc[level_set1[measure].idxmin()][DistanceMeasureCols.pairs]
+            seg2pair = level_set2.loc[level_set2[measure].idxmin()][DistanceMeasureCols.pairs]
         else:
             assert False, "unknown what parameter"
 
@@ -612,7 +588,7 @@ class DistanceMetricAssessment:
         pattern21 = self.__ds.labels.iloc[seg2pair[0]][SyntheticDataSegmentCols.pattern_id]
         pattern22 = self.__ds.labels.iloc[seg2pair[1]][SyntheticDataSegmentCols.pattern_id]
 
-        # plot each of them: group 1 on row 1, group 2 on row 2
+        # plot each of them: level set 1 on row 1, level set 2 on row 2
         ax00 = self.__plot_matrix_for_pattern(pattern11, axs, 0, 0, cmap, normed_colour, plot_diagonal=plot_diagonal)
         ax01 = self.__plot_matrix_for_pattern(pattern12, axs, 0, 1, cmap, normed_colour, plot_diagonal=plot_diagonal)
         ax10 = self.__plot_matrix_for_pattern(pattern21, axs, 1, 0, cmap, normed_colour, plot_diagonal=plot_diagonal,
@@ -621,8 +597,8 @@ class DistanceMetricAssessment:
                                               add_to_x_label='Segment B')
 
         # label rows
-        ax00.set_ylabel(r'Group: ' + '$d_' + str(g1) + '$', size=fontsize)
-        ax10.set_ylabel(r'Group: ' + '$d_' + str(g2) + '$', size=fontsize)
+        ax00.set_ylabel(r'level set: ' + '$d_' + str(g1) + '$', size=fontsize)
+        ax10.set_ylabel(r'level set: ' + '$d_' + str(g2) + '$', size=fontsize)
 
         plt.tight_layout()
         plt.show()
@@ -647,30 +623,30 @@ class DistanceMetricAssessment:
         ax.set_xlabel(label, rotation=0, size=fontsize)
         return ax
 
-    def find_min_or_max_distances_for_each_group_for_a_measure(self, what: str = "min",
+    def find_min_or_max_distances_for_each_level_set_for_a_measure(self, what: str = "min",
                                                                measure: str = DistanceMeasures.l2_cor_dist):
         """ Return  df of min or max distance for the given distance measure.
-        Result df has columns: groups, segment pairs, distance, pattern_id pairs
+        Result df has columns: level_sets, segment pairs, distance, pattern_id pairs
         """
         dist_df = self.segment_pair_distance_df
 
         indices = []
-        for group in self.groups:
+        for level_set in self.level_sets:
             if what == "min":
-                idx = dist_df[dist_df[DistanceMeasureCols.group] == group][
+                idx = dist_df[dist_df[DistanceMeasureCols.level_set] == level_set][
                     measure].idxmin()
             elif what == "max":
-                idx = dist_df[dist_df[DistanceMeasureCols.group] == group][
+                idx = dist_df[dist_df[DistanceMeasureCols.level_set] == level_set][
                     measure].idxmax()
             indices.append(idx)
         result = dist_df.iloc[indices].reset_index(drop=True)[
-            [DistanceMeasureCols.group, DistanceMeasureCols.pairs, DistanceMeasureCols.pattern_pairs, measure]]
+            [DistanceMeasureCols.level_set, DistanceMeasureCols.pairs, DistanceMeasureCols.pattern_pairs, measure]]
         return result
 
-    def plot_box_diagrams_of_distances_as_function_of_p(self, groups: []):
+    def plot_box_diagrams_of_distances_as_function_of_p(self, level_sets: []):
         """This assumes that the distance measures are the lp ones. Plots box diagrams of the distances
-        with the different p as x and the distance as y axis. If group is 'all' the mean is taken. If group is a number
-        only the distance data for that group will be plotted
+        with the different p as x and the distance as y axis. If level set is 'all' the mean is taken. If level set is a number
+        only the distance data for that level set will be plotted
         """
         # build dictionary of p's for x axis. Key is p, value is measure name
         measures = {}
@@ -714,9 +690,9 @@ class DistanceMetricAssessment:
                                 figsize=fig_size)
         sns.set(style="whitegrid")
 
-        data = pd.melt(self.segment_pair_distance_df, id_vars=[DistanceMeasureCols.group], value_vars=measure_names)
-        if groups[0] in self.groups:
-            ax = sns.boxplot(data=data, x="variable", y="value", hue=DistanceMeasureCols.group, ax=axs,
+        data = pd.melt(self.segment_pair_distance_df, id_vars=[DistanceMeasureCols.level_set], value_vars=measure_names)
+        if level_sets[0] in self.level_sets:
+            ax = sns.boxplot(data=data, x="variable", y="value", hue=DistanceMeasureCols.level_set, ax=axs,
                              palette="rainbow")
         else:
             ax = sns.boxplot(data=data, x="variable", y="value", ax=axs,
@@ -729,21 +705,21 @@ class DistanceMetricAssessment:
         ax.set_xticklabels(["L" + str(p) for p in ps], fontsize=fontsize)
         ax.tick_params(axis='y', labelsize=fontsize)
 
-        # no legend needed if group is all
-        if groups[0] in self.groups:
-            ax.legend(title="Pattern Group", title_fontsize=fontsize, fontsize=fontsize)
-            for i, group in enumerate(groups):
-                ax.legend_.texts[i].set_text(group)
+        # no legend needed if level set is all
+        if level_sets[0] in self.level_sets:
+            ax.legend(title="Pattern Level Set", title_fontsize=fontsize, fontsize=fontsize)
+            for i, level_set in enumerate(level_sets):
+                ax.legend_.texts[i].set_text(level_set)
 
         plt.show()
         return fig
 
-    def plot_box_diagrams_of_distances_for_all_groups(self, measures: [] = [], order: [] = default_order):
+    def plot_box_diagrams_of_distances_for_all_level_sets(self, measures: [] = [], order: [] = default_order):
         if len(measures) == 0:
             measures = self.__measures
 
         if len(order) == 0:
-            order = self.groups
+            order = self.level_sets
 
         reset_matplotlib(self.backend)
         fig_size = (15, 10)
@@ -754,11 +730,11 @@ class DistanceMetricAssessment:
                                 figsize=fig_size)
         sns.set(style="whitegrid")
 
-        data = pd.melt(self.segment_pair_distance_df, id_vars=[DistanceMeasureCols.group], value_vars=measures)
-        ax = sns.boxplot(data=data, x=DistanceMeasureCols.group, y="value", hue="variable", ax=axs, palette="rainbow",
+        data = pd.melt(self.segment_pair_distance_df, id_vars=[DistanceMeasureCols.level_set], value_vars=measures)
+        ax = sns.boxplot(data=data, x=DistanceMeasureCols.level_set, y="value", hue="variable", ax=axs, palette="rainbow",
                          order=order)
 
-        ax.set_xlabel('Group d', fontsize=fontsize)
+        ax.set_xlabel('Level Set d', fontsize=fontsize)
         ax.set_ylabel('Distance', fontsize=fontsize)
 
         ax.tick_params(axis='x', labelsize=fontsize)
@@ -766,7 +742,7 @@ class DistanceMetricAssessment:
 
         ax.legend(title="Distance Measure", title_fontsize=fontsize, fontsize=fontsize)
         for i, measure in enumerate(measures):
-            ax.legend_.texts[i].set_text(self.measure_names[measure])
+            ax.legend_.texts[i].set_text(measure)
 
         plt.show()
         return fig
@@ -783,12 +759,12 @@ class DistanceMetricAssessment:
         stats_dfs = []
         for pair in pattern_pairs:
             dist_for_pair = dist_df[dist_df[DistanceMeasureCols.pattern_pairs] == pair]
-            groups = list(dist_for_pair[DistanceMeasureCols.group].unique())
-            assert len(groups) == 1, "a pattern pair appears in more than one group"
-            group = groups[0]
+            level_sets = list(dist_for_pair[DistanceMeasureCols.level_set].unique())
+            assert len(level_sets) == 1, "a pattern pair appears in more than one level set"
+            level_set = level_sets[0]
             for distance_measure in self.__measures:
                 p_stats = dist_for_pair[distance_measure].describe().to_frame().T
-                p_stats.insert(0, DistanceMeasureCols.group, group)
+                p_stats.insert(0, DistanceMeasureCols.level_set, level_set)
                 p_stats.insert(1, DistanceMeasureCols.pattern_pairs, [pair])
                 stats_dfs.append(p_stats)
         all_stats = pd.concat(stats_dfs).reset_index(names=DistanceMeasureCols.type)
@@ -823,50 +799,50 @@ class DistanceMetricAssessment:
 
         return result
 
-    def calculate_df_of_pattern_pair_groups(self):
+    def calculate_df_of_pattern_pair_level_sets(self):
         """
-            Returns df with columns distance measure, group (list of group id), count (of patterns in that row),
+            Returns df with columns distance measure, level set (list of level set id), count (of patterns in that row),
             pattern pairs (list of patterns).
             Each row contains pattern pairs between which there is no significant differences
         """
         all_df = self.calculate_statistics_for_pattern_pairs_for_measure()
 
         # dtype object is important to be able to insert lists into cell
-        result = pd.DataFrame({DistanceMeasureCols.type: [], DistanceMeasureCols.group: [], "count": [],
+        result = pd.DataFrame({DistanceMeasureCols.type: [], DistanceMeasureCols.level_set: [], "count": [],
                                DistanceMeasureCols.pattern_pairs: []}, dtype=object)
         for measure in self.__measures:
             data = all_df[all_df[DistanceMeasureCols.type] == measure]
 
-            # indices for next group to start
+            # indices for next level set to start
             indices = list(data[data[DistanceMeasureCols.stat_diff] == "lower"].index)
-            indices.append(data.shape[0])  # include last group
+            indices.append(data.shape[0])  # include last level set
 
             start_idx = 0
             for end_idx in indices:
                 sub_frame = data[start_idx:end_idx]
                 pairs = list(sub_frame[DistanceMeasureCols.pattern_pairs])
-                groups = list(sub_frame[DistanceMeasureCols.group].unique())
+                level_sets = list(sub_frame[DistanceMeasureCols.level_set].unique())
                 df_index = len(result.index)
                 result.at[df_index, DistanceMeasureCols.type] = measure
                 result.at[df_index, DistanceMeasureCols.pattern_pairs] = pairs
-                result.at[df_index, DistanceMeasureCols.group] = groups
+                result.at[df_index, DistanceMeasureCols.level_set] = level_sets
                 result.at[df_index, "count"] = len(pairs)
 
                 start_idx = end_idx
 
         return result
 
-    def calculate_ci_mean_differences_between_pattern_pairs_for_each_group(self, alpha: float = 0.05,
+    def calculate_ci_mean_differences_between_pattern_pairs_for_each_level_set(self, alpha: float = 0.05,
                                                                            bonferroni: bool = True,
                                                                            two_tailed: bool = True):
-        """Calculates ci of mean difference between each pattern pair in each group"""
-        if self.__ci_mean_differences_between_pattern_pairs_per_group.get((alpha, bonferroni, two_tailed)) is None:
+        """Calculates ci of mean difference between each pattern pair in each level set"""
+        if self.__ci_mean_differences_between_pattern_pairs_per_level_sets.get((alpha, bonferroni, two_tailed)) is None:
             # calculate it - otherwise return already calculated version
             stats_df = self.calculate_statistics_for_pattern_pairs_for_measure()
 
             pattern_pair1 = []
             pattern_pair2 = []
-            groups = []
+            level_sets = []
             bonferroni_alpha = []
             dist_measures = []
             mean_diffs = []
@@ -876,20 +852,20 @@ class DistanceMetricAssessment:
             ci_widths = []
             standard_errors = []
 
-            for group in stats_df[DistanceMeasureCols.group].unique():
-                stats_for_group = stats_df[stats_df[DistanceMeasureCols.group] == group]
-                pattern_pairs = list(stats_for_group[DistanceMeasureCols.pattern_pairs].unique())
+            for level_set in stats_df[DistanceMeasureCols.level_set].unique():
+                stats_for_level_set = stats_df[stats_df[DistanceMeasureCols.level_set] == level_set]
+                pattern_pairs = list(stats_for_level_set[DistanceMeasureCols.pattern_pairs].unique())
                 combinations = list(itertools.combinations(pattern_pairs, 2))
 
-                # bonferroni correction for the group
+                # bonferroni correction for the level set
                 a = alpha
                 if bonferroni:
                     a = alpha / len(combinations)
                 z_alpha = gaussian_critical_z_value_for(a, two_tailed=two_tailed)
 
                 for pair1, pair2 in combinations:
-                    g1 = stats_for_group[stats_for_group[DistanceMeasureCols.pattern_pairs] == pair1]
-                    g2 = stats_for_group[stats_for_group[DistanceMeasureCols.pattern_pairs] == pair2]
+                    g1 = stats_for_level_set[stats_for_level_set[DistanceMeasureCols.pattern_pairs] == pair1]
+                    g2 = stats_for_level_set[stats_for_level_set[DistanceMeasureCols.pattern_pairs] == pair2]
                     n1 = g1[Aggregators.count].reset_index(drop=True)
                     n2 = g2[Aggregators.count].reset_index(drop=True)
                     m1 = g1[Aggregators.mean].reset_index(drop=True)
@@ -905,7 +881,7 @@ class DistanceMetricAssessment:
 
                     pattern_pair1.append([pair1] * len(lo_ci))  # len is for different distance measures
                     pattern_pair2.append([pair2] * len(lo_ci))
-                    groups.append([group] * len(lo_ci))
+                    level_sets.append([level_set] * len(lo_ci))
                     bonferroni_alpha.append([a] * len(lo_ci))
                     dist_measures.append(g1[DistanceMeasureCols.type])
                     mean_diffs.append(diff_ms)
@@ -917,7 +893,7 @@ class DistanceMetricAssessment:
             ci_mean_diff_df = pd.DataFrame({
                 DistanceMeasureCols.pair1: list(itertools.chain.from_iterable(pattern_pair1)),
                 DistanceMeasureCols.pair2: list(itertools.chain.from_iterable(pattern_pair2)),
-                DistanceMeasureCols.group: list(itertools.chain.from_iterable(groups)),
+                DistanceMeasureCols.level_set: list(itertools.chain.from_iterable(level_sets)),
                 DistanceMeasureCols.type: list(itertools.chain.from_iterable(dist_measures)),
                 DistanceMeasureCols.stat_diff: list(itertools.chain.from_iterable(stat_diffs)),
                 DistanceMeasureCols.alpha: list(itertools.chain.from_iterable(bonferroni_alpha)),
@@ -928,13 +904,13 @@ class DistanceMetricAssessment:
                 ConfidenceIntervalCols.standard_error: list(
                     itertools.chain.from_iterable(standard_errors)),
             })
-            self.__ci_mean_differences_between_pattern_pairs_per_group[
+            self.__ci_mean_differences_between_pattern_pairs_per_level_sets[
                 (alpha, bonferroni, two_tailed)] = ci_mean_diff_df
-        return self.__ci_mean_differences_between_pattern_pairs_per_group[(alpha, bonferroni, two_tailed)]
+        return self.__ci_mean_differences_between_pattern_pairs_per_level_sets[(alpha, bonferroni, two_tailed)]
 
-    def find_within_group_differences_where_the_distances_dont_agree(self, measures: [] = []):
+    def find_within_level_set_differences_where_the_distances_dont_agree(self, measures: [] = []):
         """
-            Returns a dictionary with the keys being the group name and the values being a list of tuples of pattern
+            Returns a dictionary with the keys being the level set name and the values being a list of tuples of pattern
             pairs ((p1, p2), (p2, p3)) for which the differences in means between segments from (p1, p2) and segments
             from (p2, p3) are not consistent across the different distance measures. I.e. one measure might judge the
             CI for differences in means as 'overlap', one as 'higher', and one as 'lower'
@@ -943,33 +919,33 @@ class DistanceMetricAssessment:
         if len(measures) is 0:
             measures = self.__measures
 
-        ci_mean_diff = self.calculate_ci_mean_differences_between_pattern_pairs_for_each_group()
+        ci_mean_diff = self.calculate_ci_mean_differences_between_pattern_pairs_for_each_level_set()
         result = {}
 
-        for group in self.groups:
+        for level_set in self.level_sets:
             # ci for that gourp
-            group_data = ci_mean_diff[ci_mean_diff[DistanceMeasureCols.group] == group]
+            level_set_data = ci_mean_diff[ci_mean_diff[DistanceMeasureCols.level_set] == level_set]
             # create a new column of tuples of pattern pair 1, pair 2
-            group_data.insert(0, "compared",
-                              list(zip(group_data[DistanceMeasureCols.pair1], group_data[DistanceMeasureCols.pair2])))
-            # group data by compared -> now each should unique pattern tuple has an entry per distance measure
+            level_set_data.insert(0, "compared",
+                              list(zip(level_set_data[DistanceMeasureCols.pair1], level_set_data[DistanceMeasureCols.pair2])))
+            # level set data by compared -> now each should unique pattern tuple has an entry per distance measure
             # then count the values for stat_diff (higher, lower, overlap), this number will be the same
             # as the number of distance measures if all measures have the same stat_diff
-            stat_diff_counts = group_data.groupby(["compared"])[
+            stat_diff_counts = level_set_data.groupby(["compared"])[
                 DistanceMeasureCols.stat_diff].value_counts().reset_index(name='count')
             # select the ones where the count is not equal to number of distance measures
             patterns = stat_diff_counts[stat_diff_counts["count"] < len(self.__measures)]["compared"].unique()
-            result[group] = patterns
+            result[level_set] = patterns
         return result
 
-    def plot_ci_pattern_pair_heat_map(self, group: int, measure: str,
+    def plot_ci_pattern_pair_heat_map(self, level_set: int, measure: str,
                                       show_stats_for: [] = ['overlap', 'lower', 'higher'], show_title: bool = True):
-        """Plots a heatmap for n/a (pair not in group), similar, overlap, higher, lower for all pattern
+        """Plots a heatmap for n/a (pair not in level set), similar, overlap, higher, lower for all pattern
         pair combinations
         """
-        # get ci data for group
-        stats_df = self.calculate_ci_mean_differences_between_pattern_pairs_for_each_group()
-        ci_mean_diff = stats_df[stats_df[DistanceMeasureCols.group] == group]
+        # get ci data for level set
+        stats_df = self.calculate_ci_mean_differences_between_pattern_pairs_for_each_level_set()
+        ci_mean_diff = stats_df[stats_df[DistanceMeasureCols.level_set] == level_set]
         ci_mean_diff = ci_mean_diff[ci_mean_diff[DistanceMeasureCols.type] == measure][
             [DistanceMeasureCols.pair1, DistanceMeasureCols.pair2, DistanceMeasureCols.stat_diff]]
 
@@ -1006,8 +982,7 @@ class DistanceMetricAssessment:
                                figsize=fig_size)
         sns.set(style="whitegrid")
 
-        title = 'Heatmap of distance similarity for group ' + str(group) + " and measure " + self.measure_names[
-            measure] + title_add
+        title = 'Heatmap of distance similarity for level set ' + str(level_set) + " and measure " + measure + title_add
 
         if show_title:
             fig.suptitle(title, fontsize=fontsize)
@@ -1045,8 +1020,8 @@ class DistanceMetricAssessment:
             -average rate of increase in mean distance from smaller to bigger changes (bigger is better, check it is
              monotonic first as it is not valid otherwise)
         """
-        # get mean difference of distance between each groups 0-1, 0-2, 0-3, ... , 1-2, 1-3 etc.
-        # check this is monotonic per group 0-4
+        # get mean difference of distance between each level sets 0-1, 0-2, 0-3, ... , 1-2, 1-3 etc.
+        # check this is monotonic per level set 0-4
         # add all up and divide by total
 
         df = self.ci_for_mean_differences
@@ -1056,8 +1031,8 @@ class DistanceMetricAssessment:
         cvies = []
         rcies = []
 
-        # don't include comparing correlations from group 0 (same pattern)
-        exclude_g0 = self.segment_pair_distance_df[self.segment_pair_distance_df[DistanceMeasureCols.group] != 0]
+        # don't include comparing correlations from level set 0 (same pattern)
+        exclude_g0 = self.segment_pair_distance_df[self.segment_pair_distance_df[DistanceMeasureCols.level_set] != 0]
 
         mins = exclude_g0[self.__measures].min(axis=0)
         maxs = exclude_g0[self.__measures].max(axis=0)
@@ -1082,8 +1057,8 @@ class DistanceMetricAssessment:
             # check monotonic
             is_monotonic = True
             for g1 in range(5):
-                groups_list = [(g1, g2) for g2 in range(g1, 6)]
-                monotonic = df_m[df_m[DistanceMeasureCols.compared].isin(groups_list)][
+                level_sets_list = [(g1, g2) for g2 in range(g1, 6)]
+                monotonic = df_m[df_m[DistanceMeasureCols.compared].isin(level_sets_list)][
                     DistanceMeasureCols.mean_diff].abs().is_monotonic_increasing
                 if not monotonic:
                     is_monotonic = False

@@ -219,10 +219,10 @@ class DescribeSyntheticDataset:
         self.n_segment_outside_tolerance_df = self.n_segment_outside_tolerance_df.sort_values(
             by=pattern_id_col).reset_index(drop=True)
 
-        # dictionary of key group id and values list of tuples of pattern pairs
-        self.groups = self.__find_all_groups()
-        # list index is group id, value is a list of all pattern pairs as tuple in that group
-        self.patterns_by_group = list(self.groups.values())
+        # dictionary of key level set id and values list of tuples of pattern pairs
+        self.level_sets = self.__find_all_level_sets()
+        # list index is level set id, value is a list of all pattern pairs as tuple in that level set
+        self.patterns_by_level_set = list(self.level_sets.values())
 
         # dictionary with key being pattern id and values being all the segment ids in that pattern
         segments_in_pattern = {}
@@ -239,7 +239,7 @@ class DescribeSyntheticDataset:
         # calculate data by pattern id
         self.data_by_pattern_id = self.__create_dictionary_of_data_by_pattern_id()
 
-    def __find_all_groups(self):
+    def __find_all_level_sets(self):
         """ this only works if patterns to model are ideal! """
         # all combinations of patterns
         all_pattern_combinations = list(itertools.combinations_with_replacement(self.patterns, 2))
@@ -247,9 +247,9 @@ class DescribeSyntheticDataset:
             SyntheticDataSegmentCols.correlation_to_model].iloc[0] for pid in self.patterns}
 
         # dictionary of pattern id and pattern model
-        groups = {i: [] for i in range(6)}
+        level_sets = {i: [] for i in range(6)}
 
-        # cycle through all pattern pairs and put them in the right group based on number of changes
+        # cycle through all pattern pairs and put them in the right level set based on number of changes
         for combination in all_pattern_combinations:
             p1 = pattern_models[combination[0]]
             p2 = pattern_models[combination[1]]
@@ -261,27 +261,27 @@ class DescribeSyntheticDataset:
                 # difference between the two values in ideal distance, that is why we round
                 n_changes += round(abs(value1 - value2), 0)
 
-            # add pattern to the group with that number of changes
-            groups[n_changes].append(combination)
+            # add pattern to the level set with that number of changes
+            level_sets[n_changes].append(combination)
 
-        return groups
+        return level_sets
 
     def __create_segment_pairs_for_each_level_set(self):
         """
-        Creates a dictionary with the key being the group id 0-5 and the value being a list of segment id tuples
-        to compare for this group
+        Creates a dictionary with the key being the level set id 0-5 and the value being a list of segment id tuples
+        to compare for this level set
         """
-        result = {}  # key is group id, value is list of segment tuples to calculate distance inbetween
+        result = {}  # key is level set id, value is list of segment tuples to calculate distance inbetween
         # get all the segment ids for each pattern
         segments_in_pattern = self.segments_for_each_pattern
 
         # all possible pairs of segments in the same cluster
-        for group_id, pattern_pairs in self.groups.items():
-            if group_id == 0:  # don't want to double the segments x,y and y,x for group 0 where the pattern is the same
-                result[group_id] = list(itertools.chain.from_iterable(
+        for level_set_id, pattern_pairs in self.level_sets.items():
+            if level_set_id == 0:  # don't want to double the segments x,y and y,x for level set 0 where the pattern is the same
+                result[level_set_id] = list(itertools.chain.from_iterable(
                     [list(itertools.combinations(segments, 2)) for p, segments in segments_in_pattern.items()]))
             else:
-                result[group_id] = list(itertools.chain.from_iterable(
+                result[level_set_id] = list(itertools.chain.from_iterable(
                     [list(itertools.product(segments_in_pattern[p1], segments_in_pattern[p2])) for p1, p2 in
                      pattern_pairs]))
 
@@ -387,10 +387,10 @@ class DescribeSyntheticDataset:
         cmap = "bwr"
         normed_colour = mpl.colors.Normalize(-1, 1)
 
-        # index is group index, tuple 0 is pattern for seg 1, tuple 1 is pattern for seg 2
-        # find pattern for each group for given pattern_id
+        # index is level set index, tuple 0 is pattern for seg 1, tuple 1 is pattern for seg 2
+        # find pattern for each level set for given pattern_id
         patterns_default_order = []
-        for patterns in self.patterns_by_group:
+        for patterns in self.patterns_by_level_set:
             patterns_with_pattern_id = list(filter(lambda x: pattern_id in x, patterns))
             # take the first
             patterns_default_order.append(patterns_with_pattern_id[0])
@@ -400,12 +400,12 @@ class DescribeSyntheticDataset:
         else:  # order patterns
             patterns_to_plot = [patterns_default_order[index] for index in order_groups]
 
-        # columns are the groups, group_id is also column id
-        for group_id, patterns_in_group in enumerate(patterns_to_plot):
+        # columns are the level sets, level_set_id is also column id
+        for level_set_id, patterns_in_level_set in enumerate(patterns_to_plot):
             # rows are segments (think the different patterns in tuple)
             # row 1 is the pattern_id, row 2 is the other pattern, all pattern pairs have smaller pattern first
             pattern_1 = pattern_id
-            pattern_2 = patterns_in_group[0] if patterns_in_group[0] != pattern_id else patterns_in_group[1]
+            pattern_2 = patterns_in_level_set[0] if patterns_in_level_set[0] != pattern_id else patterns_in_level_set[1]
 
             # get data for patterns
             df_1 = self.data_by_pattern_id[pattern_1]
@@ -414,8 +414,8 @@ class DescribeSyntheticDataset:
             corr2 = df_2.corr()
 
             # create axes for plots
-            ax1 = fig.add_subplot(grid[0, group_id])
-            ax2 = fig.add_subplot(grid[1:, group_id])
+            ax1 = fig.add_subplot(grid[0, level_set_id])
+            ax2 = fig.add_subplot(grid[1:, level_set_id])
 
             plot_corr_ellipses(corr1, plot_diagonal=plot_diagonal, ax=ax1, cmap=cmap, norm=normed_colour)
             plot_corr_ellipses(corr2, plot_diagonal=plot_diagonal, ax=ax2, cmap=cmap, norm=normed_colour)
@@ -424,7 +424,7 @@ class DescribeSyntheticDataset:
             ax2.get_xaxis().set_ticklabels([])
 
             # turn y-tick labels off for col > 0
-            if group_id > 0:
+            if level_set_id > 0:
                 ax1.get_yaxis().set_visible(False)
                 ax2.get_yaxis().set_visible(False)
             else:
@@ -439,7 +439,7 @@ class DescribeSyntheticDataset:
             ax1.set_xlabel(label_1, rotation=0, size=fontsize)
             label_2 = r'' + str(pattern_2) + ': ' + str(
                 self.labels[self.labels[SyntheticDataSegmentCols.pattern_id] == pattern_2].iloc[0][
-                    SyntheticDataSegmentCols.correlation_to_model]) + '\n\n' + '$d_' + str(group_id) + '$'
+                    SyntheticDataSegmentCols.correlation_to_model]) + '\n\n' + '$d_' + str(level_set_id) + '$'
             ax2.set_xlabel(label_2, rotation=0, size=fontsize)
 
         # plot colorbar in end column over both rows

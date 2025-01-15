@@ -273,7 +273,7 @@ def test_can_provide_datatype_for_correlated_normal_data():
 
 
 def test_the_different_groups_with_varying_pattern_changes():
-    results = ds.groups
+    results = ds.level_sets
 
     # 6 different groups 0-5
     assert_that(len(results.keys()), is_(6))
