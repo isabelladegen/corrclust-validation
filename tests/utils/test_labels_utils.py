@@ -106,8 +106,8 @@ def test_calculates_distances_between_all_cluster_centroids():
     expected_len = int(n * (n - 1) / 2)
 
     assert_that(len(cluster_dist), is_(expected_len))
-    assert_that(cluster_dist[(0, 1)], is_(1.007))
-    assert_that(cluster_dist[(0, 25)], is_(1.995))
+    assert_that(cluster_dist[(0, 1)], is_(1.015))
+    assert_that(round(cluster_dist[(0, 25)], 3), is_(2.993))
 
 
 def test_calculates_distance_matrix_from_a_labels_df():

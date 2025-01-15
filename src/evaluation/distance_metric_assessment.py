@@ -7,19 +7,15 @@ from matplotlib import pyplot as plt
 import matplotlib as mpl
 import seaborn as sns
 from matplotlib.colors import LinearSegmentedColormap
-from tslearn.metrics import cdist_dtw
 
 from src.utils.configurations import Aggregators
 
-from src.utils.distance_measures import calculate_foerstner_matrices_distance_between, \
-    calculate_log_matrix_frobenius_distance_between, lp_with_reference_vector, lp_norm, dot_transformation, \
-    DistanceMeasures
-from src.utils.plots.matplotlib_helper_functions import reset_matplotlib, Backends, fontsize, display_legend, \
+from src.utils.distance_measures import DistanceMeasures, distance_calculation_method_for
+from src.utils.plots.matplotlib_helper_functions import reset_matplotlib, Backends, fontsize, \
     use_latex_labels
 from src.utils.stats import ConfidenceIntervalCols, calculate_hi_lo_difference_ci, gaussian_critical_z_value_for, \
     cohens_d, ci_overlap, compare_ci_for_differences
-from src.evaluation.describe_synthetic_dataset import DescribeSyntheticDataset, DescribeSyntheticCols, \
-    plot_corr_ellipses
+from src.evaluation.describe_synthetic_dataset import DescribeSyntheticDataset, plot_corr_ellipses
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 
 default_order = [0, 1, 2, 3, 4, 5]
@@ -27,25 +23,6 @@ default_order = [0, 1, 2, 3, 4, 5]
 
 @dataclass
 class DistanceMeasureCols:
-    l1_with_ref = DistanceMeasures.l1_with_ref
-    l2_with_ref = DistanceMeasures.l2_with_ref
-    l5_with_ref = DistanceMeasures.l5_with_ref
-    l10_with_ref = DistanceMeasures.l10_with_ref
-    l50_with_ref = DistanceMeasures.l50_with_ref
-    l100_with_ref = DistanceMeasures.l100_with_ref
-    linf_with_ref = DistanceMeasures.linf_with_ref
-    l1_cor_dist: str = DistanceMeasures.l1_cor_dist
-    l2_cor_dist: str = DistanceMeasures.l2_cor_dist
-    l5_cor_dist: str = DistanceMeasures.l5_cor_dist
-    l10_cor_dist: str = DistanceMeasures.l10_cor_dist
-    l50_cor_dist: str = DistanceMeasures.l50_cor_dist
-    l100_cor_dist: str = DistanceMeasures.l100_cor_dist
-    linf_cor_dist: str = DistanceMeasures.linf_cor_dist
-    cosine: str = "Cosine"
-    dot_transform_linf: str = "Dot transf Linf corr"
-    dot_transform_l1: str = "Dot transf L1 corr"
-    dot_transform_l2: str = "Dot transf L2 corr"
-    dtw: str = "DTW"
     pair1: str = "Pattern pair 1"
     pair2: str = "Pattern pair 2"
     alpha: str = "alpha"
@@ -65,15 +42,15 @@ class DistanceMeasureCols:
     rc: str = "Relative Contrast (RC)"
 
 
-minkowsky_distances = [DistanceMeasureCols.l1_cor_dist, DistanceMeasureCols.l2_cor_dist,
-                       DistanceMeasureCols.l5_cor_dist, DistanceMeasureCols.l10_cor_dist,
-                       DistanceMeasureCols.l50_cor_dist, DistanceMeasureCols.l100_cor_dist,
-                       DistanceMeasureCols.linf_cor_dist]
+minkowsky_distances = [DistanceMeasures.l1_cor_dist, DistanceMeasures.l2_cor_dist,
+                       DistanceMeasures.l5_cor_dist, DistanceMeasures.l10_cor_dist,
+                       DistanceMeasures.l50_cor_dist, DistanceMeasures.l100_cor_dist,
+                       DistanceMeasures.linf_cor_dist]
 
-minkowski_with_ref_distances = [DistanceMeasureCols.l1_with_ref, DistanceMeasureCols.l2_with_ref,
-                                DistanceMeasureCols.l5_with_ref, DistanceMeasureCols.l10_with_ref,
-                                DistanceMeasureCols.l50_with_ref, DistanceMeasureCols.l100_with_ref,
-                                DistanceMeasureCols.linf_with_ref]
+minkowski_with_ref_distances = [DistanceMeasures.l1_with_ref, DistanceMeasures.l2_with_ref,
+                                DistanceMeasures.l5_with_ref, DistanceMeasures.l10_with_ref,
+                                DistanceMeasures.l50_with_ref, DistanceMeasures.l100_with_ref,
+                                DistanceMeasures.linf_with_ref]
 
 
 def get_p_from_distance(measure):
@@ -86,37 +63,35 @@ def get_p_from_distance(measure):
 
 
 class DistanceMetricAssessment:
-    def __init__(self, ds: DescribeSyntheticDataset, measures: [] = [], backend: str = Backends.none.value):
+    def __init__(self, ds: DescribeSyntheticDataset,
+                 measures: [] = [DistanceMeasures.l2_cor_dist, DistanceMeasures.log_frob_cor_dist,
+                                 DistanceMeasures.foerstner_cor_dist], backend: str = Backends.none.value):
         self.__ds = ds
         self.backend = backend
-        if len(measures) == 0:
-            measures = [DistanceMeasureCols.l2_cor_dist, DistanceMeasureCols.log_frob_cor_dist,
-                        DistanceMeasureCols.foerstner_cor_dist]
         self.__measures = measures
         self.measure_names = {
-            DistanceMeasureCols.l1_with_ref: "L1 cor with ref",
-            DistanceMeasureCols.l5_with_ref: "L5 cor with ref",
-            DistanceMeasureCols.l2_with_ref: "L2 cor with ref",
-            DistanceMeasureCols.l10_with_ref: "L10 cor with ref",
-            DistanceMeasureCols.l50_with_ref: "L50 cor with ref",
-            DistanceMeasureCols.l100_with_ref: "L100 cor with ref",
-            DistanceMeasureCols.linf_with_ref: "Linf cor with ref",
-            DistanceMeasureCols.l1_cor_dist: "L1 cor",
-            DistanceMeasureCols.l5_cor_dist: "L5 cor",
-            DistanceMeasureCols.l2_cor_dist: "L2 cor",
-            DistanceMeasureCols.l10_cor_dist: "L10 cor",
-            DistanceMeasureCols.l50_cor_dist: "L50 cor",
-            DistanceMeasureCols.l100_cor_dist: "L100 cor",
-            DistanceMeasureCols.linf_cor_dist: "Linf cor",
-            DistanceMeasureCols.log_frob_cor_dist: "Log Frobenious cor",
-            DistanceMeasureCols.foerstner_cor_dist: "Förstner cor",
-            DistanceMeasureCols.dtw: "DTW",
-            DistanceMeasureCols.dot_transform_l1: "Dot t L1 cor",
-            DistanceMeasureCols.dot_transform_l2: "Dot t L2 cor",
-            DistanceMeasureCols.dot_transform_linf: "Dot t Linf cor",
-            DistanceMeasureCols.cosine: "Cosine cor",
+            DistanceMeasures.l1_with_ref: "L1 cor with ref",
+            DistanceMeasures.l5_with_ref: "L5 cor with ref",
+            DistanceMeasures.l2_with_ref: "L2 cor with ref",
+            DistanceMeasures.l10_with_ref: "L10 cor with ref",
+            DistanceMeasures.l50_with_ref: "L50 cor with ref",
+            DistanceMeasures.l100_with_ref: "L100 cor with ref",
+            DistanceMeasures.linf_with_ref: "Linf cor with ref",
+            DistanceMeasures.l1_cor_dist: "L1 cor",
+            DistanceMeasures.l5_cor_dist: "L5 cor",
+            DistanceMeasures.l2_cor_dist: "L2 cor",
+            DistanceMeasures.l10_cor_dist: "L10 cor",
+            DistanceMeasures.l50_cor_dist: "L50 cor",
+            DistanceMeasures.l100_cor_dist: "L100 cor",
+            DistanceMeasures.linf_cor_dist: "Linf cor",
+            DistanceMeasures.log_frob_cor_dist: "Log Frobenious cor",
+            DistanceMeasures.foerstner_cor_dist: "Förstner cor",
+            DistanceMeasures.dot_transform_l1: "Dot t L1 cor",
+            DistanceMeasures.dot_transform_l2: "Dot t L2 cor",
+            DistanceMeasures.dot_transform_linf: "Dot t Linf cor",
+            DistanceMeasures.cosine: "Cosine cor",
         }
-        self.segment_pair_distance_df = self.__calculate_distances_between_segment_pairs_in_groups()
+        self.segment_pair_distance_df = self.__calculate_distances_between_segment_pairs_per_level_set()
         self.groups = self.segment_pair_distance_df[DistanceMeasureCols.group].unique().tolist()
         self.per_group_distance_statistics_df = self.__calculate_per_group_distance_statistics()
         self.effect_sizes_between_groups_df = self.__calculate_effect_size_for_difference_between_groups()
@@ -153,130 +128,25 @@ class DistanceMetricAssessment:
                                                                                   alpha, bonferroni, two_tailed)
         return ci_mean_diff_df, a
 
-    def __calculate_distances_between_segment_pairs_in_groups(self):
-        segment_pairs_dict = self.__ds.segment_pairs_for_group
+    def __calculate_distances_between_segment_pairs_per_level_set(self):
+        segment_pairs_dict = self.__ds.segment_pairs_for_level_sets
         segment_correlations = self.__ds.segment_correlations_df
-        results_gnames = []
+        results_levelset_names = []
         results_segpairs = []
         results_patternpairs = []
         results_measures = {measure: [] for measure in self.__measures}
-        for group_name, segment_pairs in segment_pairs_dict.items():
+        for level_set_name, segment_pairs in segment_pairs_dict.items():
             for pair in segment_pairs:
                 # get  correlations
                 seg1 = pair[0]
                 seg2 = pair[1]
                 corr1 = segment_correlations.loc[seg1][SyntheticDataSegmentCols.actual_correlation]
-                corr1_matrix = segment_correlations.loc[seg1][DescribeSyntheticCols.correlation_matrix_col]
                 corr2 = segment_correlations.loc[seg2][SyntheticDataSegmentCols.actual_correlation]
-                corr2_matrix = segment_correlations.loc[seg2][DescribeSyntheticCols.correlation_matrix_col]
 
-                # calculate distances
-                corr_diff = corr1 - corr2
-
-                # L1 with reference
-                if DistanceMeasureCols.l1_with_ref in self.__measures:
-                    dist = lp_with_reference_vector(corr1, corr2, p=1)
-                    results_measures[DistanceMeasureCols.l1_with_ref].append(dist)
-
-                # L2 with reference
-                if DistanceMeasureCols.l2_with_ref in self.__measures:
-                    dist = lp_with_reference_vector(corr1, corr2, p=2)
-                    results_measures[DistanceMeasureCols.l2_with_ref].append(dist)
-                # L5 with reference
-                if DistanceMeasureCols.l5_with_ref in self.__measures:
-                    dist = lp_with_reference_vector(corr1, corr2, p=5)
-                    results_measures[DistanceMeasureCols.l5_with_ref].append(dist)
-                # L10 with reference
-                if DistanceMeasureCols.l10_with_ref in self.__measures:
-                    dist = lp_with_reference_vector(corr1, corr2, p=10)
-                    results_measures[DistanceMeasureCols.l10_with_ref].append(dist)
-                # L50 with reference
-                if DistanceMeasureCols.l50_with_ref in self.__measures:
-                    dist = lp_with_reference_vector(corr1, corr2, p=50)
-                    results_measures[DistanceMeasureCols.l50_with_ref].append(dist)
-                # L100 with reference
-                if DistanceMeasureCols.l100_with_ref in self.__measures:
-                    dist = lp_with_reference_vector(corr1, corr2, p=100)
-                    results_measures[DistanceMeasureCols.l100_with_ref].append(dist)
-                # Lin with reference
-                if DistanceMeasureCols.linf_with_ref in self.__measures:
-                    dist = lp_with_reference_vector(corr1, corr2, p=np.inf)
-                    results_measures[DistanceMeasureCols.linf_with_ref].append(dist)
-
-                # L1
-                if DistanceMeasureCols.l1_cor_dist in self.__measures:
-                    dist = np.linalg.norm(corr_diff, ord=1)
-                    results_measures[DistanceMeasureCols.l1_cor_dist].append(dist)
-
-                # l2
-                if DistanceMeasureCols.l2_cor_dist in self.__measures:
-                    dist = lp_norm(corr1, corr2, p=2)
-                    results_measures[DistanceMeasureCols.l2_cor_dist].append(dist)
-
-                # l5
-                if DistanceMeasureCols.l5_cor_dist in self.__measures:
-                    dist = lp_norm(corr1, corr2, p=5)
-                    results_measures[DistanceMeasureCols.l5_cor_dist].append(dist)
-
-                # p=10
-                if DistanceMeasureCols.l10_cor_dist in self.__measures:
-                    dist = lp_norm(corr1, corr2, p=10)
-                    results_measures[DistanceMeasureCols.l10_cor_dist].append(dist)
-
-                # p=50
-                if DistanceMeasureCols.l50_cor_dist in self.__measures:
-                    dist = lp_norm(corr1, corr2, p=50)
-                    results_measures[DistanceMeasureCols.l50_cor_dist].append(dist)
-
-                # p=100
-                if DistanceMeasureCols.l100_cor_dist in self.__measures:
-                    dist = lp_norm(corr1, corr2, p=100)
-                    results_measures[DistanceMeasureCols.l100_cor_dist].append(dist)
-
-                # p=inf
-                if DistanceMeasureCols.linf_cor_dist in self.__measures:
-                    dist = lp_norm(corr1, corr2, p=np.inf)
-                    results_measures[DistanceMeasureCols.linf_cor_dist].append(dist)
-
-                # Log frobenious
-                if DistanceMeasureCols.log_frob_cor_dist in self.__measures:
-                    frob_dist = calculate_log_matrix_frobenius_distance_between(corr1_matrix, corr2_matrix)
-                    results_measures[DistanceMeasureCols.log_frob_cor_dist].append(frob_dist)
-
-                # foerstner
-                if DistanceMeasureCols.foerstner_cor_dist in self.__measures:
-                    foer_dist = calculate_foerstner_matrices_distance_between(corr1_matrix, corr2_matrix)
-                    results_measures[DistanceMeasureCols.foerstner_cor_dist].append(foer_dist)
-
-                # DTW - not implemented
-                if DistanceMeasureCols.dtw in self.__measures:
-                    # create X from seg 1 and seg 2
-                    p = cdist_dtw(None, None)
-
-                if DistanceMeasureCols.dot_transform_l1 in self.__measures or DistanceMeasureCols.dot_transform_l2 in self.__measures or DistanceMeasureCols.dot_transform_linf in self.__measures:
-                    t_corr1 = dot_transformation(corr1)
-                    t_corr2 = dot_transformation(corr2)
-                    t_corr_diff = t_corr1 - t_corr2
-
-                    # Dot transform L1
-                    if DistanceMeasureCols.dot_transform_l1 in self.__measures:
-                        dist = np.linalg.norm(t_corr_diff, ord=1)
-                        results_measures[DistanceMeasureCols.dot_transform_l1].append(dist)
-
-                    # Dot transform L2
-                    if DistanceMeasureCols.dot_transform_l1 in self.__measures:
-                        dist = np.linalg.norm(t_corr_diff, ord=2)
-                        results_measures[DistanceMeasureCols.dot_transform_l2].append(dist)
-
-                    # Dot transform Linf
-                    if DistanceMeasureCols.dot_transform_linf in self.__measures:
-                        dist = np.linalg.norm(t_corr_diff, ord=np.inf)
-                        results_measures[DistanceMeasureCols.dot_transform_linf].append(dist)
-
-                # Cosine similarity
-                if DistanceMeasureCols.cosine in self.__measures:
-                    dist = np.dot(corr1, corr2) / (np.linalg.norm(corr1, ord=2) * np.linalg.norm(corr2, ord=2))
-                    results_measures[DistanceMeasureCols.cosine].append(dist)
+                for distance_measure in self.__measures:
+                    calc_distance = distance_calculation_method_for(distance_measure)
+                    dist = calc_distance(corr1, corr2)
+                    results_measures[distance_measure].append(dist)
 
                 # find pattern pair for segments
                 p1 = self.__ds.labels[self.__ds.labels[SyntheticDataSegmentCols.segment_id] == seg1][
@@ -286,10 +156,10 @@ class DistanceMetricAssessment:
                 results_patternpairs.append((p1, p2))
 
                 # update other columns
-                results_gnames.append(group_name)
+                results_levelset_names.append(level_set_name)
                 results_segpairs.append(pair)
 
-        result_dic = {DistanceMeasureCols.group: results_gnames,
+        result_dic = {DistanceMeasureCols.group: results_levelset_names,
                       DistanceMeasureCols.pairs: results_segpairs,
                       DistanceMeasureCols.pattern_pairs: results_patternpairs
                       }
@@ -693,7 +563,7 @@ class DistanceMetricAssessment:
 
     def plot_correlation_matrices_of_biggest_distances_for_groups(self, g1: int, g2: int, plot_diagonal=False,
                                                                   what: str = "biggest",
-                                                                  measure=DistanceMeasureCols.l2_cor_dist,
+                                                                  measure=DistanceMeasures.l2_cor_dist,
                                                                   show_title: bool = True):
         """Plots correlation matrices of patterns compared in the two groups given
         :param g1: index of group plotted on row 1, 0-5
@@ -728,11 +598,11 @@ class DistanceMetricAssessment:
 
         # get segment pairs for each of the two groups
         if what == "biggest":
-            seg1pair = group1.loc[group1[DistanceMeasureCols.l2_cor_dist].idxmax()][DistanceMeasureCols.pairs]
-            seg2pair = group2.loc[group2[DistanceMeasureCols.l2_cor_dist].idxmax()][DistanceMeasureCols.pairs]
+            seg1pair = group1.loc[group1[measure].idxmax()][DistanceMeasureCols.pairs]
+            seg2pair = group2.loc[group2[measure].idxmax()][DistanceMeasureCols.pairs]
         elif what == "smallest":
-            seg1pair = group1.loc[group1[DistanceMeasureCols.l2_cor_dist].idxmin()][DistanceMeasureCols.pairs]
-            seg2pair = group2.loc[group2[DistanceMeasureCols.l2_cor_dist].idxmin()][DistanceMeasureCols.pairs]
+            seg1pair = group1.loc[group1[measure].idxmin()][DistanceMeasureCols.pairs]
+            seg2pair = group2.loc[group2[measure].idxmin()][DistanceMeasureCols.pairs]
         else:
             assert False, "unknown what parameter"
 
@@ -778,7 +648,7 @@ class DistanceMetricAssessment:
         return ax
 
     def find_min_or_max_distances_for_each_group_for_a_measure(self, what: str = "min",
-                                                               measure: str = DistanceMeasureCols.l2_cor_dist):
+                                                               measure: str = DistanceMeasures.l2_cor_dist):
         """ Return  df of min or max distance for the given distance measure.
         Result df has columns: groups, segment pairs, distance, pattern_id pairs
         """
@@ -804,34 +674,34 @@ class DistanceMetricAssessment:
         """
         # build dictionary of p's for x axis. Key is p, value is measure name
         measures = {}
-        if DistanceMeasureCols.l1_with_ref in self.__measures:
-            measures[1] = DistanceMeasureCols.l1_with_ref
-        if DistanceMeasureCols.l2_with_ref in self.__measures:
-            measures[2] = DistanceMeasureCols.l2_with_ref
-        if DistanceMeasureCols.l5_with_ref in self.__measures:
-            measures[5] = DistanceMeasureCols.l5_with_ref
-        if DistanceMeasureCols.l10_with_ref in self.__measures:
-            measures[10] = DistanceMeasureCols.l10_with_ref
-        if DistanceMeasureCols.l50_with_ref in self.__measures:
-            measures[50] = DistanceMeasureCols.l50_with_ref
-        if DistanceMeasureCols.l100_with_ref in self.__measures:
-            measures[100] = DistanceMeasureCols.l100_with_ref
-        if DistanceMeasureCols.linf_with_ref in self.__measures:
-            measures[np.inf] = DistanceMeasureCols.linf_with_ref
-        if DistanceMeasureCols.l1_cor_dist in self.__measures:
-            measures[1] = DistanceMeasureCols.l1_cor_dist
-        if DistanceMeasureCols.l2_cor_dist in self.__measures:
-            measures[2] = DistanceMeasureCols.l2_cor_dist
-        if DistanceMeasureCols.l5_cor_dist in self.__measures:
-            measures[5] = DistanceMeasureCols.l5_cor_dist
-        if DistanceMeasureCols.l10_cor_dist in self.__measures:
-            measures[10] = DistanceMeasureCols.l10_cor_dist
-        if DistanceMeasureCols.l50_cor_dist in self.__measures:
-            measures[50] = DistanceMeasureCols.l50_cor_dist
-        if DistanceMeasureCols.l100_cor_dist in self.__measures:
-            measures[100] = DistanceMeasureCols.l100_cor_dist
-        if DistanceMeasureCols.linf_cor_dist in self.__measures:
-            measures[np.inf] = DistanceMeasureCols.linf_cor_dist
+        if DistanceMeasures.l1_with_ref in self.__measures:
+            measures[1] = DistanceMeasures.l1_with_ref
+        if DistanceMeasures.l2_with_ref in self.__measures:
+            measures[2] = DistanceMeasures.l2_with_ref
+        if DistanceMeasures.l5_with_ref in self.__measures:
+            measures[5] = DistanceMeasures.l5_with_ref
+        if DistanceMeasures.l10_with_ref in self.__measures:
+            measures[10] = DistanceMeasures.l10_with_ref
+        if DistanceMeasures.l50_with_ref in self.__measures:
+            measures[50] = DistanceMeasures.l50_with_ref
+        if DistanceMeasures.l100_with_ref in self.__measures:
+            measures[100] = DistanceMeasures.l100_with_ref
+        if DistanceMeasures.linf_with_ref in self.__measures:
+            measures[np.inf] = DistanceMeasures.linf_with_ref
+        if DistanceMeasures.l1_cor_dist in self.__measures:
+            measures[1] = DistanceMeasures.l1_cor_dist
+        if DistanceMeasures.l2_cor_dist in self.__measures:
+            measures[2] = DistanceMeasures.l2_cor_dist
+        if DistanceMeasures.l5_cor_dist in self.__measures:
+            measures[5] = DistanceMeasures.l5_cor_dist
+        if DistanceMeasures.l10_cor_dist in self.__measures:
+            measures[10] = DistanceMeasures.l10_cor_dist
+        if DistanceMeasures.l50_cor_dist in self.__measures:
+            measures[50] = DistanceMeasures.l50_cor_dist
+        if DistanceMeasures.l100_cor_dist in self.__measures:
+            measures[100] = DistanceMeasures.l100_cor_dist
+        if DistanceMeasures.linf_cor_dist in self.__measures:
+            measures[np.inf] = DistanceMeasures.linf_cor_dist
         ps = list(measures.keys())
         measure_names = list(measures.values())
 

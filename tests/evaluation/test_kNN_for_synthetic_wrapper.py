@@ -1,8 +1,8 @@
 import numpy as np
 from hamcrest import *
 
-from src.evaluation.distance_metric_assessment import DistanceMeasureCols
 from src.evaluation.knn_for_synthetic_wrapper import KNNForSyntheticWrapper
+from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
 from tests.test_utils.configurations_for_testing import TEST_DATA_DIR
@@ -16,7 +16,7 @@ nn_dt = SyntheticDataType.non_normal_correlated
 
 
 def test_knn_classification_of_segments_l2():
-    w = KNNForSyntheticWrapper(measure=DistanceMeasureCols.l2_cor_dist, n_neighbors=n_neighbors, data_dir=test_data_dir,
+    w = KNNForSyntheticWrapper(measure=DistanceMeasures.l2_cor_dist, n_neighbors=n_neighbors, data_dir=test_data_dir,
                                backend=backend)
     x_test, y_true, y_pred = w.predict(ds_1)
 
@@ -33,7 +33,7 @@ def test_knn_classification_of_segments_l2():
 
 
 def test_knn_classification_of_segments_l2_with_ref():
-    w = KNNForSyntheticWrapper(measure=DistanceMeasureCols.l2_with_ref, n_neighbors=n_neighbors, data_dir=test_data_dir,
+    w = KNNForSyntheticWrapper(measure=DistanceMeasures.l2_with_ref, n_neighbors=n_neighbors, data_dir=test_data_dir,
                                backend=backend)
     x_test, y_true, y_pred = w.predict(ds_1)
 
@@ -50,7 +50,7 @@ def test_knn_classification_of_segments_l2_with_ref():
 
 
 def test_knn_classification_of_segments_log_frobenious():
-    w = KNNForSyntheticWrapper(measure=DistanceMeasureCols.log_frob_cor_dist, n_neighbors=n_neighbors,
+    w = KNNForSyntheticWrapper(measure=DistanceMeasures.log_frob_cor_dist, n_neighbors=n_neighbors,
                                data_dir=test_data_dir, backend=backend)
     x_test, y_true, y_pred = w.predict(ds_1)
 
@@ -68,7 +68,7 @@ def test_knn_classification_of_segments_log_frobenious():
 
 
 def test_can_handle_no_errors():
-    w = KNNForSyntheticWrapper(measure=DistanceMeasureCols.l1_cor_dist, n_neighbors=n_neighbors, data_dir=test_data_dir,
+    w = KNNForSyntheticWrapper(measure=DistanceMeasures.l1_cor_dist, n_neighbors=n_neighbors, data_dir=test_data_dir,
                                backend=backend)
     x_test, y_true, y_pred = w.predict(ds_1)
 
@@ -88,7 +88,7 @@ def test_can_handle_no_errors():
 
 
 def test_returns_errors_correct_nn_d_nn_and_d_correct():
-    w = KNNForSyntheticWrapper(measure=DistanceMeasureCols.l1_cor_dist, n_neighbors=n_neighbors, data_dir=test_data_dir,
+    w = KNNForSyntheticWrapper(measure=DistanceMeasures.l1_cor_dist, n_neighbors=n_neighbors, data_dir=test_data_dir,
                                backend=backend)
     x_test, y_true, y_pred = w.predict(ds_1, data_type=SyntheticDataType.rs_1min)
 

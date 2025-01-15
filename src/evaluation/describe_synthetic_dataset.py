@@ -233,8 +233,8 @@ class DescribeSyntheticDataset:
             segments_in_pattern[pattern] = segment_id
         self.segments_for_each_pattern = segments_in_pattern
 
-        # dictionary with keys being group 0-5 and values being tuples of segment pairs in this group
-        self.segment_pairs_for_group = self.__create_segment_pairs_for_each_group()
+        # dictionary with keys being level sets 0-5 and values being tuples of segment pairs in this level set
+        self.segment_pairs_for_level_sets = self.__create_segment_pairs_for_each_level_set()
 
         # calculate data by pattern id
         self.data_by_pattern_id = self.__create_dictionary_of_data_by_pattern_id()
@@ -266,7 +266,7 @@ class DescribeSyntheticDataset:
 
         return groups
 
-    def __create_segment_pairs_for_each_group(self):
+    def __create_segment_pairs_for_each_level_set(self):
         """
         Creates a dictionary with the key being the group id 0-5 and the value being a list of segment id tuples
         to compare for this group

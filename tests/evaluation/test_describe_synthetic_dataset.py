@@ -306,7 +306,7 @@ def test_segment_pairs_for_each_group():
     # flatten the list of all the entries in the dict and ensure all 100 segments are in a pattern
     assert_that(len(set(itertools.chain.from_iterable(segments_for_each_pattern.values()))), is_(100))
 
-    groups = ds.segment_pairs_for_group
+    groups = ds.segment_pairs_for_level_sets
     assert_that(len(groups), is_(6))
     assert_that(len(groups[0]), is_(170))
     assert_that(len(groups[1]), is_(822))

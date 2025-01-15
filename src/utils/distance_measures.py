@@ -17,15 +17,19 @@ class DistanceMeasures:
     l50_with_ref = "L50 with ref"
     l100_with_ref = "L100 with ref"
     linf_with_ref = "Linf with ref"
-    l1_cor_dist: str = "L1 corr dist"
-    l2_cor_dist: str = "L2 corr dist"
-    l5_cor_dist: str = "L5 corr dist"
-    l10_cor_dist: str = "L10 corr dist"
-    l50_cor_dist: str = "L50 corr dist"
-    l100_cor_dist: str = "L100 corr dist"
-    linf_cor_dist: str = "Linf corr dist"
-    log_frob_cor_dist: str = "Log Frobenious corr dist"
-    foerstner_cor_dist: str = "Foerstner corr dist"
+    l1_cor_dist: str = "L1 dist"
+    l2_cor_dist: str = "L2 dist"
+    l5_cor_dist: str = "L5 dist"
+    l10_cor_dist: str = "L10 dist"
+    l50_cor_dist: str = "L50 dist"
+    l100_cor_dist: str = "L100 dist"
+    linf_cor_dist: str = "Linf dist"
+    log_frob_cor_dist: str = "Log Frobenious dist"
+    foerstner_cor_dist: str = "Foerstner dist"
+    cosine: str = "Cosine"
+    dot_transform_linf: str = "Dot transf Linf"
+    dot_transform_l1: str = "Dot transf L1"
+    dot_transform_l2: str = "Dot transf L2"
 
 
 @overload
@@ -47,12 +51,19 @@ def calculate_foerstner_matrices_distance_between(corr1, corr2, epsilon: float =
     set to na if not both matrices are positive definite and symmetric
     :return: Foerstner distance between the two correlation matrices of each of the segment
     """
-    if hasattr(corr1, 'shape'):
+    if isinstance(corr1, np.ndarray) and len(corr1.shape) == 2:
         m1 = corr1
         m2 = corr2
     else:
-        m1 = generate_correlation_matrix(corr1)
-        m2 = generate_correlation_matrix(corr2)
+        if isinstance(corr1, list):  # turn into nd.array
+            m1 = np.array(corr1)
+            m2 = np.array(corr2)
+        else:
+            m1 = corr1
+            m2 = corr2
+        if len(m1.shape) != 2:  # it's a vector, turn into matrix
+            m1 = generate_correlation_matrix(m1)
+            m2 = generate_correlation_matrix(m2)
 
     # cov matrices must have the same shape as all segments have the same number of time series
     assert m1.shape == m2.shape
@@ -95,10 +106,17 @@ def calculate_log_matrix_frobenius_distance_between(corr1, corr2):
         m1 = corr1
         m2 = corr2
     else:
-        m1 = generate_correlation_matrix(corr1)
-        m2 = generate_correlation_matrix(corr2)
+        if isinstance(corr1, list):  # turn into nd.array
+            m1 = np.array(corr1)
+            m2 = np.array(corr2)
+        else:
+            m1 = corr1
+            m2 = corr2
+        if len(m1.shape) != 2:  # it's a vector, turn into matrix
+            m1 = generate_correlation_matrix(m1)
+            m2 = generate_correlation_matrix(m2)
 
-    # cov matrices must have the same shape
+    # corr matrices must have the same shape
     assert m2.shape == m2.shape
 
     # calculate matrix logarithm of both covariance/correlation matrices (this moves the cov/corr
@@ -121,23 +139,7 @@ def l1_distance_from_matrices(m1: [], m2: []): ...
 
 
 def l1_distance_from_matrices(m1, m2):
-    """
-        Calculates L1 corr distance between segment1 and segment 2.
-        Assuming the columns are the different time series and the rows are the observations.
-        The two df need to have the same number of columns  (observations, n_ts), the covariance/correlation
-        matrix for each segment is of shape (columns, columns).
-        :param m1: DataFrame of first segment covariance matrix of shape (n_ts, n_ts)
-        :param m2: DataFrame of second segment covariance matrix of shape (n_ts, n_ts)
-    """
-    if isinstance(m1, np.ndarray) and len(m1.shape) == 2:
-        matrix1 = m1
-        matrix2 = m2
-    else:
-        matrix1 = generate_correlation_matrix(m1)
-        matrix2 = generate_correlation_matrix(m2)
-    corr_diff = calculate_matrix_diff(matrix1, matrix2)
-    dist = np.linalg.norm(corr_diff, ord=1)
-    return dist
+    return lp_distance(m1, m2, p=1)
 
 
 @overload
@@ -149,22 +151,55 @@ def l2_distance_from_matrices(m1: [], m2: []): ...
 
 
 def l2_distance_from_matrices(corr1, corr2):
-    """
-        Calculates L2 corr distance between correlations of segment1 and segment 2.
-        matrix for each segment is of shape (columns, columns).
-        :param corr2: DataFrame of first segment covariance matrix of shape (n_ts, n_ts) or upper triu vector
-        :param corr2: DataFrame of second segment covariance matrix of shape (n_ts, n_ts) or upper triu vector
-    """
-    if isinstance(corr1, np.ndarray) and len(corr1.shape) == 2:
-        m1 = corr1
-        m2 = corr2
-    else:
-        m1 = generate_correlation_matrix(corr1)
-        m2 = generate_correlation_matrix(corr2)
+    return lp_distance(corr1, corr2, p=2)
 
-    corr_diff = calculate_matrix_diff(m1, m2)
-    dist = np.linalg.norm(corr_diff, ord=2)
-    return dist
+
+@overload
+def l5_distance_from_matrices(m1: pd.DataFrame, m2: pd.DataFrame): ...
+
+
+@overload
+def l5_distance_from_matrices(m1: [], m2: []): ...
+
+
+def l5_distance_from_matrices(corr1, corr2):
+    return lp_distance(corr1, corr2, p=5)
+
+
+@overload
+def l10_distance_from_matrices(m1: pd.DataFrame, m2: pd.DataFrame): ...
+
+
+@overload
+def l10_distance_from_matrices(m1: [], m2: []): ...
+
+
+def l10_distance_from_matrices(corr1, corr2):
+    return lp_distance(corr1, corr2, p=10)
+
+
+@overload
+def l50_distance_from_matrices(m1: pd.DataFrame, m2: pd.DataFrame): ...
+
+
+@overload
+def l50_distance_from_matrices(m1: [], m2: []): ...
+
+
+def l50_distance_from_matrices(corr1, corr2):
+    return lp_distance(corr1, corr2, p=50)
+
+
+@overload
+def l100_distance_from_matrices(m1: pd.DataFrame, m2: pd.DataFrame): ...
+
+
+@overload
+def l100_distance_from_matrices(m1: [], m2: []): ...
+
+
+def l100_distance_from_matrices(corr1, corr2):
+    return lp_distance(corr1, corr2, p=100)
 
 
 @overload
@@ -176,21 +211,38 @@ def linf_distance_from_matrices(m1: [], m2: []): ...
 
 
 def linf_distance_from_matrices(corr1, corr2):
-    """
-        Calculates Linf corr distance between segment1 and segment 2.
-        :param corr1: DataFrame of first segment covariance matrix of shape (n_ts, n_ts) or upper triu vector
-        :param corr2: DataFrame of second segment covariance matrix of shape (n_ts, n_ts) or upper triu vector
-    """
-    if isinstance(corr1, np.ndarray) and len(corr1.shape) == 2:
-        m1 = corr1
-        m2 = corr2
-    else:
-        m1 = generate_correlation_matrix(corr1)
-        m2 = generate_correlation_matrix(corr2)
+    return lp_distance(corr1, corr2, p=np.inf)
 
-    corr_diff = calculate_matrix_diff(m1, m2)
-    dist = np.linalg.norm(corr_diff, ord=np.inf)
-    return dist
+
+def lp_distance(m1, m2, p):
+    """
+        Calculates LP corr distance between 2 correlation matrices or their upper half vector.
+        :param m1: can be either list or 2d np array for m1 matrix
+        :param m2: can be either list or 2d np array for m2 matrix
+        :param p: order for distance 1=L1, 2=L2, etc.
+    """
+    # create numpy array
+    v1, v2 = to_numpy_vectors_of_upper_halfs(m1, m2)
+    corr_diff = v1 - v2
+    return np.linalg.norm(corr_diff, ord=p)
+
+
+def to_numpy_vectors_of_upper_halfs(m1, m2):
+    if isinstance(m1, list):
+        m1_nd = np.array(m1)
+        m2_nd = np.array(m2)
+    else:
+        m1_nd = m1
+        m2_nd = m2
+    if len(m1_nd.shape) == 2:  # it's a 2d array and therefore a matrix -> take upper triangular bit
+        assert m1_nd.shape == m2_nd.shape, "m1 and m2 must have the same shape"
+        n = len(m1_nd)
+        v1 = m1_nd[np.triu_indices(n, k=1)]
+        v2 = m2_nd[np.triu_indices(n, k=1)]
+    else:  # it's already a vector
+        v1 = m1_nd
+        v2 = m2_nd
+    return v1, v2
 
 
 @overload
@@ -202,21 +254,7 @@ def l1_with_ref_distance_from_matrices(m1: [], m2: []): ...
 
 
 def l1_with_ref_distance_from_matrices(m1: pd.DataFrame, m2: pd.DataFrame):
-    """
-        Calculates L1 corr distance with reference between segment1 and segment 2.
-        Assuming the columns are the different time series and the rows are the observations.
-        The two df need to have the same number of columns  (observations, n_ts), the covariance/correlation
-        matrix for each segment is of shape (columns, columns).
-        :param m1: DataFrame of first segment covariance matrix of shape (n_ts, n_ts) or list of upper triu
-        :param m2: DataFrame of second segment covariance matrix of shape (n_ts, n_ts)
-    """
-    if isinstance(m1, np.ndarray) and len(m1.shape) == 2:
-        v1 = np.triu(m1, k=1)
-        v2 = np.triu(m2, k=1)
-    else:
-        v1 = m1
-        v2 = m2
-    return lp_with_reference_vector(v1, v2, p=1)
+    return lp_with_reference_vector(m1, m2, p=1)
 
 
 @overload
@@ -228,21 +266,55 @@ def l2_with_ref_distance_from_matrices(m1: [], m2: []): ...
 
 
 def l2_with_ref_distance_from_matrices(m1, m2):
-    """
-        Calculates L2 corr distance with reference between segment1 and segment 2.
-        Assuming the columns are the different time series and the rows are the observations.
-        The two df need to have the same number of columns  (observations, n_ts), the covariance/correlation
-        matrix for each segment is of shape (columns, columns).
-        :param m1: can be either list or 2d np array or dataframe for m1 matrix
-        :param m2: can be either list or 2d np array or dataframe for m2 matrix
-    """
-    if isinstance(m1, np.ndarray) and len(m1.shape) == 2:
-        v1 = np.triu(m1, k=1)
-        v2 = np.triu(m2, k=1)
-    else:
-        v1 = m1
-        v2 = m2
-    return lp_with_reference_vector(v1, v2, p=2)
+    return lp_with_reference_vector(m1, m2, p=2)
+
+
+@overload
+def l5_with_ref_distance_from_matrices(m1: pd.DataFrame, m2: pd.DataFrame): ...
+
+
+@overload
+def l5_with_ref_distance_from_matrices(m1: [], m2: []): ...
+
+
+def l5_with_ref_distance_from_matrices(m1, m2):
+    return lp_with_reference_vector(m1, m2, p=5)
+
+
+@overload
+def l10_with_ref_distance_from_matrices(m1: pd.DataFrame, m2: pd.DataFrame): ...
+
+
+@overload
+def l10_with_ref_distance_from_matrices(m1: [], m2: []): ...
+
+
+def l10_with_ref_distance_from_matrices(m1, m2):
+    return lp_with_reference_vector(m1, m2, p=10)
+
+
+@overload
+def l50_with_ref_distance_from_matrices(m1: pd.DataFrame, m2: pd.DataFrame): ...
+
+
+@overload
+def l50_with_ref_distance_from_matrices(m1: [], m2: []): ...
+
+
+def l50_with_ref_distance_from_matrices(m1, m2):
+    return lp_with_reference_vector(m1, m2, p=50)
+
+
+@overload
+def l100_with_ref_distance_from_matrices(m1: pd.DataFrame, m2: pd.DataFrame): ...
+
+
+@overload
+def l100_with_ref_distance_from_matrices(m1: [], m2: []): ...
+
+
+def l100_with_ref_distance_from_matrices(m1, m2):
+    return lp_with_reference_vector(m1, m2, p=100)
 
 
 @overload
@@ -259,24 +331,115 @@ def linf_with_ref_distance_from_matrices(m1, m2):
         :param m1: DataFrame of first segment covariance matrix of shape (n_ts, n_ts) or upper triu vector
         :param m2: DataFrame of second segment covariance matrix of shape (n_ts, n_ts) or upper triu vector
     """
-    if isinstance(m1, np.ndarray) and len(m1.shape) == 2:
-        v1 = np.triu(m1, k=1)
-        v2 = np.triu(m2, k=1)
-    else:
-        v1 = m1
-        v2 = m2
-    dist = lp_with_reference_vector(v1, v2, p=np.inf)
+    return lp_with_reference_vector(m1, m2, p=np.inf)
+
+
+def lp_with_reference_vector(m1, m2, p):
+    # turn m1 and m2 into vectors of upper half of the correlation matrix
+    v1, v2 = to_numpy_vectors_of_upper_halfs(m1, m2)
+
+    # calculate distance between v1 and v2
+    dist = lp_distance(v1, v2, p)
+
+    # multiply distance with the sum of the distance to the reference vect
+    dim = len(v1)
+    ref = np.ones(dim) * 1 / np.sqrt(dim)
+    v1_ref = lp_distance(v1, ref, p)
+    v2_ref = lp_distance(v2, ref, p)
+    result_dist = dist * (v1_ref + v2_ref)
+    return result_dist
+
+
+@overload
+def cosine_similarity(m1: pd.DataFrame, m2: pd.DataFrame): ...
+
+
+@overload
+def cosine_similarity(m1: [], m2: []): ...
+
+
+def cosine_similarity(m1, m2):
+    """
+        Calculates cosine similarity between segment1 and segment 2.
+        :param m1: DataFrame of first segment covariance matrix of shape (n_ts, n_ts) or upper triu vector
+        :param m2: DataFrame of second segment covariance matrix of shape (n_ts, n_ts) or upper triu vector
+    """
+    v1, v2 = to_numpy_vectors_of_upper_halfs(m1, m2)
+
+    dist = np.dot(v1, v2) / (np.linalg.norm(v1, ord=2) * np.linalg.norm(v2, ord=2))
     return dist
 
 
-def calculate_matrix_diff(m1, m2):
-    # matrices must have the same shape as all segments have the same number of variates
-    assert m1.shape == m2.shape
-    c1 = np.triu(m1, k=1)
-    c2 = np.triu(m2, k=1)
-    # calculate L1
-    diff = c1 - c2
-    return diff
+@overload
+def dot_transform_l1_distance(m1: pd.DataFrame, m2: pd.DataFrame): ...
+
+
+@overload
+def dot_transform_l1_distance(m1: [], m2: []): ...
+
+
+def dot_transform_l1_distance(m1, m2):
+    """
+        Calculates dot transform l1 distance between segment1 and segment 2.
+        :param m1: DataFrame of first segment covariance matrix of shape (n_ts, n_ts) or upper triu vector
+        :param m2: DataFrame of second segment covariance matrix of shape (n_ts, n_ts) or upper triu vector
+    """
+    v1, v2 = to_numpy_vectors_of_upper_halfs(m1, m2)
+
+    t_corr1 = dot_transformation(v1)
+    t_corr2 = dot_transformation(v2)
+    t_corr_diff = t_corr1 - t_corr2
+
+    dist = np.linalg.norm(t_corr_diff, ord=1)
+    return dist
+
+
+@overload
+def dot_transform_l2_distance(m1: pd.DataFrame, m2: pd.DataFrame): ...
+
+
+@overload
+def dot_transform_l2_distance(m1: [], m2: []): ...
+
+
+def dot_transform_l2_distance(m1, m2):
+    """
+        Calculates dot transform l2 distance between segment1 and segment 2.
+        :param m1: DataFrame of first segment covariance matrix of shape (n_ts, n_ts) or upper triu vector
+        :param m2: DataFrame of second segment covariance matrix of shape (n_ts, n_ts) or upper triu vector
+    """
+    v1, v2 = to_numpy_vectors_of_upper_halfs(m1, m2)
+
+    t_corr1 = dot_transformation(v1)
+    t_corr2 = dot_transformation(v2)
+    t_corr_diff = t_corr1 - t_corr2
+
+    dist = np.linalg.norm(t_corr_diff, ord=2)
+    return dist
+
+
+@overload
+def dot_transform_linf_distance(m1: pd.DataFrame, m2: pd.DataFrame): ...
+
+
+@overload
+def dot_transform_linf_distance(m1: [], m2: []): ...
+
+
+def dot_transform_linf_distance(m1, m2):
+    """
+        Calculates dot transform linf distance between segment1 and segment 2.
+        :param m1: DataFrame of first segment covariance matrix of shape (n_ts, n_ts) or upper triu vector
+        :param m2: DataFrame of second segment covariance matrix of shape (n_ts, n_ts) or upper triu vector
+    """
+    v1, v2 = to_numpy_vectors_of_upper_halfs(m1, m2)
+
+    t_corr1 = dot_transformation(v1)
+    t_corr2 = dot_transformation(v2)
+    t_corr_diff = t_corr1 - t_corr2
+
+    dist = np.linalg.norm(t_corr_diff, ord=np.inf)
+    return dist
 
 
 def dot_transformation(v):
@@ -295,28 +458,6 @@ def dot_transformation(v):
     return v_d
 
 
-def lp_norm(v1: np.array, v2: np.array, p=2):
-    dist = np.linalg.norm(v1 - v2, ord=p)
-    return dist
-
-
-def lp_with_reference_vector(v1, v2, p: float = 2):
-    if isinstance(v1, list):
-        v1 = np.array(v1)
-        v2 = np.array(v2)
-
-    # calculate distance between v1 and v2
-    dist = lp_norm(v1, v2, p)
-
-    # multiply distance with the sum of the distance to the reference vect
-    dim = len(v1)
-    ref = np.ones(dim) * 1 / np.sqrt(dim)
-    v1_ref = np.linalg.norm(ref - v1, ord=p)
-    v2_ref = np.linalg.norm(ref - v2, ord=p)
-    result_dist = dist * (v1_ref + v2_ref)
-    return result_dist
-
-
 def distance_calculation_method_for(distance_measure: str):
     """
     Returns method to calculate distance for the given distance measure name
@@ -327,17 +468,41 @@ def distance_calculation_method_for(distance_measure: str):
         return l1_distance_from_matrices
     elif distance_measure == DistanceMeasures.l2_cor_dist:
         return l2_distance_from_matrices
+    elif distance_measure == DistanceMeasures.l5_cor_dist:
+        return l5_distance_from_matrices
+    elif distance_measure == DistanceMeasures.l10_cor_dist:
+        return l10_distance_from_matrices
+    elif distance_measure == DistanceMeasures.l50_cor_dist:
+        return l50_distance_from_matrices
+    elif distance_measure == DistanceMeasures.l100_cor_dist:
+        return l100_distance_from_matrices
     elif distance_measure == DistanceMeasures.linf_cor_dist:
         return linf_distance_from_matrices
     elif distance_measure == DistanceMeasures.l1_with_ref:
         return l1_with_ref_distance_from_matrices
     elif distance_measure == DistanceMeasures.l2_with_ref:
         return l2_with_ref_distance_from_matrices
+    elif distance_measure == DistanceMeasures.l5_with_ref:
+        return l5_with_ref_distance_from_matrices
+    elif distance_measure == DistanceMeasures.l10_with_ref:
+        return l10_with_ref_distance_from_matrices
+    elif distance_measure == DistanceMeasures.l50_with_ref:
+        return l50_with_ref_distance_from_matrices
+    elif distance_measure == DistanceMeasures.l100_with_ref:
+        return l100_with_ref_distance_from_matrices
     elif distance_measure == DistanceMeasures.linf_with_ref:
         return linf_with_ref_distance_from_matrices
     elif distance_measure == DistanceMeasures.foerstner_cor_dist:
         return calculate_foerstner_matrices_distance_between
     elif distance_measure == DistanceMeasures.log_frob_cor_dist:
         return calculate_log_matrix_frobenius_distance_between
+    elif distance_measure == DistanceMeasures.cosine:
+        return cosine_similarity
+    elif distance_measure == DistanceMeasures.dot_transform_l1:
+        return dot_transform_l1_distance
+    elif distance_measure == DistanceMeasures.dot_transform_l2:
+        return dot_transform_l2_distance
+    elif distance_measure == DistanceMeasures.dot_transform_linf:
+        return dot_transform_linf_distance
     else:
         assert False, "Unknown distance measure with name: " + distance_measure

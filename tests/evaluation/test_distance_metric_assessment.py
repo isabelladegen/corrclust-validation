@@ -7,7 +7,7 @@ from hamcrest import *
 from scipy.linalg import eigvals
 
 from src.utils.configurations import Aggregators, DISTANCE_MEASURE_ASSESSMENT_RESULTS_FOLDER_NAME
-from src.utils.distance_measures import calculate_foerstner_matrices_distance_between
+from src.utils.distance_measures import calculate_foerstner_matrices_distance_between, DistanceMeasures
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.utils.stats import number_of_unique_two_combinations
 from src.evaluation.distance_metric_assessment import DistanceMeasureCols, DistanceMetricAssessment, \
@@ -26,10 +26,9 @@ tables_dir = path.join(TEST_ROOT_RESULTS_DIR, DISTANCE_MEASURE_ASSESSMENT_RESULT
 Path(tables_dir).mkdir(parents=True, exist_ok=True)
 ds = DescribeSyntheticDataset(a_ds_name, data_dir=test_data_dir)
 da = DistanceMetricAssessment(ds, backend=backend)
-lp_measures = [DistanceMeasureCols.l1_cor_dist, DistanceMeasureCols.l2_cor_dist, DistanceMeasureCols.l10_cor_dist,
-               DistanceMeasureCols.linf_cor_dist]
+lp_measures = [DistanceMeasures.l1_cor_dist, DistanceMeasures.l2_cor_dist, DistanceMeasures.l10_cor_dist,
+               DistanceMeasures.linf_cor_dist]
 lp_da = DistanceMetricAssessment(ds, measures=lp_measures, backend=backend)
-ts_measures = [DistanceMeasureCols.dtw]
 
 
 def test_calculate_distances_between_each_segment_pair_in_each_group_for_all_distances():
@@ -37,10 +36,10 @@ def test_calculate_distances_between_each_segment_pair_in_each_group_for_all_dis
     assert_that(len(segment_pair_distance_df[DistanceMeasureCols.group].unique()), is_(6))
     # check all segment pairs distances have been calculated
     assert_that(segment_pair_distance_df.shape[0],
-                is_(len(list(itertools.chain.from_iterable(ds.segment_pairs_for_group.values())))))
+                is_(len(list(itertools.chain.from_iterable(ds.segment_pairs_for_level_sets.values())))))
 
     # euclidian
-    euc = segment_pair_distance_df[DistanceMeasureCols.l2_cor_dist]
+    euc = segment_pair_distance_df[DistanceMeasures.l2_cor_dist]
     euc_nan = euc.isna().sum()
     euc_inf = np.isinf(euc).values.ravel().sum()
     assert_that(int(euc.sum()), is_(7447))
@@ -48,7 +47,7 @@ def test_calculate_distances_between_each_segment_pair_in_each_group_for_all_dis
     assert_that(euc_inf, is_(0))
 
     # Frobenious
-    frob = segment_pair_distance_df[DistanceMeasureCols.log_frob_cor_dist]
+    frob = segment_pair_distance_df[DistanceMeasures.log_frob_cor_dist]
     frob_nan = frob.isna().sum()
     frob_inf = np.isinf(frob).values.ravel().sum()
     assert_that(int(frob.sum()), is_(181308))
@@ -56,7 +55,7 @@ def test_calculate_distances_between_each_segment_pair_in_each_group_for_all_dis
     assert_that(frob_inf, is_(0))
 
     # Foerstner
-    foer = segment_pair_distance_df[DistanceMeasureCols.foerstner_cor_dist]
+    foer = segment_pair_distance_df[DistanceMeasures.foerstner_cor_dist]
     foer_nan = foer.isna().sum()
     foer_inf = np.isinf(foer).values.ravel().sum()
     assert_that(int(foer.replace([np.inf, -np.inf], np.nan).dropna().sum()), is_(65565))
@@ -133,7 +132,7 @@ def test_eigenvalues_for_weird_matrices_for_write_up_and_bug_report():
 def test_calculates_mean_std_count_per_group_for_each_distance_measure():
     # Euclidian
     group_euc_stats = da.per_group_distance_statistics_df[
-        da.per_group_distance_statistics_df[DistanceMeasureCols.type] == DistanceMeasureCols.l2_cor_dist]
+        da.per_group_distance_statistics_df[DistanceMeasureCols.type] == DistanceMeasures.l2_cor_dist]
     assert_that(group_euc_stats.shape[0], is_(6))  # statistics for group 0-5
     g0_euc = group_euc_stats[group_euc_stats[DistanceMeasureCols.group] == 0]
     g1_euc = group_euc_stats[group_euc_stats[DistanceMeasureCols.group] == 1]
@@ -145,7 +144,7 @@ def test_calculates_mean_std_count_per_group_for_each_distance_measure():
 
     # Frobenious
     group_frob_stats = da.per_group_distance_statistics_df[
-        da.per_group_distance_statistics_df[DistanceMeasureCols.type] == DistanceMeasureCols.log_frob_cor_dist]
+        da.per_group_distance_statistics_df[DistanceMeasureCols.type] == DistanceMeasures.log_frob_cor_dist]
     assert_that(group_frob_stats.shape[0], is_(6))  # statistics for group 0-5
     g0_frob = group_frob_stats[group_frob_stats[DistanceMeasureCols.group] == 0]
     g1_frob = group_frob_stats[group_frob_stats[DistanceMeasureCols.group] == 1]
@@ -157,7 +156,7 @@ def test_calculates_mean_std_count_per_group_for_each_distance_measure():
 
     # Foerstner
     group_foer_stats = da.per_group_distance_statistics_df[
-        da.per_group_distance_statistics_df[DistanceMeasureCols.type] == DistanceMeasureCols.foerstner_cor_dist]
+        da.per_group_distance_statistics_df[DistanceMeasureCols.type] == DistanceMeasures.foerstner_cor_dist]
     assert_that(group_foer_stats.shape[0], is_(6))  # statistics for group 0-5
     g0_foer = group_foer_stats[group_foer_stats[DistanceMeasureCols.group] == 0]
     g1_foer = group_foer_stats[group_foer_stats[DistanceMeasureCols.group] == 1]
@@ -170,22 +169,22 @@ def test_calculates_mean_std_count_per_group_for_each_distance_measure():
 
 def test_calculates_effect_size_for_all_differences_in_means_between_groups_per_distance_measure():
     euc_effect_sizes_df = da.effect_sizes_between_groups_df[
-        da.effect_sizes_between_groups_df[DistanceMeasureCols.type] == DistanceMeasureCols.l2_cor_dist]
+        da.effect_sizes_between_groups_df[DistanceMeasureCols.type] == DistanceMeasures.l2_cor_dist]
     assert_that(round(euc_effect_sizes_df[DistanceMeasureCols.effect_size].abs().min(), 2), is_(1.02))
 
     frob_effect_sizes_df = da.effect_sizes_between_groups_df[
-        da.effect_sizes_between_groups_df[DistanceMeasureCols.type] == DistanceMeasureCols.log_frob_cor_dist]
+        da.effect_sizes_between_groups_df[DistanceMeasureCols.type] == DistanceMeasures.log_frob_cor_dist]
     assert_that(round(frob_effect_sizes_df[DistanceMeasureCols.effect_size].abs().min(), 2), is_(0.17))
 
     foer_effect_sizes_df = da.effect_sizes_between_groups_df[
-        da.effect_sizes_between_groups_df[DistanceMeasureCols.type] == DistanceMeasureCols.foerstner_cor_dist]
+        da.effect_sizes_between_groups_df[DistanceMeasureCols.type] == DistanceMeasures.foerstner_cor_dist]
     assert_that(round(foer_effect_sizes_df[DistanceMeasureCols.effect_size].abs().min(), 2), is_(0.04))
 
 
 def test_returns_order_of_group_by_smallest_first():
-    l2_order, euc_dist = da.ordered_groups_and_mean_distances_by_smallest_first(DistanceMeasureCols.l2_cor_dist)
+    l2_order, euc_dist = da.ordered_groups_and_mean_distances_by_smallest_first(DistanceMeasures.l2_cor_dist)
     frob_order, frob_dist = da.ordered_groups_and_mean_distances_by_smallest_first(
-        DistanceMeasureCols.log_frob_cor_dist)
+        DistanceMeasures.log_frob_cor_dist)
 
     assert_that(l2_order, contains_exactly(0, 1, 2, 3, 4, 5))
     assert_that(frob_order, contains_exactly(0, 2, 4, 1, 3, 5))
@@ -194,9 +193,9 @@ def test_returns_order_of_group_by_smallest_first():
 def test_calculate_ci_of_mean_differences_between_groups_for_each_distance_measure():
     df = da.ci_for_mean_differences
 
-    euc_df = df[df[DistanceMeasureCols.type] == DistanceMeasureCols.l2_cor_dist]
-    frob_df = df[df[DistanceMeasureCols.type] == DistanceMeasureCols.log_frob_cor_dist]
-    foer_df = df[df[DistanceMeasureCols.type] == DistanceMeasureCols.foerstner_cor_dist]
+    euc_df = df[df[DistanceMeasureCols.type] == DistanceMeasures.l2_cor_dist]
+    frob_df = df[df[DistanceMeasureCols.type] == DistanceMeasures.log_frob_cor_dist]
+    foer_df = df[df[DistanceMeasureCols.type] == DistanceMeasures.foerstner_cor_dist]
 
     # 15 group comparisons for each measure
     assert_that(euc_df.shape[0], is_(15))
@@ -236,7 +235,7 @@ def test_calculate_distances_within_groups():
     assert_that(df.shape[0], is_(23 * 3))  # 23 patterns for each distance measure
 
     # Euclidean
-    euc_s = df[df[DistanceMeasureCols.type] == DistanceMeasureCols.l2_cor_dist]
+    euc_s = df[df[DistanceMeasureCols.type] == DistanceMeasures.l2_cor_dist]
     assert_that(euc_s.shape[0], is_(23))  # 23 patterns
     p0_eu = euc_s[euc_s[SyntheticDataSegmentCols.pattern_id] == 0]
     p23_eu = euc_s[euc_s[SyntheticDataSegmentCols.pattern_id] == 23]
@@ -260,12 +259,12 @@ def test_ci_of_differences_between_patterns():
 
 def test_plot_ci_of_differences_between_groups():
     fig = da.plot_ci_of_differences_between_groups_for_measures(
-        measures=[DistanceMeasureCols.l2_cor_dist, DistanceMeasureCols.log_frob_cor_dist])
+        measures=[DistanceMeasures.l2_cor_dist, DistanceMeasures.log_frob_cor_dist])
     assert_that(fig, is_not(None))
     fig.savefig(path.join(images_dir, 'ci-distance-measures-between-groups.png'))
 
     fig2 = lp_da.plot_ci_for_ordered_groups_for_measures(
-        measures=[DistanceMeasureCols.l1_cor_dist, DistanceMeasureCols.linf_cor_dist])
+        measures=[DistanceMeasures.l1_cor_dist, DistanceMeasures.linf_cor_dist])
     assert_that(fig2, is_not(None))
     fig.savefig(path.join(images_dir, 'ci-distance-measures-between-groups_l1_linf.png'))
 
@@ -316,11 +315,11 @@ def test_plot_box_diagrams_of_distances_for_all_groups():
     # differences between patterns
     df = da.calculate_df_of_pattern_pair_groups()
     df.to_csv(path.join(tables_dir, 'sig_different_pattern_pairs_for_log_frob_l2.csv'))
-    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasureCols.l2_cor_dist].shape[0], is_(25))
-    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasureCols.log_frob_cor_dist].shape[0], is_(47))
-    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasureCols.foerstner_cor_dist].shape[0], is_(31))
+    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasures.l2_cor_dist].shape[0], is_(25))
+    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasures.log_frob_cor_dist].shape[0], is_(47))
+    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasures.foerstner_cor_dist].shape[0], is_(31))
 
-    fig = da.plot_box_diagrams_of_distances_for_all_groups(measures=[DistanceMeasureCols.l2_cor_dist],
+    fig = da.plot_box_diagrams_of_distances_for_all_groups(measures=[DistanceMeasures.l2_cor_dist],
                                                            order=default_order)
     assert_that(fig, is_not(None))
     fig.savefig(path.join(images_dir, 'box-diagram-distances-all-groups-l2-corr-misty-forest-56.png'))
@@ -331,17 +330,17 @@ def test_box_diagrams_for_lp_measures():
     assert_that(fig, is_not(None))
     fig.savefig(path.join(images_dir, 'box-diagram-distances-all-groups-lp-measures-misty-forest-56.png'))
 
-    fig = lp_da.plot_box_diagrams_of_distances_for_all_groups(measures=[DistanceMeasureCols.l1_cor_dist],
+    fig = lp_da.plot_box_diagrams_of_distances_for_all_groups(measures=[DistanceMeasures.l1_cor_dist],
                                                               order=default_order)
     assert_that(fig, is_not(None))
     fig.savefig(path.join(images_dir, 'box-diagram-distances-all-groups-l1-corr-misty-forest-56.png'))
 
-    fig = lp_da.plot_box_diagrams_of_distances_for_all_groups(measures=[DistanceMeasureCols.l10_cor_dist],
+    fig = lp_da.plot_box_diagrams_of_distances_for_all_groups(measures=[DistanceMeasures.l10_cor_dist],
                                                               order=default_order)
     assert_that(fig, is_not(None))
     fig.savefig(path.join(images_dir, 'box-diagram-distances-all-groups-l10-corr-misty-forest-56.png'))
 
-    fig = lp_da.plot_box_diagrams_of_distances_for_all_groups(measures=[DistanceMeasureCols.linf_cor_dist],
+    fig = lp_da.plot_box_diagrams_of_distances_for_all_groups(measures=[DistanceMeasures.linf_cor_dist],
                                                               order=default_order)
     assert_that(fig, is_not(None))
     fig.savefig(path.join(images_dir, 'box-diagram-distances-all-groups-linf-corr-misty-forest-56.png'))
@@ -349,29 +348,29 @@ def test_box_diagrams_for_lp_measures():
 
 def test_plot_confidence_intervals_of_mean_difference():
     fig = da.plot_ci_of_differences_between_groups_for_measures(
-        measures=[DistanceMeasureCols.l2_cor_dist, DistanceMeasureCols.log_frob_cor_dist])
+        measures=[DistanceMeasures.l2_cor_dist, DistanceMeasures.log_frob_cor_dist])
     assert_that(fig, is_not(None))
     fig.savefig(path.join(images_dir, 'ci-distance-measures-between-groups.png'))
 
     fig = da.plot_ci_for_ordered_groups_for_measures(
-        measures=[DistanceMeasureCols.l2_cor_dist, DistanceMeasureCols.log_frob_cor_dist])
+        measures=[DistanceMeasures.l2_cor_dist, DistanceMeasures.log_frob_cor_dist])
     assert_that(fig, is_not(None))
     fig.savefig(path.join(images_dir, 'ci_and_distances_for_ordered_groups_distance_measure.png'))
 
     fig = lp_da.plot_ci_of_differences_between_groups_for_measures(
-        measures=[DistanceMeasureCols.l1_cor_dist, DistanceMeasureCols.linf_cor_dist])
+        measures=[DistanceMeasures.l1_cor_dist, DistanceMeasures.linf_cor_dist])
     assert_that(fig, is_not(None))
     fig.savefig(path.join(images_dir, 'ci-distance-measures-between-groups_l1_linf.png'))
 
     fig = lp_da.plot_ci_for_ordered_groups_for_measures(
-        measures=[DistanceMeasureCols.l1_cor_dist, DistanceMeasureCols.linf_cor_dist])
+        measures=[DistanceMeasures.l1_cor_dist, DistanceMeasures.linf_cor_dist])
     assert_that(fig, is_not(None))
     fig.savefig(path.join(images_dir, 'ci_for_ordered_groups_l1_linf.png'))
 
 
 def test_find_min_or_max_distances_for_each_group_for_a_measure():
-    min_distances = da.find_min_or_max_distances_for_each_group_for_a_measure("min", DistanceMeasureCols.l2_cor_dist)
-    max_distances = da.find_min_or_max_distances_for_each_group_for_a_measure("max", DistanceMeasureCols.l2_cor_dist)
+    min_distances = da.find_min_or_max_distances_for_each_group_for_a_measure("min", DistanceMeasures.l2_cor_dist)
+    max_distances = da.find_min_or_max_distances_for_each_group_for_a_measure("max", DistanceMeasures.l2_cor_dist)
 
     assert_that(min_distances.shape[0], is_(len(da.groups)))
     assert_that(min_distances.iloc[0][DistanceMeasureCols.pattern_pairs], is_((1, 1)))
@@ -387,7 +386,7 @@ def test_statistics_of_differences_between_pattern_pairs():
 
 def test_dict_of_pattern_pairs_with_overlapping_ci():
     result = lp_da.calculate_df_of_pattern_pair_groups()
-    l2 = result[result[DistanceMeasureCols.type] == DistanceMeasureCols.l2_cor_dist].reset_index(drop=True)
+    l2 = result[result[DistanceMeasureCols.type] == DistanceMeasures.l2_cor_dist].reset_index(drop=True)
     assert_that(l2.iloc[0][DistanceMeasureCols.group], contains_exactly(0))  # first group all group 0
     assert_that(l2.iloc[0][DistanceMeasureCols.pattern_pairs],
                 contains_exactly((25, 25), (23, 23), (13, 13), (17, 17)))  # smallest distances
@@ -434,27 +433,27 @@ def test_find_pattern_pairs_for_within_group_differences_where_the_distances_don
 
 def test_plot_ci_of_mean_differences_between_pattern_pairs():
     fig = lp_da.plot_ci_per_group_for_pattern_pairs_where_distances_do_not_agree(
-        measures=[DistanceMeasureCols.l1_cor_dist, DistanceMeasureCols.l2_cor_dist])
+        measures=[DistanceMeasures.l1_cor_dist, DistanceMeasures.l2_cor_dist])
     assert_that(fig, is_not(None))
     fig.savefig(path.join(images_dir, 'ci_all_groups_pattern_pairs_l1_l2.png'))
 
 
 def test_plot_pattern_pairs_ci_difference_heat_map():
     for group in lp_da.groups:
-        fig = lp_da.plot_ci_pattern_pair_heat_map(group=group, measure=DistanceMeasureCols.l1_cor_dist)
+        fig = lp_da.plot_ci_pattern_pair_heat_map(group=group, measure=DistanceMeasures.l1_cor_dist)
         assert_that(fig, is_not(None))
         fig.savefig(path.join(images_dir, 'ci_pattern_pair_diff_heat_map_group_' + str(group) + '_distance_l1.png'))
 
     for group in lp_da.groups:
-        fig = lp_da.plot_ci_pattern_pair_heat_map(group=group, measure=DistanceMeasureCols.l2_cor_dist)
+        fig = lp_da.plot_ci_pattern_pair_heat_map(group=group, measure=DistanceMeasures.l2_cor_dist)
         assert_that(fig, is_not(None))
         fig.savefig(path.join(images_dir, 'ci_pattern_pair_diff_heat_map_group_' + str(group) + '_distance_l2.png'))
 
 
 def test_calculate_experimental_distances():
-    angle_m = [DistanceMeasureCols.l1_with_ref, DistanceMeasureCols.l2_with_ref, DistanceMeasureCols.dot_transform_l1,
-               DistanceMeasureCols.dot_transform_l2,
-               DistanceMeasureCols.dot_transform_linf, DistanceMeasureCols.cosine]
+    angle_m = [DistanceMeasures.l1_with_ref, DistanceMeasures.l2_with_ref, DistanceMeasures.dot_transform_l1,
+               DistanceMeasures.dot_transform_l2,
+               DistanceMeasures.dot_transform_linf, DistanceMeasures.cosine]
     a_da = DistanceMetricAssessment(ds, measures=angle_m, backend=backend)
 
     # box diagram
@@ -466,23 +465,23 @@ def test_calculate_experimental_distances():
     # perspective, still important that same pattern is 0
     df = a_da.calculate_df_of_pattern_pair_groups()
     # L1 with transformation
-    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasureCols.dot_transform_l1].shape[0], is_(42))
+    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasures.dot_transform_l1].shape[0], is_(42))
     # L2 better than Linf
-    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasureCols.dot_transform_l2].shape[0], is_(47))
-    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasureCols.dot_transform_linf].shape[0], is_(15))
+    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasures.dot_transform_l2].shape[0], is_(47))
+    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasures.dot_transform_linf].shape[0], is_(15))
     # Cosine is worse than L2 dot transform
-    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasureCols.cosine].shape[0], is_(19))
+    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasures.cosine].shape[0], is_(19))
 
     # L1 with ref is also good!
-    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasureCols.l1_with_ref].shape[0], is_(50))
+    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasures.l1_with_ref].shape[0], is_(50))
 
     # L2 with ref is best!
-    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasureCols.l2_with_ref].shape[0], is_(64))
+    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasures.l2_with_ref].shape[0], is_(64))
 
 
 def test_compare_ref_distances():
-    m = [DistanceMeasureCols.l1_with_ref, DistanceMeasureCols.l1_cor_dist, DistanceMeasureCols.l2_with_ref,
-         DistanceMeasureCols.l2_cor_dist]
+    m = [DistanceMeasures.l1_with_ref, DistanceMeasures.l1_cor_dist, DistanceMeasures.l2_with_ref,
+         DistanceMeasures.l2_cor_dist]
     a_da = DistanceMetricAssessment(ds, measures=m, backend=backend)
 
     # box diagram
@@ -492,9 +491,9 @@ def test_compare_ref_distances():
 
 
 def test_box_plots_for_various_p():
-    p_m = [DistanceMeasureCols.l1_cor_dist, DistanceMeasureCols.l2_cor_dist, DistanceMeasureCols.l5_cor_dist,
-           DistanceMeasureCols.l10_cor_dist, DistanceMeasureCols.l50_cor_dist, DistanceMeasureCols.l100_cor_dist,
-           DistanceMeasureCols.linf_cor_dist]
+    p_m = [DistanceMeasures.l1_cor_dist, DistanceMeasures.l2_cor_dist, DistanceMeasures.l5_cor_dist,
+           DistanceMeasures.l10_cor_dist, DistanceMeasures.l50_cor_dist, DistanceMeasures.l100_cor_dist,
+           DistanceMeasures.linf_cor_dist]
     a_da = DistanceMetricAssessment(ds, measures=p_m, backend=backend)
 
     fig = a_da.plot_box_diagrams_of_distances_as_function_of_p(groups=['all'])
@@ -507,19 +506,19 @@ def test_box_plots_for_various_p():
 
     df = a_da.calculate_df_of_pattern_pair_groups()
     df.to_csv(path.join(tables_dir, 'sig_different_pattern_pairs_for_lp.csv'))
-    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasureCols.l1_cor_dist].shape[0], is_(23))
-    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasureCols.l2_cor_dist].shape[0], is_(25))
-    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasureCols.l5_cor_dist].shape[0], is_(24))
-    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasureCols.l10_cor_dist].shape[0], is_(23))
-    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasureCols.l50_cor_dist].shape[0], is_(17))
-    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasureCols.l100_cor_dist].shape[0], is_(15))
-    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasureCols.linf_cor_dist].shape[0], is_(15))
+    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasures.l1_cor_dist].shape[0], is_(23))
+    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasures.l2_cor_dist].shape[0], is_(25))
+    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasures.l5_cor_dist].shape[0], is_(24))
+    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasures.l10_cor_dist].shape[0], is_(23))
+    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasures.l50_cor_dist].shape[0], is_(17))
+    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasures.l100_cor_dist].shape[0], is_(15))
+    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasures.linf_cor_dist].shape[0], is_(15))
 
 
 def test_box_plots_for_various_p_with_reference_vector():
-    p_m = [DistanceMeasureCols.l1_with_ref, DistanceMeasureCols.l2_with_ref, DistanceMeasureCols.l5_with_ref,
-           DistanceMeasureCols.l10_with_ref, DistanceMeasureCols.l50_with_ref, DistanceMeasureCols.l100_with_ref,
-           DistanceMeasureCols.linf_with_ref]
+    p_m = [DistanceMeasures.l1_with_ref, DistanceMeasures.l2_with_ref, DistanceMeasures.l5_with_ref,
+           DistanceMeasures.l10_with_ref, DistanceMeasures.l50_with_ref, DistanceMeasures.l100_with_ref,
+           DistanceMeasures.linf_with_ref]
     a_da = DistanceMetricAssessment(ds, measures=p_m, backend=backend)
 
     fig = a_da.plot_box_diagrams_of_distances_as_function_of_p(groups=['all'])
@@ -532,53 +531,53 @@ def test_box_plots_for_various_p_with_reference_vector():
 
     # CI diagrams with groups as column and row for two measures
     fig = a_da.plot_ci_of_differences_between_groups_for_measures(
-        measures=[DistanceMeasureCols.l1_with_ref, DistanceMeasureCols.linf_with_ref])
+        measures=[DistanceMeasures.l1_with_ref, DistanceMeasures.linf_with_ref])
     assert_that(fig, is_not(None))
     fig.savefig(path.join(images_dir, 'ci-distance-measures-between-groups_l1_vs_linf_with_ref.png'))
 
     fig = a_da.plot_ci_of_differences_between_groups_for_measures(
-        measures=[DistanceMeasureCols.l1_with_ref, DistanceMeasureCols.l2_with_ref])
+        measures=[DistanceMeasures.l1_with_ref, DistanceMeasures.l2_with_ref])
     assert_that(fig, is_not(None))
     fig.savefig(path.join(images_dir, 'ci-distance-measures-between-groups_l1_vs_l2_with_ref.png'))
 
     # CI diagrams with columns being the two distance measures compared, no rows
     fig = a_da.plot_ci_for_ordered_groups_for_measures(
-        measures=[DistanceMeasureCols.l1_with_ref, DistanceMeasureCols.linf_with_ref])
+        measures=[DistanceMeasures.l1_with_ref, DistanceMeasures.linf_with_ref])
     assert_that(fig, is_not(None))
     fig.savefig(path.join(images_dir, 'ci_and_distances_for_ordered_groups_l1_and_linf_with_ref.png'))
 
     fig = a_da.plot_ci_for_ordered_groups_for_measures(
-        measures=[DistanceMeasureCols.l1_with_ref, DistanceMeasureCols.linf_with_ref])
+        measures=[DistanceMeasures.l1_with_ref, DistanceMeasures.linf_with_ref])
     assert_that(fig, is_not(None))
     fig.savefig(path.join(images_dir, 'ci_and_distances_for_ordered_groups_l1_and_linf_with_ref.png'))
 
     # differences between patterns
     df = a_da.calculate_df_of_pattern_pair_groups()
     df.to_csv(path.join(tables_dir, 'sig_different_pattern_pairs_for_lnorms_with_ref.csv'))
-    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasureCols.l1_with_ref].shape[0], is_(50))
-    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasureCols.l2_with_ref].shape[0], is_(64))
-    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasureCols.l5_with_ref].shape[0], is_(61))
-    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasureCols.l10_with_ref].shape[0], is_(61))
-    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasureCols.l50_with_ref].shape[0], is_(43))
-    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasureCols.l100_with_ref].shape[0], is_(43))
-    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasureCols.linf_with_ref].shape[0], is_(32))
+    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasures.l1_with_ref].shape[0], is_(50))
+    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasures.l2_with_ref].shape[0], is_(64))
+    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasures.l5_with_ref].shape[0], is_(61))
+    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasures.l10_with_ref].shape[0], is_(61))
+    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasures.l50_with_ref].shape[0], is_(43))
+    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasures.l100_with_ref].shape[0], is_(43))
+    assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasures.linf_with_ref].shape[0], is_(32))
 
 
 def test_ci_plot_for_various_numbers_of_measures():
-    fig = lp_da.plot_ci_of_differences_between_groups_for_measures(measures=[DistanceMeasureCols.l1_cor_dist])
+    fig = lp_da.plot_ci_of_differences_between_groups_for_measures(measures=[DistanceMeasures.l1_cor_dist])
     assert_that(fig, is_not(None))
 
     fig = lp_da.plot_ci_of_differences_between_groups_for_measures(
-        measures=[DistanceMeasureCols.l1_cor_dist, DistanceMeasureCols.l2_cor_dist])
+        measures=[DistanceMeasures.l1_cor_dist, DistanceMeasures.l2_cor_dist])
     assert_that(fig, is_not(None))
 
     fig = lp_da.plot_ci_of_differences_between_groups_for_measures(
-        measures=[DistanceMeasureCols.l1_cor_dist, DistanceMeasureCols.l2_cor_dist, DistanceMeasureCols.l10_cor_dist])
+        measures=[DistanceMeasures.l1_cor_dist, DistanceMeasures.l2_cor_dist, DistanceMeasures.l10_cor_dist])
     assert_that(fig, is_not(None))
 
     fig = lp_da.plot_ci_of_differences_between_groups_for_measures(
-        measures=[DistanceMeasureCols.l1_cor_dist, DistanceMeasureCols.l2_cor_dist, DistanceMeasureCols.l10_cor_dist,
-                  DistanceMeasureCols.linf_cor_dist])
+        measures=[DistanceMeasures.l1_cor_dist, DistanceMeasures.l2_cor_dist, DistanceMeasures.l10_cor_dist,
+                  DistanceMeasures.linf_cor_dist])
     assert_that(fig, is_not(None))
 
 
@@ -595,8 +594,8 @@ def test_can_calculate_discriminative_power_criteria():
 
 
 def test_box_plots_and_ci_for_mixed_p_distances():
-    p_m = [DistanceMeasureCols.l1_cor_dist, DistanceMeasureCols.l1_with_ref, DistanceMeasureCols.l2_cor_dist,
-           DistanceMeasureCols.l2_with_ref, DistanceMeasureCols.linf_cor_dist, DistanceMeasureCols.linf_with_ref]
+    p_m = [DistanceMeasures.l1_cor_dist, DistanceMeasures.l1_with_ref, DistanceMeasures.l2_cor_dist,
+           DistanceMeasures.l2_with_ref, DistanceMeasures.linf_cor_dist, DistanceMeasures.linf_with_ref]
     a_da = DistanceMetricAssessment(ds, measures=p_m, backend=backend)
 
     fig = a_da.plot_box_diagrams_of_distances_as_function_of_p(groups=['all'])
@@ -608,54 +607,54 @@ def test_box_plots_and_ci_for_mixed_p_distances():
     fig.savefig(path.join(images_dir, 'box-diagram-for-lp-mixed-per-group-misty-forest-56.png'))
 
     # single box diagrams
-    fig = a_da.plot_box_diagrams_of_distances_for_all_groups(measures=[DistanceMeasureCols.l1_with_ref],
+    fig = a_da.plot_box_diagrams_of_distances_for_all_groups(measures=[DistanceMeasures.l1_with_ref],
                                                              order=default_order)
     assert_that(fig, is_not(None))
     fig.savefig(path.join(images_dir, 'box-diagram-distances-all-groups-l1-with-ref-misty-forest-56.png'))
 
-    fig = a_da.plot_box_diagrams_of_distances_for_all_groups(measures=[DistanceMeasureCols.l2_with_ref],
+    fig = a_da.plot_box_diagrams_of_distances_for_all_groups(measures=[DistanceMeasures.l2_with_ref],
                                                              order=default_order)
     assert_that(fig, is_not(None))
     fig.savefig(path.join(images_dir, 'box-diagram-distances-all-groups-l2-with-ref-misty-forest-56.png'))
 
     # CI diagrams with groups as column and row for two measures
     fig = a_da.plot_ci_of_differences_between_groups_for_measures(
-        measures=[DistanceMeasureCols.l1_cor_dist, DistanceMeasureCols.l1_with_ref])
+        measures=[DistanceMeasures.l1_cor_dist, DistanceMeasures.l1_with_ref])
     assert_that(fig, is_not(None))
     fig.savefig(path.join(images_dir, 'ci-distance-measures-between-groups_l1_vs_l1_with_ref.png'))
 
     fig = a_da.plot_ci_of_differences_between_groups_for_measures(
-        measures=[DistanceMeasureCols.l2_cor_dist, DistanceMeasureCols.l2_with_ref])
+        measures=[DistanceMeasures.l2_cor_dist, DistanceMeasures.l2_with_ref])
     assert_that(fig, is_not(None))
     fig.savefig(path.join(images_dir, 'ci-distance-measures-between-groups_l2_vs_l2_with_ref.png'))
 
     fig = a_da.plot_ci_of_differences_between_groups_for_measures(
-        measures=[DistanceMeasureCols.linf_cor_dist, DistanceMeasureCols.linf_with_ref])
+        measures=[DistanceMeasures.linf_cor_dist, DistanceMeasures.linf_with_ref])
     assert_that(fig, is_not(None))
     fig.savefig(path.join(images_dir, 'ci-distance-measures-between-groups_linf_vs_linf_with_ref.png'))
 
     fig = a_da.plot_ci_of_differences_between_groups_for_measures(
-        measures=[DistanceMeasureCols.l1_with_ref, DistanceMeasureCols.l2_with_ref])
+        measures=[DistanceMeasures.l1_with_ref, DistanceMeasures.l2_with_ref])
     assert_that(fig, is_not(None))
     fig.savefig(path.join(images_dir, 'ci-distance-measures-between-groups_l1_with_ref_vs_l2_with_ref.png'))
 
     # CI diagrams with columns being the two distance measures compared, no rows
     fig = a_da.plot_ci_for_ordered_groups_for_measures(
-        measures=[DistanceMeasureCols.l1_cor_dist, DistanceMeasureCols.l1_with_ref])
+        measures=[DistanceMeasures.l1_cor_dist, DistanceMeasures.l1_with_ref])
     assert_that(fig, is_not(None))
     fig.savefig(path.join(images_dir, 'ci_and_distances_for_ordered_groups_l1_vs_l1_with_ref.png'))
 
     fig = a_da.plot_ci_for_ordered_groups_for_measures(
-        measures=[DistanceMeasureCols.l2_cor_dist, DistanceMeasureCols.l2_with_ref])
+        measures=[DistanceMeasures.l2_cor_dist, DistanceMeasures.l2_with_ref])
     assert_that(fig, is_not(None))
     fig.savefig(path.join(images_dir, 'ci_and_distances_for_ordered_groups_l2_vs_l2_with_ref.png'))
 
     fig = a_da.plot_ci_for_ordered_groups_for_measures(
-        measures=[DistanceMeasureCols.linf_cor_dist, DistanceMeasureCols.linf_with_ref])
+        measures=[DistanceMeasures.linf_cor_dist, DistanceMeasures.linf_with_ref])
     assert_that(fig, is_not(None))
     fig.savefig(path.join(images_dir, 'ci_and_distances_for_ordered_groups_linf_vs_linf_with_ref.png'))
 
     fig = a_da.plot_ci_for_ordered_groups_for_measures(
-        measures=[DistanceMeasureCols.l1_with_ref, DistanceMeasureCols.l2_with_ref])
+        measures=[DistanceMeasures.l1_with_ref, DistanceMeasures.l2_with_ref])
     assert_that(fig, is_not(None))
     fig.savefig(path.join(images_dir, 'ci_and_distances_for_ordered_groups_l1_with_ref_vs_l2_with_ref.png'))

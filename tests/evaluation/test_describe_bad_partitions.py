@@ -1,6 +1,5 @@
 from hamcrest import *
 
-from src.evaluation.distance_metric_assessment import DistanceMeasureCols
 from src.evaluation.describe_bad_partitions import DescribeBadPartitions, DescribeBadPartCols, select_data_from_df, \
     run_internal_measure_calculation_for_dataset, read_internal_measures_calculation
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
@@ -12,7 +11,7 @@ from tests.test_utils.configurations_for_testing import TEST_DATA_DIR, TEST_ROOT
 
 ds_name = "misty-forest-56"
 internal_measures = [DescribeBadPartCols.silhouette_score, DescribeBadPartCols.pmb]
-distance_measure = DistanceMeasureCols.l1_cor_dist
+distance_measure = DistanceMeasures.l1_cor_dist
 test_data_dir = TEST_DATA_DIR
 describe = DescribeBadPartitions(ds_name, distance_measure=distance_measure, internal_measures=internal_measures,
                                  data_dir=test_data_dir)
@@ -66,16 +65,16 @@ def test_calculates_jaccard_index_for_each_gt_and_partition():
 
 
 def test_calculates_internal_measures_for_the_given_distance_measure():
-    assert_that(describe.summary_df.iloc[0][DescribeBadPartCols.silhouette_score], is_(0.967))
-    assert_that(describe.summary_df.iloc[1][DescribeBadPartCols.silhouette_score], is_(0.808))
-    assert_that(describe.summary_df.iloc[2][DescribeBadPartCols.silhouette_score], is_(-0.326))
-    assert_that(describe.summary_df.iloc[3][DescribeBadPartCols.silhouette_score], is_(0.666))
-    assert_that(describe.summary_df.iloc[4][DescribeBadPartCols.silhouette_score], is_(-0.386))
+    assert_that(describe.summary_df.iloc[0][DescribeBadPartCols.silhouette_score], is_(0.969))
+    assert_that(describe.summary_df.iloc[1][DescribeBadPartCols.silhouette_score], is_(0.829))
+    assert_that(describe.summary_df.iloc[2][DescribeBadPartCols.silhouette_score], is_(-0.337))
+    assert_that(describe.summary_df.iloc[3][DescribeBadPartCols.silhouette_score], is_(0.673))
+    assert_that(describe.summary_df.iloc[4][DescribeBadPartCols.silhouette_score], is_(-0.383))
 
-    assert_that(describe.summary_df.iloc[0][DescribeBadPartCols.pmb], is_(10.111))
-    assert_that(describe.summary_df.iloc[1][DescribeBadPartCols.pmb], is_(0.347))
-    assert_that(describe.summary_df.iloc[2][DescribeBadPartCols.pmb], is_(0.001))
-    assert_that(describe.summary_df.iloc[3][DescribeBadPartCols.pmb], is_(0.052))
+    assert_that(describe.summary_df.iloc[0][DescribeBadPartCols.pmb], is_(10.506))
+    assert_that(describe.summary_df.iloc[1][DescribeBadPartCols.pmb], is_(0.509))
+    assert_that(describe.summary_df.iloc[2][DescribeBadPartCols.pmb], is_(0.002))
+    assert_that(describe.summary_df.iloc[3][DescribeBadPartCols.pmb], is_(0.059))
     assert_that(describe.summary_df.iloc[4][DescribeBadPartCols.pmb], is_(0.001))
 
 

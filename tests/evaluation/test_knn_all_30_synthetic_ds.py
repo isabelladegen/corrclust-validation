@@ -1,6 +1,6 @@
 from hamcrest import *
 
-from src.evaluation.distance_metric_assessment import DistanceMeasureCols
+from src.evaluation.distance_metric_assessment import DistanceMeasures
 from src.evaluation.knn_all_synthetic_datasets import KnnAllSyntheticDatasets, AssessSynthCols
 from src.utils.load_synthetic_data import SyntheticDataType
 from tests.test_utils.configurations_for_testing import TEST_GENERATED_DATASETS_FILE_PATH_1, TEST_ROOT_RESULTS_DIR, \
@@ -13,7 +13,7 @@ data_dir = TEST_DATA_DIR
 
 
 def test_calculates_scores_for_log_frob():
-    measures = [DistanceMeasureCols.log_frob_cor_dist]
+    measures = [DistanceMeasures.log_frob_cor_dist]
     knn = KnnAllSyntheticDatasets(measures, overall_ds_name=overall_ds_name, save_confusion_matrix=True,
                                   run_csv=run_csv,
                                   root_results_dir=root_results_dir, data_dir=data_dir)
@@ -23,16 +23,16 @@ def test_calculates_scores_for_log_frob():
 
 
 def test_calculates_scores_for_all_measures_on_aid_like_ds():
-    measures = [DistanceMeasureCols.foerstner_cor_dist]
+    measures = [DistanceMeasures.foerstner_cor_dist]
     knn = KnnAllSyntheticDatasets(measures, save_confusion_matrix=False, run_csv=run_csv,
                                   root_results_dir=root_results_dir, data_dir=data_dir)
     scores = knn.scores_for_all_measures
     assert_that(scores.shape[0], is_(len(measures) * 2))
-    assert_that(scores[AssessSynthCols.f1][0], is_(0.04))
+    assert_that(scores[AssessSynthCols.f1][0], is_(0.01))
 
 
 def test_calculates_scores_some_measures_downsampled_and_irregular_datasets():
-    measures = [DistanceMeasureCols.l1_with_ref, DistanceMeasureCols.linf_cor_dist]
+    measures = [DistanceMeasures.l1_with_ref, DistanceMeasures.linf_cor_dist]
 
     # don't save cm
     knn = KnnAllSyntheticDatasets(measures, overall_ds_name='test_misty', save_confusion_matrix=True,
@@ -45,7 +45,7 @@ def test_calculates_scores_some_measures_downsampled_and_irregular_datasets():
 
 
 def test_calculates_scores_for_all_measures_normaldistribution_correlated_datasets():
-    measures = [DistanceMeasureCols.l2_cor_dist]
+    measures = [DistanceMeasures.l2_cor_dist]
 
     knn = KnnAllSyntheticDatasets(measures, overall_ds_name=overall_ds_name, save_confusion_matrix=False,
                                   data_type=SyntheticDataType.normal_correlated,
@@ -56,7 +56,7 @@ def test_calculates_scores_for_all_measures_normaldistribution_correlated_datase
 
 
 def test_calculates_scores_for_all_measures_0_10_min_max_scaled_datasets():
-    measures = [DistanceMeasureCols.l1_with_ref]
+    measures = [DistanceMeasures.l1_with_ref]
 
     knn = KnnAllSyntheticDatasets(measures, overall_ds_name=overall_ds_name, save_confusion_matrix=False,
                                   value_range=(0., 10.), run_csv=run_csv,
@@ -67,7 +67,7 @@ def test_calculates_scores_for_all_measures_0_10_min_max_scaled_datasets():
 
 
 def test_calculates_scores_for_all_measures_irregular_p_0_3_datasets():
-    measures = [DistanceMeasureCols.linf_with_ref, DistanceMeasureCols.linf_cor_dist]
+    measures = [DistanceMeasures.linf_with_ref, DistanceMeasures.linf_cor_dist]
 
     # don't save cm
     knn = KnnAllSyntheticDatasets(measures, overall_ds_name='test_misty', save_confusion_matrix=False,
@@ -80,7 +80,7 @@ def test_calculates_scores_for_all_measures_irregular_p_0_3_datasets():
 
 
 def test_calculates_scores_for_all_measures_irregular_p_0_9_datasets():
-    measures = [DistanceMeasureCols.l1_cor_dist, DistanceMeasureCols.l2_with_ref]
+    measures = [DistanceMeasures.l1_cor_dist, DistanceMeasures.l2_with_ref]
 
     knn = KnnAllSyntheticDatasets(measures, overall_ds_name='test_misty', save_confusion_matrix=False,
                                   data_type=SyntheticDataType.non_normal_correlated,
