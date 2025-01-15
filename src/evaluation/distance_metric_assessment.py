@@ -23,6 +23,7 @@ default_order = [0, 1, 2, 3, 4, 5]
 
 @dataclass
 class DistanceMeasureCols:
+    criterion: str = "Criterion"
     pair1: str = "Pattern pair 1"
     pair2: str = "Pattern pair 2"
     alpha: str = "alpha"
@@ -38,6 +39,20 @@ class DistanceMeasureCols:
     monotonic: str = "monotonic"
     cv: str = "Coefficient of Variation (CV)"
     rc: str = "Relative Contrast (RC)"
+
+
+@dataclass
+class EvaluationCriteria:
+    inter_i: str = "Interpretability: L_0 close to zero"
+    inter_ii: str = "Interpretability: proper level sets ordering"
+    inter_iii: str = "Interpretability: average level sets RC"
+    inter_iv: str = "Interpretability: average level sets CV"
+    inter_v: str = "Interpretability: rate of increase between level sets"
+    disc_i: str = "Discriminative Power: overall RC"
+    disc_ii: str = "Discriminative Power: overall CV"
+    disc_iii: str = "Discriminative Power: macro F1 score"
+    stab_i: str = "Stability: completed"
+    stab_ii: str = "Stability: count of nan and inf distances"
 
 
 minkowsky_distances = [DistanceMeasures.l1_cor_dist, DistanceMeasures.l2_cor_dist,
@@ -61,9 +76,7 @@ def get_p_from_distance(measure):
 
 
 class DistanceMetricAssessment:
-    def __init__(self, ds: DescribeSyntheticDataset,
-                 measures: [] = [DistanceMeasures.l2_cor_dist, DistanceMeasures.log_frob_cor_dist,
-                                 DistanceMeasures.foerstner_cor_dist], backend: str = Backends.none.value):
+    def __init__(self, ds: DescribeSyntheticDataset, measures: [], backend: str = Backends.none.value):
         self.__ds = ds
         self.backend = backend
         self.__measures = measures
@@ -192,11 +205,13 @@ class DistanceMetricAssessment:
         stats = self.per_level_set_distance_statistics_df
         level_set_combinations = list(itertools.combinations(self.level_sets, 2))
         a, ci_mean_diff_df = self.calculate_ci_of_mean_differences_between_level_sets(level_set_combinations, stats,
-                                                                                      DistanceMeasureCols.level_set, alpha,
+                                                                                      DistanceMeasureCols.level_set,
+                                                                                      alpha,
                                                                                       bonferroni, two_tailed)
         return ci_mean_diff_df, a
 
-    def calculate_ci_of_mean_differences_between_level_sets(self, combinations, stats: pd.DataFrame, level_set_selector: str,
+    def calculate_ci_of_mean_differences_between_level_sets(self, combinations, stats: pd.DataFrame,
+                                                            level_set_selector: str,
                                                             alpha: float = 0.05,
                                                             bonferroni: bool = True,
                                                             two_tailed: bool = True):
@@ -346,7 +361,8 @@ class DistanceMetricAssessment:
         if len(measures) is 0:
             measures = self.__measures
 
-        pairs_with_differences = self.find_within_level_set_differences_where_the_distances_dont_agree(measures=measures)
+        pairs_with_differences = self.find_within_level_set_differences_where_the_distances_dont_agree(
+            measures=measures)
         level_sets = [key for key, value in pairs_with_differences.items() if len(value) > 0]
 
         # setup figure
@@ -488,8 +504,10 @@ class DistanceMetricAssessment:
 
             distance_data = distance_df[distance_df[DistanceMeasureCols.type] == measure]
             # sort the data by the level set
-            distance_data[DistanceMeasureCols.level_set] = distance_data[DistanceMeasureCols.level_set].astype("category")
-            distance_data[DistanceMeasureCols.level_set] = distance_data[DistanceMeasureCols.level_set].cat.set_categories(
+            distance_data[DistanceMeasureCols.level_set] = distance_data[DistanceMeasureCols.level_set].astype(
+                "category")
+            distance_data[DistanceMeasureCols.level_set] = distance_data[
+                DistanceMeasureCols.level_set].cat.set_categories(
                 level_sets_ordered)
             sorted_distance = distance_data.sort_values(DistanceMeasureCols.level_set)
 
@@ -538,9 +556,9 @@ class DistanceMetricAssessment:
         return fig
 
     def plot_correlation_matrices_of_biggest_distances_for_level_sets(self, g1: int, g2: int, plot_diagonal=False,
-                                                                  what: str = "biggest",
-                                                                  measure=DistanceMeasures.l2_cor_dist,
-                                                                  show_title: bool = True):
+                                                                      what: str = "biggest",
+                                                                      measure=DistanceMeasures.l2_cor_dist,
+                                                                      show_title: bool = True):
         """Plots correlation matrices of patterns compared in the two level sets given
         :param g1: index of level sets plotted on row 1, 0-5
         :param g2: index of level sets plotted on row 2, 0-5
@@ -624,7 +642,7 @@ class DistanceMetricAssessment:
         return ax
 
     def find_min_or_max_distances_for_each_level_set_for_a_measure(self, what: str = "min",
-                                                               measure: str = DistanceMeasures.l2_cor_dist):
+                                                                   measure: str = DistanceMeasures.l2_cor_dist):
         """ Return  df of min or max distance for the given distance measure.
         Result df has columns: level_sets, segment pairs, distance, pattern_id pairs
         """
@@ -731,7 +749,8 @@ class DistanceMetricAssessment:
         sns.set(style="whitegrid")
 
         data = pd.melt(self.segment_pair_distance_df, id_vars=[DistanceMeasureCols.level_set], value_vars=measures)
-        ax = sns.boxplot(data=data, x=DistanceMeasureCols.level_set, y="value", hue="variable", ax=axs, palette="rainbow",
+        ax = sns.boxplot(data=data, x=DistanceMeasureCols.level_set, y="value", hue="variable", ax=axs,
+                         palette="rainbow",
                          order=order)
 
         ax.set_xlabel('Level Set d', fontsize=fontsize)
@@ -833,8 +852,8 @@ class DistanceMetricAssessment:
         return result
 
     def calculate_ci_mean_differences_between_pattern_pairs_for_each_level_set(self, alpha: float = 0.05,
-                                                                           bonferroni: bool = True,
-                                                                           two_tailed: bool = True):
+                                                                               bonferroni: bool = True,
+                                                                               two_tailed: bool = True):
         """Calculates ci of mean difference between each pattern pair in each level set"""
         if self.__ci_mean_differences_between_pattern_pairs_per_level_sets.get((alpha, bonferroni, two_tailed)) is None:
             # calculate it - otherwise return already calculated version
@@ -927,7 +946,8 @@ class DistanceMetricAssessment:
             level_set_data = ci_mean_diff[ci_mean_diff[DistanceMeasureCols.level_set] == level_set]
             # create a new column of tuples of pattern pair 1, pair 2
             level_set_data.insert(0, "compared",
-                              list(zip(level_set_data[DistanceMeasureCols.pair1], level_set_data[DistanceMeasureCols.pair2])))
+                                  list(zip(level_set_data[DistanceMeasureCols.pair1],
+                                           level_set_data[DistanceMeasureCols.pair2])))
             # level set data by compared -> now each should unique pattern tuple has an entry per distance measure
             # then count the values for stat_diff (higher, lower, overlap), this number will be the same
             # as the number of distance measures if all measures have the same stat_diff
@@ -1074,3 +1094,71 @@ class DistanceMetricAssessment:
         })
         result.set_index(DistanceMeasureCols.type, inplace=True)
         return result
+
+    def raw_results_for_each_criteria(self):
+        """ Calculates the raw results for each distance measure and each criterion as described in the paper.
+        Rows are the criteria (see EvaluationCriteria), columns are criteria followed by the distance measures.
+        :returns pd.Dataframe
+        """
+        # setup columns, indices and empty row arrays for dataframe
+        columns = self.__measures.copy()
+        indices = [
+            EvaluationCriteria.inter_i,
+            EvaluationCriteria.inter_ii,
+            EvaluationCriteria.inter_iii,
+            EvaluationCriteria.inter_iv,
+            EvaluationCriteria.inter_v,
+            EvaluationCriteria.disc_i,
+            EvaluationCriteria.disc_ii,
+            EvaluationCriteria.disc_iii,
+            EvaluationCriteria.stab_i,
+            EvaluationCriteria.stab_ii
+        ]
+
+        inter_i = []
+        inter_ii = []
+        inter_iii = []
+        inter_iv = []
+        inter_v = []
+        disc_i = []
+        disc_ii = []
+        disc_iii = []
+        stab_i = []
+        stab_ii = []
+
+        # mean distances for level set 0 indexed by distance measure
+        distances_for_level_set0 = self.per_level_set_distance_statistics_df.loc[
+            self.per_level_set_distance_statistics_df[DistanceMeasureCols.level_set] == 0][
+            [DistanceMeasureCols.type, Aggregators.mean]].round(3).set_index(DistanceMeasureCols.type, drop=True)
+
+        # statistical diff between adjacent level sets
+        ls_pairs = [(self.level_sets[i], self.level_sets[i + 1]) for i in range(len(self.level_sets) - 1)]
+        ci_adjacent = self.ci_for_mean_differences.loc[
+            (self.ci_for_mean_differences[DistanceMeasureCols.compared]).isin(ls_pairs)]
+
+        # for each distance measure calculate all criteria
+        for measure in self.__measures:
+            inter_i.append(distances_for_level_set0.loc[measure, Aggregators.mean])
+            inter_ii.append(ci_adjacent.loc[(ci_adjacent[DistanceMeasureCols.type] == measure)].eq('lower').all())
+            inter_iii.append(0)
+            inter_iv.append(0)
+            inter_v.append(0)
+            disc_i.append(0)
+            disc_ii.append(0)
+            disc_iii.append(0)
+            stab_i.append(0)
+            stab_ii.append(0)
+
+        data = [
+            inter_i,
+            inter_ii,
+            inter_iii,
+            inter_iv,
+            inter_v,
+            disc_i,
+            disc_ii,
+            disc_iii,
+            stab_i,
+            stab_ii,
+        ]
+        return pd.DataFrame(data=data, columns=columns, index=indices)

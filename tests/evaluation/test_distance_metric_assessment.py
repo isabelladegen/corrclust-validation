@@ -11,7 +11,7 @@ from src.utils.distance_measures import calculate_foerstner_matrices_distance_be
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.utils.stats import number_of_unique_two_combinations
 from src.evaluation.distance_metric_assessment import DistanceMeasureCols, DistanceMetricAssessment, \
-    default_order
+    default_order, EvaluationCriteria
 from src.evaluation.describe_synthetic_dataset import DescribeSyntheticDataset
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from tests.test_utils.configurations_for_testing import TEST_DATA_DIR, TEST_IMAGES_DIR, TEST_ROOT_RESULTS_DIR
@@ -25,10 +25,30 @@ images_dir = TEST_IMAGES_DIR
 tables_dir = path.join(TEST_ROOT_RESULTS_DIR, DISTANCE_MEASURE_ASSESSMENT_RESULTS_FOLDER_NAME)
 Path(tables_dir).mkdir(parents=True, exist_ok=True)
 ds = DescribeSyntheticDataset(a_ds_name, data_dir=test_data_dir)
-da = DistanceMetricAssessment(ds, backend=backend)
+da_measures = [DistanceMeasures.l2_cor_dist, DistanceMeasures.log_frob_cor_dist, DistanceMeasures.foerstner_cor_dist]
+da = DistanceMetricAssessment(ds, measures=da_measures, backend=backend)
 lp_measures = [DistanceMeasures.l1_cor_dist, DistanceMeasures.l2_cor_dist, DistanceMeasures.l10_cor_dist,
                DistanceMeasures.linf_cor_dist]
 lp_da = DistanceMetricAssessment(ds, measures=lp_measures, backend=backend)
+
+
+def test_calculates_raw_results_for_each_criteria_and_each_distance_measure():
+    df = da.raw_results_for_each_criteria()
+    assert_that(df.shape, is_((10, len(da_measures))))
+    # check value added for each measure
+    assert_that(df.loc[EvaluationCriteria.inter_i, da_measures[0]], is_(0.023))
+    assert_that(df.loc[EvaluationCriteria.inter_i, da_measures[1]], is_(1.352))
+    assert_that(df.loc[EvaluationCriteria.inter_i, da_measures[2]], is_(1.2))
+    # check each criterion is calculated
+    assert_that(df.loc[EvaluationCriteria.inter_ii, da_measures[0]], is_(True))
+    assert_that(df.loc[EvaluationCriteria.inter_iii, da_measures[0]], is_(1))
+    assert_that(df.loc[EvaluationCriteria.inter_iv, da_measures[0]], is_(1))
+    assert_that(df.loc[EvaluationCriteria.inter_v, da_measures[0]], is_(1))
+    assert_that(df.loc[EvaluationCriteria.disc_i, da_measures[0]], is_(1))
+    assert_that(df.loc[EvaluationCriteria.disc_ii, da_measures[0]], is_(1))
+    assert_that(df.loc[EvaluationCriteria.disc_iii, da_measures[0]], is_(1))
+    assert_that(df.loc[EvaluationCriteria.stab_i, da_measures[0]], is_(1))
+    assert_that(df.loc[EvaluationCriteria.stab_ii, da_measures[0]], is_(1))
 
 
 def test_calculate_distances_between_each_segment_pair_in_each_level_set_for_all_distances():
@@ -320,7 +340,7 @@ def test_plot_box_diagrams_of_distances_for_all_level_sets():
     assert_that(df[df[DistanceMeasureCols.type] == DistanceMeasures.foerstner_cor_dist].shape[0], is_(31))
 
     fig = da.plot_box_diagrams_of_distances_for_all_level_sets(measures=[DistanceMeasures.l2_cor_dist],
-                                                           order=default_order)
+                                                               order=default_order)
     assert_that(fig, is_not(None))
     fig.savefig(path.join(images_dir, 'box-diagram-distances-all-level-sets-l2-corr-misty-forest-56.png'))
 
@@ -331,17 +351,17 @@ def test_box_diagrams_for_lp_measures():
     fig.savefig(path.join(images_dir, 'box-diagram-distances-all-level-sets-lp-measures-misty-forest-56.png'))
 
     fig = lp_da.plot_box_diagrams_of_distances_for_all_level_sets(measures=[DistanceMeasures.l1_cor_dist],
-                                                              order=default_order)
+                                                                  order=default_order)
     assert_that(fig, is_not(None))
     fig.savefig(path.join(images_dir, 'box-diagram-distances-all-level-sets-l1-corr-misty-forest-56.png'))
 
     fig = lp_da.plot_box_diagrams_of_distances_for_all_level_sets(measures=[DistanceMeasures.l10_cor_dist],
-                                                              order=default_order)
+                                                                  order=default_order)
     assert_that(fig, is_not(None))
     fig.savefig(path.join(images_dir, 'box-diagram-distances-all-level-sets-l10-corr-misty-forest-56.png'))
 
     fig = lp_da.plot_box_diagrams_of_distances_for_all_level_sets(measures=[DistanceMeasures.linf_cor_dist],
-                                                              order=default_order)
+                                                                  order=default_order)
     assert_that(fig, is_not(None))
     fig.savefig(path.join(images_dir, 'box-diagram-distances-all-level-sets-linf-corr-misty-forest-56.png'))
 
@@ -404,7 +424,8 @@ def test_dict_of_pattern_pairs_with_overlapping_ci():
     level_set3_pairs = len(ds.patterns_by_level_set[3])
     level_set4_pairs = len(ds.patterns_by_level_set[4])
     level_set5_pairs = len(ds.patterns_by_level_set[5])
-    total_pairs = sum([level_set0_pairs, level_set1_pairs, level_set2_pairs, level_set3_pairs, level_set4_pairs, level_set5_pairs])
+    total_pairs = sum(
+        [level_set0_pairs, level_set1_pairs, level_set2_pairs, level_set3_pairs, level_set4_pairs, level_set5_pairs])
 
     for measure in result[DistanceMeasureCols.type].unique():
         pp = list(result[result[DistanceMeasureCols.type] == measure][DistanceMeasureCols.pattern_pairs])
@@ -442,12 +463,14 @@ def test_plot_pattern_pairs_ci_difference_heat_map():
     for level_set in lp_da.level_sets:
         fig = lp_da.plot_ci_pattern_pair_heat_map(level_set=level_set, measure=DistanceMeasures.l1_cor_dist)
         assert_that(fig, is_not(None))
-        fig.savefig(path.join(images_dir, 'ci_pattern_pair_diff_heat_map_level_set_' + str(level_set) + '_distance_l1.png'))
+        fig.savefig(
+            path.join(images_dir, 'ci_pattern_pair_diff_heat_map_level_set_' + str(level_set) + '_distance_l1.png'))
 
     for level_set in lp_da.level_sets:
         fig = lp_da.plot_ci_pattern_pair_heat_map(level_set=level_set, measure=DistanceMeasures.l2_cor_dist)
         assert_that(fig, is_not(None))
-        fig.savefig(path.join(images_dir, 'ci_pattern_pair_diff_heat_map_level_set_' + str(level_set) + '_distance_l2.png'))
+        fig.savefig(
+            path.join(images_dir, 'ci_pattern_pair_diff_heat_map_level_set_' + str(level_set) + '_distance_l2.png'))
 
 
 def test_calculate_experimental_distances():
@@ -608,12 +631,12 @@ def test_box_plots_and_ci_for_mixed_p_distances():
 
     # single box diagrams
     fig = a_da.plot_box_diagrams_of_distances_for_all_level_sets(measures=[DistanceMeasures.l1_with_ref],
-                                                             order=default_order)
+                                                                 order=default_order)
     assert_that(fig, is_not(None))
     fig.savefig(path.join(images_dir, 'box-diagram-distances-all-level-sets-l1-with-ref-misty-forest-56.png'))
 
     fig = a_da.plot_box_diagrams_of_distances_for_all_level_sets(measures=[DistanceMeasures.l2_with_ref],
-                                                             order=default_order)
+                                                                 order=default_order)
     assert_that(fig, is_not(None))
     fig.savefig(path.join(images_dir, 'box-diagram-distances-all-level-sets-l2-with-ref-misty-forest-56.png'))
 
