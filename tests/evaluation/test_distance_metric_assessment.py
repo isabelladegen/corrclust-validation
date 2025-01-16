@@ -34,16 +34,14 @@ lp_da = DistanceMetricAssessment(ds, measures=lp_measures, backend=backend)
 
 def test_calculates_raw_results_for_each_criteria_and_each_distance_measure():
     df = da.raw_results_for_each_criteria()
-    assert_that(df.shape, is_((10, len(da_measures))))
+    assert_that(df.shape, is_((8, len(da_measures))))
     # check value added for each measure
     assert_that(df.loc[EvaluationCriteria.inter_i, da_measures[0]], is_(0.023))
     assert_that(df.loc[EvaluationCriteria.inter_i, da_measures[1]], is_(1.352))
     assert_that(df.loc[EvaluationCriteria.inter_i, da_measures[2]], is_(1.2))
     # check each criterion is calculated
     assert_that(df.loc[EvaluationCriteria.inter_ii, da_measures[0]], is_(True))
-    assert_that(df.loc[EvaluationCriteria.inter_iii, da_measures[0]], is_(1))
-    assert_that(df.loc[EvaluationCriteria.inter_iv, da_measures[0]], is_(1))
-    assert_that(df.loc[EvaluationCriteria.inter_v, da_measures[0]], is_(1))
+    assert_that(df.loc[EvaluationCriteria.inter_iii, da_measures[0]], is_(0.515))
     assert_that(df.loc[EvaluationCriteria.disc_i, da_measures[0]], is_(1))
     assert_that(df.loc[EvaluationCriteria.disc_ii, da_measures[0]], is_(1))
     assert_that(df.loc[EvaluationCriteria.disc_iii, da_measures[0]], is_(1))
@@ -604,8 +602,8 @@ def test_ci_plot_for_various_numbers_of_measures():
     assert_that(fig, is_not(None))
 
 
-def test_can_calculate_discriminative_power_criteria():
-    result_df = lp_da.discriminative_power_criteria()
+def test_can_calculate_overall_discriminative_power_criteria():
+    result_df = lp_da.overall_discriminative_power_criteria()
 
     assert_that(result_df.shape[0], is_(len(lp_measures)))
 
@@ -614,6 +612,18 @@ def test_can_calculate_discriminative_power_criteria():
     assert_that(result_df.loc[m, DistanceMeasureCols.monotonic], is_(True))
     assert_that(result_df.loc[m, DistanceMeasureCols.cv], is_(0.4))
     assert_that(result_df.loc[m, DistanceMeasureCols.rc], is_(3.41))
+
+
+def test_can_calculate_level_set_discriminative_power_criteria():
+    result_df = da.rate_of_increase_between_level_sets()
+
+    assert_that(result_df.shape[0], is_(len(da_measures) * (len(da.level_sets) - 1)))
+
+    m = da_measures[0]
+    df_m = result_df.loc[(result_df[DistanceMeasureCols.type] == m)]
+    assert_that(df_m.shape[0], is_(len(da.level_sets) - 1))  # we have an entry per adjacent level set pair
+    assert_that(df_m.loc[(df_m[DistanceMeasureCols.compared] == (0, 1))][DistanceMeasureCols.rate_of_increase].values[0], is_(0.846))
+    assert_that(df_m.loc[(df_m[DistanceMeasureCols.compared] == (4, 5))][DistanceMeasureCols.rate_of_increase].values[0], is_(0.498))
 
 
 def test_box_plots_and_ci_for_mixed_p_distances():

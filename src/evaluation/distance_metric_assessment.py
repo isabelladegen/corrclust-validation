@@ -39,15 +39,14 @@ class DistanceMeasureCols:
     monotonic: str = "monotonic"
     cv: str = "Coefficient of Variation (CV)"
     rc: str = "Relative Contrast (RC)"
+    rate_of_increase: str = "Rate of increase"
 
 
 @dataclass
 class EvaluationCriteria:
     inter_i: str = "Interpretability: L_0 close to zero"
     inter_ii: str = "Interpretability: proper level sets ordering"
-    inter_iii: str = "Interpretability: average level sets RC"
-    inter_iv: str = "Interpretability: average level sets CV"
-    inter_v: str = "Interpretability: rate of increase between level sets"
+    inter_iii: str = "Interpretability: rate of increase between level sets"
     disc_i: str = "Discriminative Power: overall RC"
     disc_ii: str = "Discriminative Power: overall CV"
     disc_iii: str = "Discriminative Power: macro F1 score"
@@ -1034,7 +1033,7 @@ class DistanceMetricAssessment:
         else:
             assert False, "unkown value"
 
-    def discriminative_power_criteria(self):
+    def overall_discriminative_power_criteria(self):
         """
             Calculates the following discriminative information about each measure:
             -average rate of increase in mean distance from smaller to bigger changes (bigger is better, check it is
@@ -1095,7 +1094,38 @@ class DistanceMetricAssessment:
         result.set_index(DistanceMeasureCols.type, inplace=True)
         return result
 
-    def raw_results_for_each_criteria(self):
+    def rate_of_increase_between_level_sets(self, round_to: int = 3):
+        """
+        Calculates rate of increase level sets for each distance measure
+        :return pd.DataFrame with columns: level_set_pair, rate of increase
+        """
+        measures = []
+        ls = []
+        rate_of_increase = []
+        ls_pairs = [(self.level_sets[i], self.level_sets[i + 1]) for i in range(len(self.level_sets) - 1)]
+
+        for measure in self.__measures:
+            for ls1, ls2 in ls_pairs:
+                ls.append((ls1, ls2))
+                measures.append(measure)
+
+                # calculate rate of increase
+                df = self.per_level_set_distance_statistics_df
+                df_ms = df.loc[(df[DistanceMeasureCols.type] == measure)]
+
+                mean_low = df_ms.loc[(df_ms[DistanceMeasureCols.level_set] == ls1)][Aggregators.mean].values[0]
+                mean_high = df_ms.loc[(df_ms[DistanceMeasureCols.level_set] == ls2)][Aggregators.mean].values[0]
+
+                rate = round(abs(mean_high - mean_low), round_to)
+                rate_of_increase.append(rate)
+
+        return pd.DataFrame({
+            DistanceMeasureCols.compared: ls,
+            DistanceMeasureCols.type: measures,
+            DistanceMeasureCols.rate_of_increase: rate_of_increase,
+        })
+
+    def raw_results_for_each_criteria(self, round_to: int = 3):
         """ Calculates the raw results for each distance measure and each criterion as described in the paper.
         Rows are the criteria (see EvaluationCriteria), columns are criteria followed by the distance measures.
         :returns pd.Dataframe
@@ -1106,8 +1136,6 @@ class DistanceMetricAssessment:
             EvaluationCriteria.inter_i,
             EvaluationCriteria.inter_ii,
             EvaluationCriteria.inter_iii,
-            EvaluationCriteria.inter_iv,
-            EvaluationCriteria.inter_v,
             EvaluationCriteria.disc_i,
             EvaluationCriteria.disc_ii,
             EvaluationCriteria.disc_iii,
@@ -1118,8 +1146,6 @@ class DistanceMetricAssessment:
         inter_i = []
         inter_ii = []
         inter_iii = []
-        inter_iv = []
-        inter_v = []
         disc_i = []
         disc_ii = []
         disc_iii = []
@@ -1136,13 +1162,18 @@ class DistanceMetricAssessment:
         ci_adjacent = self.ci_for_mean_differences.loc[
             (self.ci_for_mean_differences[DistanceMeasureCols.compared]).isin(ls_pairs)]
 
+        # rate of increase df
+        rate_of_increase = self.rate_of_increase_between_level_sets()
+        average_rate = rate_of_increase.groupby(DistanceMeasureCols.type)[
+            DistanceMeasureCols.rate_of_increase].mean().round(round_to)
+
         # for each distance measure calculate all criteria
         for measure in self.__measures:
             inter_i.append(distances_for_level_set0.loc[measure, Aggregators.mean])
-            inter_ii.append(ci_adjacent.loc[(ci_adjacent[DistanceMeasureCols.type] == measure)].eq('lower').all())
-            inter_iii.append(0)
-            inter_iv.append(0)
-            inter_v.append(0)
+            inter_ii.append(
+                ci_adjacent.loc[(ci_adjacent[DistanceMeasureCols.type] == measure)][DistanceMeasureCols.stat_diff].eq(
+                    'lower').all())
+            inter_iii.append(average_rate.loc[measure])
             disc_i.append(0)
             disc_ii.append(0)
             disc_iii.append(0)
@@ -1153,8 +1184,6 @@ class DistanceMetricAssessment:
             inter_i,
             inter_ii,
             inter_iii,
-            inter_iv,
-            inter_v,
             disc_i,
             disc_ii,
             disc_iii,
