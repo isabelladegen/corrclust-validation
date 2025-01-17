@@ -1,4 +1,5 @@
 import pandas as pd
+import pytest
 from hamcrest import *
 
 from src.evaluation.describe_synthetic_dataset import DescribeSyntheticDataset
@@ -135,6 +136,7 @@ def test_calculate_shannon_entropy_per_level_set():
     assert_that(result.shape[1], is_(len(sel_measures) + 1))
 
 
+@pytest.mark.skip(reason="just an experiment with different bin sizes")
 def test_different_bins_for_overall_entropy():
     n_bins_list = [3, 8, 12, 50, 100, 150, 200, 253, 2500]
 
@@ -153,6 +155,7 @@ def test_different_bins_for_overall_entropy():
     df.to_csv('overall_entropy_for_different_bins.csv')
 
 
+@pytest.mark.skip(reason="just an experiment with different bin sizes")
 def test_different_bins_for_entropy_per_level_set():
     n_bins_list = [3, 8, 12, 50, 100, 150, 200, 253, 2500]
 
