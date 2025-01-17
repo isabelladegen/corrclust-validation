@@ -24,13 +24,16 @@ default_order = [0, 1, 2, 3, 4, 5]
 @dataclass
 class DistanceMeasureCols:
     criterion: str = "Criterion"
+    segment_id: str = SyntheticDataSegmentCols.segment_id
+    canonical_pattern_id: str = "P_x"
+    compared_to_pattern_id: str = "P_y"
+    type: str = "distance measure"
     pair1: str = "Pattern pair 1"
     pair2: str = "Pattern pair 2"
     alpha: str = "alpha"
     level_set: str = "level set"
     pairs: str = "segment pairs"
     pattern_pairs: str = "pattern pairs"
-    type: str = "distance measure"
     compared: str = "compared level sets"
     effect_size: str = "Cohen's d"
     stat_diff: str = "Stat diff"
@@ -40,18 +43,6 @@ class DistanceMeasureCols:
     cv: str = "Coefficient of Variation (CV)"
     rc: str = "Relative Contrast (RC)"
     rate_of_increase: str = "Rate of increase"
-
-
-@dataclass
-class EvaluationCriteria:
-    inter_i: str = "Interpretability: L_0 close to zero"
-    inter_ii: str = "Interpretability: proper level sets ordering"
-    inter_iii: str = "Interpretability: rate of increase between level sets"
-    disc_i: str = "Discriminative Power: overall RC"
-    disc_ii: str = "Discriminative Power: overall CV"
-    disc_iii: str = "Discriminative Power: macro F1 score"
-    stab_i: str = "Stability: completed"
-    stab_ii: str = "Stability: count of nan and inf distances"
 
 
 minkowsky_distances = [DistanceMeasures.l1_cor_dist, DistanceMeasures.l2_cor_dist,
