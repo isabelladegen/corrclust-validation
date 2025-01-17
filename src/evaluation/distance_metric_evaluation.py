@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from functools import lru_cache
 
+import numpy as np
 import pandas as pd
 
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
@@ -41,9 +42,12 @@ class DistanceMetricEvaluation:
         # adjacent level sets
         self.adjacent_level_set_indices = [(self.level_set_indices[i], self.level_set_indices[i + 1]) for i in
                                            range(len(self.level_set_indices) - 1)]
+        # calculate distances
         self.distances_df = self.__calculate_distances_df()
+        # calculate statistics
         self.per_level_set_distance_statistics_df = self.__calculate_per_level_sets_distance_statistics()
         self.ci_for_mean_differences, self.alpha_for_level_set_ci = self.__calculate_ci_for_mean_differences_between_adjacent_level_sets()
+        self.normalised_distance_df = self.__normalise_distances()
 
     def rate_of_increase_between_level_sets(self):
         """
@@ -75,6 +79,71 @@ class DistanceMetricEvaluation:
             DistanceMeasureCols.type: measures,
             DistanceMeasureCols.rate_of_increase: rate_of_increase,
         })
+
+    def calculate_level_set_shannon_entropy(self, n_bins: int = 50):
+        """
+        Calculates the Shannon's entropy for each distance measure per level set
+        Measures with higher entropy have more diverse distances in the level set, measure with lower entropy have more
+        similar distances
+        :param n_bins: the number of bins used in the histogram. Each bin has the width 1/n_bins given we use
+        normalised distances
+        :returns pd.DataFrame with columns
+            DistanceMeasureCols.level_set -> which level set the entropy is for
+            a column per distance measure
+        """
+        level_sets = self.level_set_indices
+        results = {measure: [] for measure in self.__measures}
+        df = self.normalised_distance_df
+
+        # calculate entropy for each measure
+        for measure in self.__measures:
+            for level_set in level_sets:
+                distances = df.loc[(df[DistanceMeasureCols.level_set] == level_set), measure]
+                entropy = self.calculate_shannon_entropy_of_distances(distances, n_bins)
+                results[measure].append(entropy)
+
+        # construct resulting dataframe
+        results[DistanceMeasureCols.level_set] = level_sets
+        df = pd.DataFrame(results)
+        # reorder columns
+        ordered = [DistanceMeasureCols.level_set]
+        ordered.extend(self.__measures)
+        df = df[ordered]
+        return df
+
+    def calculate_overall_shannon_entropy(self, n_bins: int = 50):
+        """Calculates the Shannon's entropy for each distance measure overall distances
+        Measures with higher entropy have more diverse distances, measure with lower entropy have more
+        similar distances
+        :param n_bins: the number of bins used in the histogram. Each bin has the width 1/n_bins given we use
+        normalised distances
+        :returns a dictionary with key=distance measure and value=entropy
+        """
+        results = {}
+
+        # calculate entropy for each measure
+        for measure in self.__measures:
+            # finite normalised distances for measure (non nan or inf)
+            distances = self.normalised_distance_df[measure]
+            results[measure] = self.calculate_shannon_entropy_of_distances(distances, n_bins)
+
+        return results
+
+    def calculate_shannon_entropy_of_distances(self, distances: pd.Series, n_bins: int, range=(0, 1)):
+        """Calculates the Shannon's entropy for the distances given
+        :param distances: pd.Series of distances (if not normalised provide appropriate range for histogram)
+        :param n_bins: how many bins
+        :param range: optional, defaults to (0,1) for normalised distance
+        :return shannon_entropy value
+        """
+        finite_dist = distances[np.isfinite(distances)]
+        # Calculate histogram on normalised distances, hence range (0,1)
+        hist, _ = np.histogram(finite_dist, bins=n_bins, range=range)
+        # Calculate probabilities for non-empty bins (we only sum over the positive p(i) values)
+        probs = hist[hist > 0] / len(finite_dist)
+        # Calculate entropy
+        entropy = -np.sum(probs * np.log2(probs))
+        return round(entropy, self.__round_to)
 
     def raw_results_for_each_criteria(self, round_to: int = 3):
         """ Calculates the raw results for each distance measure and each criterion as described in the paper.
@@ -265,3 +334,16 @@ class DistanceMetricEvaluation:
             alpha,
             bonferroni, two_tailed)
         return ci_mean_diff_df, a
+
+    def __normalise_distances(self):
+        """Calculates the distances normalised to [0,1] for each measure, we round these to round_to (defaulted to 3
+        decimals as a meaningful accuracy without over differentiation of small differences
+        :returns df with same columns as distance_df but normalised distances
+        """
+        result = self.distances_df.copy()
+
+        # vectorised calculation over all distance columns at the same time
+        df = self.distances_df[self.__measures]
+        result[self.__measures] = (df - df.min()) / (df.max() - df.min())
+
+        return result.round(self.__round_to)

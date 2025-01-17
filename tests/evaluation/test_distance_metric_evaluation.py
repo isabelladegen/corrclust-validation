@@ -1,3 +1,4 @@
+import pandas as pd
 from hamcrest import *
 
 from src.evaluation.describe_synthetic_dataset import DescribeSyntheticDataset
@@ -23,8 +24,7 @@ ev = DistanceMetricEvaluation(run_name=a_ds_name, data_type=SyntheticDataType.no
 
 def test_calculates_distances_for_all_empirical_correlations_to_all_canonical_patterns():
     df = ev.distances_df
-    # wrong should not be 10000
-    df.to_csv("irregularp90_distances.csv")
+    # df.to_csv("irregularp90_distances.csv")
     assert_that(df.shape[0], is_(23 * 100))  # each segment compared to each canonical pattern
     # todo write more asserts
     # todo investigate nan cases for Förstner as they are still many
@@ -105,6 +105,71 @@ def test_can_calculate_level_rate_of_increase_between_adjacent_levels():
     # check results are the same
     assert_that(result_l01, is_((l1 - l0).round(3)))
     assert_that(result_l45, is_((l5 - l4).round(3)))
+
+
+def test_calculate_normalised_distances_for_each_distance_level():
+    df = ev.normalised_distance_df
+
+    for measure in sel_measures:
+        assert_that(df[measure].min(), equal_to(0))
+        assert_that(df[measure].max(), equal_to(1))
+
+
+def test_calculate_overall_shannon_entropy():
+    result = ev.calculate_overall_shannon_entropy()
+
+    # we have a result for each distance measure
+    assert_that(len(result), is_(len(sel_measures)))
+
+    assert_that(result[sel_measures[0]], is_(4.665))  # l2
+    assert_that(result[sel_measures[1]], is_(4.15))  # Frobenious
+    assert_that(result[sel_measures[2]], is_(2.808))  # Förstner
+
+
+def test_calculate_shannon_entropy_per_level_set():
+    result = ev.calculate_level_set_shannon_entropy()
+
+    # we have a result for each level set
+    assert_that(result.shape[0], is_(len(ev.level_set_indices)))
+    # we have a column of results for each measure and the level set column
+    assert_that(result.shape[1], is_(len(sel_measures) + 1))
+
+
+def test_different_bins_for_overall_entropy():
+    n_bins_list = [3, 8, 12, 50, 100, 150, 200, 253, 2500]
+
+    # Create list to store results
+    results = []
+
+    # Calculate metrics for each n_bins value
+    for n_bins in n_bins_list:
+        metrics = ev.calculate_overall_shannon_entropy(n_bins=n_bins)
+        # Add n_bins to the metrics dict
+        metrics['n_bins'] = n_bins
+        results.append(metrics)
+
+    # Create DataFrame
+    df = pd.DataFrame(results)
+    df.to_csv('overall_entropy_for_different_bins.csv')
+
+
+def test_different_bins_for_entropy_per_level_set():
+    n_bins_list = [3, 8, 12, 50, 100, 150, 200, 253, 2500]
+
+    # Create list to store results
+    results = []
+
+    # Calculate metrics for each n_bins value
+    for n_bins in n_bins_list:
+        df_result = ev.calculate_level_set_shannon_entropy(n_bins)
+        # Add n_bins as a column
+        df_result.insert(0, 'n_bins', n_bins)
+        # Append to results list
+        results.append(df_result)
+
+    # Concatenate all results into a single DataFrame
+    final_df = pd.concat(results, ignore_index=True)
+    final_df.to_csv('level_set_entropy_for_different_bins.csv')
 
 
 def test_calculates_raw_results_for_each_criteria_and_each_distance_measure():
