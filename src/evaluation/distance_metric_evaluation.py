@@ -5,7 +5,8 @@ import pandas as pd
 
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.evaluation.describe_synthetic_dataset import DescribeSyntheticDataset
-from src.evaluation.distance_metric_assessment import DistanceMeasureCols
+from src.evaluation.distance_metric_assessment import DistanceMeasureCols, \
+    calculate_ci_of_mean_differences_between_two_values_for_distance_measures
 from src.utils.configurations import Aggregators
 from src.utils.distance_measures import distance_calculation_method_for
 from src.utils.plots.matplotlib_helper_functions import Backends
@@ -33,9 +34,12 @@ class DistanceMetricEvaluation:
         # dictionary of key level set id and values list of tuples of pattern pairs
         self.level_sets = ds.level_sets
         self.level_set_indices = list(self.level_sets.keys())
+        # adjacent level sets
+        self.adjacent_level_set_indices = [(self.level_set_indices[i], self.level_set_indices[i + 1]) for i in
+                                           range(len(self.level_set_indices) - 1)]
         self.distances_df = self.__calculate_distances_df()
         self.per_level_set_distance_statistics_df = self.__calculate_per_level_sets_distance_statistics()
-        self.ci_for_mean_differences = None
+        self.ci_for_mean_differences, self.alpha_for_level_set_ci = self.__calculate_ci_for_mean_differences_between_adjacent_level_sets()
 
     def rate_of_increase_between_level_sets(self):
         """
@@ -45,9 +49,7 @@ class DistanceMetricEvaluation:
         measures = []
         ls = []
         rate_of_increase = []
-        # adjacent level sets
-        ls_pairs = [(self.level_set_indices[i], self.level_set_indices[i + 1]) for i in
-                    range(len(self.level_set_indices) - 1)]
+        ls_pairs = self.adjacent_level_set_indices
 
         for measure in self.__measures:
             for ls1, ls2 in ls_pairs:
@@ -236,3 +238,26 @@ class DistanceMetricEvaluation:
         for measure, values in resulting_distances.items():
             resulting_df[measure] = values
         return resulting_df
+
+    def __calculate_ci_for_mean_differences_between_adjacent_level_sets(self, alpha: float = 0.05,
+                                                                        bonferroni: bool = True,
+                                                                        two_tailed: bool = True):
+        """
+        Calculates ci of mean difference between adjacent level sets
+        :returns pd.DataFrame with columns (below) and alpha value used for calc
+            DistanceMeasureCols.compared -> tuple of the values compared
+            DistanceMeasureCols.type -> distance measure name
+            DistanceMeasureCols.stat_diff -> interpretation: overlap, lower, higher (comparing mean of value1 to value2)
+            DistanceMeasureCols.mean_diff -> mean diff
+            ConfidenceIntervalCols.ci_96lo -> lo ci (not necessary 95% as this depends on alpha)
+            ConfidenceIntervalCols.ci_96hi -> high ci (not necessary 95% as this depends on alpha)
+            ConfidenceIntervalCols.width -> diff of hi-low ci
+            ConfidenceIntervalCols.standard_error -> standard_error for ci
+        """
+        stats = self.per_level_set_distance_statistics_df
+        a, ci_mean_diff_df = calculate_ci_of_mean_differences_between_two_values_for_distance_measures(
+            self.adjacent_level_set_indices, stats,
+            DistanceMeasureCols.level_set,
+            alpha,
+            bonferroni, two_tailed)
+        return ci_mean_diff_df, a

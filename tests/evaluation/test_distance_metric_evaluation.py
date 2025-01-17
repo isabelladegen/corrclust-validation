@@ -19,7 +19,7 @@ a_ds_name = "misty-forest-56"
 test_data_dir = TEST_IRREGULAR_P90_DATA_DIR  # so we have much less data for speed
 images_dir = TEST_IMAGES_DIR
 ds = DescribeSyntheticDataset(a_ds_name, data_dir=test_data_dir)
-sel_measures = [DistanceMeasures.l2_cor_dist, DistanceMeasures.l2_with_ref, DistanceMeasures.log_frob_cor_dist,
+sel_measures = [DistanceMeasures.l2_cor_dist, DistanceMeasures.log_frob_cor_dist,
                 DistanceMeasures.foerstner_cor_dist]
 ev = DistanceMetricEvaluation(ds, measures=sel_measures, backend=backend)
 
@@ -31,6 +31,32 @@ def test_calculates_distances_for_all_empirical_correlations_to_all_canonical_pa
     assert_that(df.shape[0], is_(23 * 100))  # each segment compared to each canonical pattern
     # todo write more asserts
     # todo investigate nan cases for Förstner as they are still many
+
+
+def test_calculate_ci_of_mean_differences_between_adjacent_level_sets_for_each_distance_measure():
+    df = ev.ci_for_mean_differences
+
+    l2_df = df[df[DistanceMeasureCols.type] == DistanceMeasures.l2_cor_dist]
+    frob_df = df[df[DistanceMeasureCols.type] == DistanceMeasures.log_frob_cor_dist]
+    foer_df = df[df[DistanceMeasureCols.type] == DistanceMeasures.foerstner_cor_dist]
+
+    # calculated correct number of ci intervals
+    n_ci_intervals = len(ev.level_set_indices) - 1
+    assert_that(l2_df.shape[0], is_(n_ci_intervals))
+    assert_that(frob_df.shape[0], is_(n_ci_intervals))
+    assert_that(foer_df.shape[0], is_(n_ci_intervals))
+
+    # check ci (measures are ordered Foerstner, L2, Log Frob)
+    assert_that(df[df[DistanceMeasureCols.compared] == (0, 1)][DistanceMeasureCols.stat_diff].tolist(),
+                contains_exactly("lower", "lower", "lower"))
+    assert_that(df[df[DistanceMeasureCols.compared] == (1, 2)][DistanceMeasureCols.stat_diff].tolist(),
+                contains_exactly("overlap", "lower", "higher"))
+    assert_that(df[df[DistanceMeasureCols.compared] == (2, 3)][DistanceMeasureCols.stat_diff].tolist(),
+                contains_exactly("lower", "lower", "lower"))
+    assert_that(df[df[DistanceMeasureCols.compared] == (3, 4)][DistanceMeasureCols.stat_diff].tolist(),
+                contains_exactly("lower", "lower", "higher"))
+    assert_that(df[df[DistanceMeasureCols.compared] == (4, 5)][DistanceMeasureCols.stat_diff].tolist(),
+                contains_exactly("lower", "lower", "lower"))
 
 
 def test_per_level_set_statistics_calculation():
@@ -71,15 +97,17 @@ def test_can_calculate_level_rate_of_increase_between_adjacent_levels():
         0]
 
     # calculate by hand here
-    mean_for_m = ev.per_level_set_distance_statistics_df.loc[(ev.per_level_set_distance_statistics_df[DistanceMeasureCols.type] == m)][[DistanceMeasureCols.level_set, Aggregators.mean]]
+    mean_for_m = ev.per_level_set_distance_statistics_df.loc[
+        (ev.per_level_set_distance_statistics_df[DistanceMeasureCols.type] == m)][
+        [DistanceMeasureCols.level_set, Aggregators.mean]]
     l0 = mean_for_m[mean_for_m[DistanceMeasureCols.level_set] == 0][Aggregators.mean].values[0]
     l1 = mean_for_m[mean_for_m[DistanceMeasureCols.level_set] == 1][Aggregators.mean].values[0]
     l4 = mean_for_m[mean_for_m[DistanceMeasureCols.level_set] == 4][Aggregators.mean].values[0]
     l5 = mean_for_m[mean_for_m[DistanceMeasureCols.level_set] == 5][Aggregators.mean].values[0]
 
     # check results are the same
-    assert_that(result_l01, is_((l1-l0).round(3)))
-    assert_that(result_l45, is_((l5-l4).round(3)))
+    assert_that(result_l01, is_((l1 - l0).round(3)))
+    assert_that(result_l45, is_((l5 - l4).round(3)))
 
 
 def test_calculates_raw_results_for_each_criteria_and_each_distance_measure():

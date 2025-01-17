@@ -6,7 +6,6 @@ import numpy as np
 from hamcrest import *
 from scipy.linalg import eigvals
 
-from src.evaluation.distance_metric_evaluation import EvaluationCriteria
 from src.utils.configurations import Aggregators, DISTANCE_MEASURE_ASSESSMENT_RESULTS_FOLDER_NAME
 from src.utils.distance_measures import calculate_foerstner_matrices_distance_between, DistanceMeasures
 from src.utils.plots.matplotlib_helper_functions import Backends
@@ -31,20 +30,6 @@ da = DistanceMetricAssessment(ds, measures=da_measures, backend=backend)
 lp_measures = [DistanceMeasures.l1_cor_dist, DistanceMeasures.l2_cor_dist, DistanceMeasures.l10_cor_dist,
                DistanceMeasures.linf_cor_dist]
 lp_da = DistanceMetricAssessment(ds, measures=lp_measures, backend=backend)
-
-
-# todo delete
-def test_calculates_raw_results_for_each_criteria_and_each_distance_measure():
-    df = da.raw_results_for_each_criteria()
-    assert_that(df.shape, is_((8, len(da_measures))))
-    # check value added for each measure
-    assert_that(df.loc[EvaluationCriteria.inter_i, da_measures[0]], is_(0.023))
-    assert_that(df.loc[EvaluationCriteria.inter_i, da_measures[1]], is_(1.352))
-    assert_that(df.loc[EvaluationCriteria.inter_i, da_measures[2]], is_(1.2))
-    # check each criterion is calculated
-    assert_that(df.loc[EvaluationCriteria.inter_ii, da_measures[0]], is_(True))
-    assert_that(df.loc[EvaluationCriteria.inter_iii, da_measures[0]], is_(0.515))
-    assert_that(df.loc[EvaluationCriteria.stab_ii, da_measures[0]], is_(1))
 
 
 def test_calculate_distances_between_each_segment_pair_in_each_level_set_for_all_distances():
