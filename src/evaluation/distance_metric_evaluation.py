@@ -187,6 +187,13 @@ class DistanceMetricEvaluation:
         average_rate = rate_of_increase.groupby(DistanceMeasureCols.type)[
             DistanceMeasureCols.rate_of_increase].mean().round(round_to)
 
+        # overall entropy df
+        n_bins = 50
+        overall_entropy = self.calculate_overall_shannon_entropy(n_bins=n_bins)
+
+        #level set entropy values
+        level_set_entropy = self.calculate_level_set_shannon_entropy(n_bins=n_bins)
+
         # for each distance measure calculate all criteria
         for measure in self.__measures:
             inter_i.append(distances_for_level_set0.loc[measure, Aggregators.mean])
@@ -194,8 +201,8 @@ class DistanceMetricEvaluation:
                 ci_adjacent.loc[(ci_adjacent[DistanceMeasureCols.type] == measure)][DistanceMeasureCols.stat_diff].eq(
                     'lower').all())
             inter_iii.append(average_rate.loc[measure])
-            disc_i.append(0)
-            disc_ii.append(0)
+            disc_i.append(overall_entropy[measure])
+            disc_ii.append(level_set_entropy[measure].mean().round(self.__round_to))
             disc_iii.append(0)
             stab_i.append(0)
             stab_ii.append(0)

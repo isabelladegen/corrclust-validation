@@ -185,8 +185,8 @@ def test_calculates_raw_results_for_each_criteria_and_each_distance_measure():
     # check each criterion is calculated
     assert_that(df.loc[EvaluationCriteria.inter_ii, sel_measures[0]], is_(True))
     assert_that(df.loc[EvaluationCriteria.inter_iii, sel_measures[0]], is_(0.513))
-    assert_that(df.loc[EvaluationCriteria.disc_i, sel_measures[0]], is_(1))
-    assert_that(df.loc[EvaluationCriteria.disc_ii, sel_measures[0]], is_(1))
+    assert_that(df.loc[EvaluationCriteria.disc_i, sel_measures[0]], is_(4.665))
+    assert_that(df.loc[EvaluationCriteria.disc_ii, sel_measures[0]], is_(2.372))
     assert_that(df.loc[EvaluationCriteria.disc_iii, sel_measures[0]], is_(1))
     assert_that(df.loc[EvaluationCriteria.stab_i, sel_measures[0]], is_(1))
     assert_that(df.loc[EvaluationCriteria.stab_ii, sel_measures[0]], is_(1))
