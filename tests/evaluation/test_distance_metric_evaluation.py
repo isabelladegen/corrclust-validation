@@ -1,17 +1,13 @@
-from os import path
-from pathlib import Path
-
-import pandas as pd
 from hamcrest import *
 
 from src.evaluation.describe_synthetic_dataset import DescribeSyntheticDataset
 from src.evaluation.distance_metric_assessment import DistanceMeasureCols
 from src.evaluation.distance_metric_evaluation import DistanceMetricEvaluation, EvaluationCriteria
-from src.utils.configurations import DISTANCE_MEASURE_ASSESSMENT_RESULTS_FOLDER_NAME, Aggregators
+from src.utils.configurations import Aggregators
 from src.utils.distance_measures import DistanceMeasures
+from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
-from tests.test_utils.configurations_for_testing import TEST_DATA_DIR, TEST_IMAGES_DIR, TEST_ROOT_RESULTS_DIR, \
-    TEST_IRREGULAR_P90_DATA_DIR
+from tests.test_utils.configurations_for_testing import TEST_IMAGES_DIR, TEST_IRREGULAR_P90_DATA_DIR
 
 backend = Backends.none.value
 # backend = Backends.visible_tests.value
@@ -21,7 +17,8 @@ images_dir = TEST_IMAGES_DIR
 ds = DescribeSyntheticDataset(a_ds_name, data_dir=test_data_dir)
 sel_measures = [DistanceMeasures.l2_cor_dist, DistanceMeasures.log_frob_cor_dist,
                 DistanceMeasures.foerstner_cor_dist]
-ev = DistanceMetricEvaluation(ds, measures=sel_measures, backend=backend)
+ev = DistanceMetricEvaluation(run_name=a_ds_name, data_type=SyntheticDataType.non_normal_correlated,
+                              data_dir=test_data_dir, measures=sel_measures, backend=backend)
 
 
 def test_calculates_distances_for_all_empirical_correlations_to_all_canonical_patterns():
@@ -114,12 +111,12 @@ def test_calculates_raw_results_for_each_criteria_and_each_distance_measure():
     df = ev.raw_results_for_each_criteria()
     assert_that(df.shape, is_((8, len(sel_measures))))
     # check value added for each measure
-    assert_that(df.loc[EvaluationCriteria.inter_i, sel_measures[0]], is_(0.023))
-    assert_that(df.loc[EvaluationCriteria.inter_i, sel_measures[1]], is_(1.352))
-    assert_that(df.loc[EvaluationCriteria.inter_i, sel_measures[2]], is_(1.2))
+    assert_that(df.loc[EvaluationCriteria.inter_i, sel_measures[0]], is_(0.227))
+    assert_that(df.loc[EvaluationCriteria.inter_i, sel_measures[1]], is_(6.612))
+    assert_that(df.loc[EvaluationCriteria.inter_i, sel_measures[2]], is_(1.042))
     # check each criterion is calculated
     assert_that(df.loc[EvaluationCriteria.inter_ii, sel_measures[0]], is_(True))
-    assert_that(df.loc[EvaluationCriteria.inter_iii, sel_measures[0]], is_(0.515))
+    assert_that(df.loc[EvaluationCriteria.inter_iii, sel_measures[0]], is_(0.513))
     assert_that(df.loc[EvaluationCriteria.disc_i, sel_measures[0]], is_(1))
     assert_that(df.loc[EvaluationCriteria.disc_ii, sel_measures[0]], is_(1))
     assert_that(df.loc[EvaluationCriteria.disc_iii, sel_measures[0]], is_(1))

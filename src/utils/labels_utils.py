@@ -1,3 +1,4 @@
+import itertools
 from itertools import combinations
 
 import numpy as np
@@ -184,3 +185,37 @@ def calculate_distance_matrix_for(labels_df: pd.DataFrame, distance_measure: str
         distances[seg1][seg2] = dist
         distances[seg2][seg1] = dist
     return distances
+
+
+def find_all_level_sets(labels_df: pd.DataFrame):
+    """
+    Calculates all possible level sets and which pattern tuples belong to it. This method only works
+    if patterns to model are ideal!
+    :param labels_df: a labels dataframe
+    :return: dictionary of key level set id and values list of tuples of pattern pairs
+    """
+    patterns = labels_df[SyntheticDataSegmentCols.pattern_id].unique().tolist()
+    # all combinations of patterns
+    all_pattern_combinations = list(itertools.combinations_with_replacement(patterns, 2))
+    pattern_models = {pid: labels_df[labels_df[SyntheticDataSegmentCols.pattern_id] == pid][
+        SyntheticDataSegmentCols.correlation_to_model].iloc[0] for pid in patterns}
+
+    # dictionary of pattern id and pattern model
+    level_sets = {i: [] for i in range(6)}
+
+    # cycle through all pattern pairs and put them in the right level set based on number of changes
+    for combination in all_pattern_combinations:
+        p1 = pattern_models[combination[0]]
+        p2 = pattern_models[combination[1]]
+
+        # add up all the changes in the pattern
+        n_changes = 0
+        for idx, value1 in enumerate(p1):
+            value2 = p2[idx]
+            # difference between the two values in ideal distance, that is why we round
+            n_changes += round(abs(value1 - value2), 0)
+
+        # add pattern to the level set with that number of changes
+        level_sets[n_changes].append(combination)
+
+    return level_sets

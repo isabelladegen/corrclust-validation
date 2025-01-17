@@ -10,7 +10,8 @@ import matplotlib as mpl
 from matplotlib.collections import EllipseCollection
 from pandas._libs.tslibs import to_offset
 
-from src.utils.labels_utils import calculate_n_segments_within_tolerance_for, calculate_n_segments_outside_tolerance_for
+from src.utils.labels_utils import calculate_n_segments_within_tolerance_for, \
+    calculate_n_segments_outside_tolerance_for, find_all_level_sets
 from src.utils.load_synthetic_data import load_synthetic_data, SyntheticDataType, load_labels_file_for
 from src.utils.configurations import GeneralisedCols, SyntheticDataVariates, SYNTHETIC_DATA_DIR, \
     bad_partition_dir_for_data_type
@@ -220,7 +221,7 @@ class DescribeSyntheticDataset:
             by=pattern_id_col).reset_index(drop=True)
 
         # dictionary of key level set id and values list of tuples of pattern pairs
-        self.level_sets = self.__find_all_level_sets()
+        self.level_sets = find_all_level_sets(self.labels)
         # list index is level set id, value is a list of all pattern pairs as tuple in that level set
         self.patterns_by_level_set = list(self.level_sets.values())
 
@@ -239,33 +240,6 @@ class DescribeSyntheticDataset:
         # calculate data by pattern id
         self.data_by_pattern_id = self.__create_dictionary_of_data_by_pattern_id()
 
-    def __find_all_level_sets(self):
-        """ this only works if patterns to model are ideal! """
-        # all combinations of patterns
-        all_pattern_combinations = list(itertools.combinations_with_replacement(self.patterns, 2))
-        pattern_models = {pid: self.labels[self.labels[SyntheticDataSegmentCols.pattern_id] == pid][
-            SyntheticDataSegmentCols.correlation_to_model].iloc[0] for pid in self.patterns}
-
-        # dictionary of pattern id and pattern model
-        level_sets = {i: [] for i in range(6)}
-
-        # cycle through all pattern pairs and put them in the right level set based on number of changes
-        for combination in all_pattern_combinations:
-            p1 = pattern_models[combination[0]]
-            p2 = pattern_models[combination[1]]
-
-            # add up all the changes in the pattern
-            n_changes = 0
-            for idx, value1 in enumerate(p1):
-                value2 = p2[idx]
-                # difference between the two values in ideal distance, that is why we round
-                n_changes += round(abs(value1 - value2), 0)
-
-            # add pattern to the level set with that number of changes
-            level_sets[n_changes].append(combination)
-
-        return level_sets
-
     def __create_segment_pairs_for_each_level_set(self):
         """
         Creates a dictionary with the key being the level set id 0-5 and the value being a list of segment id tuples
@@ -276,12 +250,12 @@ class DescribeSyntheticDataset:
         segments_in_pattern = self.segments_for_each_pattern
 
         # all possible pairs of segments in the same cluster
-        for level_set_id, pattern_pairs in self.level_sets.items():
-            if level_set_id == 0:  # don't want to double the segments x,y and y,x for level set 0 where the pattern is the same
-                result[level_set_id] = list(itertools.chain.from_iterable(
+        for group_id, pattern_pairs in self.level_sets.items():
+            if group_id == 0:  # don't want to double the segments x,y and y,x for level set 0 where the pattern is the same
+                result[group_id] = list(itertools.chain.from_iterable(
                     [list(itertools.combinations(segments, 2)) for p, segments in segments_in_pattern.items()]))
             else:
-                result[level_set_id] = list(itertools.chain.from_iterable(
+                result[group_id] = list(itertools.chain.from_iterable(
                     [list(itertools.product(segments_in_pattern[p1], segments_in_pattern[p2])) for p1, p2 in
                      pattern_pairs]))
 
@@ -512,3 +486,4 @@ def plot_corr_ellipses(corr_df: pd.DataFrame, ax, plot_diagonal=False, **kwargs)
     ax.set_ylim(-half_w - gap, n_ticks - half_w + (n_ticks * gap))
     ax.autoscale_view()
     return ec
+

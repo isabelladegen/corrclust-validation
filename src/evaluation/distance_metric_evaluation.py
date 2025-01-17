@@ -4,11 +4,12 @@ from functools import lru_cache
 import pandas as pd
 
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
-from src.evaluation.describe_synthetic_dataset import DescribeSyntheticDataset
 from src.evaluation.distance_metric_assessment import DistanceMeasureCols, \
     calculate_ci_of_mean_differences_between_two_values_for_distance_measures
 from src.utils.configurations import Aggregators
 from src.utils.distance_measures import distance_calculation_method_for
+from src.utils.labels_utils import find_all_level_sets
+from src.utils.load_synthetic_data import load_labels
 from src.utils.plots.matplotlib_helper_functions import Backends
 
 
@@ -25,14 +26,17 @@ class EvaluationCriteria:
 
 
 class DistanceMetricEvaluation:
-    def __init__(self, ds: DescribeSyntheticDataset, measures: [], backend: str = Backends.none.value,
+    def __init__(self, run_name: str, data_type: str, data_dir: str, measures: [], backend: str = Backends.none.value,
                  round_to: int = 3):
-        self.__ds = ds
         self.backend = backend
+        self.run_name = run_name
+        self.data_type = data_type
+        self.data_dir = data_dir
         self.__measures = measures
         self.__round_to = round_to
+        self.__labels = load_labels(self.run_name, self.data_type, data_dir=data_dir)
         # dictionary of key level set id and values list of tuples of pattern pairs
-        self.level_sets = ds.level_sets
+        self.level_sets = find_all_level_sets(self.__labels)
         self.level_set_indices = list(self.level_sets.keys())
         # adjacent level sets
         self.adjacent_level_set_indices = [(self.level_set_indices[i], self.level_set_indices[i + 1]) for i in
@@ -177,7 +181,7 @@ class DistanceMetricEvaluation:
         """
         # 1. Get the empirical correlation of each segment, and it's canonical pattern and the pattern id
         # columns segment_id (index), pattern id, correlation_to_model, actual correlation
-        segment_correlations = self.__ds.labels[
+        segment_correlations = self.__labels[
             [SyntheticDataSegmentCols.segment_id, SyntheticDataSegmentCols.pattern_id,
              SyntheticDataSegmentCols.correlation_to_model, SyntheticDataSegmentCols.actual_correlation]]
         segment_correlations.set_index(SyntheticDataSegmentCols.segment_id, inplace=True)
