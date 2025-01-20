@@ -34,7 +34,7 @@ def test_drop_observation_with_a_likelihood_p():
     # cols that needed changing (all the others should not appear in diff df as they have not been updated)
     changed_cols = [SyntheticDataSegmentCols.start_idx, SyntheticDataSegmentCols.end_idx,
                     SyntheticDataSegmentCols.length, SyntheticDataSegmentCols.actual_correlation,
-                    SyntheticDataSegmentCols.mae]
+                    SyntheticDataSegmentCols.mae, SyntheticDataSegmentCols.relaxed_mae]
     cols_with_differences = list(diff_df.columns.levels[0])
     for cols in changed_cols:
         assert_that(cols in cols_with_differences, is_(True))
@@ -101,7 +101,8 @@ def test_creates_same_irregular_version_for_ds_variation():
 
     # labels dataframes only differ in correlation achieved, tolerance and mae
     changed_labels_cols = [SyntheticDataSegmentCols.actual_correlation,
-                           SyntheticDataSegmentCols.actual_within_tolerance, SyntheticDataSegmentCols.mae]
+                           SyntheticDataSegmentCols.actual_within_tolerance, SyntheticDataSegmentCols.mae,
+                           SyntheticDataSegmentCols.relaxed_mae]
     check_that_the_following_columns_are_different(changed_labels_cols, raw_irr_labels, nc)
 
     # data dataframes only differ in observations columns
@@ -137,7 +138,8 @@ def test_creates_same_irregular_version_for_ds_variation():
                                  SyntheticDataSegmentCols.end_idx, SyntheticDataSegmentCols.length,
                                  SyntheticDataSegmentCols.pattern_id, SyntheticDataSegmentCols.correlation_to_model,
                                  SyntheticDataSegmentCols.actual_correlation,
-                                 SyntheticDataSegmentCols.actual_within_tolerance, SyntheticDataSegmentCols.mae))
+                                 SyntheticDataSegmentCols.actual_within_tolerance, SyntheticDataSegmentCols.mae,
+                                 SyntheticDataSegmentCols.relaxed_mae))
 
     # resampled mae higher than nn mae
     assert_that(rs_irr_labels.iloc[-1][SyntheticDataSegmentCols.mae],
@@ -156,8 +158,10 @@ def test_compare_similarity_between_normal_and_non_normal_irregular_data():
                                    data_dir=TEST_DATA_DIR, data_cols=SyntheticDataVariates.columns(), seed=seed)
     nn_data, nn_labels = nc_id.drop_observation_with_likelihood(p)
 
-    orig_nc_data, orig_nc_labels = load_synthetic_data(run_name, SyntheticDataType.normal_correlated, data_dir=TEST_DATA_DIR)
-    orig_nn_data, orig_nn_labels = load_synthetic_data(run_name, SyntheticDataType.non_normal_correlated, data_dir=TEST_DATA_DIR)
+    orig_nc_data, orig_nc_labels = load_synthetic_data(run_name, SyntheticDataType.normal_correlated,
+                                                       data_dir=TEST_DATA_DIR)
+    orig_nn_data, orig_nn_labels = load_synthetic_data(run_name, SyntheticDataType.non_normal_correlated,
+                                                       data_dir=TEST_DATA_DIR)
 
     orig_data_diff = orig_nc_data.compare(orig_nn_data, result_names=("orig", "new"))
     orig_labels_diff = orig_nc_labels.compare(orig_nn_labels, result_names=("orig", "new"))

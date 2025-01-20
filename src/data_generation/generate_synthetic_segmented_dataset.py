@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from tslearn.preprocessing import TimeSeriesScalerMinMax
 
+from src.data_generation.model_correlation_patterns import ModelCorrelationPatterns
 from src.utils.configurations import GeneralisedCols, SyntheticDataVariates
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.data_generation.generate_synthetic_correlated_data import GenerateData, calculate_spearman_correlation, \
@@ -31,7 +32,7 @@ def min_max_scaled_df(df: pd.DataFrame, scale_range: (), columns: []) -> pd.Data
 def recalculate_labels_df_from_data(data_df, labels_df):
     """
     Returns a new labels df with updated achieved correlation, correlations within tolerance and
-    MAE columns calculated from the data_df provided
+    MAE and relaxed MAE columns calculated from the data_df provided
     """
     achieved_corrs = []
     within_tols = []
@@ -60,19 +61,30 @@ def recalculate_labels_df_from_data(data_df, labels_df):
     new_labels_df[SyntheticDataSegmentCols.actual_correlation] = achieved_corrs
     new_labels_df[SyntheticDataSegmentCols.actual_within_tolerance] = within_tols
     # calculate MAE per segment
-    new_labels_df[SyntheticDataSegmentCols.mae] = mean_absolute_error_from_labels_df(new_labels_df)
+    result = mean_absolute_error_from_labels_df(new_labels_df)
+    new_labels_df[SyntheticDataSegmentCols.mae] = result[0]
+    new_labels_df[SyntheticDataSegmentCols.relaxed_mae] = result[1]
     return new_labels_df
 
 
 def mean_absolute_error_from_labels_df(labels_df: pd.DataFrame, round_to: int = 3):
-    """Recalculate just the sum of absolute error between correlation to model and correlation achieved
-    for each segment
+    """Recalculate just the sum of absolute error_to_canonical_pattern between correlation to model and correlation achieved
+    for each segment both to canonical pattern and relaxed pattern taken from correlation_patterns csv
     """
+    # for the moment we get
+    model_correlation_patterns = ModelCorrelationPatterns()
+    canonical_patterns_lookup = model_correlation_patterns.canonical_patterns()
+    relaxed_patterns_lookup = model_correlation_patterns.relaxed_patterns()
+
     n = len(labels_df.loc[0, SyntheticDataSegmentCols.correlation_to_model])
-    canonical_pattern = np.array(labels_df[SyntheticDataSegmentCols.correlation_to_model].to_list())
-    achieved_correlation = np.array(labels_df[SyntheticDataSegmentCols.actual_correlation].to_list())
-    error = np.round(np.sum(abs(np.array(canonical_pattern) - np.array(achieved_correlation)), axis=1) / n, round_to)
-    return error
+    canonical_patterns = np.array(labels_df[SyntheticDataSegmentCols.pattern_id].map(canonical_patterns_lookup).to_list())
+    relaxed_patterns = np.array(labels_df[SyntheticDataSegmentCols.pattern_id].map(relaxed_patterns_lookup).to_list())
+    achieved_correlations = np.array(labels_df[SyntheticDataSegmentCols.actual_correlation].to_list())
+    error_canonical = np.round(np.sum(abs(np.array(canonical_patterns) - np.array(achieved_correlations)), axis=1) / n,
+                               round_to)
+    error_relaxed = np.round(np.sum(abs(np.array(relaxed_patterns) - np.array(achieved_correlations)), axis=1) / n,
+                             round_to)
+    return error_canonical, error_relaxed
 
 
 @dataclass
@@ -85,8 +97,9 @@ class SyntheticDataSegmentCols:  # todo rename to labels cols
     pattern_id = "cluster_id"  # canonical pattern id
     correlation_to_model = "correlation to model"  # canonical pattern to model
     regularisation = "corr regularisation"
-    actual_correlation = "correlation achieved"  # this is spearman correlation
-    mae = "MAE"  # between canonical pattern and achieved correlation
+    actual_correlation = "correlation achieved"  # this is spearman correlation, this is A_x
+    mae = "MAE"  # between canonical pattern and A_x
+    relaxed_mae = "relaxed MAE"  # between relaxed canonical pattern and A_x
     actual_within_tolerance = "correlation achieved with tolerance"
 
 

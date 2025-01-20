@@ -70,7 +70,7 @@ def test_returns_y_pred_and_update_y_pred_from_labels_df_and_full_gt_y_pred_when
 
 def test_calculates_overall_data_centroid():
     corr = calculate_overall_data_correlation(data[SyntheticDataVariates.columns()].to_numpy())
-    assert_that(corr, contains_exactly(0.056, 0.02, -0.005))
+    assert_that(corr, contains_exactly(0.056, 0.019, -0.004))
 
 
 def test_calculates_distances_between_each_segment_to_the_overall_data_centroid():
@@ -88,7 +88,7 @@ def test_calculates_all_cluster_centroids():
     patterns = gt_label[SyntheticDataSegmentCols.pattern_id].unique()
     assert_that(len(centroids), is_(len(patterns)))
     assert_that(centroids[3], contains_exactly(0.0, 1.0, 0.0))
-    assert_that(centroids[25], contains_exactly(-1.0, -1.0, 1.0))
+    assert_that(centroids[25], contains_exactly(-0.999, -1.0, 0.999))
 
 
 def test_calculates_distances_between_each_segment_to_each_cluster_centroid():
@@ -106,8 +106,8 @@ def test_calculates_distances_between_all_cluster_centroids():
     expected_len = int(n * (n - 1) / 2)
 
     assert_that(len(cluster_dist), is_(expected_len))
-    assert_that(cluster_dist[(0, 1)], is_(1.015))
-    assert_that(round(cluster_dist[(0, 25)], 3), is_(2.993))
+    assert_that(cluster_dist[(0, 1)], is_(1.013))
+    assert_that(round(cluster_dist[(0, 25)], 3), is_(2.994))
 
 
 def test_calculates_distance_matrix_from_a_labels_df():

@@ -27,6 +27,8 @@ class DistanceMeasureCols:
     segment_id: str = SyntheticDataSegmentCols.segment_id
     canonical_pattern_id: str = "P_x"
     compared_to_pattern_id: str = "P_y"
+    a_x = "Segment Correlation A_x"
+    relaxed_p_x = "Relaxed canonical pattern"
     type: str = "distance measure"
     pair1: str = "Pattern pair 1"
     pair2: str = "Pattern pair 2"

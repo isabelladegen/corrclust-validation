@@ -54,7 +54,7 @@ class GenerateData:
         # correlate the variates
         if self.method == "cholesky":
             correlated_normal_data = cholesky_correlate_data(data=raw_data, correlations=self.correlations,
-                                               cov_reg=self.covariance_regulation)
+                                                             cov_reg=self.covariance_regulation)
         elif self.method == "loadings":
             # treated as approximate correlation
             correlated_normal_data = loading_correlate_data(data=raw_data, correlations=self.correlations)
@@ -63,7 +63,8 @@ class GenerateData:
         correlated_normal_data = np.round(correlated_normal_data, decimals=round_to)
 
         # shift distribution
-        non_normal_correlated_data = move_to_distributions(correlated_normal_data, self.distributions, self.args, self.kwargs)
+        non_normal_correlated_data = move_to_distributions(correlated_normal_data, self.distributions, self.args,
+                                                           self.kwargs)
         non_normal_correlated_data = np.round(non_normal_correlated_data, decimals=round_to)
 
         # update results
@@ -226,10 +227,12 @@ def cholesky_correlate_data(data: np.array, correlations: [], cov_reg=0.0001):
     return cor_data.T
 
 
-def calculate_spearman_correlation(data: np.array, round_to: int = 2):
+def calculate_spearman_correlation(data: np.array, round_to: int = 3):
     """ Calculate the correlation for the data. Assumes that columns are variates and rows are observations.
-    :return: np.array of correlations ordered by np.triu_indices of the upper half of the correlation matrix
-
+    Warning: due to the special properties of correlation matrices, it is safer to truncate the correlations than
+    round. E.g. a correlation of 0.99897654 rounded to 2 becomes 1.0. This perfect correlation can cause the
+    resulting matrix not to be psd.
+    :return: list of correlations ordered by np.triu_indices of the upper half of the correlation matrix
     """
     n = data.shape[1]
     result = spearmanr(data)
@@ -237,7 +240,8 @@ def calculate_spearman_correlation(data: np.array, round_to: int = 2):
         return_result = [result.correlation]
     else:
         return_result = result.correlation[np.triu_indices(n, 1)]
-    return [round(x, round_to) for x in return_result]
+    factor = 10 ** round_to  # shift decimals past point for truncation and back again
+    return list(np.trunc(np.array(return_result) * factor) / factor)
 
 
 def check_correlations_are_within_original_strength(original_cor, actual_cor, strong_cor: float = 0.7,

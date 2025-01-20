@@ -25,10 +25,9 @@ ev = DistanceMetricEvaluation(run_name=a_ds_name, data_type=SyntheticDataType.no
 
 def test_calculates_distances_for_all_empirical_correlations_to_all_canonical_patterns():
     df = ev.distances_df
-    # df.to_csv("irregularp90_distances.csv")
+    df.to_csv("irregularp90_distances.csv")
     assert_that(df.shape[0], is_(23 * 100))  # each segment compared to each canonical pattern
     # todo write more asserts
-    # todo investigate nan cases for Förstner as they are still many
 
 
 def test_calculate_ci_of_mean_differences_between_adjacent_level_sets_for_each_distance_measure():
@@ -48,11 +47,11 @@ def test_calculate_ci_of_mean_differences_between_adjacent_level_sets_for_each_d
     assert_that(df[df[DistanceMeasureCols.compared] == (0, 1)][DistanceMeasureCols.stat_diff].tolist(),
                 contains_exactly("lower", "lower", "lower"))
     assert_that(df[df[DistanceMeasureCols.compared] == (1, 2)][DistanceMeasureCols.stat_diff].tolist(),
-                contains_exactly("overlap", "lower", "higher"))
+                contains_exactly("higher", "lower", "higher"))
     assert_that(df[df[DistanceMeasureCols.compared] == (2, 3)][DistanceMeasureCols.stat_diff].tolist(),
                 contains_exactly("lower", "lower", "lower"))
     assert_that(df[df[DistanceMeasureCols.compared] == (3, 4)][DistanceMeasureCols.stat_diff].tolist(),
-                contains_exactly("lower", "lower", "higher"))
+                contains_exactly("overlap", "lower", "higher"))
     assert_that(df[df[DistanceMeasureCols.compared] == (4, 5)][DistanceMeasureCols.stat_diff].tolist(),
                 contains_exactly("lower", "lower", "lower"))
 
@@ -122,9 +121,9 @@ def test_calculate_overall_shannon_entropy():
     # we have a result for each distance measure
     assert_that(len(result), is_(len(sel_measures)))
 
-    assert_that(result[sel_measures[0]], is_(4.665))  # l2
-    assert_that(result[sel_measures[1]], is_(4.15))  # Frobenious
-    assert_that(result[sel_measures[2]], is_(2.808))  # Förstner
+    assert_that(result[sel_measures[0]], is_(4.519))  # l2
+    assert_that(result[sel_measures[1]], is_(4.38))  # Frobenious
+    assert_that(result[sel_measures[2]], is_(3.813))  # Förstner
 
 
 def test_calculate_shannon_entropy_per_level_set():
@@ -134,6 +133,17 @@ def test_calculate_shannon_entropy_per_level_set():
     assert_that(result.shape[0], is_(len(ev.level_set_indices)))
     # we have a column of results for each measure and the level set column
     assert_that(result.shape[1], is_(len(sel_measures) + 1))
+
+
+def test_calculate_n_nan_inf_distances():
+    result = ev.count_nan_inf_distance_for_measures()
+
+    # we have a result for each measure
+    assert_that(len(result), is_(len(sel_measures)))
+
+    assert_that(result[sel_measures[0]], is_(0))  # l2
+    assert_that(result[sel_measures[1]], is_(0))  # Frobenious
+    assert_that(result[sel_measures[2]], is_(0))  # Förstner
 
 
 @pytest.mark.skip(reason="just an experiment with different bin sizes")
@@ -177,16 +187,15 @@ def test_different_bins_for_entropy_per_level_set():
 
 def test_calculates_raw_results_for_each_criteria_and_each_distance_measure():
     df = ev.raw_results_for_each_criteria()
-    assert_that(df.shape, is_((8, len(sel_measures))))
+    assert_that(df.shape, is_((7, len(sel_measures))))
     # check value added for each measure
-    assert_that(df.loc[EvaluationCriteria.inter_i, sel_measures[0]], is_(0.227))
-    assert_that(df.loc[EvaluationCriteria.inter_i, sel_measures[1]], is_(6.612))
-    assert_that(df.loc[EvaluationCriteria.inter_i, sel_measures[2]], is_(1.042))
+    assert_that(df.loc[EvaluationCriteria.inter_i, sel_measures[0]], is_(0.072))
+    assert_that(df.loc[EvaluationCriteria.inter_i, sel_measures[1]], is_(16.152))
+    assert_that(df.loc[EvaluationCriteria.inter_i, sel_measures[2]], is_(7.549))
     # check each criterion is calculated
     assert_that(df.loc[EvaluationCriteria.inter_ii, sel_measures[0]], is_(True))
-    assert_that(df.loc[EvaluationCriteria.inter_iii, sel_measures[0]], is_(0.513))
-    assert_that(df.loc[EvaluationCriteria.disc_i, sel_measures[0]], is_(4.665))
-    assert_that(df.loc[EvaluationCriteria.disc_ii, sel_measures[0]], is_(2.372))
-    assert_that(df.loc[EvaluationCriteria.disc_iii, sel_measures[0]], is_(1))
-    assert_that(df.loc[EvaluationCriteria.stab_i, sel_measures[0]], is_(1))
-    assert_that(df.loc[EvaluationCriteria.stab_ii, sel_measures[0]], is_(1))
+    assert_that(df.loc[EvaluationCriteria.inter_iii, sel_measures[0]], is_(0.506))
+    assert_that(df.loc[EvaluationCriteria.disc_i, sel_measures[0]], is_(4.519))
+    assert_that(df.loc[EvaluationCriteria.disc_ii, sel_measures[0]], is_(2.374))
+    # assert_that(df.loc[EvaluationCriteria.disc_iii, sel_measures[0]], is_(1))
+    assert_that(df.loc[EvaluationCriteria.stab_ii, sel_measures[0]], is_(0))

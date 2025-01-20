@@ -65,13 +65,13 @@ def test_calculates_jaccard_index_for_each_gt_and_partition():
 
 
 def test_calculates_internal_measures_for_the_given_distance_measure():
-    assert_that(describe.summary_df.iloc[0][DescribeBadPartCols.silhouette_score], is_(0.969))
+    assert_that(describe.summary_df.iloc[0][DescribeBadPartCols.silhouette_score], is_(0.97))
     assert_that(describe.summary_df.iloc[1][DescribeBadPartCols.silhouette_score], is_(0.829))
     assert_that(describe.summary_df.iloc[2][DescribeBadPartCols.silhouette_score], is_(-0.337))
     assert_that(describe.summary_df.iloc[3][DescribeBadPartCols.silhouette_score], is_(0.673))
     assert_that(describe.summary_df.iloc[4][DescribeBadPartCols.silhouette_score], is_(-0.383))
 
-    assert_that(describe.summary_df.iloc[0][DescribeBadPartCols.pmb], is_(10.506))
+    assert_that(describe.summary_df.iloc[0][DescribeBadPartCols.pmb], is_(12.769))
     assert_that(describe.summary_df.iloc[1][DescribeBadPartCols.pmb], is_(0.509))
     assert_that(describe.summary_df.iloc[2][DescribeBadPartCols.pmb], is_(0.002))
     assert_that(describe.summary_df.iloc[3][DescribeBadPartCols.pmb], is_(0.059))
@@ -358,20 +358,20 @@ def test_calculates_n_segment_within_tolerance_stats():
     """ Calculate and return stats df across the partitions for the dataset"""
     n_within = describe.n_segment_within_tolerance_stats()
 
-    assert_that(n_within['mean'], is_(66))
-    assert_that(n_within['std'], is_(32.435))
+    assert_that(n_within['mean'], is_(65.6))
+    assert_that(n_within['std'], is_(31.919))
     assert_that(n_within['50%'], is_(73.000))
     assert_that(n_within['min'], is_(23))
-    assert_that(n_within['max'], is_(100))
+    assert_that(n_within['max'], is_(98))
 
 
 def test_calculates_n_segment_outside_tolerance_stats():
     n_outside = describe.n_segment_outside_tolerance_stats()
 
-    assert_that(n_outside['mean'], is_(34))
-    assert_that(n_outside['std'], is_(32.435))
+    assert_that(n_outside['mean'], is_(34.4))
+    assert_that(n_outside['std'], is_(31.919))
     assert_that(n_outside['50%'], is_(27))
-    assert_that(n_outside['min'], is_(0))
+    assert_that(n_outside['min'], is_(2))
     assert_that(n_outside['max'], is_(77))
 
 

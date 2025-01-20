@@ -5,10 +5,11 @@ import numpy as np
 import pandas as pd
 
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
+from src.data_generation.model_correlation_patterns import ModelCorrelationPatterns
 from src.evaluation.distance_metric_assessment import DistanceMeasureCols, \
     calculate_ci_of_mean_differences_between_two_values_for_distance_measures
 from src.utils.configurations import Aggregators
-from src.utils.distance_measures import distance_calculation_method_for
+from src.utils.distance_measures import distance_calculation_method_for, DistanceMeasures
 from src.utils.labels_utils import find_all_level_sets
 from src.utils.load_synthetic_data import load_labels
 from src.utils.plots.matplotlib_helper_functions import Backends
@@ -22,7 +23,7 @@ class EvaluationCriteria:
     disc_i: str = "Discriminative Power: overall RC"
     disc_ii: str = "Discriminative Power: overall CV"
     disc_iii: str = "Discriminative Power: macro F1 score"
-    stab_i: str = "Stability: completed"
+    # stab_i: str = "Stability: completed" -> this is kind of a not catchable one
     stab_ii: str = "Stability: count of nan and inf distances"
 
 
@@ -159,7 +160,6 @@ class DistanceMetricEvaluation:
             EvaluationCriteria.disc_i,
             EvaluationCriteria.disc_ii,
             EvaluationCriteria.disc_iii,
-            EvaluationCriteria.stab_i,
             EvaluationCriteria.stab_ii
         ]
 
@@ -169,7 +169,6 @@ class DistanceMetricEvaluation:
         disc_i = []
         disc_ii = []
         disc_iii = []
-        stab_i = []
         stab_ii = []
 
         # mean distances for level set 0 indexed by distance measure
@@ -191,8 +190,11 @@ class DistanceMetricEvaluation:
         n_bins = 50
         overall_entropy = self.calculate_overall_shannon_entropy(n_bins=n_bins)
 
-        #level set entropy values
+        # level set entropy values
         level_set_entropy = self.calculate_level_set_shannon_entropy(n_bins=n_bins)
+
+        # count nan and infs
+        stability_count = self.count_nan_inf_distance_for_measures()
 
         # for each distance measure calculate all criteria
         for measure in self.__measures:
@@ -204,8 +206,7 @@ class DistanceMetricEvaluation:
             disc_i.append(overall_entropy[measure])
             disc_ii.append(level_set_entropy[measure].mean().round(self.__round_to))
             disc_iii.append(0)
-            stab_i.append(0)
-            stab_ii.append(0)
+            stab_ii.append(stability_count[measure])
 
         data = [
             inter_i,
@@ -214,7 +215,6 @@ class DistanceMetricEvaluation:
             disc_i,
             disc_ii,
             disc_iii,
-            stab_i,
             stab_ii,
         ]
         return pd.DataFrame(data=data, columns=columns, index=indices)
@@ -250,8 +250,10 @@ class DistanceMetricEvaluation:
         Calculate dataframe of all the MxL distances d(Ax,Py) in the dataset
         :return: pd.dataframe with columns:
                 DistanceMeasureCols.segment_id -> segment id
-                DistanceMeasureCols.canonical_pattern_id -> canonical pattern id for P_x (where A_x was generated from)
+                DistanceMeasureCols.canonical_pattern_id -> canonical pattern id for P'_x (where A_x was generated from)
                 DistanceMeasureCols.compared_to_pattern_id -> canonical pattern id for P_y
+                DistanceMeasureCols.a_x -> segments correlation coefficients
+                DistanceMeasureCols.p_x -> relaxed pattern correlation coefficients
                 DistanceMeasureCols.level_set -> id of the level set that P_x and P_y belong to
                 Measure_names -> column for each measure in self.__measures and the distance for that measure
         """
@@ -276,15 +278,22 @@ class DistanceMetricEvaluation:
             return level_set_lookup.get(pattern_pair) or level_set_lookup.get((pattern_pair[1], pattern_pair[0]))
 
         # 3. Create df of unique canonical patterns and their correlation to model
-        unique_patterns_df = segment_correlations[
-            [SyntheticDataSegmentCols.pattern_id, SyntheticDataSegmentCols.correlation_to_model]].drop_duplicates(
-            subset=[SyntheticDataSegmentCols.pattern_id])
+        unique_patterns_df = segment_correlations[SyntheticDataSegmentCols.pattern_id].drop_duplicates().to_frame()
+        # find relaxed patterns for the ids to calculate distances to patterns that are valid correlations
+        # to ensure that proper correlation distances are not wrongly punished
+        # todo ideally we would have these saved in the results but we don't
+        relaxed_patterns = ModelCorrelationPatterns().relaxed_patterns()
+        unique_patterns_df[SyntheticDataSegmentCols.correlation_to_model] = unique_patterns_df[
+            SyntheticDataSegmentCols.pattern_id].map(relaxed_patterns)
+
         n_patterns = len(unique_patterns_df)
 
-        # 3. For each segment and each distance measure calculate the distances for all measures to all other segment_ids
+        # 4. For each segment and each distance measure calculate the distances for all measures to all other segment_ids
         segment_ids = []
         p_x_ids = []
         p_y_ids = []
+        a_xs = []
+        p_xs = []
         resulting_distances = {measure: [] for measure in self.__measures}
 
         for seg_id in segment_correlations.index:
@@ -294,10 +303,14 @@ class DistanceMetricEvaluation:
             segment_ids.extend([seg_id] * n_patterns)
             p_x_ids.extend([p_x] * n_patterns)
             p_y_ids.extend(unique_patterns_df[SyntheticDataSegmentCols.pattern_id].to_list())
+            a_xs.extend([a_x] * n_patterns)
+            p_xs.extend(unique_patterns_df[SyntheticDataSegmentCols.correlation_to_model].to_list())
 
             for measure in self.__measures:
                 calc_distance = distance_calculation_method_for(measure)
-                # Calculate distances to all segments correlation_to_model (which are the canonical patterns)
+                if seg_id == 1 and p_x == 1 and measure==DistanceMeasures.foerstner_cor_dist:
+                    print("check")
+                # Calculate distances to all segments correlation_to_model (which are the relaxed canonical patterns)
                 distances = unique_patterns_df[SyntheticDataSegmentCols.correlation_to_model].apply(
                     lambda x: calc_distance(a_x, x))
                 # extend does not create a list of list but instead adds each element to the list
@@ -311,7 +324,9 @@ class DistanceMetricEvaluation:
             DistanceMeasureCols.segment_id: segment_ids,
             DistanceMeasureCols.canonical_pattern_id: p_x_ids,
             DistanceMeasureCols.compared_to_pattern_id: p_y_ids,
-            DistanceMeasureCols.level_set: level_sets
+            DistanceMeasureCols.level_set: level_sets,
+            DistanceMeasureCols.a_x: a_xs,
+            DistanceMeasureCols.relaxed_p_x: p_xs
         })
 
         # add results from distance measures
@@ -354,3 +369,16 @@ class DistanceMetricEvaluation:
         result[self.__measures] = (df - df.min()) / (df.max() - df.min())
 
         return result.round(self.__round_to)
+
+    def count_nan_inf_distance_for_measures(self):
+        """Counts number of inf and nan distances for each distance measure overall distances
+        :returns a dictionary with key=distance measure and value=count
+        """
+        results = {}
+
+        for measure in self.__measures:
+            measure_results = self.distances_df[measure]
+            nan_count = measure_results.isna().sum()
+            inf_count = np.isinf(measure_results).sum()
+            results[measure] = nan_count + inf_count
+        return results

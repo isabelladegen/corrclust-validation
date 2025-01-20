@@ -61,10 +61,10 @@ def test_knn_classification_of_segments_log_frobenious():
 
 
     accuracy, precision, recall, f1 = w.evaluate_scores(average="macro")
-    assert_that(accuracy, is_(0.49))
-    assert_that(precision, is_(0.44))
-    assert_that(recall, is_(0.48))
-    assert_that(f1, is_(0.44))
+    assert_that(accuracy, is_(0.15))
+    assert_that(precision, is_(0.04))
+    assert_that(recall, is_(0.13))
+    assert_that(f1, is_(0.06))
 
 
 def test_can_handle_no_errors():

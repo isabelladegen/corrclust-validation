@@ -40,7 +40,7 @@ def test_assigns_n_segments_to_a_wrong_cluster():
     pattern_id = a_new_label.loc[0, SyntheticDataSegmentCols.pattern_id]
     assert_that(pattern_id, is_(10))  # changed first pattern
     # updated pattern to model
-    correlations_lookup = ModelCorrelationPatterns().ideal_correlations()
+    correlations_lookup = ModelCorrelationPatterns().canonical_patterns()
     assert_that(a_new_label.loc[0, SyntheticDataSegmentCols.correlation_to_model],
                 contains_exactly(*correlations_lookup[pattern_id]))
     # recalculated tolerance
@@ -149,7 +149,7 @@ def test_creates_bad_partitions_both_shifting_segments_end_idx_and_assigning_ran
     pattern_id = a_new_label.loc[0, SyntheticDataSegmentCols.pattern_id]
     assert_that(pattern_id, is_(4))  # changed first pattern
     # updated pattern to model
-    correlations_lookup = ModelCorrelationPatterns().ideal_correlations()
+    correlations_lookup = ModelCorrelationPatterns().canonical_patterns()
     assert_that(a_new_label.loc[0, SyntheticDataSegmentCols.correlation_to_model],
                 contains_exactly(*correlations_lookup[pattern_id]))
     # recalculated tolerance

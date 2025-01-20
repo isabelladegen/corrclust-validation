@@ -27,7 +27,7 @@ def test_can_load_raw_data_and_labels():
     assert_that(data.loc[0, GeneralisedCols.bg], is_(0.1256351542775318))
 
     # check labels data
-    assert_that(labels.shape, is_((100, 9)))  # loaded the 100 segments
+    assert_that(labels.shape, is_((100, 10)))  # loaded the 100 segments
 
     # check first row
     assert_that(labels.loc[0, SyntheticDataSegmentCols.segment_id], is_(0))
@@ -36,7 +36,7 @@ def test_can_load_raw_data_and_labels():
     assert_that(labels.loc[0, SyntheticDataSegmentCols.length], is_(900))
     assert_that(labels.loc[0, SyntheticDataSegmentCols.pattern_id], is_(0))
     assert_that(labels.loc[0, SyntheticDataSegmentCols.correlation_to_model], contains_exactly(0, 0, 0))
-    assert_that(labels.loc[0, SyntheticDataSegmentCols.actual_correlation], contains_exactly(0.03, -0.03, 0.01))
+    assert_that(labels.loc[0, SyntheticDataSegmentCols.actual_correlation], contains_exactly(0.031, -0.031, 0.009))
     assert_that(labels.loc[0, SyntheticDataSegmentCols.actual_within_tolerance], contains_exactly(True, True, True))
 
 
@@ -66,7 +66,7 @@ def test_can_load_correlated_normal_data_and_labels():
     assert_that(labels.loc[0, SyntheticDataSegmentCols.length], is_(900))
     assert_that(labels.loc[0, SyntheticDataSegmentCols.pattern_id], is_(0))
     assert_that(labels.loc[0, SyntheticDataSegmentCols.correlation_to_model], contains_exactly(0, 0, 0))
-    assert_that(labels.loc[0, SyntheticDataSegmentCols.actual_correlation], contains_exactly(0.03, -0.03, 0.01))
+    assert_that(labels.loc[0, SyntheticDataSegmentCols.actual_correlation], contains_exactly(0.031, -0.031, 0.009))
     assert_that(labels.loc[0, SyntheticDataSegmentCols.actual_within_tolerance], contains_exactly(True, True, True))
 
 
@@ -96,7 +96,7 @@ def test_can_load_correlated_non_normal_data_and_labels():
     assert_that(labels.loc[0, SyntheticDataSegmentCols.length], is_(900))
     assert_that(labels.loc[0, SyntheticDataSegmentCols.pattern_id], is_(0))
     assert_that(labels.loc[0, SyntheticDataSegmentCols.correlation_to_model], contains_exactly(0, 0, 0))
-    assert_that(labels.loc[0, SyntheticDataSegmentCols.actual_correlation], contains_exactly(0.03, -0.03, 0.01))
+    assert_that(labels.loc[0, SyntheticDataSegmentCols.actual_correlation], contains_exactly(0.032, -0.031, 0.009))
     assert_that(labels.loc[0, SyntheticDataSegmentCols.actual_within_tolerance], contains_exactly(True, True, True))
 
 
@@ -126,7 +126,7 @@ def test_can_load_resampled_data_and_labels():
     assert_that(labels.loc[0, SyntheticDataSegmentCols.length], is_(15))
     assert_that(labels.loc[0, SyntheticDataSegmentCols.pattern_id], is_(0))
     assert_that(labels.loc[0, SyntheticDataSegmentCols.correlation_to_model], contains_exactly(0, 0, 0))
-    assert_that(labels.loc[0, SyntheticDataSegmentCols.actual_correlation], contains_exactly(0.31, -0.23, -0.06))
+    assert_that(labels.loc[0, SyntheticDataSegmentCols.actual_correlation], contains_exactly(0.31, -0.228, -0.064))
     assert_that(labels.loc[0, SyntheticDataSegmentCols.actual_within_tolerance], contains_exactly(False, False, True))
 
 
@@ -157,7 +157,7 @@ def test_can_load_irregular_30_data_and_labels():
     assert_that(labels.loc[0, SyntheticDataSegmentCols.length], is_(611))
     assert_that(labels.loc[0, SyntheticDataSegmentCols.pattern_id], is_(0))
     assert_that(labels.loc[0, SyntheticDataSegmentCols.correlation_to_model], contains_exactly(0, 0, 0))
-    assert_that(labels.loc[0, SyntheticDataSegmentCols.actual_correlation], contains_exactly(0.04, -0.04, -0.01))
+    assert_that(labels.loc[0, SyntheticDataSegmentCols.actual_correlation], contains_exactly(0.038, -0.04, -0.007))
     assert_that(labels.loc[0, SyntheticDataSegmentCols.actual_within_tolerance], contains_exactly(True, True, True))
 
 
@@ -188,7 +188,7 @@ def test_can_load_nn_irregular_90_data_and_labels():
     assert_that(labels.loc[0, SyntheticDataSegmentCols.length], is_(103))
     assert_that(labels.loc[0, SyntheticDataSegmentCols.pattern_id], is_(0))
     assert_that(labels.loc[0, SyntheticDataSegmentCols.correlation_to_model], contains_exactly(0, 0, 0))
-    assert_that(labels.loc[0, SyntheticDataSegmentCols.actual_correlation], contains_exactly(-0.02, -0.11, -0.0))
+    assert_that(labels.loc[0, SyntheticDataSegmentCols.actual_correlation], contains_exactly(-0.024, -0.11, -0.002))
     assert_that(labels.loc[0, SyntheticDataSegmentCols.actual_within_tolerance], contains_exactly(True, True, True))
 
 

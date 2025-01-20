@@ -109,9 +109,9 @@ def one_synthetic_creation_run(config: SyntheticDataConfig, seed: int = 6666):
         wandb.log({keys.dataset_seed: seed})
 
         if config.correlation_model == "cholesky":
-            patterns = ModelCorrelationPatterns().patterns_to_model()
+            patterns = ModelCorrelationPatterns().relaxed_patterns_and_regularisation_term()
         elif config.correlation_model == "loadings":
-            patterns = ModelCorrelationPatterns().ideal_correlations()
+            patterns = ModelCorrelationPatterns().canonical_patterns()
         else:
             assert False, "Unknown correlation model method {}".format(config.correlation_model)
         exit_code = 0

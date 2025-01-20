@@ -29,7 +29,7 @@ class CreateBadSyntheticPartitions:
         self.__cluster_ids = self.labels[SyntheticDataSegmentCols.pattern_id].unique().tolist()
         self.__segments = self.labels[SyntheticDataSegmentCols.segment_id].unique().tolist()
         self.__seed = seed
-        self.__patterns_to_model_lookup = ModelCorrelationPatterns().ideal_correlations()
+        self.__patterns_to_model_lookup = ModelCorrelationPatterns().canonical_patterns()
 
     def randomly_assign_wrong_cluster(self, n_partitions: int, n_segments: [int]):
         """Creates new partitions by assigning n_segments to a randomly picked wrong cluster

@@ -64,8 +64,8 @@ def test_describes_numeric_properties_of_synthetic_dataset():
     assert_that(describe.frequency, is_("s"))
 
     # check number of segments with one or more variate within or outside tolerance
-    assert_that(describe.n_segment_within_tolerance, is_(100))
-    assert_that(describe.n_segment_outside_tolerance, is_(0))
+    assert_that(describe.n_segment_within_tolerance, is_(99))
+    assert_that(describe.n_segment_outside_tolerance, is_(1))
 
     # correlation descriptions
     correlation_patterns = describe.correlation_patterns_df
@@ -78,14 +78,14 @@ def test_describes_numeric_properties_of_synthetic_dataset():
     assert_that(row0[SyntheticDataSegmentCols.correlation_to_model], contains_exactly(0, 0, 0))
     assert_that(row0[SyntheticDataSegmentCols.length],
                 contains_exactly(900, 14400, 10800, 28800, 7200))
-    assert_that(row0[DescribeSyntheticCols.achieved_min], contains_exactly(-0.06, -0.0, -0.03))
-    assert_that(row0[DescribeSyntheticCols.achieved_max], contains_exactly(0.01, 0.01, 0.02))
-    assert_that(row0[DescribeSyntheticCols.achieved_mean], contains_exactly(-0.014, 0.004, -0.004))
-    assert_that(row0[DescribeSyntheticCols.achieved_std], contains_exactly(0.027, 0.0055, 0.0182))
-    assert_that(row0[DescribeSyntheticCols.error_min], contains_exactly(0.0, 0.0, 0.0))
-    assert_that(row0[DescribeSyntheticCols.error_max], contains_exactly(0.06, 0.01, 0.03))
-    assert_that(row0[DescribeSyntheticCols.error_mean], contains_exactly(0.018, 0.004, 0.012))
-    assert_that(row0[DescribeSyntheticCols.error_std], contains_exactly(0.0239, 0.0055, 0.013))
+    assert_that(row0[DescribeSyntheticCols.achieved_min], contains_exactly(*[-0.059, -0.0, -0.028]))
+    assert_that(row0[DescribeSyntheticCols.achieved_max], contains_exactly(*[0.006, 0.012, 0.021]))
+    assert_that(row0[DescribeSyntheticCols.achieved_mean], contains_exactly(*[-0.0132, 0.005, -0.002]))
+    assert_that(row0[DescribeSyntheticCols.achieved_std], contains_exactly(*[0.026, 0.0054, 0.0177]))
+    assert_that(row0[DescribeSyntheticCols.error_min], contains_exactly(*[0.002, 0.0, 0.001]))
+    assert_that(row0[DescribeSyntheticCols.error_max], contains_exactly(*[0.059, 0.012, 0.028]))
+    assert_that(row0[DescribeSyntheticCols.error_mean], contains_exactly(*[0.0156, 0.005, 0.012]))
+    assert_that(row0[DescribeSyntheticCols.error_std], contains_exactly(*[0.0243, 0.0054, 0.0118]))
     assert_that(row0[DescribeSyntheticCols.n_within_tolerance], contains_exactly(5, 5, 5))
     assert_that(row0[DescribeSyntheticCols.n_outside_tolerance], contains_exactly(0, 0, 0))
     assert_that(correlation_patterns.iloc[-1][DescribeSyntheticCols.n_segments], is_(4))
@@ -105,25 +105,23 @@ def test_describes_numeric_properties_of_synthetic_dataset():
     # mae stats (L1/Q) - use directly from labels file which was calculated on generation
     assert_that(describe.mae_stats['mean'], is_(0.113))
     assert_that(describe.mae_stats['min'], is_(0.0))
-    assert_that(describe.mae_stats['max'], is_(0.217))
+    assert_that(describe.mae_stats['max'], is_(0.219))
     assert_that(describe.mae_stats['std'], is_(0.104))
     assert_that(describe.mae_stats['50%'], is_(0.21))
 
     # mean abs errors across all variates
     sum_mean_abs_error = describe.sum_mean_absolute_error_stats
-    assert_that(sum_mean_abs_error['mean'], is_(0.3464))
-    assert_that(sum_mean_abs_error['min'], is_(0))
-    assert_that(sum_mean_abs_error['max'], is_(0.6475))
-    assert_that(sum_mean_abs_error['std'], is_(0.3178))
+    assert_that(sum_mean_abs_error['mean'], is_(0.3468))
+    assert_that(sum_mean_abs_error['min'], is_(0.002))
+    assert_that(sum_mean_abs_error['max'], is_(0.6473))
+    assert_that(sum_mean_abs_error['std'], is_(0.3177))
 
     assert_that(describe.patterns_with_sum_mean_error_max_df.shape[0], is_(1))
-    assert_that(describe.patterns_with_sum_mean_error_min_df.shape[0], is_(4))
+    assert_that(describe.patterns_with_sum_mean_error_min_df.shape[0], is_(2))
     assert_that(describe.patterns_with_sum_mean_error_smaller_equal_mean_df.shape[0], is_(11))
     assert_that(describe.patterns_with_sum_mean_error_bigger_than_mean_df.shape[0], is_(12))
 
-    assert_that(describe.patterns_with_zero_mean_error_df.shape[0], is_(4))
-    assert_that(describe.patterns_with_zero_mean_error_df[SyntheticDataSegmentCols.pattern_id],
-                contains_exactly(17, 23, 13, 25))
+    assert_that(describe.patterns_with_zero_mean_error_df.shape[0], is_(0))
 
     # segment descriptions
     seg_lengths = describe.segment_length_stats
@@ -156,8 +154,8 @@ def test_describes_numeric_properties_of_synthetic_dataset():
 
 def test_misty_forest_ds_description():
     # check number of segments with one or more variate within or outside tolerance
-    assert_that(ds.n_segment_within_tolerance, is_(100))
-    assert_that(ds.n_segment_outside_tolerance, is_(0))
+    assert_that(ds.n_segment_within_tolerance, is_(98))
+    assert_that(ds.n_segment_outside_tolerance, is_(2))
 
     correlation_patterns = ds.correlation_patterns_df
 
@@ -211,10 +209,10 @@ def test_can_provide_datatype_for_uncorrelated_normal_data():
 
     # no variation all the same none correlated data
     sum_mean_abs_error = describe.sum_mean_absolute_error_stats
-    assert_that(sum_mean_abs_error['mean'], is_(1.8393))
-    assert_that(sum_mean_abs_error['min'], is_(0.034))
-    assert_that(sum_mean_abs_error['max'], is_(3.02))
-    assert_that(sum_mean_abs_error['std'], is_(0.7673))
+    assert_that(sum_mean_abs_error['mean'], is_(1.8383))
+    assert_that(sum_mean_abs_error['min'], is_(0.0328))
+    assert_that(sum_mean_abs_error['max'], is_(3.0162))
+    assert_that(sum_mean_abs_error['std'], is_(0.7667))
 
     # values generated follow normal distribution
     obs_values = describe.observations_stats
@@ -251,10 +249,10 @@ def test_can_provide_datatype_for_correlated_normal_data():
     assert_that(row0[DescribeSyntheticCols.n_outside_tolerance], contains_exactly(0, 0, 0))
 
     sum_mean_abs_error = describe.sum_mean_absolute_error_stats
-    assert_that(sum_mean_abs_error['mean'], is_(0.3462))
+    assert_that(sum_mean_abs_error['mean'], is_(0.3461))
     assert_that(sum_mean_abs_error['min'], is_(0))
-    assert_that(sum_mean_abs_error['max'], is_(0.6475))
-    assert_that(sum_mean_abs_error['std'], is_(0.3176))
+    assert_that(sum_mean_abs_error['max'], is_(0.6468))
+    assert_that(sum_mean_abs_error['std'], is_(0.3177))
 
     # values generated follow normal distribution but slightly different to non correlation shifted
     obs_values = describe.observations_stats
@@ -359,13 +357,13 @@ def test_return_modeled_correlation_as_x_matrix_and_label_as_y_vector():
     assert_that(x.shape[1], is_(3))
     assert_that(y.shape[0], is_(n_seg))
 
-    assert_that(all(np.equal(x[0, :], np.array([0.03, -0.03, 0.01]))))
+    assert_that(all(np.equal(x[0, :], np.array([0.032, -0.031, 0.009]))))
     assert_that(y[0], is_(0))
 
-    assert_that(all(np.equal(x[22, :], np.array([-1, -1, 1]))))
+    assert_that(all(np.equal(x[22, :], np.array([-0.999, -1, 0.999]))))
     assert_that(y[22], is_(25))
 
-    assert_that(all(np.equal(x[99, :], np.array([-0.09, -0.72, 0.72]))))
+    assert_that(all(np.equal(x[99, :], np.array([-0.086, -0.722, 0.721]))))
     assert_that(y[99], is_(7))
 
 
@@ -395,8 +393,8 @@ def test_can_load_irregular_dataset():
     assert_that(all(list(compare_lengths)), is_(True))
 
     # check tolerance
-    assert_that(irregular_30.n_segment_within_tolerance, is_(99))
-    assert_that(irregular_30.n_segment_outside_tolerance, is_(1))
+    assert_that(irregular_30.n_segment_within_tolerance, is_(98))
+    assert_that(irregular_30.n_segment_outside_tolerance, is_(2))
 
 
 def test_can_load_a_single_bad_partition():

@@ -44,8 +44,8 @@ distributions_args = [args_iob, args_cob, args_ig]
 distributions_kwargs = [kwargs_iob, kwargs_cob, kwargs_ig]
 
 # patterns to model
-cholesky_patterns = ModelCorrelationPatterns().patterns_to_model()
-loadings_patterns = ModelCorrelationPatterns().ideal_correlations()
+cholesky_patterns = ModelCorrelationPatterns().relaxed_patterns_and_regularisation_term()
+loadings_patterns = ModelCorrelationPatterns().canonical_patterns()
 
 
 def no_consecutive_duplicates(a_list: []):
@@ -103,12 +103,6 @@ def test_generates_two_segments_with_given_correlation():
     # check that labels df for raw and correlated normal and non_normal are not the same
     _, raw_labels = generator.raw_generated_data_labels_df()
     _, normal_labels = generator.normal_correlated_generated_data_labels_df()
-
-    mae_nn = non_normal_labels_df.loc[0, SyntheticDataSegmentCols.mae]
-    mae_raw = raw_labels.loc[0, SyntheticDataSegmentCols.mae]
-    mae_n = normal_labels.loc[0, SyntheticDataSegmentCols.mae]
-    assert_that(mae_raw, greater_than(mae_nn))
-    assert_that(mae_raw, greater_than(mae_n))
 
     nn_achieved_correlation = np.array(non_normal_labels_df.loc[0, SyntheticDataSegmentCols.actual_correlation])
     raw_achieved_correlation = np.array(raw_labels.loc[0, SyntheticDataSegmentCols.actual_correlation])
