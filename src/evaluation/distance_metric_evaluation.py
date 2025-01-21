@@ -153,7 +153,7 @@ class DistanceMetricEvaluation:
     def raw_results_for_each_criteria(self, round_to: int = 3):
         """ Calculates the raw results for each distance measure and each criterion as described in the paper.
         Rows are the criteria (see EvaluationCriteria), columns are criteria followed by the distance measures.
-        :returns pd.Dataframe
+        :returns pd.Dataframe with EvaluationCriteria as rows (and index) and columns the distance measures
         """
         # setup columns, indices and empty row arrays for dataframe
         columns = self.__measures.copy()
@@ -400,9 +400,9 @@ class DistanceMetricEvaluation:
             results[measure] = nan_count + inf_count
         return results
 
-    def save_csv_of_raw_values_for_all_criteria(self, overall_dataset_name: str, base_results_dir: str):
+    def save_csv_of_raw_values_for_all_criteria(self, run_name: str, base_results_dir: str):
         """ Saves the raw criteria values dataframe in the results folder as csv file"""
-        result_dir = distance_measure_evaluation_results_dir_for(overall_dataset_name=overall_dataset_name,
+        result_dir = distance_measure_evaluation_results_dir_for(overall_dataset_name=run_name,
                                                                  data_type=self.data_type,
                                                                  base_results_dir=base_results_dir,
                                                                  data_dir=self.data_dir)
@@ -417,7 +417,7 @@ def read_csv_of_raw_values_for_all_criteria(overall_dataset_name: str, data_type
       :param data_type: the data type, see SyntheticDataType
       :param base_results_dir: the directory for results, this is the main directory usually results or test results
       :param data_dir: the directory from which the data was read to be able to add the irregular folder if required
-        :returns pd.DataFrame: of the raw criteria values
+      :returns pd.DataFrame: of the raw criteria values as row and distance measures as columns
     """
     result_dir = distance_measure_evaluation_results_dir_for(overall_dataset_name=overall_dataset_name,
                                                              data_type=data_type,

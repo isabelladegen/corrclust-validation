@@ -5,7 +5,7 @@ from src.evaluation.distance_metric_evaluation import EvaluationCriteria
 
 
 class DistanceMetricRanking:
-    def __init__(self, raw_criteria_data: {}, distance_measures: []):
+    def __init__(self, raw_criteria_data: {}, distance_measures: [], round_to: int = 3):
         """
         Class to rank distance metric both for one or multiple datasets. Rank 1 is best!
         :param raw_criteria_data: dictionary with key=ds-name and value= DistanceMeasureEvaluation df of raw values
@@ -15,6 +15,7 @@ class DistanceMetricRanking:
         """
         self.raw_criteria_data = raw_criteria_data
         self.distance_measures = distance_measures
+        self.__round_to = round_to
         # lookup dictionary with instruction how to rank the raw data based on value, rank 1 is best:
         # True: ascending -> higher values get higher ranks, i.e.lower values are better
         # False: descending -> lower values get higher ranks, i.e. higher values are better
@@ -29,11 +30,13 @@ class DistanceMetricRanking:
             EvaluationCriteria.stab_ii: True  # fewer inf and nans
         }
 
-    def ranking_df_for_ds(self, a_ds_name):
+    def ranking_df_for_ds(self, run_name):
         """
         Returns dataframe of criterion level ranks, key principle ranks and overall ranks for the distance_measure
+        :param run_name: the run name you want to rank
+        :return pd.Dataframe with EvaluationCriteria as rows (and index) and columns the distance measures
         """
-        raw_df = self.raw_criteria_data[a_ds_name]
+        raw_df = self.raw_criteria_data[run_name]
         # check that we have results for all distance measures (fails if not)
         error_msg = "Raw Criteria contains results for distance measures: " + str(
             raw_df.columns) + ". We want to evaluate measures: " + str(self.distance_measures)
@@ -55,4 +58,18 @@ class DistanceMetricRanking:
 
             ranked_df.loc[idx] = rankings
 
+        return ranked_df.astype(float)
+
+    def calculate_overall_rank(self):
+        """
+        Returns dataframe overall rank for each distance_measure per dataset
+        :return pd.Dataframe with run_names as rows (and index) and columns the distance measures
+        """
+        # build a new overall rank df
+        ranked_df = pd.DataFrame(index=self.raw_criteria_data.keys(), columns=self.distance_measures)
+
+        for idx in ranked_df.index:
+            ds_ranks = self.ranking_df_for_ds(idx)
+            ranked_df.loc[idx] = ds_ranks.mean()
+        ranked_df = ranked_df.astype(float).round(decimals=self.__round_to)
         return ranked_df
