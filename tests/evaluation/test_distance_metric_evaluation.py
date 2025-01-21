@@ -3,7 +3,6 @@ import pandas.testing as tm
 import pytest
 from hamcrest import *
 
-from src.evaluation.describe_synthetic_dataset import DescribeSyntheticDataset
 from src.evaluation.distance_metric_assessment import DistanceMeasureCols
 from src.evaluation.distance_metric_evaluation import DistanceMetricEvaluation, EvaluationCriteria, \
     read_csv_of_raw_values_for_all_criteria

@@ -30,6 +30,8 @@ OVERALL_SEGMENT_LENGTH_IMAGE = 'overall_segment_length_distributions.png'
 OVERALL_MAE_IMAGE = 'overall_mae_distributions.png'
 OVERALL_DISTRIBUTION_IMAGE = 'overall_distributions.png'
 DISTANCE_MEASURE_EVALUATION_CRITERIA_RESULTS_FILE = 'raw_evaluation_criteria_results.csv'
+DISTANCE_MEASURE_EVALUATION_CRITERIA_RANKS_RESULTS_FILE = 'rank_evaluation_criteria_results.csv'
+DISTANCE_MEASURE_EVALUATION_OVERALL_RANKS_RESULTS_FILE = 'per_ds_rank_evaluation_criteria_results.csv'
 
 
 @dataclass
@@ -108,11 +110,11 @@ def dataset_description_dir(overall_dataset_name: str, data_type: str, root_resu
                                drop_segments=0)
 
 
-def distance_measure_evaluation_results_dir_for(overall_dataset_name: str, data_type: str, base_results_dir: str,
+def distance_measure_evaluation_results_dir_for(run_name: str, data_type: str, base_results_dir: str,
                                                 data_dir: str):
     """
           Returns results directory for distance measure evaluation
-          :param overall_dataset_name: a name to identify the dataset overall e.g n30 or n2
+          :param run_name: the run name, e.g. wandb run_name
           :param data_type: the data type, see SyntheticDataType
           :param base_results_dir: the directory for results, this is the main directory usually results or test results
           :param data_dir: the directory from which the data was read to be able to add the irregular folder if required
@@ -121,7 +123,7 @@ def distance_measure_evaluation_results_dir_for(overall_dataset_name: str, data_
           results/distance-measures-evaluation/irregular_p30/non_normal/overall_dataset_name
       """
     return get_folder_name_for(results_type=ResultsType.distance_measure_evaluation,
-                               overall_dataset_name=overall_dataset_name, data_type=data_type, data_dir=data_dir,
+                               overall_dataset_name=run_name, data_type=data_type, data_dir=data_dir,
                                distance_measure="", results_dir=base_results_dir)
 
 

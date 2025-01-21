@@ -1,7 +1,9 @@
 from hamcrest import *
+import pandas.testing as tm
 
 from src.evaluation.distance_metric_evaluation import read_csv_of_raw_values_for_all_criteria, EvaluationCriteria
-from src.evaluation.distance_metric_ranking import DistanceMetricRanking
+from src.evaluation.distance_metric_ranking import DistanceMetricRanking, read_csv_of_ranks_for_all_criteria, \
+    read_csv_of_overall_rank_per_dataset
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 from tests.test_utils.configurations_for_testing import TEST_ROOT_RESULTS_DIR, TEST_IRREGULAR_P90_DATA_DIR
@@ -57,3 +59,19 @@ def test_calculates_average_rank_per_distance_level_and_ds():
     assert_that(mean_rank.loc[DistanceMeasures.foerstner_cor_dist], is_(2.178))
 
 
+def test_saves_results_if_result_dir_given(tmp_path):
+    # base_results_dir = TEST_ROOT_RESULTS_DIR
+    base_results_dir = str(tmp_path)
+    ds_1_criteria_rank = ranker.ranking_df_for_ds(ds_name1)  # not saving here just reading so can compare
+    overall_ds_name = "test"
+    overall_rank = ranker.calculate_overall_rank(overall_ds_name=overall_ds_name, root_results_dir=base_results_dir,
+                                                 data_type=data_type, data_dir=test_data_dir)
+
+    # read csv
+    loaded_ds1_criteria_rank = read_csv_of_ranks_for_all_criteria(ds_name1, data_type, test_data_dir, base_results_dir)
+    loaded_overall_rank = read_csv_of_overall_rank_per_dataset(overall_ds_name, data_type, test_data_dir,
+                                                               base_results_dir)
+
+    # check calculated and reloaded dfs are the same
+    tm.assert_frame_equal(loaded_ds1_criteria_rank, ds_1_criteria_rank)
+    tm.assert_frame_equal(loaded_overall_rank, overall_rank)
