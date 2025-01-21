@@ -29,6 +29,7 @@ MULTIPLE_DS_SUMMARY_FILE = 'multiple-datasets-summary.csv'
 OVERALL_SEGMENT_LENGTH_IMAGE = 'overall_segment_length_distributions.png'
 OVERALL_MAE_IMAGE = 'overall_mae_distributions.png'
 OVERALL_DISTRIBUTION_IMAGE = 'overall_distributions.png'
+DISTANCE_MEASURE_EVALUATION_CRITERIA_RESULTS_FILE = 'raw_evaluation_criteria_results.csv'
 
 
 @dataclass
@@ -51,6 +52,7 @@ class ResultsType:
     internal_measure_assessment: str = 'internal-measures-assessment'
     internal_measures: str = 'internal-measures'
     distance_measure_assessment: str = 'distance-measures-assessment'
+    distance_measure_evaluation: str = 'distance-measures-evaluation'
     dataset_description: str = 'dataset-description'
 
 
@@ -104,6 +106,23 @@ def dataset_description_dir(overall_dataset_name: str, data_type: str, root_resu
                                overall_dataset_name=overall_dataset_name, data_type=data_type,
                                distance_measure="", results_dir=root_results_dir, data_dir=data_dir, drop_clusters=0,
                                drop_segments=0)
+
+
+def distance_measure_evaluation_results_dir_for(overall_dataset_name: str, data_type: str, base_results_dir: str,
+                                                data_dir: str):
+    """
+          Returns results directory for distance measure evaluation
+          :param overall_dataset_name: a name to identify the dataset overall e.g n30 or n2
+          :param data_type: the data type, see SyntheticDataType
+          :param base_results_dir: the directory for results, this is the main directory usually results or test results
+          :param data_dir: the directory from which the data was read to be able to add the irregular folder if required
+          :return: the path name to the results folder e.g.
+          results/distance-measures-evaluation/normal/overall_dataset_name or
+          results/distance-measures-evaluation/irregular_p30/non_normal/overall_dataset_name
+      """
+    return get_folder_name_for(results_type=ResultsType.distance_measure_evaluation,
+                               overall_dataset_name=overall_dataset_name, data_type=data_type, data_dir=data_dir,
+                               distance_measure="", results_dir=base_results_dir)
 
 
 def distance_measure_assessment_dir_for(overall_dataset_name: str, data_type: str, results_dir: str, data_dir: str,

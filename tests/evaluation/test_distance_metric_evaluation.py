@@ -1,15 +1,18 @@
 import pandas as pd
+import pandas.testing as tm
 import pytest
 from hamcrest import *
 
 from src.evaluation.describe_synthetic_dataset import DescribeSyntheticDataset
 from src.evaluation.distance_metric_assessment import DistanceMeasureCols
-from src.evaluation.distance_metric_evaluation import DistanceMetricEvaluation, EvaluationCriteria
+from src.evaluation.distance_metric_evaluation import DistanceMetricEvaluation, EvaluationCriteria, \
+    read_csv_of_raw_values_for_all_criteria
 from src.utils.configurations import Aggregators
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
-from tests.test_utils.configurations_for_testing import TEST_IMAGES_DIR, TEST_IRREGULAR_P90_DATA_DIR
+from tests.test_utils.configurations_for_testing import TEST_IMAGES_DIR, TEST_IRREGULAR_P90_DATA_DIR, \
+    TEST_ROOT_RESULTS_DIR
 
 backend = Backends.none.value
 # backend = Backends.visible_tests.value
@@ -208,3 +211,19 @@ def test_calculates_raw_results_for_each_criteria_and_each_distance_measure():
     assert_that(df.loc[EvaluationCriteria.disc_iii, sel_measures[2]], is_(0.012))  # Förstner
     # number of nan's
     assert_that(df.loc[EvaluationCriteria.stab_ii, sel_measures[0]], is_(0))
+
+
+def test_saves_results(tmp_path):
+    # if you want to check the structure it creates use, tmp_path handles the dir itself and will delete it
+    # after the test
+    # base_results_dir = TEST_ROOT_RESULTS_DIR
+    base_results_dir = str(tmp_path)
+    ds_name = "dmev-test"
+    ev.save_csv_of_raw_values_for_all_criteria(ds_name, base_results_dir)
+
+    # read csv
+    loaded_results = read_csv_of_raw_values_for_all_criteria(ds_name, ev.data_type, ev.data_dir, base_results_dir)
+
+    # check two frames are the same
+    calculated_results = ev.raw_results_for_each_criteria()
+    tm.assert_frame_equal(loaded_results, calculated_results)

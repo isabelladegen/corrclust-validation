@@ -1,5 +1,7 @@
+import ast
 from dataclasses import dataclass
 from functools import lru_cache
+from os import path
 
 import numpy as np
 import pandas as pd
@@ -9,7 +11,8 @@ from src.data_generation.model_correlation_patterns import ModelCorrelationPatte
 from src.evaluation.distance_metric_assessment import DistanceMeasureCols, \
     calculate_ci_of_mean_differences_between_two_values_for_distance_measures
 from src.evaluation.knn_for_synthetic_wrapper import KNNForSyntheticWrapper
-from src.utils.configurations import Aggregators
+from src.utils.configurations import Aggregators, distance_measure_evaluation_results_dir_for, \
+    DISTANCE_MEASURE_EVALUATION_CRITERIA_RESULTS_FILE
 from src.utils.distance_measures import distance_calculation_method_for, DistanceMeasures
 from src.utils.labels_utils import find_all_level_sets
 from src.utils.load_synthetic_data import load_labels
@@ -396,3 +399,31 @@ class DistanceMetricEvaluation:
             inf_count = np.isinf(measure_results).sum()
             results[measure] = nan_count + inf_count
         return results
+
+    def save_csv_of_raw_values_for_all_criteria(self, overall_dataset_name: str, base_results_dir: str):
+        """ Saves the raw criteria values dataframe in the results folder as csv file"""
+        result_dir = distance_measure_evaluation_results_dir_for(overall_dataset_name=overall_dataset_name,
+                                                                 data_type=self.data_type,
+                                                                 base_results_dir=base_results_dir,
+                                                                 data_dir=self.data_dir)
+        results_df = self.raw_results_for_each_criteria(round_to=self.__round_to)
+        results_df.to_csv(path.join(result_dir, DISTANCE_MEASURE_EVALUATION_CRITERIA_RESULTS_FILE))
+
+
+def read_csv_of_raw_values_for_all_criteria(overall_dataset_name: str, data_type: str, data_dir: str,
+                                            base_results_dir: str):
+    """ Reads the raw criteria csv from the provided folder
+      :param overall_dataset_name: a name to identify the dataset overall e.g n30 or n2
+      :param data_type: the data type, see SyntheticDataType
+      :param base_results_dir: the directory for results, this is the main directory usually results or test results
+      :param data_dir: the directory from which the data was read to be able to add the irregular folder if required
+        :returns pd.DataFrame: of the raw criteria values
+    """
+    result_dir = distance_measure_evaluation_results_dir_for(overall_dataset_name=overall_dataset_name,
+                                                             data_type=data_type,
+                                                             base_results_dir=base_results_dir,
+                                                             data_dir=data_dir)
+    file_name = DISTANCE_MEASURE_EVALUATION_CRITERIA_RESULTS_FILE
+    full_path = path.join(result_dir, file_name)
+    columns = pd.read_csv(full_path, nrows=0, index_col=0).columns
+    return pd.read_csv(full_path, index_col=0, converters={col: ast.literal_eval for col in columns})
