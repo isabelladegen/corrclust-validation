@@ -1,11 +1,13 @@
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols, \
     recalculate_labels_df_from_data
 from src.data_generation.model_correlation_patterns import ModelCorrelationPatterns
-from src.utils.configurations import dir_for_data_type, bad_partition_dir_for_data_type
+from src.utils.configurations import dir_for_data_type, bad_partition_dir_for_data_type, SYNTHETIC_DATA_DIR, \
+    IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR, GENERATED_DATASETS_FILE_PATH
 from src.utils.load_synthetic_data import SyntheticDataType, load_synthetic_data, SyntheticFileTypes, \
     load_synthetic_data_and_labels_for_bad_partitions
 from tests.test_utils.configurations_for_testing import TEST_DATA_DIR, TEST_IRREGULAR_P90_DATA_DIR, \
@@ -80,3 +82,32 @@ def test_this_is_temporary_to_create_correct_labels_files_for_bad_partitions():
 
         labels_file_name = Path(bad_partition_dir, file_name)
         recalculated_labels_df.to_csv(labels_file_name)
+
+
+@pytest.mark.skip(reason="this is a once off calculation to update correlations in labels files")
+def test_recalculate_all_labels_files_to_allow_for_distance_measure_calculation():
+    """
+    This is a once off to recalculate all the labels files to allow for distance calculation
+    We change the correlation 0.99 to not get rounded to 1 and keep 3 decimals for correlations
+    We also now calculate the relaxed MAE
+    This does not include bad partitions!
+    """
+    dataset_types = [SyntheticDataType.raw,
+                     SyntheticDataType.normal_correlated,
+                     SyntheticDataType.non_normal_correlated,
+                     SyntheticDataType.rs_1min]
+    data_dirs = [SYNTHETIC_DATA_DIR,
+                 IRREGULAR_P30_DATA_DIR,
+                 IRREGULAR_P90_DATA_DIR]
+
+    generated_ds = pd.read_csv(GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
+
+    for data_dir in data_dirs:
+        for data_type in dataset_types:
+            for run_name in generated_ds:
+                data_df, labels_df = load_synthetic_data(run_name, data_type=data_type, data_dir=data_dir)
+                recalculated_labels_df = recalculate_labels_df_from_data(data_df, labels_df)
+                labels_file = SyntheticFileTypes.labels
+                file_dir = dir_for_data_type(data_type, data_dir)
+                labels_file_name = Path(file_dir, run_name + labels_file)
+                recalculated_labels_df.to_csv(labels_file_name)
