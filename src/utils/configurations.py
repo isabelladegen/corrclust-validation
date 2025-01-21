@@ -267,7 +267,7 @@ def folder_name_for_distance_measure(distance_measure_name: str):
 
 
 def get_internal_measures_summary_file_name(ds_name: str):
-    """Returns the result name for the internal measure assessment for the given ds_nambe
+    """Returns the result name for the internal measure assessment for the given ds_name
     :param ds_name: the name of the dataset
     :return: the file name for the results csv
     """

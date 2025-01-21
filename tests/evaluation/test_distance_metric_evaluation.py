@@ -19,7 +19,6 @@ backend = Backends.none.value
 a_ds_name = "misty-forest-56"
 test_data_dir = TEST_IRREGULAR_P90_DATA_DIR  # so we have much less data for speed
 images_dir = TEST_IMAGES_DIR
-ds = DescribeSyntheticDataset(a_ds_name, data_dir=test_data_dir)
 sel_measures = [DistanceMeasures.l2_cor_dist, DistanceMeasures.log_frob_cor_dist,
                 DistanceMeasures.foerstner_cor_dist]
 ev = DistanceMetricEvaluation(run_name=a_ds_name, data_type=SyntheticDataType.non_normal_correlated,
@@ -218,7 +217,7 @@ def test_saves_results(tmp_path):
     # after the test
     # base_results_dir = TEST_ROOT_RESULTS_DIR
     base_results_dir = str(tmp_path)
-    ds_name = "dmev-test"
+    ds_name = "test-criteria"
     ev.save_csv_of_raw_values_for_all_criteria(ds_name, base_results_dir)
 
     # read csv
