@@ -87,8 +87,8 @@ class KnnAllSyntheticDatasets:
                                                      data_dir=self.data_dir, backend=self.backend)
 
             for ds_name in self.ds_names:
-                x_test, y_true, y_pred = knn_for_measure.predict(ds_name, data_type=self.data_type,
-                                                                 value_range=self.value_range)
+                x_test, y_true, y_pred = knn_for_measure.load_data_and_predict(ds_name, data_type=self.data_type,
+                                                                               value_range=self.value_range)
                 errors = [(true_label, y_pred[idx]) for idx, true_label in enumerate(y_true) if
                           true_label != y_pred[idx]]
                 if self.save_confusion_matrix:

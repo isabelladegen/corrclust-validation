@@ -8,6 +8,7 @@ from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDa
 from src.data_generation.model_correlation_patterns import ModelCorrelationPatterns
 from src.evaluation.distance_metric_assessment import DistanceMeasureCols, \
     calculate_ci_of_mean_differences_between_two_values_for_distance_measures
+from src.evaluation.knn_for_synthetic_wrapper import KNNForSyntheticWrapper
 from src.utils.configurations import Aggregators
 from src.utils.distance_measures import distance_calculation_method_for, DistanceMeasures
 from src.utils.labels_utils import find_all_level_sets
@@ -193,19 +194,33 @@ class DistanceMetricEvaluation:
         # level set entropy values
         level_set_entropy = self.calculate_level_set_shannon_entropy(n_bins=n_bins)
 
+        # 1NN x_test and y_true
+        # true pattern that they should be predicted to
+        y_true = self.__labels[SyntheticDataSegmentCols.pattern_id].to_numpy()
+        # actual correlations achieved in the data
+        x_test = np.array(self.__labels[SyntheticDataSegmentCols.actual_correlation].to_list())
+
         # count nan and infs
         stability_count = self.count_nan_inf_distance_for_measures()
 
         # for each distance measure calculate all criteria
         for measure in self.__measures:
+            # Interpretability Criteria
             inter_i.append(distances_for_level_set0.loc[measure, Aggregators.mean])
             inter_ii.append(
                 ci_adjacent.loc[(ci_adjacent[DistanceMeasureCols.type] == measure)][DistanceMeasureCols.stat_diff].eq(
                     'lower').all())
             inter_iii.append(average_rate.loc[measure])
+            # Discriminative power Criteria
             disc_i.append(overall_entropy[measure])
             disc_ii.append(level_set_entropy[measure].mean().round(self.__round_to))
-            disc_iii.append(0)
+            # 1NN train and calculate f1
+            knn_for_measure = KNNForSyntheticWrapper(measure=measure, n_neighbors=1, data_dir=self.data_dir,
+                                                     backend=self.backend)
+            knn_for_measure.predict(x_test, y_true)
+            accuracy, precision, recall, f1 = knn_for_measure.evaluate_scores(average="macro", round_to=self.__round_to)
+            disc_iii.append(f1)
+            # Stability criteria
             stab_ii.append(stability_count[measure])
 
         data = [
@@ -281,7 +296,6 @@ class DistanceMetricEvaluation:
         unique_patterns_df = segment_correlations[SyntheticDataSegmentCols.pattern_id].drop_duplicates().to_frame()
         # find relaxed patterns for the ids to calculate distances to patterns that are valid correlations
         # to ensure that proper correlation distances are not wrongly punished
-        # todo ideally we would have these saved in the results but we don't
         relaxed_patterns = ModelCorrelationPatterns().relaxed_patterns()
         unique_patterns_df[SyntheticDataSegmentCols.correlation_to_model] = unique_patterns_df[
             SyntheticDataSegmentCols.pattern_id].map(relaxed_patterns)
@@ -308,7 +322,7 @@ class DistanceMetricEvaluation:
 
             for measure in self.__measures:
                 calc_distance = distance_calculation_method_for(measure)
-                if seg_id == 1 and p_x == 1 and measure==DistanceMeasures.foerstner_cor_dist:
+                if seg_id == 1 and p_x == 1 and measure == DistanceMeasures.foerstner_cor_dist:
                     print("check")
                 # Calculate distances to all segments correlation_to_model (which are the relaxed canonical patterns)
                 distances = unique_patterns_df[SyntheticDataSegmentCols.correlation_to_model].apply(

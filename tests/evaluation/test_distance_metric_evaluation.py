@@ -25,7 +25,7 @@ ev = DistanceMetricEvaluation(run_name=a_ds_name, data_type=SyntheticDataType.no
 
 def test_calculates_distances_for_all_empirical_correlations_to_all_canonical_patterns():
     df = ev.distances_df
-    df.to_csv("irregularp90_distances.csv")
+    # df.to_csv("irregularp90_distances.csv")
     assert_that(df.shape[0], is_(23 * 100))  # each segment compared to each canonical pattern
     # todo write more asserts
 
@@ -189,13 +189,22 @@ def test_calculates_raw_results_for_each_criteria_and_each_distance_measure():
     df = ev.raw_results_for_each_criteria()
     assert_that(df.shape, is_((7, len(sel_measures))))
     # check value added for each measure
-    assert_that(df.loc[EvaluationCriteria.inter_i, sel_measures[0]], is_(0.072))
-    assert_that(df.loc[EvaluationCriteria.inter_i, sel_measures[1]], is_(16.152))
-    assert_that(df.loc[EvaluationCriteria.inter_i, sel_measures[2]], is_(7.549))
+    # level 0 avg distances
+    assert_that(df.loc[EvaluationCriteria.inter_i, sel_measures[0]], is_(0.072))  # l2
+    assert_that(df.loc[EvaluationCriteria.inter_i, sel_measures[1]], is_(16.152))  # log frob
+    assert_that(df.loc[EvaluationCriteria.inter_i, sel_measures[2]], is_(7.549))  # Förstner
     # check each criterion is calculated
+    # means of all adjacent level sets are sig different
     assert_that(df.loc[EvaluationCriteria.inter_ii, sel_measures[0]], is_(True))
+    # avg rate of increase between level set
     assert_that(df.loc[EvaluationCriteria.inter_iii, sel_measures[0]], is_(0.506))
+    # overall entropy
     assert_that(df.loc[EvaluationCriteria.disc_i, sel_measures[0]], is_(4.519))
+    # average level set entropy
     assert_that(df.loc[EvaluationCriteria.disc_ii, sel_measures[0]], is_(2.374))
-    # assert_that(df.loc[EvaluationCriteria.disc_iii, sel_measures[0]], is_(1))
+    # F1 score
+    assert_that(df.loc[EvaluationCriteria.disc_iii, sel_measures[0]], is_(1))  # l2
+    assert_that(df.loc[EvaluationCriteria.disc_iii, sel_measures[1]], is_(0.044))  # log Frob
+    assert_that(df.loc[EvaluationCriteria.disc_iii, sel_measures[2]], is_(0.012))  # Förstner
+    # number of nan's
     assert_that(df.loc[EvaluationCriteria.stab_ii, sel_measures[0]], is_(0))

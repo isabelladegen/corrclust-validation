@@ -39,20 +39,25 @@ class KNNForSyntheticWrapper:
 
         self.knn.fit(self.x_train, self.y_train)
 
-    def predict(self, ds_name: str, data_type: str = SyntheticDataType.non_normal_correlated,
-                value_range: (float, float) = None, bad_partition_name: str = ""):
+    def load_data_and_predict(self, ds_name: str, data_type: str = SyntheticDataType.non_normal_correlated,
+                              value_range: (float, float) = None, bad_partition_name: str = ""):
         """returns x_test, y_true and y_pred for the given synthetic dataset"""
         ds = DescribeSyntheticDataset(run_name=ds_name, data_type=data_type, value_range=value_range,
                                       data_dir=self.__data_dir,
                                       backend=self.__backend, bad_partition_name=bad_partition_name)
         self.ds_name = ds_name
-        self.x_test, self.y_true = ds.x_and_y_of_patterns_modelled()
+        x_test, y_true = ds.x_and_y_of_patterns_modelled()
+        return self.predict(x_test, y_true)
+
+    def predict(self, x_test: np.ndarray, y_true: np.ndarray):
+        self.x_test = x_test
+        self.y_true = y_true
         self.y_pred = self.knn.predict(self.x_test)
         return self.x_test, self.y_true, self.y_pred
 
     def evaluate_scores(self, average, round_to: int = 2):
         if self.y_pred is None:
-            assert False, "Call predict before evaluation"
+            assert False, "Call load_data_and_predict before evaluation"
         accuracy = accuracy_score(self.y_true, self.y_pred),
         precision = precision_score(self.y_true, self.y_pred, average=average)
         recall = recall_score(self.y_true, self.y_pred, average=average)
