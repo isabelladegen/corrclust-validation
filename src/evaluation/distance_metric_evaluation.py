@@ -180,11 +180,6 @@ class DistanceMetricEvaluation:
             self.per_level_set_distance_statistics_df[DistanceMeasureCols.level_set] == 0][
             [DistanceMeasureCols.type, Aggregators.mean]].round(3).set_index(DistanceMeasureCols.type, drop=True)
 
-        # statistical diff between adjacent level sets
-        ls_pairs = [(self.level_sets[i], self.level_sets[i + 1]) for i in range(len(self.level_sets) - 1)]
-        ci_adjacent = self.ci_for_mean_differences.loc[
-            (self.ci_for_mean_differences[DistanceMeasureCols.compared]).isin(ls_pairs)]
-
         # rate of increase df
         rate_of_increase = self.rate_of_increase_between_level_sets()
         average_rate = rate_of_increase.groupby(DistanceMeasureCols.type)[
@@ -211,8 +206,8 @@ class DistanceMetricEvaluation:
             # Interpretability Criteria
             inter_i.append(distances_for_level_set0.loc[measure, Aggregators.mean])
             inter_ii.append(
-                ci_adjacent.loc[(ci_adjacent[DistanceMeasureCols.type] == measure)][DistanceMeasureCols.stat_diff].eq(
-                    'lower').all())
+                self.ci_for_mean_differences[self.ci_for_mean_differences[DistanceMeasureCols.type] == measure][
+                    DistanceMeasureCols.stat_diff].eq('lower').all())
             inter_iii.append(average_rate.loc[measure])
             # Discriminative power Criteria
             disc_i.append(overall_entropy[measure])

@@ -196,7 +196,9 @@ def test_calculates_raw_results_for_each_criteria_and_each_distance_measure():
     assert_that(df.loc[EvaluationCriteria.inter_i, sel_measures[2]], is_(7.549))  # Förstner
     # check each criterion is calculated
     # means of all adjacent level sets are sig different
-    assert_that(df.loc[EvaluationCriteria.inter_ii, sel_measures[0]], is_(True))
+    assert_that(df.loc[EvaluationCriteria.inter_ii, sel_measures[0]], is_(True))  # l2
+    assert_that(df.loc[EvaluationCriteria.inter_ii, sel_measures[1]], is_(False))  # log frob
+    assert_that(df.loc[EvaluationCriteria.inter_ii, sel_measures[2]], is_(False))  # Förstner
     # avg rate of increase between level set
     assert_that(df.loc[EvaluationCriteria.inter_iii, sel_measures[0]], is_(0.506))
     # overall entropy
