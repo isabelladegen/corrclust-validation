@@ -19,7 +19,7 @@ def test_calculates_scores_for_log_frob():
                                   root_results_dir=root_results_dir, data_dir=data_dir)
     scores = knn.scores_for_all_measures
     assert_that(scores.shape[0], is_(len(measures) * 2))
-    assert_that(scores[AssessSynthCols.f1][0], is_(0.02))
+    assert_that(scores[AssessSynthCols.f1][0], is_(0.44))
 
 
 def test_calculates_scores_for_all_measures_on_aid_like_ds():
@@ -28,7 +28,7 @@ def test_calculates_scores_for_all_measures_on_aid_like_ds():
                                   root_results_dir=root_results_dir, data_dir=data_dir)
     scores = knn.scores_for_all_measures
     assert_that(scores.shape[0], is_(len(measures) * 2))
-    assert_that(scores[AssessSynthCols.f1][0], is_(0.01))
+    assert_that(scores[AssessSynthCols.f1][0], is_(0.02))
 
 
 def test_calculates_scores_some_measures_downsampled_and_irregular_datasets():

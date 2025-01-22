@@ -123,7 +123,7 @@ def test_calculate_overall_shannon_entropy():
     assert_that(len(result), is_(len(sel_measures)))
 
     assert_that(result[sel_measures[0]], is_(4.519))  # l2
-    assert_that(result[sel_measures[1]], is_(4.38))  # Frobenious
+    assert_that(result[sel_measures[1]], is_(4.645))  # Frobenious
     assert_that(result[sel_measures[2]], is_(3.813))  # Förstner
 
 
@@ -192,7 +192,7 @@ def test_calculates_raw_results_for_each_criteria_and_each_distance_measure():
     # check value added for each measure
     # level 0 avg distances
     assert_that(df.loc[EvaluationCriteria.inter_i, sel_measures[0]], is_(0.072))  # l2
-    assert_that(df.loc[EvaluationCriteria.inter_i, sel_measures[1]], is_(16.152))  # log frob
+    assert_that(df.loc[EvaluationCriteria.inter_i, sel_measures[1]], is_(7.219))  # log frob
     assert_that(df.loc[EvaluationCriteria.inter_i, sel_measures[2]], is_(7.549))  # Förstner
     # check each criterion is calculated
     # means of all adjacent level sets are sig different
@@ -207,8 +207,8 @@ def test_calculates_raw_results_for_each_criteria_and_each_distance_measure():
     assert_that(df.loc[EvaluationCriteria.disc_ii, sel_measures[0]], is_(2.374))
     # F1 score
     assert_that(df.loc[EvaluationCriteria.disc_iii, sel_measures[0]], is_(1))  # l2
-    assert_that(df.loc[EvaluationCriteria.disc_iii, sel_measures[1]], is_(0.044))  # log Frob
-    assert_that(df.loc[EvaluationCriteria.disc_iii, sel_measures[2]], is_(0.012))  # Förstner
+    assert_that(df.loc[EvaluationCriteria.disc_iii, sel_measures[1]], is_(0.509))  # log Frob
+    assert_that(df.loc[EvaluationCriteria.disc_iii, sel_measures[2]], is_(0.044))  # Förstner
     # number of nan's
     assert_that(df.loc[EvaluationCriteria.stab_ii, sel_measures[0]], is_(0))
 

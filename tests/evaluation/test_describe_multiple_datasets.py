@@ -39,7 +39,7 @@ def test_calculates_various_stats_on_across_the_datasets():
     assert_that(n_outside["min"], is_(95))
 
     assert_that(ds_raw.overall_mae_stats()["mean"], is_(0.613))
-    assert_that(ds_raw.overall_mae_stats()["min"], is_(0.0))
+    assert_that(ds_raw.overall_mae_stats()["min"], is_(0.001))
     assert_that(ds_raw.mae_stats()["min"], is_(0.602))
 
     assert_that(ds_raw.observations_stats()["mean"], is_(1264010.0))

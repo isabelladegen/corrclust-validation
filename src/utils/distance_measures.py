@@ -96,12 +96,14 @@ def calculate_log_matrix_frobenius_distance_between(m1: pd.DataFrame, m2: pd.Dat
 def calculate_log_matrix_frobenius_distance_between(m1: [], m2: []): ...
 
 
-def calculate_log_matrix_frobenius_distance_between(corr1, corr2):
+def calculate_log_matrix_frobenius_distance_between(corr1, corr2, epsilon: float = 1e-10):
     """
     Calculates log(matrix) frobenius distance between segment1 and segment2.
     See https://link.springer.com/article/10.1007/s10115-017-1098-1 for distance definition
     :param corr1: correlation matrix of shape (n_ts, n_ts) or vector of upper triu
     :param corr2: correlation matrix of shape (n_ts, n_ts) or vector of upper triu
+    :param epsilon: a small identity matrix based number to make all correlation matrices full rank and avoid log
+    not being defined
     :return: Log(matrix) frobenius distance between the two correlation matrices of segments
     """
     if isinstance(corr1, np.ndarray) and len(corr1.shape) == 2:
@@ -120,6 +122,11 @@ def calculate_log_matrix_frobenius_distance_between(corr1, corr2):
 
     # corr matrices must have the same shape
     assert m2.shape == m2.shape
+
+    # FIX: regularisation to avoid singular matrices
+    reg_m = np.identity(m1.shape[0]) * epsilon
+    m1 = m1 + reg_m
+    m2 = m2 + reg_m
 
     # calculate matrix logarithm of both covariance/correlation matrices (this moves the cov/corr
     # into tangent space on the Riemannian manifold

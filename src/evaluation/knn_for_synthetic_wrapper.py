@@ -59,7 +59,7 @@ class KNNForSyntheticWrapper:
         if self.y_pred is None:
             assert False, "Call load_data_and_predict before evaluation"
         accuracy = accuracy_score(self.y_true, self.y_pred),
-        precision = precision_score(self.y_true, self.y_pred, average=average)
+        precision = precision_score(self.y_true, self.y_pred, average=average, zero_division=0)
         recall = recall_score(self.y_true, self.y_pred, average=average)
         f1 = f1_score(self.y_true, self.y_pred, average=average)
         return round(accuracy[0], round_to), round(precision, round_to), round(recall, round_to), round(f1, round_to)

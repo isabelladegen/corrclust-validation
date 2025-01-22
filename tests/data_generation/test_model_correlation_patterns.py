@@ -68,6 +68,10 @@ def test_return_patterns_to_model_as_x_and_y():
     assert_that(all(np.equal(x[0, :], np.array([0, 0, 0]))))
     assert_that(y[0], is_(0))
 
+    # uses relaxed patterns
+    assert_that(all(np.equal(x[4, :], np.array([0, 0.71, 0.7]))))
+    assert_that(y[4], is_(4))
+
     assert_that(all(np.equal(x[22, :], np.array([-1, -1, 1]))))
     assert_that(y[22], is_(25))
 

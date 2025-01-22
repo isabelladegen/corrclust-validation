@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 from hamcrest import *
 
@@ -7,6 +9,7 @@ from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
 from tests.test_utils.configurations_for_testing import TEST_DATA_DIR
 
+warnings.simplefilter('always')
 backend = Backends.visible_tests.value
 
 n_neighbors = 1
@@ -59,6 +62,24 @@ def test_knn_classification_of_segments_log_frobenious():
 
     assert_that(all(np.equal(y_pred, y_true)), is_(False))  # makes mistakes
 
+    accuracy, precision, recall, f1 = w.evaluate_scores(average="macro")
+    assert_that(accuracy, is_(0.66))
+    assert_that(precision, is_(0.47))
+    assert_that(recall, is_(0.65))
+    assert_that(f1, is_(0.54))
+
+
+def test_knn_classification_of_segments_foerstner():
+    # this measure will need us to use the relaxed patterns to train 1NN, if we don't we unfairly punish
+    # the proper correlation measures
+    w = KNNForSyntheticWrapper(measure=DistanceMeasures.foerstner_cor_dist, n_neighbors=n_neighbors,
+                               data_dir=test_data_dir, backend=backend)
+    x_test, y_true, y_pred = w.load_data_and_predict(ds_1)
+
+    fig = w.plot_confusion_matrix()
+    assert_that(fig, is_not(None))
+
+    assert_that(all(np.equal(y_pred, y_true)), is_(False))  # makes mistakes
 
     accuracy, precision, recall, f1 = w.evaluate_scores(average="macro")
     assert_that(accuracy, is_(0.15))
@@ -103,7 +124,7 @@ def test_returns_errors_correct_nn_d_nn_and_d_correct():
     possible_values = [-1, 0, 1]
     for cor in error_cor:
         # knn is trained on ideal pattern values
-        assert_that(len(set(cor) - set(possible_values)), is_(0),
+        assert_that(len(set(cor) - set(possible_values)), is_(2),
                     f"Error correlation with none ideal training values {cor}")
     assert_that(len(error_sample), is_(len(errors)))
     assert_that(len(error_sample[0]), is_(3))

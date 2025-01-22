@@ -15,7 +15,7 @@ def test_calculates_the_raw_criteria_for_the_specified_runs(tmp_path):
     data_dirs = [TEST_IRREGULAR_P30_DATA_DIR,
                  TEST_IRREGULAR_P90_DATA_DIR]
     run_names = pd.read_csv(TEST_GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
-    distance_measures = [DistanceMeasures.l3_cor_dist, DistanceMeasures.l3_with_ref]
+    distance_measures = [DistanceMeasures.l3_with_ref, DistanceMeasures.l10_cor_dist]
 
     run_distance_evaluation_raw_criteria_for_ds(data_dirs=data_dirs, dataset_types=dataset_types, run_names=run_names,
                                                 root_result_dir=root_result_dir, distance_measures=distance_measures)

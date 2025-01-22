@@ -187,7 +187,7 @@ def test_frobenious_distance():
     assert_that(nd_vector_dist, is_(vector_dist))  # should give the same result
     assert_that(matrix_dist, is_(vector_dist))  # should give the same result
     assert_that(matrix_dist, is_(nd_matrix))  # should give the same result
-    assert_that(round(vector_dist, 3), is_(56.69))
+    assert_that(round(vector_dist, 3), is_(28.495))
 
 
 def test_cosine_similarity():

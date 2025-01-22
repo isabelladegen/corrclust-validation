@@ -234,7 +234,7 @@ class DistanceMetricEvaluation:
 
     def __calculate_per_level_sets_distance_statistics(self):
         """
-        Calculates the per level sets distance stastistics
+        Calculates the per level sets distance statistics
         :return pd.DataFrame with columns:
                 DistanceMeasureCols.type  -> name of distance measure
                 DistanceMeasureCols.level_set - 0, 1, 2 ... for all the different level sets
@@ -253,7 +253,7 @@ class DistanceMetricEvaluation:
         # reset_index -> makes the current level_set index a column
         # sort_values -> orders by distance measure and then level set
         # round -> to limit accuracy
-        result = stats_df.stack(level=0).reset_index(level=1).reset_index().sort_values(
+        result = stats_df.stack(level=0, future_stack=True).reset_index(level=1).reset_index().sort_values(
             [DistanceMeasureCols.type, DistanceMeasureCols.level_set]).round(self.__round_to)
 
         return result

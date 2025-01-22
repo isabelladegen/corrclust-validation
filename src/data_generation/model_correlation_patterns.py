@@ -116,9 +116,9 @@ class ModelCorrelationPatterns:
 
     def x_and_y_of_patterns_to_model(self):
         """ Returns feature matrix X and class label vector y. X has each correlation pair as column and
-        y has the class label for each row in X. The ideal label and correlations are used.
+        y has the class label for each row in X. The relaxed patterns are used.
         """
-        patterns = self.canonical_patterns()
+        patterns = self.relaxed_patterns()
         y = np.array(list(patterns.keys()))
         x = np.array(list(patterns.values()))
         return x, y
