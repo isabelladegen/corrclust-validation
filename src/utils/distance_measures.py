@@ -12,6 +12,7 @@ from src.data_generation.generate_synthetic_correlated_data import generate_corr
 class DistanceMeasures:
     l1_with_ref = "L1 with ref"
     l2_with_ref = "L2 with ref"
+    l3_with_ref = "L3 with ref"
     l5_with_ref = "L5 with ref"
     l10_with_ref = "L10 with ref"
     l50_with_ref = "L50 with ref"
@@ -19,6 +20,7 @@ class DistanceMeasures:
     linf_with_ref = "Linf with ref"
     l1_cor_dist: str = "L1 dist"
     l2_cor_dist: str = "L2 dist"
+    l3_cor_dist: str = "L3 dist"
     l5_cor_dist: str = "L5 dist"
     l10_cor_dist: str = "L10 dist"
     l50_cor_dist: str = "L50 dist"
@@ -155,6 +157,18 @@ def l2_distance_from_matrices(corr1, corr2):
 
 
 @overload
+def l3_distance_from_matrices(m1: pd.DataFrame, m2: pd.DataFrame): ...
+
+
+@overload
+def l3_distance_from_matrices(m1: [], m2: []): ...
+
+
+def l3_distance_from_matrices(corr1, corr2):
+    return lp_distance(corr1, corr2, p=3)
+
+
+@overload
 def l5_distance_from_matrices(m1: pd.DataFrame, m2: pd.DataFrame): ...
 
 
@@ -267,6 +281,18 @@ def l2_with_ref_distance_from_matrices(m1: [], m2: []): ...
 
 def l2_with_ref_distance_from_matrices(m1, m2):
     return lp_with_reference_vector(m1, m2, p=2)
+
+
+@overload
+def l3_with_ref_distance_from_matrices(m1: pd.DataFrame, m2: pd.DataFrame): ...
+
+
+@overload
+def l3_with_ref_distance_from_matrices(m1: [], m2: []): ...
+
+
+def l3_with_ref_distance_from_matrices(m1, m2):
+    return lp_with_reference_vector(m1, m2, p=3)
 
 
 @overload
@@ -468,6 +494,8 @@ def distance_calculation_method_for(distance_measure: str):
         return l1_distance_from_matrices
     elif distance_measure == DistanceMeasures.l2_cor_dist:
         return l2_distance_from_matrices
+    elif distance_measure == DistanceMeasures.l3_cor_dist:
+        return l3_distance_from_matrices
     elif distance_measure == DistanceMeasures.l5_cor_dist:
         return l5_distance_from_matrices
     elif distance_measure == DistanceMeasures.l10_cor_dist:
@@ -482,6 +510,8 @@ def distance_calculation_method_for(distance_measure: str):
         return l1_with_ref_distance_from_matrices
     elif distance_measure == DistanceMeasures.l2_with_ref:
         return l2_with_ref_distance_from_matrices
+    elif distance_measure == DistanceMeasures.l3_with_ref:
+        return l3_with_ref_distance_from_matrices
     elif distance_measure == DistanceMeasures.l5_with_ref:
         return l5_with_ref_distance_from_matrices
     elif distance_measure == DistanceMeasures.l10_with_ref:
