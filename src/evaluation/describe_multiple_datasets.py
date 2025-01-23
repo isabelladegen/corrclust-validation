@@ -241,7 +241,7 @@ class DescribeMultipleDatasets:
         folder = dataset_description_dir(overall_dataset_name=self.__overall_ds_name, data_type=self.__data_type,
                                          root_results_dir=root_results_dir, data_dir=self.__data_dir)
         file_name = path.join(folder, MULTIPLE_DS_SUMMARY_FILE)
-        df.to_csv(file_name)
+        df.to_csv(str(file_name))
 
     def get_data_as_xtrain(self, ds_name: str) -> np.array:
         """
@@ -368,19 +368,19 @@ if __name__ == '__main__':
     for ds_type in dataset_types:
         ds = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=ds_type,
                                       data_dir=SYNTHETIC_DATA_DIR)
-    ds.save_summary(root_results_dir)
+        ds.save_summary(root_results_dir)
 
     # do irregular p30 sampled ones
     for ds_type in dataset_types:
         ds = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=ds_type,
                                       data_dir=IRREGULAR_P30_DATA_DIR)
-    ds.save_summary(root_results_dir)
+        ds.save_summary(root_results_dir)
 
     # do irregular p90 sampled ones
     for ds_type in dataset_types:
         ds = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=ds_type,
                                       data_dir=IRREGULAR_P90_DATA_DIR)
-    ds.save_summary(root_results_dir)
+        ds.save_summary(root_results_dir)
 
     # write combined results (this also reads all files and then writes a result)
     combine_all_ds_variations_multiple_description_summary_dfs(result_root_dir=root_results_dir)
