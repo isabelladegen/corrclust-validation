@@ -34,7 +34,9 @@ class DistParams:
 @dataclass
 class SummaryStatistics:
     mae = "mae"  # mean of each labels file across datasets
+    relaxed_mae = "relaxed_mae"  # mean of each labels file across datasets for relaxed canonical pattern
     overall_mae = "overall mae"  # all maes
+    relaxed_overall_mae = "relaxed overall mae"  # all maes but to relaxed canonical pattern
     seg_outside_tol = "segments outside tolerance"
     observations = "observations"
     segments = "n segments"
@@ -126,27 +128,29 @@ class DescribeMultipleDatasets:
         else:  # load just labels
             self.label_dfs = {name: load_labels(name, self.__data_type, self.__data_dir) for name in self.run_names}
 
-    def mae_stats(self):
+    def mae_stats(self, column: str):
         """ Return stats for mae
         This is to see variations across the different datasets, therefore we use the mean of each dataset
+        :params columns SyntheticDataSegmentCols.mae or SyntheticDataSegmentCols.relaxed_mae
         :returns pandas describe series
         """
-        mean_values = [label[SyntheticDataSegmentCols.mae].mean() for label in self.label_dfs.values()]
+        mean_values = [label[column].mean() for label in self.label_dfs.values()]
         return pd.Series(mean_values).describe().round(3)
 
-    def overall_mae_stats(self):
+    def overall_mae_stats(self, column: str):
         """
         Return stats for mae overall, here we consider all segment's mae without calculating the mean
         first. This will give a better impression on how mae varies on a segment level.
+        :params column to calculate mae from SyntheticDataSegmentCols.mae or SyntheticDataSegmentCols.relaxed_mae
         :returns pandas describe series
         """
         # list of list
-        values = self.all_mae_values()
+        values = self.all_mae_values(column)
         values_flat = list(chain.from_iterable(values))
         return pd.Series(values_flat).describe().round(3)
 
-    def all_mae_values(self):
-        values = [label[SyntheticDataSegmentCols.mae] for label in self.label_dfs.values()]
+    def all_mae_values(self, column: str):
+        values = [label[column] for label in self.label_dfs.values()]
         return values
 
     def n_segments_outside_tolerance_stats(self):
@@ -215,8 +219,10 @@ class DescribeMultipleDatasets:
         access like df[SummaryStatistics]['mean'], the second can be any value in pandas describe
         """
         return pd.DataFrame({
-            SummaryStatistics.mae: self.mae_stats(),
-            SummaryStatistics.overall_mae: self.overall_mae_stats(),
+            SummaryStatistics.mae: self.mae_stats(SyntheticDataSegmentCols.mae),
+            SummaryStatistics.relaxed_mae: self.mae_stats(SyntheticDataSegmentCols.relaxed_mae),
+            SummaryStatistics.overall_mae: self.overall_mae_stats(SyntheticDataSegmentCols.mae),
+            SummaryStatistics.relaxed_overall_mae: self.overall_mae_stats(SyntheticDataSegmentCols.relaxed_mae),
             SummaryStatistics.seg_outside_tol: self.n_segments_outside_tolerance_stats(),
             SummaryStatistics.observations: self.observations_stats(),
             SummaryStatistics.segments: self.n_segments_stats(),

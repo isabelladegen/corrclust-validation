@@ -5,6 +5,7 @@ import pandas as pd
 from hamcrest import *
 import scipy.stats as stats
 
+from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.evaluation.describe_multiple_datasets import DescribeMultipleDatasets, SummaryStatistics, \
     combine_all_ds_variations_multiple_description_summary_dfs, DistParams
 from src.utils.configurations import SYNTHETIC_DATA_DIR, GENERATED_DATASETS_FILE_PATH, IRREGULAR_P90_DATA_DIR, \
@@ -27,20 +28,21 @@ def test_can_load_base_raw_datasets_and_return_ds_variation_mae():
     assert_that(len(ds_raw.label_dfs), is_(30))  # 30 files
     assert_that(ds_raw.label_dfs[ds_raw.run_names[0]].shape[0], is_(100))  # loaded the data properly
 
-    mae_stats = ds_raw.mae_stats()
+    mae_stats = ds_raw.mae_stats(SyntheticDataSegmentCols.mae)
     assert_that(mae_stats["mean"], is_(0.613))
     assert_that(mae_stats["std"], is_(0.006))
 
 
 def test_calculates_various_stats_on_across_the_datasets():
+    column_name = SyntheticDataSegmentCols.mae
     n_outside = ds_raw.n_segments_outside_tolerance_stats()
     assert_that(n_outside["mean"], is_(95.6))
     assert_that(n_outside["std"], is_(0.498))
     assert_that(n_outside["min"], is_(95))
 
-    assert_that(ds_raw.overall_mae_stats()["mean"], is_(0.613))
-    assert_that(ds_raw.overall_mae_stats()["min"], is_(0.001))
-    assert_that(ds_raw.mae_stats()["min"], is_(0.602))
+    assert_that(ds_raw.overall_mae_stats(column_name)["mean"], is_(0.613))
+    assert_that(ds_raw.overall_mae_stats(column_name)["min"], is_(0.001))
+    assert_that(ds_raw.mae_stats(column_name)["min"], is_(0.602))
 
     assert_that(ds_raw.observations_stats()["mean"], is_(1264010.0))
     assert_that(ds_raw.n_patterns_stats()["mean"], is_(23.0))
@@ -59,7 +61,7 @@ def test_can_load_base_non_normal_datasets():
     assert_that(len(ds_nn.label_dfs), is_(30))  # 30 files
     assert_that(ds_nn.label_dfs[ds_nn.run_names[0]].shape[0], is_(100))  # loaded the data properly
 
-    mae_stats = ds_nn.mae_stats()
+    mae_stats = ds_nn.mae_stats(SyntheticDataSegmentCols.mae)
     assert_that(mae_stats["mean"], is_(0.116))
     assert_that(mae_stats["min"], is_(0.11))
 
@@ -73,7 +75,7 @@ def test_can_irregular_p90_non_normal_dataset():
     assert_that(len(ds_irr_p90nn.label_dfs), is_(30))  # 30 files
     assert_that(ds_irr_p90nn.label_dfs[ds_irr_p90nn.run_names[0]].shape[0], is_(100))  # loaded the data properly
 
-    mae_stats = ds_irr_p90nn.mae_stats()
+    mae_stats = ds_irr_p90nn.mae_stats(SyntheticDataSegmentCols.mae)
     assert_that(mae_stats["mean"], is_(0.123))
 
 
@@ -102,13 +104,13 @@ def test_saves_summary_df_of_statistics_in_provide_results_root_using_ds_descrip
     # read standard raw
     res_dir = dataset_description_dir(overall_ds_name, raw, results_dir, data_dir)
     file_name = path.join(res_dir, MULTIPLE_DS_SUMMARY_FILE)
-    df_raw = pd.read_csv(file_name, index_col=0)
+    df_raw = pd.read_csv(str(file_name), index_col=0)
     assert_that(df_raw[SummaryStatistics.overall_segment_lengths]["min"], is_(900))
 
     # read p30 version
     res_dir = dataset_description_dir(overall_ds_name, raw, results_dir, IRREGULAR_P30_DATA_DIR)
     p30_file_name = path.join(res_dir, MULTIPLE_DS_SUMMARY_FILE)
-    df_raw_p30 = pd.read_csv(p30_file_name, index_col=0)
+    df_raw_p30 = pd.read_csv(str(p30_file_name), index_col=0)
     assert_that(df_raw_p30[SummaryStatistics.overall_segment_lengths]["min"], is_(592))
 
 

@@ -132,7 +132,7 @@ class DistanceMetricRanking:
         stacked = np.stack([df.values for df in criteria_rankings])
 
         # 3. Calculate average for each criterion (rows) and each measure (columns) across runs (stacks)
-        avg_ranks = np.mean(stacked, axis=0)
+        avg_ranks = np.mean(stacked, axis=0).round(self.__round_to)
 
         # 4. Create new dataframe with index criteria and columns distance measures but values averages across runs
         average_ranking_df = pd.DataFrame(
