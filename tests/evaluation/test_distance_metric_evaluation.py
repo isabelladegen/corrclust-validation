@@ -214,8 +214,8 @@ def test_calculates_raw_results_for_each_criteria_and_each_distance_measure():
 
 
 def test_saves_results(tmp_path):
-    # if you want to check the structure it creates use, tmp_path handles the dir itself and will delete it
-    # after the test
+    # if you want to check the structure it creates use the TEST_ROOT_RESULTS_DIR,
+    # tmp_path handles the dir itself and will delete it after the test
     # base_results_dir = TEST_ROOT_RESULTS_DIR
     base_results_dir = str(tmp_path)
     ds_name = "test-criteria"

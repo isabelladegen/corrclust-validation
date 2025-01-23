@@ -12,7 +12,7 @@ from src.evaluation.distance_metric_assessment import DistanceMeasureCols, \
     calculate_ci_of_mean_differences_between_two_values_for_distance_measures
 from src.evaluation.knn_for_synthetic_wrapper import KNNForSyntheticWrapper
 from src.utils.configurations import Aggregators, distance_measure_evaluation_results_dir_for, \
-    DISTANCE_MEASURE_EVALUATION_CRITERIA_RESULTS_FILE, DISTANCE_MEASURE_EVALUATION_CRITERIA_RANKS_RESULTS_FILE
+    DISTANCE_MEASURE_EVALUATION_CRITERIA_RESULTS_FILE
 from src.utils.distance_measures import distance_calculation_method_for, DistanceMeasures
 from src.utils.labels_utils import find_all_level_sets
 from src.utils.load_synthetic_data import load_labels
@@ -22,13 +22,13 @@ from src.utils.plots.matplotlib_helper_functions import Backends
 @dataclass
 class EvaluationCriteria:
     inter_i: str = "Interpretability: L_0 close to zero"
-    inter_ii: str = "Interpretability: proper level sets ordering"
-    inter_iii: str = "Interpretability: rate of increase between level sets"
-    disc_i: str = "Discriminative Power: overall RC"
-    disc_ii: str = "Discriminative Power: overall CV"
-    disc_iii: str = "Discriminative Power: macro F1 score"
+    inter_ii: str = "Interpretability: levels sets sig different and correct order"
+    inter_iii: str = "Interpretability: higher rate of increase between level sets"
+    disc_i: str = "Discriminative Power: higher overall entropy"
+    disc_ii: str = "Discriminative Power: lower level set entropy"
+    disc_iii: str = "Discriminative Power: higher macro F1 score"
     # stab_i: str = "Stability: completed" -> this is kind of a not catchable one
-    stab_ii: str = "Stability: count of nan and inf distances"
+    stab_ii: str = "Stability: fewer nan and inf distances"
 
 
 class DistanceMetricEvaluation:

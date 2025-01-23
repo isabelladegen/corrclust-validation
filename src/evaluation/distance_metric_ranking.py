@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from os import path
 
 import numpy as np
@@ -5,7 +6,13 @@ import pandas as pd
 
 from src.evaluation.distance_metric_evaluation import EvaluationCriteria
 from src.utils.configurations import distance_measure_evaluation_results_dir_for, \
-    DISTANCE_MEASURE_EVALUATION_CRITERIA_RANKS_RESULTS_FILE, DISTANCE_MEASURE_EVALUATION_OVERALL_RANKS_RESULTS_FILE
+    DISTANCE_MEASURE_EVALUATION_CRITERIA_RANKS_RESULTS_FILE, DISTANCE_MEASURE_EVALUATION_OVERALL_RANKS_RESULTS_FILE, \
+    DISTANCE_MEASURE_EVALUATION_AVERAGE_RANKS_PER_CRITERIA_RESULTS_FILE
+
+
+@dataclass
+class RankingStats:
+    best: str = 'best'
 
 
 class DistanceMetricRanking:
@@ -88,10 +95,10 @@ class DistanceMetricRanking:
         # build a new overall rank df
         ranked_df = pd.DataFrame(index=self.raw_criteria_data.keys(), columns=self.distance_measures)
 
-        for idx in ranked_df.index:
-            ds_ranks = self.ranking_df_for_ds(idx, root_results_dir=root_results_dir, data_type=data_type,
+        for run_name in ranked_df.index:
+            ds_ranks = self.ranking_df_for_ds(run_name, root_results_dir=root_results_dir, data_type=data_type,
                                               data_dir=data_dir)
-            ranked_df.loc[idx] = ds_ranks.mean()
+            ranked_df.loc[run_name] = ds_ranks.mean()
         ranked_df = ranked_df.astype(float).round(decimals=self.__round_to)
 
         if root_results_dir is not None:  # save results as csv
@@ -102,6 +109,54 @@ class DistanceMetricRanking:
             ranked_df.to_csv(str(path.join(result_dir, DISTANCE_MEASURE_EVALUATION_OVERALL_RANKS_RESULTS_FILE)))
 
         return ranked_df
+
+    def calculate_criteria_level_average_rank(self, overall_ds_name: str = "", root_results_dir: str = None,
+                                              data_type: str = None, data_dir: str = None):
+        """
+        Returns dataframe of average rank for each measure and each criterion
+        :param overall_ds_name: name for the dataset overall for when we want to save the result for a dir, e.g. n30
+        :param root_results_dir: if not None, we save the df using that dir
+        :param data_type: the data type, see SyntheticDataType
+        :param data_dir: the directory from which the data was read to be able to add the irregular folder if required
+        :return pd.Dataframe with criteria as rows (and index, see EvaluationCriteria) and columns the distance measures
+        each cell is the average rank across all the runs for that data variant. Last column is 'best' which is the
+        name of the lowest ranked distance measure(s) per row
+        """
+        # 1. load all criteria level ranking for each run
+        criteria_rankings = []
+        for run_name in self.raw_criteria_data.keys():
+            criteria_rankings.append(self.ranking_df_for_ds(run_name, root_results_dir=root_results_dir,
+                                                            data_type=data_type, data_dir=data_dir))
+
+        # 2. Stack all dataframes cells
+        stacked = np.stack([df.values for df in criteria_rankings])
+
+        # 3. Calculate average for each criterion (rows) and each measure (columns) across runs (stacks)
+        avg_ranks = np.mean(stacked, axis=0)
+
+        # 4. Create new dataframe with index criteria and columns distance measures but values averages across runs
+        average_ranking_df = pd.DataFrame(
+            avg_ranks,
+            index=criteria_rankings[0].index,
+            columns=criteria_rankings[0].columns
+        )
+
+        # 5. Add best measure column
+        average_ranking_df[RankingStats.best] = average_ranking_df.apply(
+            lambda row: ', '.join(row.index[row == row.min()]),
+            axis=1
+        )
+
+        # 6. Save results (optional)
+        if root_results_dir is not None:
+            result_dir = distance_measure_evaluation_results_dir_for(run_name=overall_ds_name,
+                                                                     data_type=data_type,
+                                                                     base_results_dir=root_results_dir,
+                                                                     data_dir=data_dir)
+            average_ranking_df.to_csv(
+                str(path.join(result_dir, DISTANCE_MEASURE_EVALUATION_AVERAGE_RANKS_PER_CRITERIA_RESULTS_FILE)))
+
+        return average_ranking_df
 
 
 def read_csv_of_ranks_for_all_criteria(run_name: str, data_type: str, data_dir: str,
@@ -126,12 +181,13 @@ def read_csv_of_ranks_for_all_criteria(run_name: str, data_type: str, data_dir: 
 
 def read_csv_of_overall_rank_per_dataset(overall_run_name: str, data_type: str, data_dir: str,
                                          base_results_dir: str):
-    """ Reads the raw criteria csv from the provided folder
+    """ Reads the overall rank csv from the provided folder
       :param overall_run_name: overall name such as, n30
       :param data_type: the data type, see SyntheticDataType
       :param base_results_dir: the directory for results, this is the main directory usually results or test results
       :param data_dir: the directory from which the data was read to be able to add the irregular folder if required
-      :returns pd.DataFrame: of the rank for the raw criteria values as row and distance measures as columns
+      :returns pd.DataFrame: of the avg rank rows (run names), columns (distance metric), cells average rank accross
+      criteria for each run and distance measure
     """
     result_dir = distance_measure_evaluation_results_dir_for(run_name=overall_run_name,
                                                              data_type=data_type,
@@ -142,3 +198,25 @@ def read_csv_of_overall_rank_per_dataset(overall_run_name: str, data_type: str, 
     full_path = path.join(result_dir, file_name)
     df = pd.read_csv(str(full_path), index_col=0)
     return df.astype(float)
+
+
+def read_csv_of_average_criteria_across_datasets(overall_run_name: str, data_type: str, data_dir: str,
+                                                 base_results_dir: str):
+    """ Reads the average criteria rank csv from the provided folder
+      :param overall_run_name: overall name such as, n30
+      :param data_type: the data type, see SyntheticDataType
+      :param base_results_dir: the directory for results, this is the main directory usually results or test results
+      :param data_dir: the directory from which the data was read to be able to add the irregular folder if required
+      :returns pd.DataFrame: of the average rank rows (criterion - see EvaluationCriteria), columns
+      (distance measures), cells average rank of that criterion for that distance measure across runs
+    """
+    result_dir = distance_measure_evaluation_results_dir_for(run_name=overall_run_name,
+                                                             data_type=data_type,
+                                                             base_results_dir=base_results_dir,
+                                                             data_dir=data_dir)
+    file_name = DISTANCE_MEASURE_EVALUATION_AVERAGE_RANKS_PER_CRITERIA_RESULTS_FILE
+
+    full_path = path.join(result_dir, file_name)
+    df = pd.read_csv(str(full_path), index_col=0)
+    df.iloc[:, :-1] = df.iloc[:, :-1].astype(float)
+    return df

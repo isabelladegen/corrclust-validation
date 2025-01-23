@@ -28,7 +28,12 @@ def run_ranking_for(data_dirs: [str], dataset_types: [str], run_names: [str], ro
                                                          root_results_dir=root_result_dir,
                                                          data_type=data_type, data_dir=data_dir)
 
-            # 3. Calculate most frequent min measure in overall rank
+            # 3. calculate average rank per criterion for each measure across runs
+            ranker.calculate_criteria_level_average_rank(overall_ds_name=overall_ds_name,
+                                                         root_results_dir=root_result_dir,
+                                                         data_type=data_type, data_dir=data_dir)
+
+            # 4. Calculate most frequent min measure in overall rank
             min_ranks = overall_rank.min(axis=1)  # per row min
             # a dict {'run_name':[list of min ranked measures (columns]}
             min_results = {a_run: overall_rank.columns[overall_rank.loc[a_run] == min_ranks[a_run]].tolist()

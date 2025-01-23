@@ -32,6 +32,7 @@ OVERALL_DISTRIBUTION_IMAGE = 'overall_distributions.png'
 DISTANCE_MEASURE_EVALUATION_CRITERIA_RESULTS_FILE = 'raw_evaluation_criteria_results.csv'
 DISTANCE_MEASURE_EVALUATION_CRITERIA_RANKS_RESULTS_FILE = 'rank_evaluation_criteria_results.csv'
 DISTANCE_MEASURE_EVALUATION_OVERALL_RANKS_RESULTS_FILE = 'per_ds_rank_evaluation_criteria_results.csv'
+DISTANCE_MEASURE_EVALUATION_AVERAGE_RANKS_PER_CRITERIA_RESULTS_FILE = 'per_criteria_avg_rank_evaluation_criteria_results.csv'
 
 
 @dataclass

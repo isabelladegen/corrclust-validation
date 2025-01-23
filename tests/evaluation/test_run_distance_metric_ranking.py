@@ -1,8 +1,9 @@
 import pandas as pd
 from hamcrest import *
 
+from src.evaluation.distance_metric_evaluation import EvaluationCriteria
 from src.evaluation.distance_metric_ranking import read_csv_of_ranks_for_all_criteria, \
-    read_csv_of_overall_rank_per_dataset
+    read_csv_of_overall_rank_per_dataset, read_csv_of_average_criteria_across_datasets, RankingStats
 from src.evaluation.run_distance_distance_metric_ranking import run_ranking_for
 from src.evaluation.run_distance_evaluation_raw_criteria import run_distance_evaluation_raw_criteria_for_ds
 from src.utils.distance_measures import DistanceMeasures
@@ -40,6 +41,7 @@ def test_calculates_the_raw_criteria_for_the_specified_runs(tmp_path):
                 # all criteria for all distance measures have been calculated
                 assert_that(ranked_criteria.isna().sum().sum(), is_(0))
 
+            # test overall rank for the dataset variant
             overall_rank = read_csv_of_overall_rank_per_dataset(overall_ds_name, data_type, data_dir, root_result_dir)
             # calculated all distance measures
             assert_that(overall_rank.columns.tolist(), contains_exactly(*distance_measures))
@@ -47,3 +49,16 @@ def test_calculates_the_raw_criteria_for_the_specified_runs(tmp_path):
             assert_that(overall_rank.isna().sum().sum(), is_(0))
             # calculated all runs specified
             assert_that(overall_rank.shape[0], is_(len(run_names)))
+
+            # test average criteria rank for the dataset variant
+            average_criteria_rank = read_csv_of_average_criteria_across_datasets(overall_ds_name, data_type,
+                                                                                 data_dir, root_result_dir)
+            # calculated all distance measures and best
+            columns = distance_measures.copy()
+            columns.append(RankingStats.best)
+            assert_that(average_criteria_rank.columns.tolist(), contains_exactly(*columns))
+            # all criteria for all distance measures have been calculated
+            assert_that(average_criteria_rank.shape[0], is_(7))
+            # calculated best measure
+            assert_that(average_criteria_rank.loc[EvaluationCriteria.inter_i, RankingStats.best],
+                        is_(DistanceMeasures.l10_cor_dist))
