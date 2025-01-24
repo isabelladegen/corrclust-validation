@@ -58,7 +58,7 @@ def test_calculates_the_raw_criteria_for_the_specified_runs(tmp_path):
             columns.append(RankingStats.best)
             assert_that(average_criteria_rank.columns.tolist(), contains_exactly(*columns))
             # all criteria for all distance measures have been calculated
-            assert_that(average_criteria_rank.shape[0], is_(7))
+            assert_that(average_criteria_rank.shape[0], is_(6))
             # calculated best measure
             assert_that(average_criteria_rank.loc[EvaluationCriteria.inter_i, RankingStats.best],
                         is_(DistanceMeasures.l10_cor_dist))

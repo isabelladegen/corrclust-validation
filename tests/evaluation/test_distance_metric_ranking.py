@@ -27,26 +27,22 @@ def test_ranks_each_distance_metric_criteria():
     ranked = ranker.ranking_df_for_ds(ds_name1)
 
     # test rank 1 = best for each measure
-    highest_rank = len(distance_measures)  # worst
     # lower raw value is better
     assert_that(ranked.loc[EvaluationCriteria.inter_i, DistanceMeasures.l2_cor_dist], is_(1))
-    assert_that(ranked.loc[EvaluationCriteria.inter_i, DistanceMeasures.log_frob_cor_dist], is_(highest_rank))
-    # Pass/Fail - averaged
-    assert_that(ranked.loc[EvaluationCriteria.inter_ii, DistanceMeasures.l2_cor_dist], is_(1.5))
-    assert_that(ranked.loc[EvaluationCriteria.inter_ii, DistanceMeasures.foerstner_cor_dist], is_(1.5))
-    assert_that(ranked.loc[EvaluationCriteria.inter_ii, DistanceMeasures.log_frob_cor_dist], is_(highest_rank))
+    assert_that(ranked.loc[EvaluationCriteria.inter_i, DistanceMeasures.log_frob_cor_dist], is_(3))
+    # Pass/Fail - dense
+    assert_that(ranked.loc[EvaluationCriteria.inter_ii, DistanceMeasures.l2_cor_dist], is_(1))
+    assert_that(ranked.loc[EvaluationCriteria.inter_ii, DistanceMeasures.foerstner_cor_dist], is_(1))
+    assert_that(ranked.loc[EvaluationCriteria.inter_ii, DistanceMeasures.log_frob_cor_dist], is_(2))
     # higher raw value is better
     assert_that(ranked.loc[EvaluationCriteria.inter_iii, DistanceMeasures.log_frob_cor_dist], is_(1))
-    assert_that(ranked.loc[EvaluationCriteria.inter_iii, DistanceMeasures.l2_cor_dist], is_(highest_rank))
+    assert_that(ranked.loc[EvaluationCriteria.inter_iii, DistanceMeasures.l2_cor_dist], is_(3))
     assert_that(ranked.loc[EvaluationCriteria.disc_i, DistanceMeasures.l2_cor_dist], is_(1))
     assert_that(ranked.loc[EvaluationCriteria.disc_ii, DistanceMeasures.foerstner_cor_dist], is_(1))
     # tied outcome for highest rank
     assert_that(ranked.loc[EvaluationCriteria.disc_iii, DistanceMeasures.l2_cor_dist], is_(1))
-    assert_that(ranked.loc[EvaluationCriteria.disc_iii, DistanceMeasures.log_frob_cor_dist], is_(highest_rank / 2 + 1))
-    assert_that(ranked.loc[EvaluationCriteria.disc_iii, DistanceMeasures.foerstner_cor_dist], is_(highest_rank / 2 + 1))
-    # lower is better
-    assert_that(ranked.loc[EvaluationCriteria.stab_ii, DistanceMeasures.l2_cor_dist], is_(1))
-    assert_that(ranked.loc[EvaluationCriteria.stab_ii, DistanceMeasures.foerstner_cor_dist], is_(highest_rank))
+    assert_that(ranked.loc[EvaluationCriteria.disc_iii, DistanceMeasures.log_frob_cor_dist], is_(2))
+    assert_that(ranked.loc[EvaluationCriteria.disc_iii, DistanceMeasures.foerstner_cor_dist], is_(2))
 
 
 def test_calculates_average_rank_per_distance_level_and_ds():
@@ -54,25 +50,24 @@ def test_calculates_average_rank_per_distance_level_and_ds():
 
     assert_that(ranked.shape, is_((2, len(distance_measures))))
     mean_rank = ranked.mean().round(3)
-    assert_that(mean_rank.loc[DistanceMeasures.l2_cor_dist], is_(1.535))
-    assert_that(mean_rank.loc[DistanceMeasures.log_frob_cor_dist], is_(2.286))
-    assert_that(mean_rank.loc[DistanceMeasures.foerstner_cor_dist], is_(2.178))
+    assert_that(mean_rank.loc[DistanceMeasures.l2_cor_dist], is_(1.5))
+    assert_that(mean_rank.loc[DistanceMeasures.log_frob_cor_dist], is_(2.167))
+    assert_that(mean_rank.loc[DistanceMeasures.foerstner_cor_dist], is_(2))
 
 
 def test_calculates_average_rank_per_criteria_and_distance_measures_across_runs():
     ranked = ranker.calculate_criteria_level_average_rank()
 
     # row for each criterion, column for each distance measure
-    assert_that(ranked.shape, is_((7, len(distance_measures) + 1)))
+    assert_that(ranked.shape, is_((6, len(distance_measures) + 1)))
     assert_that(ranked.loc[EvaluationCriteria.inter_i, DistanceMeasures.l2_cor_dist], is_(1))
     assert_that(ranked.loc[EvaluationCriteria.inter_i, DistanceMeasures.log_frob_cor_dist], is_(3))
     assert_that(ranked.loc[EvaluationCriteria.inter_i, DistanceMeasures.foerstner_cor_dist], is_(2))
-    assert_that(ranked.loc[EvaluationCriteria.inter_ii, DistanceMeasures.l2_cor_dist], is_(1.25))
+    assert_that(ranked.loc[EvaluationCriteria.inter_ii, DistanceMeasures.l2_cor_dist], is_(1))
     assert_that(ranked.loc[EvaluationCriteria.inter_iii, DistanceMeasures.l2_cor_dist], is_(3))
     assert_that(ranked.loc[EvaluationCriteria.disc_i, DistanceMeasures.l2_cor_dist], is_(1))
     assert_that(ranked.loc[EvaluationCriteria.disc_ii, DistanceMeasures.l2_cor_dist], is_(2))
     assert_that(ranked.loc[EvaluationCriteria.disc_iii, DistanceMeasures.l2_cor_dist], is_(1))
-    assert_that(ranked.loc[EvaluationCriteria.stab_ii, DistanceMeasures.l2_cor_dist], is_(1.5))
 
     # check we calculated the best measure for each row
     assert_that(ranked.loc[EvaluationCriteria.inter_i, RankingStats.best], is_(DistanceMeasures.l2_cor_dist))
@@ -81,7 +76,6 @@ def test_calculates_average_rank_per_criteria_and_distance_measures_across_runs(
     assert_that(ranked.loc[EvaluationCriteria.disc_i, RankingStats.best], is_(DistanceMeasures.l2_cor_dist))
     assert_that(ranked.loc[EvaluationCriteria.disc_ii, RankingStats.best], is_(DistanceMeasures.foerstner_cor_dist))
     assert_that(ranked.loc[EvaluationCriteria.disc_iii, RankingStats.best], is_(DistanceMeasures.l2_cor_dist))
-    assert_that(ranked.loc[EvaluationCriteria.stab_ii, RankingStats.best], is_(DistanceMeasures.l2_cor_dist))
 
 
 def test_saves_results_if_result_dir_given(tmp_path):

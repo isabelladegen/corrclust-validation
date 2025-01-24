@@ -38,7 +38,6 @@ class DistanceMetricRanking:
             EvaluationCriteria.disc_i: False,  # higher overall entropy
             EvaluationCriteria.disc_ii: True,  # lower average LS entropy
             EvaluationCriteria.disc_iii: False,  # higher F1 score
-            EvaluationCriteria.stab_ii: True  # fewer inf and nans
         }
 
     def ranking_df_for_ds(self, run_name: str, root_results_dir: str = None, data_type: str = None,
@@ -49,27 +48,29 @@ class DistanceMetricRanking:
         :param root_results_dir: if not None we save the df using that dir
         :param data_type: the data type, see SyntheticDataType
         :param data_dir: the directory from which the data was read to be able to add the irregular folder if required
-        :return pd.Dataframe with EvaluationCriteria as rows (and index) and columns the distance measures
+        :return pd.Dataframe with self.rankingCriteria as rows (and index) and columns the distance measures
         """
         raw_df = self.raw_criteria_data[run_name]
         # check that we have results for all distance measures (fails if not)
         error_msg = "Raw Criteria contains results for distance measures: " + str(
             raw_df.columns) + ". We want to evaluate measures: " + str(self.distance_measures)
         assert all(col in raw_df.columns for col in self.distance_measures), error_msg
-        highest_rank = len(self.distance_measures)
+
+        # find common ranking criteria
+        criteria_to_rank = list(set(self.ranking_criteria) & set(raw_df.index))
 
         # build a new ranked df
-        ranked_df = pd.DataFrame(index=raw_df.index, columns=raw_df.columns)
+        ranked_df = pd.DataFrame(index=criteria_to_rank, columns=raw_df.columns)
 
-        for idx in raw_df.index:
+        for idx in ranked_df.index:
             what_is_best = self.ranking_criteria[idx]
             row_values = raw_df.loc[idx]
 
             if what_is_best == 'boolean':
                 # Convert bools to int, then judge higher (=True) is better but average
-                rankings = row_values.astype(int).rank(ascending=False, method='average')
+                rankings = row_values.astype(int).rank(ascending=False, method='dense')
             else:  # for numeric rows use pandas ranking for series
-                rankings = row_values.rank(ascending=what_is_best, method='average')
+                rankings = row_values.rank(ascending=what_is_best, method='dense')
 
             ranked_df.loc[idx] = rankings
 
