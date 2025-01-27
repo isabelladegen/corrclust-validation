@@ -21,7 +21,7 @@ inter = DistanceMetricInterpretation(run_names=run_names, overall_ds_name=overal
 
 
 def test_loads_df_average_overall_criterion_per_run_df():
-    overall_ranks = inter.average_overall_criterion_per_run_df
+    overall_ranks = inter.average_rank_per_run
 
     assert_that(overall_ranks.shape, is_((len(run_names), len(measures))))
 

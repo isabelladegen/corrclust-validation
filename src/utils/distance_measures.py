@@ -34,6 +34,25 @@ class DistanceMeasures:
     dot_transform_l2: str = "Dot transf L2"
 
 
+short_distance_measure_names = {
+    DistanceMeasures.l1_cor_dist: 'L1',
+    DistanceMeasures.l2_cor_dist: 'L2',
+    DistanceMeasures.l3_cor_dist: 'L3',
+    DistanceMeasures.l5_cor_dist: 'L5',
+    DistanceMeasures.linf_cor_dist: 'Linf',
+    DistanceMeasures.l1_with_ref: 'L1 ref',
+    DistanceMeasures.l2_with_ref: 'L2 ref',
+    DistanceMeasures.l3_with_ref: 'L3 ref',
+    DistanceMeasures.l5_with_ref: 'L5 ref',
+    DistanceMeasures.linf_with_ref: 'Linf ref',
+    DistanceMeasures.dot_transform_l1: 'dt L1',
+    DistanceMeasures.dot_transform_l2: 'dt L2',
+    DistanceMeasures.dot_transform_linf: 'dt Linf',
+    DistanceMeasures.log_frob_cor_dist: 'Log F',
+    DistanceMeasures.foerstner_cor_dist: 'Foer',
+}
+
+
 @overload
 def calculate_foerstner_matrices_distance_between(m1: pd.DataFrame, m2: pd.DataFrame): ...
 
