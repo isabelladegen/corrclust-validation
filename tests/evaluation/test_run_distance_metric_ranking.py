@@ -1,4 +1,5 @@
 import pandas as pd
+import pytest
 from hamcrest import *
 
 from src.evaluation.distance_metric_evaluation import EvaluationCriteria
@@ -9,7 +10,27 @@ from src.evaluation.run_distance_evaluation_raw_criteria import run_distance_eva
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 from tests.test_utils.configurations_for_testing import TEST_IRREGULAR_P30_DATA_DIR, TEST_IRREGULAR_P90_DATA_DIR, \
-    TEST_GENERATED_DATASETS_FILE_PATH
+    TEST_GENERATED_DATASETS_FILE_PATH, TEST_ROOT_RESULTS_DIR
+
+
+@pytest.mark.skip(reason="this is a once off calculation to generate data for testing")
+def test_generate_test_data_of_ranking():
+    data_dirs = [TEST_IRREGULAR_P90_DATA_DIR]
+    dataset_types = [SyntheticDataType.non_normal_correlated]
+    root_results_dir = TEST_ROOT_RESULTS_DIR
+    measures = [DistanceMeasures.l1_cor_dist, DistanceMeasures.l2_cor_dist, DistanceMeasures.log_frob_cor_dist,
+                DistanceMeasures.foerstner_cor_dist]
+    overall_ds_name = "n2"
+    run_names = pd.read_csv(TEST_GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
+
+    # calculate raw values
+    run_distance_evaluation_raw_criteria_for_ds(data_dirs=data_dirs, dataset_types=dataset_types, run_names=run_names,
+                                                root_result_dir=root_results_dir, distance_measures=measures)
+
+    # do the ranking
+    run_ranking_for(data_dirs=data_dirs, dataset_types=dataset_types, run_names=run_names,
+                    root_result_dir=root_results_dir, distance_measures=measures,
+                    overall_ds_name=overall_ds_name)
 
 
 def test_calculates_the_raw_criteria_for_the_specified_runs(tmp_path):

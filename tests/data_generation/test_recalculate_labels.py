@@ -20,7 +20,7 @@ from tests.test_utils.configurations_for_testing import TEST_DATA_DIR, TEST_IRRE
 test_data_dir = TEST_DATA_DIR
 
 
-# @pytest.mark.skip(reason="this is a once off calculation to bring old labels files into new format")
+@pytest.mark.skip(reason="this is a once off calculation to bring old labels files into new format")
 def test_this_is_temporary_to_create_correct_labels_files():
     twilight_fog = "twilight-fog-55"
     playful_thun = "playful-thunder-52"
