@@ -57,7 +57,7 @@ class DistanceMetricRanking:
         assert all(col in raw_df.columns for col in self.distance_measures), error_msg
 
         # find common ranking criteria
-        criteria_to_rank = list(set(self.ranking_criteria) & set(raw_df.index))
+        criteria_to_rank = [x for x in raw_df.index if x in self.ranking_criteria]
 
         # build a new ranked df
         ranked_df = pd.DataFrame(index=criteria_to_rank, columns=raw_df.columns)
