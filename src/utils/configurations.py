@@ -28,6 +28,7 @@ GENERATED_DATASETS_FILE_PATH = path.join(SYNTHETIC_DATA_DIR, 'synthetic-correlat
 MULTIPLE_DS_SUMMARY_FILE = 'multiple-datasets-summary.csv'
 OVERALL_SEGMENT_LENGTH_IMAGE = 'overall_segment_length_distributions.png'
 OVERALL_MAE_IMAGE = 'overall_mae_distributions.png'
+CRITERIA_RANK_DISTRIBUTION = 'criteria_rank_distributions_across_runs.png'
 AVERAGE_RANK_DISTRIBUTION = 'average_rank_distributions_across_runs.png'
 OVERALL_DISTRIBUTION_IMAGE = 'overall_distributions.png'
 DISTANCE_MEASURE_EVALUATION_CRITERIA_RESULTS_FILE = 'raw_evaluation_criteria_results.csv'

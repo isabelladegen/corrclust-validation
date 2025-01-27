@@ -6,12 +6,13 @@ import pandas as pd
 from src.evaluation.interpretation_distance_metric_ranking import DistanceMetricInterpretation
 from src.utils.configurations import ROOT_RESULTS_DIR, SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, \
     IRREGULAR_P90_DATA_DIR, GENERATED_DATASETS_FILE_PATH, base_dataset_result_folder_for_type, ResultsType, \
-    get_image_name_based_on_data_dir, AVERAGE_RANK_DISTRIBUTION, get_image_name_based_on_data_dir_and_data_type
+    get_image_name_based_on_data_dir, AVERAGE_RANK_DISTRIBUTION, get_image_name_based_on_data_dir_and_data_type, \
+    CRITERIA_RANK_DISTRIBUTION
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.visualisation.visualise_distance_measure_rank_distributions import \
-    violin_plots_of_average_rank_per_distance_measure
+    violin_plots_of_average_rank_per_distance_measure, violin_plot_grids_per_criteria_for_distance_measure
 
 data_variant_description = {
     (SYNTHETIC_DATA_DIR, SyntheticDataType.raw): "complete, raw data variant",
@@ -38,10 +39,15 @@ def violin_plots_for(data_dirs, dataset_types, run_names, root_results_dir, dist
                                                           data_dir=data_dir,
                                                           root_results_dir=root_results_dir,
                                                           measures=distance_measures)
-            title = "Distribution of Average Ranks for the " + data_variant_description[(data_dir, data_type)]
+            variant_desc = data_variant_description[(data_dir, data_type)]
+            title = "Distribution of Average Ranks for the " + variant_desc
             fig = violin_plots_of_average_rank_per_distance_measure(interpretation.average_rank_per_run,
                                                                     title=title,
                                                                     backend=backend)
+            criteria_title = "Distribution of Ranks for the " + variant_desc
+            criteria_fig = violin_plot_grids_per_criteria_for_distance_measure(interpretation.all_criteria_ranks_df,
+                                                                               title=criteria_title,
+                                                                               backend=backend)
             if save_fig:
                 folder = base_dataset_result_folder_for_type(root_results_dir, ResultsType.distance_measure_evaluation)
                 folder = path.join(folder, "images")
@@ -49,6 +55,11 @@ def violin_plots_for(data_dirs, dataset_types, run_names, root_results_dir, dist
                 image_name = get_image_name_based_on_data_dir_and_data_type(AVERAGE_RANK_DISTRIBUTION, data_dir,
                                                                             data_type)
                 fig.savefig(path.join(folder, image_name), dpi=300, bbox_inches='tight')
+
+                image_name_criteria = get_image_name_based_on_data_dir_and_data_type(CRITERIA_RANK_DISTRIBUTION,
+                                                                                     data_dir,
+                                                                                     data_type)
+                criteria_fig.savefig(path.join(folder, image_name_criteria), dpi=300, bbox_inches='tight')
 
 
 if __name__ == "__main__":
