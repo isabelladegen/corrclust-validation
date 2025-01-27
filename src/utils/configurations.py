@@ -28,6 +28,7 @@ GENERATED_DATASETS_FILE_PATH = path.join(SYNTHETIC_DATA_DIR, 'synthetic-correlat
 MULTIPLE_DS_SUMMARY_FILE = 'multiple-datasets-summary.csv'
 OVERALL_SEGMENT_LENGTH_IMAGE = 'overall_segment_length_distributions.png'
 OVERALL_MAE_IMAGE = 'overall_mae_distributions.png'
+AVERAGE_RANK_DISTRIBUTION = 'average_rank_distributions_across_runs.png'
 OVERALL_DISTRIBUTION_IMAGE = 'overall_distributions.png'
 DISTANCE_MEASURE_EVALUATION_CRITERIA_RESULTS_FILE = 'raw_evaluation_criteria_results.csv'
 DISTANCE_MEASURE_EVALUATION_CRITERIA_RANKS_RESULTS_FILE = 'rank_evaluation_criteria_results.csv'
@@ -57,6 +58,13 @@ class ResultsType:
     distance_measure_assessment: str = 'distance-measures-assessment'
     distance_measure_evaluation: str = 'distance-measures-evaluation'
     dataset_description: str = 'dataset-description'
+
+
+def get_image_name_based_on_data_dir_and_data_type(image_name: str, data_dir: str, data_type: str) -> str:
+    """ If the data dir is irregular_p30 it attaches an irregular_p30 to the image name, attaches data_type
+    to image name"""
+    result = data_type + "-" + image_name
+    return get_image_name_based_on_data_dir(result, data_dir)
 
 
 def get_image_name_based_on_data_dir(image_base_name: str, data_dir: str) -> str:

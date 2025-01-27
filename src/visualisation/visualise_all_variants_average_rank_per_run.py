@@ -1,15 +1,19 @@
+import os
+from os import path
+
 import pandas as pd
 
 from src.evaluation.interpretation_distance_metric_ranking import DistanceMetricInterpretation
 from src.utils.configurations import ROOT_RESULTS_DIR, SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, \
-    IRREGULAR_P90_DATA_DIR, GENERATED_DATASETS_FILE_PATH
+    IRREGULAR_P90_DATA_DIR, GENERATED_DATASETS_FILE_PATH, base_dataset_result_folder_for_type, ResultsType, \
+    get_image_name_based_on_data_dir, AVERAGE_RANK_DISTRIBUTION, get_image_name_based_on_data_dir_and_data_type
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.visualisation.visualise_distance_measure_rank_distributions import \
     violin_plots_of_average_rank_per_distance_measure
 
-title_dictionary = {
+data_variant_description = {
     (SYNTHETIC_DATA_DIR, SyntheticDataType.raw): "complete, raw data variant",
     (SYNTHETIC_DATA_DIR, SyntheticDataType.normal_correlated): "complete, correlated data variant",
     (SYNTHETIC_DATA_DIR, SyntheticDataType.non_normal_correlated): "complete, non-normal data variant",
@@ -26,7 +30,7 @@ title_dictionary = {
 
 
 def violin_plots_for(data_dirs, dataset_types, run_names, root_results_dir, distance_measures, overall_ds_name,
-                     backend):
+                     backend, save_fig=True):
     for data_dir in data_dirs:
         for data_type in dataset_types:
             interpretation = DistanceMetricInterpretation(run_names=run_names, overall_ds_name=overall_ds_name,
@@ -34,15 +38,23 @@ def violin_plots_for(data_dirs, dataset_types, run_names, root_results_dir, dist
                                                           data_dir=data_dir,
                                                           root_results_dir=root_results_dir,
                                                           measures=distance_measures)
-            title = "Distribution of Average Ranks for the " + title_dictionary[(data_dir, data_type)]
+            title = "Distribution of Average Ranks for the " + data_variant_description[(data_dir, data_type)]
             fig = violin_plots_of_average_rank_per_distance_measure(interpretation.average_rank_per_run,
                                                                     title=title,
                                                                     backend=backend)
+            if save_fig:
+                folder = base_dataset_result_folder_for_type(root_results_dir, ResultsType.distance_measure_evaluation)
+                folder = path.join(folder, "images")
+                os.makedirs(folder, exist_ok=True)
+                image_name = get_image_name_based_on_data_dir_and_data_type(AVERAGE_RANK_DISTRIBUTION, data_dir,
+                                                                            data_type)
+                fig.savefig(path.join(folder, image_name), dpi=300, bbox_inches='tight')
 
 
 if __name__ == "__main__":
     # violin plots for average ranking for each dataset in the N30
     backend = Backends.visible_tests.value
+    save_fig = True
     root_result_dir = ROOT_RESULTS_DIR
     dataset_types = [SyntheticDataType.raw,
                      SyntheticDataType.normal_correlated,
@@ -73,4 +85,4 @@ if __name__ == "__main__":
 
     violin_plots_for(data_dirs=data_dirs, dataset_types=dataset_types, run_names=run_names,
                      root_results_dir=root_result_dir, distance_measures=distance_measures, overall_ds_name="n30",
-                     backend=backend)
+                     backend=backend, save_fig=save_fig)
