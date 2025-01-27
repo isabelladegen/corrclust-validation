@@ -8,7 +8,7 @@ from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.visualisation.visualise_distance_measure_rank_distributions import \
-    violin_plots_of_average_rank_per_distance_measure
+    violin_plots_of_average_rank_per_distance_measure, violin_plot_grids_per_criteria_for_distance_measure
 
 root_results_dir = ROOT_RESULTS_DIR
 measures = [DistanceMeasures.l1_cor_dist, DistanceMeasures.l2_cor_dist, DistanceMeasures.log_frob_cor_dist,
@@ -43,3 +43,13 @@ def test_plots_violin_plots_of_average_rank_per_distance_measure():
     assert_that(fig, is_(not_none()))
 
 
+def test_plots_grid_of_violin_plots_per_criterion():
+    fig = violin_plot_grids_per_criteria_for_distance_measure(partial_non_normal.all_criteria_ranks_df,
+                                                              title="Partial, non-normal",
+                                                              backend=backend)
+    assert_that(fig, is_(not_none()))
+
+    fig = violin_plot_grids_per_criteria_for_distance_measure(sparse_non_normal.all_criteria_ranks_df,
+                                                              title="Sparse, non-normal",
+                                                              backend=backend)
+    assert_that(fig, is_(not_none()))

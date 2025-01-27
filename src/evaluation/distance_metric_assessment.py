@@ -24,6 +24,7 @@ default_order = [0, 1, 2, 3, 4, 5]
 @dataclass
 class DistanceMeasureCols:
     criterion: str = "Criterion"
+    rank: str = "Rank"
     segment_id: str = SyntheticDataSegmentCols.segment_id
     canonical_pattern_id: str = "P_x"
     compared_to_pattern_id: str = "P_y"
