@@ -17,7 +17,7 @@ class DistanceMetricInterpretation:
         # x is runs, y is measures, cell value is average rank for run and measure across criterion
         self.average_rank_per_run = read_csv_of_overall_rank_per_dataset(self.overall_ds_name,
                                                                          self.data_type, self.data_dir,
-                                                                         self.root_results_dir)
+                                                                         self.root_results_dir)[self.__measures]
         self.criteria_average_run_df = read_csv_of_average_criteria_across_datasets(self.overall_ds_name,
                                                                                     self.data_type, self.data_dir,
-                                                                                    self.root_results_dir)
+                                                                                    self.root_results_dir)[self.__measures]

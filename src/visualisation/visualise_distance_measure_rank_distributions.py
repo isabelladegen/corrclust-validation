@@ -7,7 +7,8 @@ from src.utils.distance_measures import short_distance_measure_names
 from src.utils.plots.matplotlib_helper_functions import reset_matplotlib, Backends
 
 
-def violin_plots_of_average_rank_per_distance_measure(df: pd.DataFrame, title="", rename_measures=short_distance_measure_names,
+def violin_plots_of_average_rank_per_distance_measure(df: pd.DataFrame, title="",
+                                                      rename_measures=short_distance_measure_names,
                                                       backend=Backends.none.value):
     """Input df is rows are the runs, columns are the measures"""
 
@@ -20,6 +21,7 @@ def violin_plots_of_average_rank_per_distance_measure(df: pd.DataFrame, title=""
     # reshape from x=run, y=measures to two columns measure and average rank
     melted_df = df.melt(var_name=x_column, value_name=y_column)
     melted_df[x_column] = melted_df[x_column].replace(rename_measures)
+    min_rank = melted_df[y_column].min()
 
     # calculate median for each measure and sort
     measure_medians = melted_df.groupby(x_column)[y_column].median().sort_values()
@@ -31,11 +33,12 @@ def violin_plots_of_average_rank_per_distance_measure(df: pd.DataFrame, title=""
                         y=y_column,
                         inner='box',  # Shows quartile box inside violin
                         alpha=0.7,
-                        order=measure_order)
+                        order=measure_order,
+                        bw_adjust=0.4)  # reduce the smoothing to better represent the discrete values
 
     # Add median annotations below the violins
     for i, median in enumerate(measure_medians):
-        ax.text(i, 3, f'{median:.2f}',
+        ax.text(i, int(min_rank), f'{median:.2f}',
                 horizontalalignment='center',
                 verticalalignment='center',
                 fontweight='bold',
@@ -53,7 +56,7 @@ def violin_plots_of_average_rank_per_distance_measure(df: pd.DataFrame, title=""
     plt.xlabel('')
 
     # Set y-axis to start at 1
-    plt.ylim(bottom=1)
+    plt.ylim(bottom=int(min_rank) - 0.5)
 
     # Adjust layout to prevent label cutoff
     plt.tight_layout()
