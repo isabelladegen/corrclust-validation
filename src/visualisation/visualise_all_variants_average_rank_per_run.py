@@ -45,7 +45,7 @@ def violin_plots_for(data_dirs, dataset_types, run_names, root_results_dir, dist
                                                                     title=title,
                                                                     backend=backend)
             criteria_title = "Distribution of Ranks for the " + variant_desc
-            criteria_fig = violin_plot_grids_per_criteria_for_distance_measure(interpretation.all_criteria_ranks_df,
+            criteria_fig = violin_plot_grids_per_criteria_for_distance_measure(interpretation.raw_criteria_ranks_df,
                                                                                title=criteria_title,
                                                                                backend=backend)
             if save_fig:

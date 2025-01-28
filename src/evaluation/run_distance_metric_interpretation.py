@@ -20,7 +20,7 @@ def interpret_distance_metric_for(top_x: [], data_dirs: [], dataset_types: [], r
                                                           root_results_dir=root_results_dir,
                                                           measures=distance_measures)
             for x in top_x:
-                interpretation.top_and_bottom_x_distance_measures(x=x, save_results=True)
+                interpretation.top_and_bottom_x_distance_measures_ranks(x=x, save_results=True)
 
 
 if __name__ == "__main__":
