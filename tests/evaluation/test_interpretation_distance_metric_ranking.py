@@ -76,5 +76,5 @@ def test_returns_the_top_x_bottom_x_distance_measure_by_various_statistics():
     assert_that(df.loc['mean', DistanceInterpretation.top_avg], is_('L1, L2'))
 
     # read results from disk
-    read_top_bottom_distance_measure_result(overall_ds_name=overall_ds_name, data_type=data_type,
+    read_top_bottom_distance_measure_result(x=x, overall_ds_name=overall_ds_name, data_type=data_type,
                                             base_results_dir=root_results_dir, data_dir=test_data_dir)

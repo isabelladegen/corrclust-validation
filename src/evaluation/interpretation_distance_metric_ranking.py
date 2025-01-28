@@ -189,14 +189,15 @@ class DistanceMetricInterpretation:
                                                                      data_type=self.data_type,
                                                                      base_results_dir=self.root_results_dir,
                                                                      data_dir=self.data_dir)
-            result.to_csv(str(path.join(result_dir, DISTANCE_MEASURE_EVALUATION_TOP_BOTTOM_MEASURES)))
+            result.to_csv(str(path.join(result_dir, str(x) + '_' + DISTANCE_MEASURE_EVALUATION_TOP_BOTTOM_MEASURES)))
 
         return result
 
 
-def read_top_bottom_distance_measure_result(overall_ds_name: str, data_type: str, base_results_dir: str, data_dir: str):
+def read_top_bottom_distance_measure_result(x:int, overall_ds_name: str, data_type: str, base_results_dir: str, data_dir: str):
     """
     Reads csv from results for top and bottom distance measures
+    :param x: how many top and bottom measures were listed
     :return pd.DataFrame: rows are the describe statistics and columns are the top, bottom for average rank and all
     criteria
     """
@@ -204,7 +205,7 @@ def read_top_bottom_distance_measure_result(overall_ds_name: str, data_type: str
                                                              data_type=data_type,
                                                              base_results_dir=base_results_dir,
                                                              data_dir=data_dir)
-    file_name = DISTANCE_MEASURE_EVALUATION_TOP_BOTTOM_MEASURES
+    file_name = str(x) + '_' + DISTANCE_MEASURE_EVALUATION_TOP_BOTTOM_MEASURES
 
     full_path = path.join(result_dir, file_name)
     df = pd.read_csv(str(full_path), index_col=0)

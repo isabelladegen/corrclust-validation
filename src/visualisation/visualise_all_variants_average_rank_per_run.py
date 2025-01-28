@@ -6,7 +6,7 @@ import pandas as pd
 from src.evaluation.interpretation_distance_metric_ranking import DistanceMetricInterpretation
 from src.utils.configurations import ROOT_RESULTS_DIR, SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, \
     IRREGULAR_P90_DATA_DIR, GENERATED_DATASETS_FILE_PATH, base_dataset_result_folder_for_type, ResultsType, \
-    get_image_name_based_on_data_dir, AVERAGE_RANK_DISTRIBUTION, get_image_name_based_on_data_dir_and_data_type, \
+    AVERAGE_RANK_DISTRIBUTION, get_image_name_based_on_data_dir_and_data_type, \
     CRITERIA_RANK_DISTRIBUTION
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
