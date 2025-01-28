@@ -3,7 +3,8 @@ from hamcrest import *
 
 from src.evaluation.distance_metric_assessment import DistanceMeasureCols
 from src.evaluation.distance_metric_evaluation import EvaluationCriteria
-from src.evaluation.interpretation_distance_metric_ranking import DistanceMetricInterpretation
+from src.evaluation.interpretation_distance_metric_ranking import DistanceMetricInterpretation, DistanceInterpretation, \
+    read_top_bottom_distance_measure_result
 from src.utils.configurations import RunInformationCols
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
@@ -29,6 +30,13 @@ def test_loads_df_average_overall_criterion_per_run_df():
     assert_that(overall_ranks.shape, is_((len(run_names), len(measures))))
 
 
+def test_calculates_statistics_df_for_average_rank_across_all_runs():
+    df = inter.stats_for_average_rank_across_all_runs()
+
+    assert_that(df.loc['mean', DistanceMeasures.l1_cor_dist], is_(1.833))
+    assert_that(df.loc['std', DistanceMeasures.l1_cor_dist], is_(0.937))
+
+
 def test_loads_criteria_average_run_df():
     df = inter.criteria_average_run_df
 
@@ -49,3 +57,24 @@ def test_loads_all_criteria_level_ranks_for_each_run_into_one_df():
     # select for one criteria
     fitlered = df[df[DistanceMeasureCols.criterion] == EvaluationCriteria.inter_i]
     assert_that(fitlered.shape[0], is_(n_runs * n_measures))
+
+
+def test_calculates_statistics_df_per_criterion():
+    results = inter.stats_per_criterion_rank()
+
+    df = results[EvaluationCriteria.inter_i]
+
+    assert_that(df.loc['mean', DistanceMeasures.l1_cor_dist], is_(2))
+    assert_that(df.loc['std', DistanceMeasures.l1_cor_dist], is_(0))
+
+
+def test_returns_the_top_x_bottom_x_distance_measure_by_various_statistics():
+    x = 2
+    df = inter.top_and_bottom_x_distance_measures(x=x, save_results=True)
+
+    assert_that(df.shape[1], is_(14))  # column for top and bottom for avg and all 6 criterion
+    assert_that(df.loc['mean', DistanceInterpretation.top_avg], is_('L1, L2'))
+
+    # read results from disk
+    read_top_bottom_distance_measure_result(overall_ds_name=overall_ds_name, data_type=data_type,
+                                            base_results_dir=root_results_dir, data_dir=test_data_dir)

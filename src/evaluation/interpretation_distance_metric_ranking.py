@@ -1,10 +1,33 @@
+from dataclasses import dataclass
+from os import path
+
 import pandas as pd
 
 from src.evaluation.distance_metric_assessment import DistanceMeasureCols
+from src.evaluation.distance_metric_evaluation import EvaluationCriteria
 from src.evaluation.distance_metric_ranking import read_csv_of_overall_rank_per_dataset, \
     read_csv_of_average_criteria_across_datasets, read_csv_of_ranks_for_all_criteria
-from src.utils.configurations import RunInformationCols
-from src.utils.plots.matplotlib_helper_functions import Backends
+from src.utils.configurations import RunInformationCols, distance_measure_evaluation_results_dir_for, \
+    DISTANCE_MEASURE_EVALUATION_TOP_BOTTOM_MEASURES
+from src.utils.distance_measures import short_distance_measure_names
+
+
+@dataclass
+class DistanceInterpretation:
+    top_avg: str = 'top avg'  # all criteria averaged
+    bottom_avg: str = 'bottom avg'  # all criteria averaged
+    top_inter_i: str = "top c1"
+    top_inter_ii: str = "top c2"
+    top_inter_iii: str = "top c3"
+    top_disc_i: str = "top c4"
+    top_disc_ii: str = "top c5"
+    top_disc_iii: str = "top c6"
+    bottom_inter_i: str = "bottom c1"
+    bottom_inter_ii: str = "bottom c2"
+    bottom_inter_iii: str = "bottom c3"
+    bottom_disc_i: str = "bottom c4"
+    bottom_disc_ii: str = "bottom c5"
+    bottom_disc_iii: str = "bottom c6"
 
 
 class DistanceMetricInterpretation:
@@ -43,7 +66,8 @@ class DistanceMetricInterpretation:
             # change into long df with columns criteria, distance measure and rank
             columns = [DistanceMeasureCols.criterion]
             columns.extend(self.__measures)
-            melted = pd.melt(rank_df[columns], id_vars=DistanceMeasureCols.criterion, var_name=DistanceMeasureCols.type, value_name=DistanceMeasureCols.rank)
+            melted = pd.melt(rank_df[columns], id_vars=DistanceMeasureCols.criterion, var_name=DistanceMeasureCols.type,
+                             value_name=DistanceMeasureCols.rank)
             # add run name column
             melted[RunInformationCols.ds_name] = run_name
 
@@ -57,3 +81,131 @@ class DistanceMetricInterpretation:
         final_df = final_df[[RunInformationCols.ds_name, DistanceMeasureCols.criterion, DistanceMeasureCols.type,
                              DistanceMeasureCols.rank]]
         return final_df
+
+    def stats_for_average_rank_across_all_runs(self):
+        """
+        Calculates descriptive statistics for the average rank across all runs
+        :return: pd.Dataframe with rows descriptive statistics and columns distance measures
+        """
+        stats = self.all_criteria_ranks_df.groupby(DistanceMeasureCols.type)[DistanceMeasureCols.rank].describe().round(
+            self.__round_to)
+        stats = stats.transpose()
+        return stats
+
+    def stats_per_criterion_rank(self):
+        """
+        Calculates descriptive statistics for the ranks across all runs per criterion
+        :return: dictionary of key criterion value pd.Dataframe with rows descriptive statistics and columns
+        distance measures
+        """
+        criteria = self.all_criteria_ranks_df[DistanceMeasureCols.criterion].unique()
+        result = {}
+        for criterion in criteria:
+            criterion_ranks = self.all_criteria_ranks_df[
+                self.all_criteria_ranks_df[DistanceMeasureCols.criterion] == criterion]
+
+            stats = criterion_ranks.groupby(DistanceMeasureCols.type)[DistanceMeasureCols.rank].describe().round(
+                self.__round_to)
+            stats = stats.transpose()
+            result[criterion] = stats
+        return result
+
+    def top_and_bottom_x_distance_measures(self, x: int, save_results: bool = False):
+        """Returns dataframe of top and bottom x distance measures
+        :param x: number of x distance measures to include
+        :param save_results: if true will save df to distk
+        :return: pd.Dataframe with rows descriptive statistics for top x and bottom x average rank, per criterion ranks
+        """
+        avg_stats = self.stats_for_average_rank_across_all_runs()
+        criteria_stats = self.stats_per_criterion_rank()
+
+        top_avg = []
+        bottom_avg = []
+        top_inter_i = []
+        top_inter_ii = []
+        top_inter_iii = []
+        top_disc_i = []
+        top_disc_ii = []
+        top_disc_iii = []
+        bottom_inter_i = []
+        bottom_inter_ii = []
+        bottom_inter_iii = []
+        bottom_disc_i = []
+        bottom_disc_ii = []
+        bottom_disc_iii = []
+
+        for stat in avg_stats.index:
+            if stat == 'count':  # skip count
+                continue
+            top_avg.append(", ".join(avg_stats.loc[stat].sort_values(ascending=True).head(x).index.tolist()))
+            bottom_avg.append(", ".join(avg_stats.loc[stat].sort_values(ascending=False).head(x).index.tolist()))
+            top_inter_i.append(", ".join(criteria_stats[EvaluationCriteria.inter_i].loc[stat]
+                                         .sort_values(ascending=True).head(x).index.tolist()))
+            top_inter_ii.append(", ".join(criteria_stats[EvaluationCriteria.inter_ii].loc[stat]
+                                          .sort_values(ascending=True).head(x).index.tolist()))
+            top_inter_iii.append(", ".join(criteria_stats[EvaluationCriteria.inter_iii].loc[stat]
+                                           .sort_values(ascending=True).head(x).index.tolist()))
+            top_disc_i.append(", ".join(criteria_stats[EvaluationCriteria.disc_i].loc[stat]
+                                        .sort_values(ascending=True).head(x).index.tolist()))
+            top_disc_ii.append(", ".join(criteria_stats[EvaluationCriteria.disc_ii].loc[stat]
+                                         .sort_values(ascending=True).head(x).index.tolist()))
+            top_disc_iii.append(", ".join(criteria_stats[EvaluationCriteria.disc_iii].loc[stat]
+                                          .sort_values(ascending=True).head(x).index.tolist()))
+            bottom_inter_i.append(", ".join(criteria_stats[EvaluationCriteria.inter_i].loc[stat]
+                                            .sort_values(ascending=False).head(x).index.tolist()))
+            bottom_inter_ii.append(", ".join(criteria_stats[EvaluationCriteria.inter_ii].loc[stat]
+                                             .sort_values(ascending=False).head(x).index.tolist()))
+            bottom_inter_iii.append(", ".join(criteria_stats[EvaluationCriteria.inter_iii].loc[stat]
+                                              .sort_values(ascending=False).head(x).index.tolist()))
+            bottom_disc_i.append(", ".join(criteria_stats[EvaluationCriteria.disc_i].loc[stat]
+                                           .sort_values(ascending=False).head(x).index.tolist()))
+            bottom_disc_ii.append(", ".join(criteria_stats[EvaluationCriteria.disc_ii].loc[stat]
+                                            .sort_values(ascending=False).head(x).index.tolist()))
+            bottom_disc_iii.append(", ".join(criteria_stats[EvaluationCriteria.disc_iii].loc[stat]
+                                             .sort_values(ascending=False).head(x).index.tolist()))
+
+        result = pd.DataFrame(index=avg_stats.index[1:].tolist(), data={  # skip count from index
+            DistanceInterpretation.top_avg: top_avg,
+            DistanceInterpretation.bottom_avg: bottom_avg,
+            DistanceInterpretation.top_inter_i: top_inter_i,
+            DistanceInterpretation.top_inter_ii: top_inter_ii,
+            DistanceInterpretation.top_inter_iii: top_inter_iii,
+            DistanceInterpretation.top_disc_i: top_disc_i,
+            DistanceInterpretation.top_disc_ii: top_disc_ii,
+            DistanceInterpretation.top_disc_iii: top_disc_iii,
+            DistanceInterpretation.bottom_inter_i: bottom_inter_i,
+            DistanceInterpretation.bottom_inter_ii: bottom_inter_ii,
+            DistanceInterpretation.bottom_inter_iii: bottom_inter_iii,
+            DistanceInterpretation.bottom_disc_i: bottom_disc_i,
+            DistanceInterpretation.bottom_disc_ii: bottom_disc_ii,
+            DistanceInterpretation.bottom_disc_iii: bottom_disc_iii
+        })
+        # rename distance measures w    ith shorter names
+        for old, new in short_distance_measure_names.items():
+            result = result.apply(lambda x: x.str.replace(old, new))
+
+        if save_results:
+            result_dir = distance_measure_evaluation_results_dir_for(run_name=self.overall_ds_name,
+                                                                     data_type=self.data_type,
+                                                                     base_results_dir=self.root_results_dir,
+                                                                     data_dir=self.data_dir)
+            result.to_csv(str(path.join(result_dir, DISTANCE_MEASURE_EVALUATION_TOP_BOTTOM_MEASURES)))
+
+        return result
+
+
+def read_top_bottom_distance_measure_result(overall_ds_name: str, data_type: str, base_results_dir: str, data_dir: str):
+    """
+    Reads csv from results for top and bottom distance measures
+    :return pd.DataFrame: rows are the describe statistics and columns are the top, bottom for average rank and all
+    criteria
+    """
+    result_dir = distance_measure_evaluation_results_dir_for(run_name=overall_ds_name,
+                                                             data_type=data_type,
+                                                             base_results_dir=base_results_dir,
+                                                             data_dir=data_dir)
+    file_name = DISTANCE_MEASURE_EVALUATION_TOP_BOTTOM_MEASURES
+
+    full_path = path.join(result_dir, file_name)
+    df = pd.read_csv(str(full_path), index_col=0)
+    return df
