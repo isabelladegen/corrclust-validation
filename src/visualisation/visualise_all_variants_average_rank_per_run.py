@@ -15,18 +15,18 @@ from src.visualisation.visualise_distance_measure_rank_distributions import \
     violin_plots_of_average_rank_per_distance_measure, violin_plot_grids_per_criteria_for_distance_measure
 
 data_variant_description = {
-    (SYNTHETIC_DATA_DIR, SyntheticDataType.raw): "complete, raw data variant",
-    (SYNTHETIC_DATA_DIR, SyntheticDataType.normal_correlated): "complete, correlated data variant",
-    (SYNTHETIC_DATA_DIR, SyntheticDataType.non_normal_correlated): "complete, non-normal data variant",
-    (SYNTHETIC_DATA_DIR, SyntheticDataType.rs_1min): "complete, downsampled data variant",
-    (IRREGULAR_P30_DATA_DIR, SyntheticDataType.raw): "partial, raw data variant",
-    (IRREGULAR_P30_DATA_DIR, SyntheticDataType.normal_correlated): "partial, correlated data variant",
-    (IRREGULAR_P30_DATA_DIR, SyntheticDataType.non_normal_correlated): "partial, non-normal data variant",
-    (IRREGULAR_P30_DATA_DIR, SyntheticDataType.rs_1min): "partial, downsampled data variant",
-    (IRREGULAR_P90_DATA_DIR, SyntheticDataType.raw): "sparse, raw data variant",
-    (IRREGULAR_P90_DATA_DIR, SyntheticDataType.normal_correlated): "sparse, correlated data variant",
-    (IRREGULAR_P90_DATA_DIR, SyntheticDataType.non_normal_correlated): "sparse, non-normal data variant",
-    (IRREGULAR_P90_DATA_DIR, SyntheticDataType.rs_1min): "sparse, downsampled data variant",
+    (SYNTHETIC_DATA_DIR, SyntheticDataType.raw): "complete, raw",
+    (SYNTHETIC_DATA_DIR, SyntheticDataType.normal_correlated): "complete, correlated",
+    (SYNTHETIC_DATA_DIR, SyntheticDataType.non_normal_correlated): "complete, non-normal",
+    (SYNTHETIC_DATA_DIR, SyntheticDataType.rs_1min): "complete, downsampled",
+    (IRREGULAR_P30_DATA_DIR, SyntheticDataType.raw): "partial, raw",
+    (IRREGULAR_P30_DATA_DIR, SyntheticDataType.normal_correlated): "partial, correlated",
+    (IRREGULAR_P30_DATA_DIR, SyntheticDataType.non_normal_correlated): "partial, non-normal",
+    (IRREGULAR_P30_DATA_DIR, SyntheticDataType.rs_1min): "partial, downsampled",
+    (IRREGULAR_P90_DATA_DIR, SyntheticDataType.raw): "sparse, raw",
+    (IRREGULAR_P90_DATA_DIR, SyntheticDataType.normal_correlated): "sparse, correlated",
+    (IRREGULAR_P90_DATA_DIR, SyntheticDataType.non_normal_correlated): "sparse, non-normal",
+    (IRREGULAR_P90_DATA_DIR, SyntheticDataType.rs_1min): "sparse, downsampled",
 }
 
 
@@ -40,11 +40,11 @@ def violin_plots_for(data_dirs, dataset_types, run_names, root_results_dir, dist
                                                           root_results_dir=root_results_dir,
                                                           measures=distance_measures)
             variant_desc = data_variant_description[(data_dir, data_type)]
-            title = "Distribution of Average Ranks for the " + variant_desc
+            title = "Distribution of Average Ranks for the " + variant_desc + " data variant"
             fig = violin_plots_of_average_rank_per_distance_measure(interpretation.average_rank_per_run,
                                                                     title=title,
                                                                     backend=backend)
-            criteria_title = "Distribution of Ranks for the " + variant_desc
+            criteria_title = "Distribution of Ranks for the " + variant_desc + " data variant"
             criteria_fig = violin_plot_grids_per_criteria_for_distance_measure(interpretation.raw_criteria_ranks_df,
                                                                                title=criteria_title,
                                                                                backend=backend)

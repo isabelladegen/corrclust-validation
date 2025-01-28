@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -5,6 +6,77 @@ import matplotlib.pyplot as plt
 from src.evaluation.distance_metric_assessment import DistanceMeasureCols
 from src.utils.distance_measures import short_distance_measure_names
 from src.utils.plots.matplotlib_helper_functions import reset_matplotlib, Backends, fontsize
+
+
+def heatmap_of_ranks(df: pd.DataFrame, highlight_rows=[], highlight_cols=[], backend=Backends.none.value):
+    """
+    Creates heatmap of rank across data variants
+    :param df: Dataframe with rows being data variants and columns being distance measures
+    :param highlight_cols: sets all other cols transparent
+    :param highlight_rows: sets all other rows transparent, if no rows or cols given then everything is as normal
+    """
+    # Create figure and axes
+    # Setup plt
+    reset_matplotlib(backend)
+    fig = plt.figure(figsize=(16, 12))
+
+    do_highlight = (len(highlight_rows) + len(highlight_cols)) > 0
+
+    # Create masks for highlighted row and column
+    row_mask = np.zeros_like(df, dtype=bool)
+    col_mask = np.zeros_like(df, dtype=bool)
+
+    # Set True for the row and column to highlight
+    for row in highlight_rows:
+        row_mask[df.index == row] = True
+    for col in highlight_cols:
+        col_mask[:, df.columns == col] = True
+
+    # Combine masks and adjust alpha values
+    mask = row_mask | col_mask
+    alpha_matrix = np.ones_like(df, dtype=float)
+    alpha_matrix[mask] = 1.0  # Highlighted cells fully opaque
+    alpha_matrix[~mask] = 0.5 if do_highlight else 1.0  # Other cells more transparent unless no highlight
+
+    # Create heatmap
+    ax = sns.heatmap(
+        df,
+        annot=True,  # Show values in cells
+        fmt='.1f',  # Format for annotations
+        cmap=sns.color_palette("mako", n_colors=256, as_cmap=True),
+        cbar_kws={'label': 'Rank',
+                  'shrink': 0.68,
+                  'aspect': 30
+                  },
+        annot_kws={'size': fontsize, 'weight': 'bold'},
+        square=True,
+        linewidths=1,
+        linecolor='black',
+        clip_on=False,
+        alpha=alpha_matrix
+    )
+    ax.tick_params(left=False, bottom=False)
+    ax.grid(False)
+
+    # Set transparency of text
+    def text_alpha(is_highlighted):
+        if is_highlighted:
+            return 1.0
+        return 0.4 if do_highlight else 1.0
+
+    for i in range(len(df.index)):
+        for j in range(len(df.columns)):
+            text = ax.texts[i * len(df.columns) + j]
+            text.set_alpha(text_alpha(mask[i, j]))
+
+    # Rotate x-axis labels for better readability
+    plt.xticks(rotation=90, ha='right', fontsize=fontsize)
+    plt.yticks(rotation=0, ha='right', fontsize=fontsize)
+
+    plt.tight_layout()
+    plt.show()
+
+    return fig
 
 
 def violin_plots_of_average_rank_per_distance_measure(df: pd.DataFrame, title="",
@@ -50,7 +122,7 @@ def violin_plots_of_average_rank_per_distance_measure(df: pd.DataFrame, title=""
 
     # Customize the plot
     plt.xticks(rotation=45, ha='right')  # Rotate x-axis labels for better readability
-    if title is not "":
+    if title != "":
         plt.title(title)
     plt.ylabel('Average Rank')
     plt.xlabel('')
@@ -103,14 +175,14 @@ def violin_plot_grids_per_criteria_for_distance_measure(df: pd.DataFrame, title=
 
         # Create violin plot
         ax = sns.violinplot(data=criterion_data,
-                       x=x_column,
-                       y=y_column,
-                       ax=axes[idx],
-                       inner='box',  # Shows quartile box inside violin
-                       alpha=0.7,
-                       order=measure_order,  # lowest median first
-                       bw_adjust=0.4  # less smoothing to be truer to actual ranks observed
-                       )
+                            x=x_column,
+                            y=y_column,
+                            ax=axes[idx],
+                            inner='box',  # Shows quartile box inside violin
+                            alpha=0.7,
+                            order=measure_order,  # lowest median first
+                            bw_adjust=0.4  # less smoothing to be truer to actual ranks observed
+                            )
 
         # Add median annotations below the violins
         for i, median in enumerate(measure_medians):

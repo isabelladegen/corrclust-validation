@@ -328,7 +328,7 @@ class VisualiseMultipleDatasets:
             fig.savefig(path.join(folder, OVERALL_SEGMENT_LENGTH_IMAGE), dpi=300, bbox_inches='tight')
         return fig
 
-    def violin_plots_of_overall_mae(self, root_result_dir:str, save_fig=False):
+    def violin_plots_of_overall_mae(self, root_result_dir: str, save_fig=False):
         """
             Creates a plot of overall segment lengths, rows will be standard, irregular p 0.3, irregular p 0.9 and columns
             will be "RAW/NC/NN" and "RS"

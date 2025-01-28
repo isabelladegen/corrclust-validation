@@ -8,7 +8,8 @@ from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.visualisation.visualise_distance_measure_rank_distributions import \
-    violin_plots_of_average_rank_per_distance_measure, violin_plot_grids_per_criteria_for_distance_measure
+    violin_plots_of_average_rank_per_distance_measure, violin_plot_grids_per_criteria_for_distance_measure, \
+    heatmap_of_ranks
 
 root_results_dir = ROOT_RESULTS_DIR
 measures = [DistanceMeasures.l1_cor_dist, DistanceMeasures.l2_cor_dist, DistanceMeasures.log_frob_cor_dist,
@@ -52,4 +53,15 @@ def test_plots_grid_of_violin_plots_per_criterion():
     fig = violin_plot_grids_per_criteria_for_distance_measure(sparse_non_normal.raw_criteria_ranks_df,
                                                               title="Sparse, non-normal",
                                                               backend=backend)
+    assert_that(fig, is_(not_none()))
+
+
+def test_plots_heatmap_of_ranks_over_data_variant():
+    df = pd.DataFrame({
+        'L1 ref': [1, 2, 3],
+        'dt L1': [2, 1, 2],
+        'L2': [3, 3, 1]
+    }, index=['Non-normal, complete', 'None-normal, partial', 'None-normal, sparse'])
+
+    fig = heatmap_of_ranks(df, backend)
     assert_that(fig, is_(not_none()))
