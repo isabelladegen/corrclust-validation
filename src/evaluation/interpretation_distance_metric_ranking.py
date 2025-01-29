@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from os import path
 
 import pandas as pd
+from scipy import stats
 
 from src.evaluation.distance_metric_assessment import DistanceMeasureCols
 from src.evaluation.distance_metric_evaluation import EvaluationCriteria
@@ -161,7 +162,8 @@ class DistanceMetricInterpretation:
             top_avg.append(", ".join(avg_stats.loc[stat].sort_values(ascending=True).head(x).index.tolist()))
             bottom_avg.append(", ".join(avg_stats.loc[stat].sort_values(ascending=False).head(x).index.tolist()))
             raw_top_avg.append(", ".join(avg_raw_stats.loc[stat].sort_values(ascending=True).head(x).index.tolist()))
-            raw_bottom_avg.append(", ".join(avg_raw_stats.loc[stat].sort_values(ascending=False).head(x).index.tolist()))
+            raw_bottom_avg.append(
+                ", ".join(avg_raw_stats.loc[stat].sort_values(ascending=False).head(x).index.tolist()))
             top_inter_i.append(", ".join(criteria_stats[EvaluationCriteria.inter_i].loc[stat]
                                          .sort_values(ascending=True).head(x).index.tolist()))
             top_inter_ii.append(", ".join(criteria_stats[EvaluationCriteria.inter_ii].loc[stat]
@@ -217,6 +219,25 @@ class DistanceMetricInterpretation:
             result.to_csv(str(path.join(result_dir, str(x) + '_' + DISTANCE_MEASURE_EVALUATION_TOP_BOTTOM_MEASURES)))
 
         return result
+
+    def statistical_validation_of_two_measures_based_on_ranking(self, measure1: str, measure2: str, alpha: float,
+                                                                bonferroni_adjust: int):
+        """
+        Calculates the Wilcoxon signed rank test between measure 1 and 2. Alpha is divided by the number given for
+        boneferroni_adjust.
+        :returns statistic, p_value, is_significant, adjusted_alpha
+        """
+        m1_ranks = self.average_rank_per_run[measure1]
+        m2_ranks = self.average_rank_per_run[measure2]
+
+        result = stats.wilcoxon(x=m1_ranks, y=m2_ranks, method='exact')
+        statistic = result.statistic
+        p_value = result.pvalue
+
+        adjusted_alpha = (alpha / bonferroni_adjust)
+        is_significant = p_value < adjusted_alpha
+
+        return statistic, p_value, is_significant, adjusted_alpha
 
 
 def read_top_bottom_distance_measure_result(x: int, overall_ds_name: str, data_type: str,

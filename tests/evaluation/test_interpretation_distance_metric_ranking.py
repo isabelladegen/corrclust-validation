@@ -85,3 +85,16 @@ def test_returns_the_average_top_x_bottom_x_distance_measure_by_various_statisti
     # read results from disk
     read_top_bottom_distance_measure_result(x=x, overall_ds_name=overall_ds_name, data_type=data_type,
                                             base_results_dir=root_results_dir, data_dir=test_data_dir)
+
+
+def test_statistical_validation_of_top_measures_based_on_ranking():
+    m1 = DistanceMeasures.l1_cor_dist
+    m2 = DistanceMeasures.l2_cor_dist
+    alpha = 0.05
+    statistic, p_value, is_significant, adjusted_alpha = inter.statistical_validation_of_two_measures_based_on_ranking(
+        measure1=m1, measure2=m2, alpha=alpha, bonferroni_adjust=1)
+
+    assert_that(statistic, is_(0))
+    assert_that(p_value, is_(0.5))
+    assert_that(is_significant, is_(False))
+    assert_that(adjusted_alpha, is_(alpha))
