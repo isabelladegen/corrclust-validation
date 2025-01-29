@@ -9,15 +9,29 @@ from src.utils.distance_measures import short_distance_measure_names
 from src.utils.plots.matplotlib_helper_functions import reset_matplotlib, Backends, fontsize
 
 
-def heatmap_of_raw_values(df: pd.DataFrame, backend=Backends.none.value):
+def heatmap_of_raw_values(df: pd.DataFrame, highlight_rows=[], backend=Backends.none.value):
     """
     Creates heatmap of raw across data variants, for the colour the raw values are scaled, for annotation the actual
     raw values are used
     :param df: Dataframe with rows being data variants and columns being distance measures
+    :param highlight_rows: sets all other rows transparent, if no rows or cols given then everything is as normal
     """
     # Setup plt
     reset_matplotlib(backend)
     fig = plt.figure(figsize=(16, 12))
+
+    do_highlight = len(highlight_rows) > 0
+    # Create masks for highlighted row and column
+    row_mask = np.zeros_like(df, dtype=bool)
+
+    # Set True for the rows to highlight
+    for row in highlight_rows:
+        row_mask[df.index == row] = True
+
+    # Adjust alpha values
+    alpha_matrix = np.ones_like(df, dtype=float)
+    alpha_matrix[row_mask] = 1.0  # Highlighted cells fully opaque
+    alpha_matrix[~row_mask] = 0.5 if do_highlight else 1.0  # Other cells more transparent unless no highlight
 
     # scale values so that all colors are comparable (dark is good, bright is worse)
     scaled_df = df.copy()
@@ -56,9 +70,21 @@ def heatmap_of_raw_values(df: pd.DataFrame, backend=Backends.none.value):
                   },
         annot_kws={'size': fontsize, 'weight': 'bold'},
         square=True,
+        alpha=alpha_matrix
     )
     ax.tick_params(left=False, bottom=False, top=False)
     ax.grid(False)
+
+    # Set transparency of text
+    def text_alpha(is_highlighted):
+        if is_highlighted:
+            return 1.0
+        return 0.4 if do_highlight else 1.0
+
+    for i in range(len(df.index)):
+        for j in range(len(df.columns)):
+            text = ax.texts[i * len(df.columns) + j]
+            text.set_alpha(text_alpha(row_mask[i, j]))
 
     # Separate each criterion pair
     n_cols = len(df.columns)

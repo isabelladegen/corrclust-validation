@@ -69,7 +69,9 @@ def plot_raw_values_heat_map_for_top_two_measures(raw_value_dfs, highlight_cols,
             row_data[f'{criteria_short_names[criterion]}:{short_distance_measure_names[m2]}'] = df.loc[criterion, m2]
         rows.append(row_data)
     matrix_raw_values = pd.DataFrame(rows, index=list(raw_value_dfs.keys()))
-    fig = heatmap_of_raw_values(matrix_raw_values, backend=backend)
+    partial_nn = data_variant_description[(IRREGULAR_P30_DATA_DIR, SyntheticDataType.non_normal_correlated)]
+    highlight_rows = [partial_nn]
+    fig = heatmap_of_raw_values(matrix_raw_values, highlight_rows=highlight_rows, backend=backend)
     return fig
 
 
