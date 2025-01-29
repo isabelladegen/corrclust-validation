@@ -27,8 +27,20 @@ class EvaluationCriteria:
     disc_i: str = "Discriminative Power: higher overall entropy"
     disc_ii: str = "Discriminative Power: lower level set entropy"
     disc_iii: str = "Discriminative Power: higher macro F1 score"
-    # stab_i: str = "Stability: completed" -> this is kind of a not catchable one
     stab_ii: str = "Stability: fewer nan and inf distances"
+
+
+criteria_short_names = {
+    EvaluationCriteria.inter_i: '1. L_0=0',
+    EvaluationCriteria.inter_ii: '2. L_d diff',
+    EvaluationCriteria.inter_iii: '3. L_d inc',
+    EvaluationCriteria.disc_i: '4. H_D',
+    EvaluationCriteria.disc_ii: '5. H_L',
+    EvaluationCriteria.disc_iii: '6. F1',
+}
+
+# criteria for which lower values are better
+inverse_criteria = [criteria_short_names[EvaluationCriteria.inter_i], criteria_short_names[EvaluationCriteria.disc_ii]]
 
 
 class DistanceMetricEvaluation:

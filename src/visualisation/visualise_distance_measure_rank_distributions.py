@@ -4,8 +4,83 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 from src.evaluation.distance_metric_assessment import DistanceMeasureCols
+from src.evaluation.distance_metric_evaluation import inverse_criteria
 from src.utils.distance_measures import short_distance_measure_names
 from src.utils.plots.matplotlib_helper_functions import reset_matplotlib, Backends, fontsize
+
+
+def heatmap_of_raw_values(df: pd.DataFrame, backend=Backends.none.value):
+    """
+    Creates heatmap of raw across data variants, for the colour the raw values are scaled, for annotation the actual
+    raw values are used
+    :param df: Dataframe with rows being data variants and columns being distance measures
+    """
+    # Setup plt
+    reset_matplotlib(backend)
+    fig = plt.figure(figsize=(16, 12))
+
+    # scale values so that all colors are comparable (dark is good, bright is worse)
+    scaled_df = df.copy()
+    measures = []
+    criteria = []
+    for col in df.columns:
+        split_str = col.split(':')
+        criteria.append(split_str[0])
+        measures.append(split_str[1])
+
+    m1 = measures[0]
+    m2 = measures[1]
+
+    for criterion in set(criteria):
+        col1 = f'{criterion}:{m1}'
+        col2 = f'{criterion}:{m2}'
+
+        # Find min and max across both measures for this criterion
+        min_val = min(df[col1].min(), df[col2].min())
+        max_val = max(df[col1].max(), df[col2].max())
+
+        # Scale both measures together, inverse for measures where lower values are better
+        for col, measure in [(col1, m1), (col2, m2)]:
+            scaled = (df[col] - min_val) / (max_val - min_val)
+            scaled_df[col] = 1 - scaled if criterion in inverse_criteria else scaled
+
+    # Create heatmap
+    ax = sns.heatmap(
+        data=scaled_df,  # show scaled values for colour comparison
+        annot=df,  # Show raw values in cell annotation
+        fmt='.2f',  # Format for annotations
+        cmap=sns.color_palette("mako", n_colors=256, as_cmap=True).reversed(),
+        cbar_kws={'label': 'Normalised raw values',
+                  'shrink': 1,
+                  'aspect': 30
+                  },
+        annot_kws={'size': fontsize, 'weight': 'bold'},
+        square=True,
+    )
+    ax.tick_params(left=False, bottom=False, top=False)
+    ax.grid(False)
+
+    # Separate each criterion pair
+    n_cols = len(df.columns)
+    for i in range(0, n_cols, 2):
+        if i > 0:  # Don't draw line at x=0
+            ax.axvline(x=i, color='#B0C4DE', linewidth=3)
+
+    # Axis labels
+    plt.yticks(rotation=0, ha='right', fontsize=fontsize)  # data variant
+    plt.xticks(rotation=90, ha='right', fontsize=fontsize, ticks=np.arange(len(df.columns)) + 0.7, labels=measures)
+
+    # Add criteria labels on top
+    secondary_ax = plt.gca().secondary_xaxis('top')  # or 'bottom' if you prefer
+    secondary_ax.set_xticks(np.arange(1, len(df.columns), 2))  # every other column
+    secondary_ax.set_xticklabels(criteria[::2], fontsize=fontsize)
+    secondary_ax.tick_params(axis='x', length=0)  # hide the actual tick marks
+    secondary_ax.spines['top'].set_visible(False)  # hide spine that the tick marks are on
+
+    plt.tight_layout()
+    plt.show()
+
+    return fig
 
 
 def heatmap_of_ranks(df: pd.DataFrame, highlight_rows=[], highlight_cols=[], backend=Backends.none.value):

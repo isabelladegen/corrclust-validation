@@ -3,21 +3,30 @@ from os import path
 
 import pandas as pd
 
+from src.evaluation.distance_metric_evaluation import criteria_short_names
 from src.evaluation.interpretation_distance_metric_ranking import DistanceMetricInterpretation
 from src.utils.configurations import ROOT_RESULTS_DIR, SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, \
     IRREGULAR_P90_DATA_DIR, GENERATED_DATASETS_FILE_PATH, base_dataset_result_folder_for_type, ResultsType, \
-    AVERAGE_RANK_DISTRIBUTION
+    AVERAGE_RANK_DISTRIBUTION, HEATMAP_OF_RANKS, HEATMAP_OF_BEST_MEASURES_RAW_VALUES
 from src.utils.distance_measures import DistanceMeasures, short_distance_measure_names
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
-from src.visualisation.visualise_all_variants_average_rank_per_run import data_variant_description
-from src.visualisation.visualise_distance_measure_rank_distributions import heatmap_of_ranks
+from src.visualisation.run_average_rank_visualisations import data_variant_description
+from src.visualisation.visualise_distance_measure_rank_distributions import heatmap_of_ranks, heatmap_of_raw_values
+
+
+def get_key_for_value(dictionary, value):
+    for key, val in dictionary.items():
+        if val == value:
+            return key
+    return None
 
 
 def heatmap_for_all_variants(data_dirs, dataset_types, run_names, root_results_dir, distance_measures, overall_ds_name,
                              backend, save_fig=True):
     # build data to plot
     ranks_dfs = {}
+    raw_value_dfs = {}
     for data_dir in data_dirs:
         for data_type in dataset_types:
             interpretation = DistanceMetricInterpretation(run_names=run_names, overall_ds_name=overall_ds_name,
@@ -26,29 +35,56 @@ def heatmap_for_all_variants(data_dirs, dataset_types, run_names, root_results_d
                                                           root_results_dir=root_results_dir,
                                                           measures=distance_measures)
             variant_desc = data_variant_description[(data_dir, data_type)]
+            # for average rank heatmap
             ranks_dfs[variant_desc] = interpretation.stats_for_average_ranks_across_all_runs().loc["50%"]
+            # for raw value heatmap
+            raw_value_dfs[variant_desc] = interpretation.median_raw_values
 
-    rank_matrix = pd.concat(ranks_dfs).unstack(level=0).T
-    # rename distance measures
-    rank_matrix = rank_matrix.rename(columns=lambda x: short_distance_measure_names.get(x, x))
+    # PLOT RANKING HEATMAP
+    fig, highlight_cols = plot_ranking_heat_map(backend, ranks_dfs)
 
-    # plot heatmap
-    # highlight baseline variant
-    partial_nn = data_variant_description[(IRREGULAR_P30_DATA_DIR, SyntheticDataType.non_normal_correlated)]
-    highlight_rows = [partial_nn]
+    # PLOT RAW VALUE HEATMAP
+    fig_raw = plot_raw_values_heat_map_for_top_two_measures(raw_value_dfs, highlight_cols, backend)
 
-    # find top 2 distance measure with min rank for partial_nn
-    highlight_cols = rank_matrix.loc[partial_nn].sort_values(ascending=True).head(2).index.tolist()
-
-    fig = heatmap_of_ranks(rank_matrix, highlight_rows=highlight_rows, highlight_cols=highlight_cols, backend=backend)
-
-    # save figure
+    # save figures
     if save_fig:
         folder = base_dataset_result_folder_for_type(root_results_dir, ResultsType.distance_measure_evaluation)
         folder = path.join(folder, "images")
         os.makedirs(folder, exist_ok=True)
-        image_name = AVERAGE_RANK_DISTRIBUTION
-        fig.savefig(path.join(folder, image_name), dpi=300, bbox_inches='tight')
+        fig.savefig(path.join(folder, HEATMAP_OF_RANKS), dpi=300, bbox_inches='tight')
+        fig_raw.savefig(path.join(folder, HEATMAP_OF_BEST_MEASURES_RAW_VALUES), dpi=300, bbox_inches='tight')
+
+
+def plot_raw_values_heat_map_for_top_two_measures(raw_value_dfs, highlight_cols, backend):
+    # create matrix for raw values for top best ranked measures
+    top_measures = [get_key_for_value(short_distance_measure_names, m) for m in highlight_cols]
+    m1 = top_measures[0]
+    m2 = top_measures[1]
+    rows = []
+    criteria = list(raw_value_dfs.values())[0].index
+    for variant_name, df in raw_value_dfs.items():
+        row_data = {}
+        for criterion in criteria:
+            row_data[f'{criteria_short_names[criterion]}:{short_distance_measure_names[m1]}'] = df.loc[criterion, m1]
+            row_data[f'{criteria_short_names[criterion]}:{short_distance_measure_names[m2]}'] = df.loc[criterion, m2]
+        rows.append(row_data)
+    matrix_raw_values = pd.DataFrame(rows, index=list(raw_value_dfs.keys()))
+    fig = heatmap_of_raw_values(matrix_raw_values, backend=backend)
+    return fig
+
+
+def plot_ranking_heat_map(backend, ranks_dfs):
+    rank_matrix = pd.concat(ranks_dfs).unstack(level=0).T
+    # rename distance measures
+    rank_matrix = rank_matrix.rename(columns=lambda x: short_distance_measure_names.get(x, x))
+    # plot heatmap
+    # highlight baseline variant
+    partial_nn = data_variant_description[(IRREGULAR_P30_DATA_DIR, SyntheticDataType.non_normal_correlated)]
+    highlight_rows = [partial_nn]
+    # find top 2 distance measure with min rank for partial_nn
+    highlight_cols = rank_matrix.loc[partial_nn].sort_values(ascending=True).head(2).index.tolist()
+    fig = heatmap_of_ranks(rank_matrix, highlight_rows=highlight_rows, highlight_cols=highlight_cols, backend=backend)
+    return fig, highlight_cols
 
 
 if __name__ == "__main__":
