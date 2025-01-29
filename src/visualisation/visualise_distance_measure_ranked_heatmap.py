@@ -33,11 +33,9 @@ def heatmap_for_all_variants(data_dirs, dataset_types, run_names, root_results_d
     rank_matrix = rank_matrix.rename(columns=lambda x: short_distance_measure_names.get(x, x))
 
     # plot heatmap
-    # highlight non-normal variants
+    # highlight baseline variant
     partial_nn = data_variant_description[(IRREGULAR_P30_DATA_DIR, SyntheticDataType.non_normal_correlated)]
-    sparse_nn = data_variant_description[(IRREGULAR_P90_DATA_DIR, SyntheticDataType.non_normal_correlated)]
-    complete_nn = data_variant_description[(SYNTHETIC_DATA_DIR, SyntheticDataType.non_normal_correlated)]
-    highlight_rows = [partial_nn, sparse_nn, complete_nn]
+    highlight_rows = [partial_nn]
 
     # find top 2 distance measure with min rank for partial_nn
     highlight_cols = rank_matrix.loc[partial_nn].sort_values(ascending=True).head(2).index.tolist()
