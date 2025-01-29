@@ -66,6 +66,12 @@ def test_loads_all_criteria_raw_ranks_for_each_run_into_one_df():
     assert_that(filtered.shape[0], is_(n_runs * n_measures))
 
 
+def test_calculates_median_raw_values_across_runs():
+    df = inter.median_raw_values
+
+    assert_that(df.shape, is_((number_of_criteria, len(measures))))
+
+
 def test_calculates_statistics_df_per_criterion():
     results = inter.stats_per_criterion_raw_ranks()
 

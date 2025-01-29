@@ -6,7 +6,7 @@ import pandas as pd
 from scipy import stats
 
 from src.evaluation.distance_metric_assessment import DistanceMeasureCols
-from src.evaluation.distance_metric_evaluation import EvaluationCriteria
+from src.evaluation.distance_metric_evaluation import EvaluationCriteria, read_csv_of_raw_values_for_all_criteria
 from src.evaluation.distance_metric_ranking import read_csv_of_overall_rank_per_dataset, \
     read_csv_of_average_criteria_across_datasets, read_csv_of_ranks_for_all_criteria
 from src.utils.configurations import RunInformationCols, distance_measure_evaluation_results_dir_for, \
@@ -58,6 +58,9 @@ class DistanceMetricInterpretation:
             self.__measures]
         # columns run_name, criteria, measure, rank - long df
         self.raw_criteria_ranks_df = self.__melt_into_criteria_ranks_df()
+
+        # read raw values for distance measures
+        self.median_raw_values = self.__median_raw_values()
 
     def __melt_into_criteria_ranks_df(self):
         melted_dfs = []
@@ -240,6 +243,34 @@ class DistanceMetricInterpretation:
         result = stats.wilcoxon(x=nonzero_diffs, zero_method='wilcox', mode='exact')
         stats_res = WilcoxResult(result.statistic, result.pvalue, len(m1_ranks), len(nonzero_diffs))
         return stats_res
+
+    def __median_raw_values(self):
+            # Load all raw_criteria_data for this data variant
+            measures = self.__measures
+            criteria = [EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii, EvaluationCriteria.inter_iii,
+                        EvaluationCriteria.disc_i, EvaluationCriteria.disc_ii, EvaluationCriteria.disc_iii]
+            raw_dfs = []
+            for run_name in self.run_names:
+                raw_criteria_df = read_csv_of_raw_values_for_all_criteria(run_name=run_name, data_type=self.data_type,
+                                                                          data_dir=self.data_dir,
+                                                                          base_results_dir=self.root_results_dir)
+                # filter measures and criteria
+                raw_dfs.append(raw_criteria_df.loc[criteria, measures])
+
+            # Stack all DataFrames along a new axis
+            stacked_data = np.stack([df.values for df in raw_dfs])
+
+            # Calculate median along the first axis (across DataFrames)
+            median_values = np.median(stacked_data, axis=0)
+
+            # Create new DataFrame with median values
+            # Using the column names and index from the first DataFrame
+            median_df = pd.DataFrame(
+                median_values,
+                columns=raw_dfs[0].columns,
+                index=raw_dfs[0].index
+            )
+            return median_df
 
 
 def read_top_bottom_distance_measure_result(x: int, overall_ds_name: str, data_type: str,

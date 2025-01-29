@@ -67,7 +67,7 @@ class DistanceMetricRanking:
             row_values = raw_df.loc[idx]
 
             if what_is_best == 'boolean':
-                # Convert bools to int, then judge higher (=True) is better but average
+                # Convert bools to int, then judge higher (=True) is better
                 rankings = row_values.astype(int).rank(ascending=False, method='dense')
             else:  # for numeric rows use pandas ranking for series
                 rankings = row_values.rank(ascending=what_is_best, method='dense')
