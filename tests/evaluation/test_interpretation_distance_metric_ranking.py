@@ -90,11 +90,15 @@ def test_returns_the_average_top_x_bottom_x_distance_measure_by_various_statisti
 def test_statistical_validation_of_top_measures_based_on_ranking():
     m1 = DistanceMeasures.l1_cor_dist
     m2 = DistanceMeasures.l2_cor_dist
-    alpha = 0.05
-    statistic, p_value, is_significant, adjusted_alpha = inter.statistical_validation_of_two_measures_based_on_ranking(
-        measure1=m1, measure2=m2, alpha=alpha, bonferroni_adjust=1)
+    result = inter.statistical_validation_of_two_measures_based_on_average_ranking(measure1=m1, measure2=m2)
 
-    assert_that(statistic, is_(0))
-    assert_that(p_value, is_(0.5))
-    assert_that(is_significant, is_(False))
-    assert_that(adjusted_alpha, is_(alpha))
+    alpha = 0.05
+    b = 1
+    assert_that(result.statistic, is_(0))
+    assert_that(result.p_value, is_(0.5))
+    assert_that(result.is_significant(alpha, b), is_(False))
+    assert_that(result.adjusted_alpha(alpha), is_(alpha))
+    assert_that(result.n_pairs, is_(2))
+    assert_that(result.non_zero, is_(2))
+    assert_that(result.effect_size(), is_(0.477))
+    assert_that(result.achieved_power(), is_(0.061))

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from os import path
 
+import numpy as np
 import pandas as pd
 from scipy import stats
 
@@ -11,6 +12,7 @@ from src.evaluation.distance_metric_ranking import read_csv_of_overall_rank_per_
 from src.utils.configurations import RunInformationCols, distance_measure_evaluation_results_dir_for, \
     DISTANCE_MEASURE_EVALUATION_TOP_BOTTOM_MEASURES
 from src.utils.distance_measures import short_distance_measure_names
+from src.utils.stats import WilcoxResult
 
 
 @dataclass
@@ -220,24 +222,24 @@ class DistanceMetricInterpretation:
 
         return result
 
-    def statistical_validation_of_two_measures_based_on_ranking(self, measure1: str, measure2: str, alpha: float,
-                                                                bonferroni_adjust: int):
+    def statistical_validation_of_two_measures_based_on_average_ranking(self, measure1: str, measure2: str,
+                                                                        non_zero: float = 0.001):
         """
-        Calculates the Wilcoxon signed rank test between measure 1 and 2. Alpha is divided by the number given for
-        boneferroni_adjust.
-        :returns statistic, p_value, is_significant, adjusted_alpha
+        Calculates the Wilcoxon signed rank test between measure 1 and 2. The difference in ranks has to be greater
+        than non-zero to be considered. Zero difference pairs are removed
+        :returns WilcoxResult
         """
         m1_ranks = self.average_rank_per_run[measure1]
         m2_ranks = self.average_rank_per_run[measure2]
 
-        result = stats.wilcoxon(x=m1_ranks, y=m2_ranks, method='exact')
-        statistic = result.statistic
-        p_value = result.pvalue
+        # remove zeros to avoid approximation
+        differences = np.array(m1_ranks) - np.array(m2_ranks)
+        nonzero_diffs = differences[np.abs(differences) > non_zero]  # don't consider too small differences
+        stats.wilcoxon(nonzero_diffs, mode='exact')
 
-        adjusted_alpha = (alpha / bonferroni_adjust)
-        is_significant = p_value < adjusted_alpha
-
-        return statistic, p_value, is_significant, adjusted_alpha
+        result = stats.wilcoxon(x=nonzero_diffs, zero_method='wilcox', mode='exact')
+        stats_res = WilcoxResult(result.statistic, result.pvalue, len(m1_ranks), len(nonzero_diffs))
+        return stats_res
 
 
 def read_top_bottom_distance_measure_result(x: int, overall_ds_name: str, data_type: str,

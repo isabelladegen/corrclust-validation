@@ -6,6 +6,8 @@ from pathlib import Path
 import yaml
 from os import path
 
+from src.utils.distance_measures import short_distance_measure_names
+
 
 @dataclass
 class ExtensionNames:
@@ -32,6 +34,7 @@ CRITERIA_RANK_DISTRIBUTION = 'criteria_rank_distributions_across_runs.png'
 AVERAGE_RANK_DISTRIBUTION = 'average_rank_distributions_across_runs.png'
 HEATMAP_OF_RANKS = 'heat_map_of_ranks.png'
 OVERALL_DISTRIBUTION_IMAGE = 'overall_distributions.png'
+DISTANCE_MEASURE_AVG_RANK_STATS_VALIDATION = 'stats_validation_average_ranks.csv'
 DISTANCE_MEASURE_EVALUATION_CRITERIA_RESULTS_FILE = 'raw_evaluation_criteria_results.csv'
 DISTANCE_MEASURE_EVALUATION_CRITERIA_RANKS_RESULTS_FILE = 'rank_evaluation_criteria_results.csv'
 DISTANCE_MEASURE_EVALUATION_OVERALL_RANKS_RESULTS_FILE = 'per_ds_rank_evaluation_criteria_results.csv'
@@ -61,6 +64,12 @@ class ResultsType:
     distance_measure_assessment: str = 'distance-measures-assessment'
     distance_measure_evaluation: str = 'distance-measures-evaluation'
     dataset_description: str = 'dataset-description'
+
+
+def get_filename_for_statistical_validation_between_measures(measure1: str, measure2: str):
+    m1_short = short_distance_measure_names[measure1].replace(" ", "_")
+    m2_short = short_distance_measure_names[measure2].replace(" ", "_")
+    return m1_short + "_VS_" + m2_short + DISTANCE_MEASURE_AVG_RANK_STATS_VALIDATION
 
 
 def get_image_name_based_on_data_dir_and_data_type(image_name: str, data_dir: str, data_type: str) -> str:

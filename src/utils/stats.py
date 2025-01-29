@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 
 import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt
 from scipy.stats import norm
+from statsmodels.stats.power import TTestPower
 
 from src.utils.plots.matplotlib_helper_functions import reset_matplotlib, Backends, display_legend, fontsize
 
@@ -20,6 +22,93 @@ class ConfidenceIntervalCols:
     ci_96lo = "ci96_lo"
     width = "ci width"
     standard_error = "ci standard error"
+
+
+@dataclass
+class StatsCols:
+    variant: str = 'data variant'
+    is_significant: str = 'significant'
+    p_value: str = 'p-value'
+    effect_size: str = 'effect size'
+    alpha: str = 'adjusted alpha'
+    achieved_power: str = 'achieved_power'
+    n_for_power_80: str = 'required n for 80%'
+    none_zero_pairs: str = 'none zero pairs'
+    statistic: str = 'statistic'
+    n_pairs: str = 'n pairs'
+
+
+class WilcoxResult:
+    def __init__(self, statistic: float, p_value: float, n_pairs: int, none_zero: int, round_to: int = 3):
+        self.statistic = statistic
+        self.p_value = p_value
+        self.n_pairs = n_pairs
+        self.non_zero = none_zero
+        self.__round_to = round_to
+
+    def is_significant(self, alpha: float = 0.05, bonferroni_adjust: int = 1) -> bool:
+        """
+        Returns if p_value is significant
+        :param bonferroni_adjust: divides alpha by bonferroni adjustment for significance testing
+        """
+        adjusted_alpha = self.adjusted_alpha(alpha=alpha, bonferroni_adjust=bonferroni_adjust)
+        is_significant = self.p_value < adjusted_alpha
+        return is_significant
+
+    def effect_size(self) -> float:
+        """
+        Returns effect size r = z_scores/sqrt(N_non_zero_pairs). Assumes two sided test
+        """
+        z_score = norm.ppf(self.p_value / 2)  # divide by 2 for two-tailed test
+        r = abs(z_score) / np.sqrt(self.non_zero)
+        return round(r, self.__round_to)
+
+    @staticmethod
+    def adjusted_alpha(alpha: float = 0.05, bonferroni_adjust: int = 1) -> float:
+        return round(alpha / bonferroni_adjust, 4)
+
+    def achieved_power(self, alpha: float = 0.05, bonferroni_adjust: int = 1) -> float:
+        """
+        Returns the power achieved as float, so 0.7 = 70%
+        :param alpha: optional, alpha that should be used
+        :param bonferroni_adjust: optional, int to divide alpha by for multiple tests
+        :return: achieved power
+        """
+        adjusted_alpha = self.adjusted_alpha(alpha=alpha, bonferroni_adjust=bonferroni_adjust)
+        power_analysis = TTestPower()
+        achieved_power = power_analysis.power(
+            effect_size=self.effect_size(),
+            nobs=self.non_zero,
+            alpha=adjusted_alpha,
+            alternative='two-sided'
+        )
+        return round(achieved_power, self.__round_to)
+
+    def sample_size_for_power(self, target_power: float = 0.8, alpha: float = 0.05, bonferroni_adjust: int = 1) -> int:
+        adjusted_alpha = self.adjusted_alpha(alpha=alpha, bonferroni_adjust=bonferroni_adjust)
+        power_analysis = TTestPower()
+        required_n = power_analysis.solve_power(
+            effect_size=self.effect_size(),
+            power=target_power,
+            alpha=adjusted_alpha,
+            alternative='two-sided',
+            nobs=None
+        )
+        return np.ceil(required_n)
+
+    def as_series(self, variant_name: str, target_power: float = 0.8, alpha: float = 0.05, bonferroni_adjust: int = 1):
+        return pd.Series({
+            StatsCols.variant: variant_name,
+            StatsCols.is_significant: self.is_significant(alpha, bonferroni_adjust),
+            StatsCols.p_value: round(self.p_value, 4),
+            StatsCols.effect_size: self.effect_size(),
+            StatsCols.alpha: self.adjusted_alpha(alpha=alpha, bonferroni_adjust=bonferroni_adjust),
+            StatsCols.achieved_power: self.achieved_power(alpha, bonferroni_adjust),
+            StatsCols.n_for_power_80: self.sample_size_for_power(target_power, alpha, bonferroni_adjust),
+            StatsCols.none_zero_pairs: self.non_zero,
+            StatsCols.statistic: self.statistic,
+            StatsCols.n_pairs: self.n_pairs,
+        })
 
 
 def calculate_hi_ci(mean_series, std_df, count_df):
@@ -110,7 +199,8 @@ def p_value_from_ci_se(se, difference_in_mean):
     return p
 
 
-def plot_power_for_effect_size_and_samples_for_ci(effect_sizes, samples, alpha=0.05, two_tailed=True, power_line=0.8,
+def plot_power_for_effect_size_and_samples_for_ci(effect_sizes, samples, alpha=0.05, two_tailed=True,
+                                                  power_line=0.8,
                                                   backend=Backends.none.value):
     """
     Plots power for effect sizes and samples formula used is n=2*(z_alpha/2 - z_beta/d)^2
@@ -125,7 +215,8 @@ def plot_power_for_effect_size_and_samples_for_ci(effect_sizes, samples, alpha=0
     powers = {}
     for effect_size in effect_sizes:
         for sample in samples:
-            powers[(effect_size, sample)] = ci_power(d=effect_size, n=sample, alpha=alpha, two_tailed=two_tailed)
+            powers[(effect_size, sample)] = ci_power(d=effect_size, n=sample, alpha=alpha,
+                                                     two_tailed=two_tailed)
 
     reset_matplotlib(backend=backend)
     fig_size = (15, 12)
@@ -164,7 +255,8 @@ def number_of_unique_two_combinations(n):
     return (n * (n - 1)) / 2
 
 
-def number_of_samples_for_correlations(alpha: float, beta: float, rho1: float, rho0: float, b: float = 3, c2: float = 1,
+def number_of_samples_for_correlations(alpha: float, beta: float, rho1: float, rho0: float, b: float = 3,
+                                       c2: float = 1,
                                        two_tailed: bool = True):
     """Calculates the number of samples required for the given parameters
     Source: Sample Size Charts for Spearman and Kendall Coefficients, Justine O et all
