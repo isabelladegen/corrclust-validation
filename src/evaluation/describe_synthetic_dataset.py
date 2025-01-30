@@ -271,21 +271,30 @@ class DescribeSyntheticDataset:
         no_rows = 5
         fig, axs = plt.subplots(nrows=no_rows,
                                 ncols=no_rows,
-                                sharey=False,
-                                sharex=False,
+                                sharey=True,
+                                sharex=True,
                                 figsize=fig_size)
         cmap = "bwr"
         normed_colour = mpl.colors.Normalize(-1, 1)
+        patterns = self.patterns.copy()
+        patterns.sort()
 
         pattern_idx = 0
         for rdx in range(no_rows):
             for cdx in range(no_rows):
                 ax = axs[rdx][cdx]
+
+                # turn grid off
+                ax.grid(False, which='major')
+                ax.grid(False, which='minor')
+                ax.tick_params(length=0)
+
                 # get all segment data for this pattern
-                pattern = self.patterns[pattern_idx]
+                pattern = patterns[pattern_idx]
                 df = self.data_by_pattern_id[pattern]
                 correlation = df.corr(method=method)
-                plot_corr_ellipses(correlation, plot_diagonal=plot_diagonal, ax=ax, cmap=cmap, norm=normed_colour)
+                plot_corr_ellipses(correlation, plot_diagonal=plot_diagonal, show_top_labels=(rdx == 0), ax=ax,
+                                   cmap=cmap, norm=normed_colour)
                 ax.margins(0.1)
 
                 # pattern as x-label
@@ -295,12 +304,12 @@ class DescribeSyntheticDataset:
                 ax.set_xlabel(label, rotation=0, size=fontsize)
 
                 # all patterns have been plotted - need to break both row and column loop
-                if pattern_idx == len(self.patterns) - 1:
+                if pattern_idx == len(patterns) - 1:
                     break
                 pattern_idx += 1
 
             # all patterns have been plotted - need to break both row and column loop
-            if pattern_idx == len(self.patterns) - 1:
+            if pattern_idx == len(patterns) - 1:
                 break
 
         axs[4, 4].axis('off')
@@ -308,7 +317,12 @@ class DescribeSyntheticDataset:
 
         # fig.subplots_adjust(right=0.8)
         # cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
-        cbar_ax = axs[4, 4]
+        pos = axs[4, 4].get_position()
+        cbar_ax = fig.add_axes([pos.x0,
+                                pos.y0 - 0.08,
+                                pos.width,
+                                pos.height])
+        cbar_ax.axis('off')
         fig.colorbar(mpl.cm.ScalarMappable(norm=normed_colour, cmap=cmap),
                      ax=cbar_ax, orientation='vertical', label='Correlation coefficient')
 
@@ -432,7 +446,7 @@ class DescribeSyntheticDataset:
         return x, y
 
 
-def plot_corr_ellipses(corr_df: pd.DataFrame, ax, plot_diagonal=False, **kwargs):
+def plot_corr_ellipses(corr_df: pd.DataFrame, ax, plot_diagonal=False, show_top_labels=True, **kwargs):
     gap = 0.1  # space between ellipses on the grid
 
     cor = corr_df.to_numpy()
@@ -461,8 +475,14 @@ def plot_corr_ellipses(corr_df: pd.DataFrame, ax, plot_diagonal=False, **kwargs)
                            transOffset=ax.transData, array=cor[upper_indices], edgecolor='black', **kwargs)
     ax.add_collection(ec)
 
-    ax.xaxis.set_tick_params(labeltop=True)
-    ax.xaxis.set_tick_params(labelbottom=False)
+    # Modify the tick params based on show_top_labels first row only
+    if show_top_labels:
+        ax.xaxis.set_tick_params(labeltop=True)
+        ax.xaxis.set_tick_params(labelbottom=False)
+    else:
+        ax.xaxis.set_tick_params(labeltop=False)
+        ax.xaxis.set_tick_params(labelbottom=False)
+
     n_ticks = n if plot_diagonal else n - k
     ticks = [tick + tick * gap for tick in np.arange(n_ticks)]
     ax.set_xticks(ticks)
@@ -486,4 +506,3 @@ def plot_corr_ellipses(corr_df: pd.DataFrame, ax, plot_diagonal=False, **kwargs)
     ax.set_ylim(-half_w - gap, n_ticks - half_w + (n_ticks * gap))
     ax.autoscale_view()
     return ec
-

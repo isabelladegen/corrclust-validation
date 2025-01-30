@@ -135,6 +135,15 @@ def test_combines_all_datasets_into_one_table():
     assert_that(df[nn_ds_rs_irr_p90][SummaryStatistics.overall_segment_lengths]['min'], is_(13))
 
 
+def test_returns_name_of_dataset_with_worst_mae():
+    partial_nn = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name,
+                                          data_type=SyntheticDataType.non_normal_correlated,
+                                          data_dir=IRREGULAR_P30_DATA_DIR)
+    name, mae = partial_nn.name_for_worst_relaxed_mae()
+    assert_that(name, is_('trim-fire-24'))
+    assert_that(mae, is_(0.034))
+
+
 def test_loads_distribution_parameters_from_run_file():
     dist_params = ds_raw.get_median_min_max_distribution_parameters()
 

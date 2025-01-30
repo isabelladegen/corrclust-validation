@@ -5,7 +5,7 @@ import numpy as np
 from hamcrest import *
 
 from src.utils.load_synthetic_data import SyntheticDataSets, SyntheticDataType
-from src.utils.configurations import GeneralisedCols
+from src.utils.configurations import GeneralisedCols, IRREGULAR_P30_DATA_DIR
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.evaluation.describe_synthetic_dataset import DescribeSyntheticDataset, DescribeSyntheticCols
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
@@ -320,6 +320,12 @@ def test_plot_actual_correlations_for_each_pattern():
     fig.savefig(path.join(images_dir, 'correlation_for_patterns-misty-forest-56.png'))
 
 
+# def test_stuff():
+#     dst = DescribeSyntheticDataset(run_name='trim-fire-24', data_type=SyntheticDataType.non_normal_correlated,
+#                                    data_dir=IRREGULAR_P30_DATA_DIR, backend=Backends.visible_tests.value)
+#     dst.plot_correlation_matrix_for_each_pattern()
+
+
 def test_plot_description_of_subgroups():
     # find pairs for this pattern
     pattern_id = 15
@@ -384,7 +390,8 @@ def test_can_min_max_scale_the_data():
 
 def test_can_load_irregular_dataset():
     data_type = SyntheticDataType.non_normal_correlated
-    irregular_30 = DescribeSyntheticDataset(run_name=a_ds_name, data_type=data_type, data_dir=TEST_IRREGULAR_P30_DATA_DIR,
+    irregular_30 = DescribeSyntheticDataset(run_name=a_ds_name, data_type=data_type,
+                                            data_dir=TEST_IRREGULAR_P30_DATA_DIR,
                                             backend=backend)
     irregular_30.correlation_patterns_df[DescribeSyntheticCols.sum_mean_abs_error].describe()
 

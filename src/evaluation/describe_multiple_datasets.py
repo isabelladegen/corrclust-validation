@@ -343,6 +343,13 @@ class DescribeMultipleDatasets:
 
         return dist_params
 
+    def name_for_worst_relaxed_mae(self, column=SyntheticDataSegmentCols.relaxed_mae):
+        # get name and mae tuples
+        name_mae = [(name, label[column].mean()) for name, label in self.label_dfs.items()]
+        # find max mae and name
+        name, mae = max(name_mae, key=lambda x: x[1])
+        return name, round(mae, self.__round_to)
+
 
 def extract_distribution(log_string: str):
     """Gets scipy distributio form log string"""
