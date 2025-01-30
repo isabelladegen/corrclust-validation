@@ -103,12 +103,12 @@ def get_qq_plots_bounds(dist_info: {}, data: np.ndarray, dist_method):
             max(theoretical_quantiles.max(), empirical_quantiles.max()))
 
 
-def plot_standard_distributions(datasets: {}, dist_params: {}, reference_key: str = "NN", fontsize=20,
+def plot_standard_distributions(datasets: {}, dist_params: {}, reference_key: str = "Non-normal", fontsize=20,
                                 figsize: () = (20, 15), backend: str = Backends.none.value):
     """
     Create a grid of distribution plots with QQ plot insets.
 
-    :param datasets: Dict where keys are variations ('RAW', 'NN', 'NC', 'RS') and values are lists of 2D numpy arrays
+    :param datasets: Dict where keys are variations ('Raw', 'Correlated', 'Non-normal', 'Downsampled') and values are lists of 2D numpy arrays
              Each array has shape (n_observations, n_timeseries)
     :param dist_params: Dict of distribution parameters for each time series
                  First level: time series name ('iob', 'cob', 'ig')
@@ -283,16 +283,16 @@ class VisualiseDistributionsOfMultipleDatasets:
         self.row_names = []
         self.dataset_variates = {}
         for ds_type in dataset_types:
-            column_name = SyntheticDataType.get_log_key_for_data_type(ds_type)
+            column_name = SyntheticDataType.get_display_name_for_data_type(ds_type)
             ds = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name,
                                           data_type=ds_type, data_dir=self.data_dir, load_data=True)
             self.dataset_variates[column_name] = ds
         # dataset variate names
-        self.col_names = [SyntheticDataType.get_log_key_for_data_type(ds_type) for ds_type in dataset_types]
+        self.col_names = [SyntheticDataType.get_display_name_for_data_type(ds_type) for ds_type in dataset_types]
 
     def plot_as_standard_distribution(self, root_result_dir: str, save_fig: bool = False):
         """
-            Creates a plot of the dataset variation as columns (RAW, NC, NN, RS) and the time series as rows (IOB, COB,
+            Creates a plot of the dataset variation as columns (Raw, Correlated, Non-normal, Downsampled) and the time series as rows (IOB, COB,
             IG). Each square show the theoretical PDF/PMF distribution of the median parameters for the distribution
             we shifted to in NN, the empirical observations in density space and a QQ-plot inset. We can see
             what the ds variations do to the specified distribution for NN.
@@ -301,7 +301,7 @@ class VisualiseDistributionsOfMultipleDatasets:
             :return: fig
         """
         datasets = {key: value.get_list_of_xtrain_of_all_datasets() for key, value in self.dataset_variates.items()}
-        nn_col_name = SyntheticDataType.get_log_key_for_data_type(SyntheticDataType.non_normal_correlated)
+        nn_col_name = SyntheticDataType.get_display_name_for_data_type(SyntheticDataType.non_normal_correlated)
         if nn_col_name in self.dataset_variates.keys():
             dist_params = self.dataset_variates[nn_col_name].get_median_min_max_distribution_parameters()
         else:

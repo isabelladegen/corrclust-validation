@@ -17,12 +17,12 @@ vds = VisualiseMultipleDatasets(run_file=GENERATED_DATASETS_FILE_PATH, overall_d
 
 
 def test_can_visualise_overall_segment_lengths_distributions():
-    column_names = [SyntheticDataType.get_log_key_for_data_type(SyntheticDataType.raw),
-                    SyntheticDataType.get_log_key_for_data_type(SyntheticDataType.normal_correlated),
-                    SyntheticDataType.get_log_key_for_data_type(SyntheticDataType.non_normal_correlated),
-                    SyntheticDataType.get_log_key_for_data_type(SyntheticDataType.rs_1min)]
+    column_names = [SyntheticDataType.get_display_name_for_data_type(SyntheticDataType.raw),
+                    SyntheticDataType.get_display_name_for_data_type(SyntheticDataType.normal_correlated),
+                    SyntheticDataType.get_display_name_for_data_type(SyntheticDataType.non_normal_correlated),
+                    SyntheticDataType.get_display_name_for_data_type(SyntheticDataType.rs_1min)]
     assert_that(vds.col_names, contains_exactly(*column_names))
-    assert_that(vds.row_names, contains_exactly('Standard', 'Irregular p 0.3', 'Irregular p 0.9'))
+    assert_that(vds.row_names, contains_exactly('Complete 100%', 'Partial 70%', 'Sparse 10%'))
 
     fig = vds.violin_plots_of_overall_segment_lengths(save_fig=False, root_result_dir=ROOT_RESULTS_DIR)
     assert_that(fig, is_not(None))

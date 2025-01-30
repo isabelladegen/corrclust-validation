@@ -59,5 +59,5 @@ def test_can_visualise_irregular_variations_of_distributions_p30():
     assert_that(len(ds_variates), is_(4))
     assert_that(ds_variates[vds.col_names[0]].get_list_of_xtrain_of_all_datasets()[0].shape[0], less_than(900000))
 
-    fig = vds.plot_as_standard_distribution(root_result_dir=ROOT_RESULTS_DIR, save_fig=False)
+    fig = vds.plot_as_standard_distribution(root_result_dir=ROOT_RESULTS_DIR, save_fig=True)
     assert_that(fig, is_not(None))

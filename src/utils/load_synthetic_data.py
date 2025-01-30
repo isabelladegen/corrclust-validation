@@ -50,11 +50,23 @@ class SyntheticDataType:
         if data_type == SyntheticDataType.raw:
             return "RAW"
         if data_type == SyntheticDataType.normal_correlated:
-            return "NC"
+            return "NC"  # correlated
         if data_type == SyntheticDataType.non_normal_correlated:
-            return "NN"
+            return "NN"  # non-normal
         if SyntheticDataType.is_resample_type(data_type):
-            return "RS"
+            return "RS"  # downsampled
+        return data_type
+
+    @staticmethod
+    def get_display_name_for_data_type(data_type: str):
+        if data_type == SyntheticDataType.raw:
+            return "Raw"
+        if data_type == SyntheticDataType.normal_correlated:
+            return "Correlated"
+        if data_type == SyntheticDataType.non_normal_correlated:
+            return "Non-normal"
+        if SyntheticDataType.is_resample_type(data_type):
+            return "Downsampled"
         return data_type
 
     @staticmethod

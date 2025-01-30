@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 import seaborn as sns
 from matplotlib.gridspec import GridSpec
 
+from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.evaluation.describe_multiple_datasets import DescribeMultipleDatasets
 from src.utils.configurations import get_irregular_folder_name_from, base_dataset_result_folder_for_type, ResultsType, \
     OVERALL_SEGMENT_LENGTH_IMAGE, OVERALL_MAE_IMAGE
@@ -16,12 +17,15 @@ from src.utils.plots.matplotlib_helper_functions import reset_matplotlib, Backen
 def get_row_name_from(folder):
     irr_folder_name = get_irregular_folder_name_from(folder)
     if irr_folder_name is "":
-        return "Standard"
-    # change _p30 to irregular p 0.3
+        return "Complete 100%"
+    # change _p30 to partial 30%
     match_no = re.search(r'p(\d+)$', irr_folder_name)
     if match_no:
         number = int(match_no.group(1)) / 100
-        return "Irregular p " + str(number)
+        if number == 0.3:
+            return "Partial 70%"
+        elif number == 0.9:
+            return "Sparse 10%"
     assert False, "Unknown folder extension in: " + folder
 
 
@@ -292,12 +296,12 @@ class VisualiseMultipleDatasets:
             self.row_names.append(row_name)
             column_results = {}
             for ds_type in dataset_types:
-                column_name = SyntheticDataType.get_log_key_for_data_type(ds_type)
+                column_name = SyntheticDataType.get_display_name_for_data_type(ds_type)
                 ds = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name,
                                               data_type=ds_type, data_dir=folder)
                 column_results[column_name] = ds
             self.all_data[row_name] = column_results
-        self.col_names = [SyntheticDataType.get_log_key_for_data_type(ds_type) for ds_type in dataset_types]
+        self.col_names = [SyntheticDataType.get_display_name_for_data_type(ds_type) for ds_type in dataset_types]
 
     def violin_plots_of_overall_segment_lengths(self, save_fig: bool, root_result_dir: str):
         """
@@ -309,9 +313,10 @@ class VisualiseMultipleDatasets:
         """
         # create data dict, for this RAW, NC and NN are all the same so we're just using NN
         column_keys = {
-            SyntheticDataType.get_log_key_for_data_type(SyntheticDataType.non_normal_correlated): "RAW/NC/NN",
-            SyntheticDataType.get_log_key_for_data_type(
-                SyntheticDataType.rs_1min): SyntheticDataType.get_log_key_for_data_type(SyntheticDataType.rs_1min)}
+            SyntheticDataType.get_display_name_for_data_type(
+                SyntheticDataType.non_normal_correlated): "Raw/Correlated/Non-normal",
+            SyntheticDataType.get_display_name_for_data_type(
+                SyntheticDataType.rs_1min): SyntheticDataType.get_display_name_for_data_type(SyntheticDataType.rs_1min)}
         data_dict = {}
         for row, row_data in self.all_data.items():
             row_dict = {}
@@ -341,7 +346,7 @@ class VisualiseMultipleDatasets:
         for row, row_data in self.all_data.items():
             row_dict = {}
             for col, col_data in row_data.items():
-                row_dict[col] = col_data.all_mae_values()
+                row_dict[col] = col_data.all_mae_values(SyntheticDataSegmentCols.relaxed_mae)
             data_dict[row] = row_dict
 
         fig = create_violin_grid(data_dict=data_dict, backend=self.backend, figsize=(15, 10))
