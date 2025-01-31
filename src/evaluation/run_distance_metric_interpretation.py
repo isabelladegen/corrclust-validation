@@ -19,7 +19,7 @@ def interpret_distance_metric_for(top_x: [], data_dirs: [], dataset_types: [], r
     measure1 = DistanceMeasures.l1_with_ref
     measure2 = DistanceMeasures.l1_cor_dist
     # number of tests run to adjust alpha
-    bonferroni_adjust = len(data_dirs) * len(dataset_types)
+    bonferroni_adjust = len(distance_measures)
 
     # run all calculation for each of the 12 data variant
     for data_dir in data_dirs:
