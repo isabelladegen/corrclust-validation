@@ -62,7 +62,7 @@ class RunInformationCols:
 @dataclass
 class ResultsType:
     internal_measure_assessment: str = 'internal-measures-assessment'
-    internal_measures: str = 'internal-measures'
+    internal_measures: str = 'internal-measures-evaluation'
     distance_measure_assessment: str = 'distance-measures-assessment'
     distance_measure_evaluation: str = 'distance-measures-evaluation'
     dataset_description: str = 'dataset-description'

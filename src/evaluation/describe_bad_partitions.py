@@ -1,4 +1,3 @@
-import os
 import random
 from dataclasses import dataclass
 
@@ -6,12 +5,9 @@ import pandas as pd
 
 from src.utils.clustering_quality_measures import silhouette_avg_from_distances, calculate_pmb, \
     clustering_jaccard_coeff, ClusteringQualityMeasures, calculate_dbi, calculate_vrc
-from src.utils.configurations import SYNTHETIC_DATA_DIR, SyntheticDataVariates, \
-    get_internal_measures_summary_file_name, GENERATED_DATASETS_FILE_PATH, ROOT_RESULTS_DIR, \
-    internal_measure_calculation_dir_for
+from src.utils.configurations import SYNTHETIC_DATA_DIR, SyntheticDataVariates
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols, \
     recalculate_labels_df_from_data
-from src.utils.distance_measures import DistanceMeasures
 from src.utils.labels_utils import calculate_overall_data_correlation, \
     calculate_distance_between_segment_and_data_centroid, calculate_cluster_centroids, \
     calculate_distances_between_each_segment_and_its_cluster_centroid, calculate_distances_between_cluster_centroids, \
@@ -479,114 +475,3 @@ def update_labels_df(df, patterns, segments):
     df = df[df[SyntheticDataSegmentCols.segment_id].isin(segments)]
     df = df.reset_index(drop=True)
     return df
-
-
-def read_internal_measures_calculation(overall_ds_name: str, data_type: str, root_results_dir: str, data_dir: str,
-                                       distance_measure: str, n_dropped_clusters=0, n_dropped_segments=0,
-                                       generated_ds_csv: str = GENERATED_DATASETS_FILE_PATH):
-    """ Reads the summary results files from the internal measure calculation for the datasets in the overall_ds_name
-    :param overall_ds_name: a name for the dataset we're using e.g. n30 or n2
-    :param data_type: which datatype to use see SyntheticDataType
-    :param root_results_dir: directory where to store the results, it will use a subdirectory based on
-    the distance measure, and the data type and other information
-    :param n_dropped_clusters: number of clusters that were dropped if 0 it reads results from full ds
-    :param n_dropped_segments: number of segments that were dropped if 0 it reads results from full ds
-    :param generated_ds_csv: csv file with a list of all the run names
-    """
-    results_dir = internal_measure_calculation_dir_for(overall_ds_name,
-                                                       data_type,
-                                                       root_results_dir,
-                                                       data_dir,
-                                                       distance_measure,
-                                                       n_dropped_clusters,
-                                                       n_dropped_segments)
-    datasets = pd.read_csv(generated_ds_csv)['Name'].tolist()
-
-    results_for_run = []
-    for ds_name in datasets:
-        file_name = get_internal_measures_summary_file_name(ds_name)
-        file_to_read = os.path.join(results_dir, file_name)
-        df = pd.read_csv(file_to_read, index_col=0)
-        # sort by Jaccard index
-        df = df.sort_values(by=ClusteringQualityMeasures.jaccard_index)
-        df.reset_index(drop=True, inplace=True)
-        results_for_run.append(df)
-    return results_for_run
-
-
-def calculate_internal_measures_for_all_partitions(overall_ds_name: str, dataset_names: [str], data_type: str,
-                                                   data_dir: str,
-                                                   results_dir: str,
-                                                   distance_measure: str,
-                                                   internal_measures: [str], drop_clusters=0, drop_segments=0):
-    store_results_in = internal_measure_calculation_dir_for(
-        overall_dataset_name=overall_ds_name,
-        data_type=data_type,
-        results_dir=results_dir,
-        data_dir=data_dir,
-        distance_measure=distance_measure,
-        drop_clusters=drop_clusters,
-        drop_segments=drop_segments)
-    partitions = []
-    for ds_name in dataset_names:
-        print(ds_name)
-        # we don't vary the seed so all datasets will select the same clusters and segments
-        sum_df = DescribeBadPartitions(ds_name=ds_name, data_type=data_type, data_dir=data_dir,
-                                       distance_measure=distance_measure,
-                                       internal_measures=internal_measures, drop_n_segments=drop_segments,
-                                       drop_n_clusters=drop_clusters).summary_df.copy()
-        file_name = get_internal_measures_summary_file_name(ds_name)
-        sum_df.to_csv(os.path.join(store_results_in, file_name))
-        partitions.append(sum_df)
-
-
-def run_internal_measure_calculation_for_dataset(overall_ds_name: str,
-                                                 generated_ds_csv: str = GENERATED_DATASETS_FILE_PATH,
-                                                 distance_measure: str = DistanceMeasures.l1_cor_dist,
-                                                 data_type: str = SyntheticDataType.non_normal_correlated,
-                                                 data_dir: str = SYNTHETIC_DATA_DIR,
-                                                 results_dir: str = ROOT_RESULTS_DIR,
-                                                 internal_measures: [str] = [ClusteringQualityMeasures.silhouette_score,
-                                                                             ClusteringQualityMeasures.pmb],
-                                                 n_dropped_clusters: [int] = [],
-                                                 n_dropped_segments: [int] = [],
-                                                 ):
-    """ Calculates the internal measure assessment for all ds in the csv files of the generated runs
-    :param overall_ds_name: a name for the dataset we're using e.g. n30 or n2
-    :param generated_ds_csv: full path to the csv file of the generated runs, using the names to locate the data
-    :param distance_measure: name of distance measure to run assessment for
-    :param data_type: which datatype to use see SyntheticDataType
-    :param data_dir: where to read the data from
-    :param results_dir: directory where to store the results, it will use a subdirectory based on the distance measure,
-    and the data type
-    :param internal_measures: list of internal measures to assess
-    :param n_dropped_clusters: list of the number of clusters to drop in each run, if empty then we run the assessment
-    on all the cluster
-    :param n_dropped_segments: list of the number of segments to drop in each run, if empty then we run the assessment
-    using all segments
-    """
-    # read file of which datasets to assess
-    dataset_names = pd.read_csv(generated_ds_csv)['Name'].tolist()
-
-    # decide which assessment to run
-    if len(n_dropped_clusters) == 0 and len(n_dropped_segments) == 0:
-        calculate_internal_measures_for_all_partitions(overall_ds_name, dataset_names, data_type, data_dir, results_dir,
-                                                       distance_measure,
-                                                       internal_measures)
-    else:
-        # run evaluation for all dropped clusters and for all dropped segments separately
-        # for this we just do clusters first
-        for n_clus in n_dropped_clusters:
-            calculate_internal_measures_for_all_partitions(overall_ds_name, dataset_names, data_type, data_dir,
-                                                           results_dir, distance_measure,
-                                                           internal_measures, drop_clusters=n_clus)
-        # and second we do segments
-        for n_seg in n_dropped_segments:
-            calculate_internal_measures_for_all_partitions(overall_ds_name, dataset_names, data_type, data_dir,
-                                                           results_dir, distance_measure,
-                                                           internal_measures, drop_segments=n_seg)
-
-
-if __name__ == "__main__":
-    overall_dataset_name = "n2"
-    run_internal_measure_calculation_for_dataset(overall_dataset_name)
