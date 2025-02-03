@@ -3,7 +3,7 @@ from hamcrest import *
 
 from src.utils.distance_measures import distance_calculation_method_for, DistanceMeasures
 from src.utils.internal_measures import silhouette_avg_from_distances, calculate_pmb, clustering_jaccard_coeff, \
-    calculate_dbi
+    calculate_dbi, calculate_vrc
 
 # test scenario with two clusters
 # cluster 1
@@ -124,3 +124,21 @@ def test_davies_bouldin_index():
     assert_that(dbi_gt, less_than(dbi_ok))
     assert_that(dbi_gt, less_than(dbi_bad))
     assert_that(dbi_ok, less_than(dbi_bad))
+
+
+def test_calinski_harabasz_index():
+    distances_m = DistanceMeasures.l1_cor_dist
+    dist_cluster_centroids_gt = calculate_distances_between_segments_and_cluster_centroids(seg_clusters_gt, distances_m)
+    dist_cluster_centroids_ok = calculate_distances_between_segments_and_cluster_centroids(seg_clusters_ok, distances_m)
+    dist_cluster_centroids_bad = calculate_distances_between_segments_and_cluster_centroids(seg_clusters_bad,
+                                                                                            distances_m)
+    dist_calc = distance_calculation_method_for(distances_m)
+    dist_cluster_centroids_data = {1: dist_calc(c1, d), 2: dist_calc(c2, d)}
+
+    vrc_gt = calculate_vrc(dist_cluster_centroids_gt, dist_cluster_centroids_data)
+    vrc_ok = calculate_vrc(dist_cluster_centroids_ok, dist_cluster_centroids_data)
+    vrc_bad = calculate_vrc(dist_cluster_centroids_bad, dist_cluster_centroids_data)
+
+    assert_that(vrc_gt, greater_than(vrc_ok))
+    assert_that(vrc_gt, greater_than(vrc_bad))
+    assert_that(vrc_ok, greater_than(vrc_bad))

@@ -2,11 +2,48 @@ import numpy as np
 from sklearn import metrics
 
 
+def calculate_vrc(distances_seg_cluster_centroid: {}, distance_cluster_centroids_to_data: {}, round_to: int = 3) -> float:
+    """
+    Calculates the calinkski harabasz index (VRC) - higher is better (lowest is 0)
+    :param distances_seg_cluster_centroid: dictionary with key cluster id and values list of distances for each
+    segment in the cluster to the centroid. Shape len(k)= number of clusters, len(distances) = n_segment in that cluster
+    :param distance_cluster_centroids_to_data: dictionary with key cluster id and value distance between this clusters centroid
+    to the overall data
+    :param round_to: optional to adjust rounding
+    :returns vrc index
+    """
+    clusters = list(distances_seg_cluster_centroid.keys())
+    n_clusters = len(clusters)
+    n_segments = sum(len(segments) for segments in distances_seg_cluster_centroid.values())
+    # calculate BCV and WCV
+    bcvs = []  # between cluster variance sum bits
+    wcvs = []  # within cluster variance sum bits
+    for cluster in clusters:
+        # calculate between cluster variance sum bit
+        segments_for_cluster = distances_seg_cluster_centroid[cluster]
+        bcvs.append(len(segments_for_cluster) * distance_cluster_centroids_to_data[cluster] ** 2)
+
+        # calculate within cluster variance sum bit
+        wcvs.append(sum(seg_dist ** 2 for seg_dist in segments_for_cluster))
+
+    # check we have the right number of elements in the lists
+    assert len(bcvs) == n_clusters, "Something went wrong we don't have a number for each cluster"
+    assert len(wcvs) == n_clusters, "Something went wrong we don't have a number for each cluster"
+
+    bcv = (1 / (n_clusters - 1)) * sum(bcvs)
+    wcv = (1 / (n_segments - n_clusters)) * sum(wcvs)
+
+    return round(bcv / wcv, round_to)
+
+
 def calculate_dbi(distances_seg_cluster_centroid: {}, distances_cluster_centroids: {}, round_to: int = 3) -> float:
     """
     Calculates the davies bouldin index - lower is better (lowest is 0)
-    :param distances_seg_cluster_centroid:
-    :param distances_cluster_centroids:
+    :param distances_seg_cluster_centroid: dictionary with key cluster id and values list of distances for each
+    segment in the cluster to the centroid. Shape len(k)= number of clusters, len(distances) = n_segment in that cluster
+    :param distances_cluster_centroids: dictionary with key (cluster1, cluster2) and value distance between these
+    two cluster centroids
+    :param round_to: optional to adjust rounding
     :returns dbi index
     """
     clusters = list(distances_seg_cluster_centroid.keys())
