@@ -8,8 +8,8 @@ from sklearn import metrics
 class ClusteringQualityMeasures:
     pmb: str = "PMB"
     silhouette_score: str = "SCW"
-    vrc_index: str = "VRC"
-    dbi_index: str = "DBI"
+    vrc: str = "VRC"
+    dbi: str = "DBI"
     jaccard_index: str = "Jaccard"
 
 

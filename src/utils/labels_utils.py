@@ -78,7 +78,7 @@ def calculate_cluster_centroids(labels_df: pd.DataFrame, data: np.array, round_t
     :param labels_df: a labels df that has the correlation matrices for each segment
     :param data: np.array 2D np array of the observation data
     :param round_to: number of decimals to calculate correlations for
-    :return:
+    :return: dictionary with key being pattern_id and value being cluster centroid
     """
     patterns = labels_df[SyntheticDataSegmentCols.pattern_id].unique().tolist()
     cluster_centroids = {}
@@ -128,6 +128,20 @@ def calculate_distance_between_segment_and_data_centroid(labels_df: pd.DataFrame
     return [distance_calc(m1, overall_data_centroid) for m1 in m1s]
 
 
+def calculate_distance_between_cluster_centroids_and_data(cluster_centroids: {}, data_centroid: [],
+                                                          distance_measure: str):
+    """
+    Calculates the distance between each cluster centroid to the data centroid for the given distance meausre
+    :param cluster_centroids: dictionary with key being cluster_id and value being the centroid of the cluster
+    :param data_centroid: list of correlation coefficients for data centroid
+    :param distance_measure: name of distance measure to use
+    :return: dictionary with key being cluster_id and value being the distance between cluster centroid and data centroid
+    """
+    distance_calc = distance_calculation_method_for(distance_measure)
+    return {cluster_id: distance_calc(cluster_centroid, data_centroid) for cluster_id, cluster_centroid in
+            cluster_centroids.items()}
+
+
 def calculate_distances_between_each_segment_and_its_cluster_centroid(labels_df: pd.DataFrame, cluster_centroids: {},
                                                                       distance_measure: str):
     """
@@ -136,13 +150,15 @@ def calculate_distances_between_each_segment_and_its_cluster_centroid(labels_df:
     :param cluster_centroids: dictionary with key being the pattern_id and value the upper triu correlation vector for
     the cluster
     :param distance_measure: name of a distance measure that takes to matrices as argument m1, m2
-    :return: list of all distances ordered by segment id
+    :return: dictionary of all distances with keys being cluster_id and values being list of distances for segments
     """
     distance_calc = distance_calculation_method_for(distance_measure)
-    df = labels_df[[SyntheticDataSegmentCols.actual_correlation, SyntheticDataSegmentCols.pattern_id]]
-    segment_correlations_and_pattern = df.apply(tuple, axis=1).tolist()
-    # t[0] is the segments correlation, t[1] is the segments pattern_id (=cluster)
-    return [distance_calc(t[0], cluster_centroids[t[1]]) for t in segment_correlations_and_pattern]
+    result = {}
+    for pattern_id, cluster_centroid in cluster_centroids.items():
+        seg_correlations = labels_df[labels_df[SyntheticDataSegmentCols.pattern_id] == pattern_id][
+            SyntheticDataSegmentCols.actual_correlation]
+        result[pattern_id] = [distance_calc(seg, cluster_centroid) for seg in seg_correlations]
+    return result
 
 
 def calculate_distances_between_cluster_centroids(cluster_centroids: {}, distance_measure: str):
@@ -151,7 +167,7 @@ def calculate_distances_between_cluster_centroids(cluster_centroids: {}, distanc
     :param cluster_centroids: dictionary with key being the pattern_id and value the upper triu correlation vector for
     the cluster
     :param distance_measure: name of a distance measure that takes to matrices as argument m1, m2
-    :return: dictionary of keys being the two clusters id being compared and value being the distance between these two
+    :return: dictionary of keys being a tuple of two clusters id being compared and value being the distance between these two
     clusters
     """
     distance_calc = distance_calculation_method_for(distance_measure)

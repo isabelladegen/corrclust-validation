@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import pandas as pd
 
 from src.utils.clustering_quality_measures import silhouette_avg_from_distances, calculate_pmb, \
-    clustering_jaccard_coeff, ClusteringQualityMeasures
+    clustering_jaccard_coeff, ClusteringQualityMeasures, calculate_dbi, calculate_vrc
 from src.utils.configurations import SYNTHETIC_DATA_DIR, SyntheticDataVariates, \
     get_internal_measures_summary_file_name, GENERATED_DATASETS_FILE_PATH, ROOT_RESULTS_DIR, \
     internal_measure_calculation_dir_for
@@ -16,7 +16,8 @@ from src.utils.labels_utils import calculate_overall_data_correlation, \
     calculate_distance_between_segment_and_data_centroid, calculate_cluster_centroids, \
     calculate_distances_between_each_segment_and_its_cluster_centroid, calculate_distances_between_cluster_centroids, \
     calculate_y_pred_from, calculate_distance_matrix_for, calculate_y_pred_and_updated_gt_y_pred_from, \
-    calculate_n_observations_for, calculate_n_segments_within_tolerance_for, calculate_n_segments_outside_tolerance_for
+    calculate_n_observations_for, calculate_n_segments_within_tolerance_for, calculate_n_segments_outside_tolerance_for, \
+    calculate_distance_between_cluster_centroids_and_data
 from src.utils.load_synthetic_data import SyntheticDataType, load_synthetic_data_and_labels_for_bad_partitions
 
 
@@ -121,6 +122,8 @@ class DescribeBadPartitions:
         jaccards = []
         sils = []
         pmbs = []
+        dbis = []
+        vrcs = []
 
         # 1. add ground truth information to summary df
         file_names.append(ds_name)
@@ -141,23 +144,72 @@ class DescribeBadPartitions:
             sil_avg = silhouette_avg_from_distances(self.gt_distance_matrix, self.gt_patterns)
             sils.append(sil_avg)
 
+        # set calculations to None and only calculate if measures need it
+        self.data_centroid = None
+        # VRC, DBI, PMB
+        self.gt_cluster_centroids = None
+        # distance between segments and their cluster's centroid - VRC, DBI, PMB
+        self.gt_dist_seg_cluster_centroid = None
+        self.gt_dist_cluster_centroids = None  # distance between the cluster centroids - PMB, DBI
+
+        if ClusteringQualityMeasures.dbi in self.__internal_measures:
+            if self.gt_cluster_centroids is None:
+                self.gt_cluster_centroids = calculate_cluster_centroids(self.gt_label, self.gt_data_np)
+            if self.gt_dist_cluster_centroids is None:
+                self.gt_dist_cluster_centroids = calculate_distances_between_cluster_centroids(
+                    self.gt_cluster_centroids,
+                    self.distance_measure)
+            if self.gt_dist_seg_cluster_centroid is None:
+                self.gt_dist_seg_cluster_centroid = calculate_distances_between_each_segment_and_its_cluster_centroid(
+                    self.gt_label,
+                    self.gt_cluster_centroids,
+                    self.distance_measure)
+
+            dbi = calculate_dbi(self.gt_dist_seg_cluster_centroid, self.gt_dist_cluster_centroids)
+            dbis.append(dbi)
+
+        if ClusteringQualityMeasures.vrc in self.__internal_measures:
+            if self.data_centroid is None:
+                self.data_centroid = calculate_overall_data_correlation(self.gt_data_np)
+            if self.gt_cluster_centroids is None:
+                self.gt_dist_cluster_centroids = calculate_cluster_centroids(self.gt_label, self.gt_data_np)
+            self.gt_dist_cluster_centroids_data = calculate_distance_between_cluster_centroids_and_data(
+                self.gt_cluster_centroids, self.data_centroid, self.distance_measure)
+
+            if self.gt_dist_seg_cluster_centroid is None:
+                self.gt_dist_seg_cluster_centroid = calculate_distances_between_each_segment_and_its_cluster_centroid(
+                    self.gt_label,
+                    self.gt_cluster_centroids,
+                    self.distance_measure)
+
+            vrc = calculate_vrc(self.gt_dist_seg_cluster_centroid, self.gt_dist_cluster_centroids_data)
+            vrcs.append(vrc)
+
         if ClusteringQualityMeasures.pmb in self.__internal_measures:
-            self.data_centroid = calculate_overall_data_correlation(self.gt_data_np)
-            self.gt_cluster_centroids = calculate_cluster_centroids(self.gt_label, self.gt_data_np)
+            if self.data_centroid is None:
+                self.data_centroid = calculate_overall_data_correlation(self.gt_data_np)
+            if self.gt_cluster_centroids is None:
+                self.gt_cluster_centroids = calculate_cluster_centroids(self.gt_label, self.gt_data_np)
 
             # distances between each segment to overall correlation of data
             self.gt_dist_seg_overall_data = calculate_distance_between_segment_and_data_centroid(self.gt_label,
                                                                                                  self.data_centroid,
                                                                                                  self.distance_measure)
             # distances between each segment to their cluster centroid
-            self.gt_dist_seg_cluster = calculate_distances_between_each_segment_and_its_cluster_centroid(self.gt_label,
-                                                                                                         self.gt_cluster_centroids,
-                                                                                                         self.distance_measure)
+            if self.gt_dist_seg_cluster_centroid is None:
+                self.gt_dist_seg_cluster_centroid = calculate_distances_between_each_segment_and_its_cluster_centroid(
+                    self.gt_label,
+                    self.gt_cluster_centroids,
+                    self.distance_measure)
             # distances between all cluster centroids
-            self.gt_dist_between_clusters = calculate_distances_between_cluster_centroids(self.gt_cluster_centroids,
-                                                                                          self.distance_measure)
-            pmb = calculate_pmb(self.gt_dist_seg_overall_data, self.gt_dist_seg_cluster,
-                                self.gt_dist_between_clusters.values())
+            if self.gt_dist_cluster_centroids is None:
+                self.gt_dist_cluster_centroids = calculate_distances_between_cluster_centroids(
+                    self.gt_cluster_centroids,
+                    self.distance_measure)
+            flat_gt_seg_cluster_centroid = [item for clusterslist in self.gt_dist_seg_cluster_centroid.values() for item
+                                            in clusterslist]
+            pmb = calculate_pmb(self.gt_dist_seg_overall_data, flat_gt_seg_cluster_centroid,
+                                self.gt_dist_cluster_centroids.values())
             pmbs.append(pmb)
 
         # to calculate the shift
@@ -193,22 +245,69 @@ class DescribeBadPartitions:
                 sil_avg = silhouette_avg_from_distances(p_distance_matrix, p_patterns)
                 sils.append(sil_avg)
 
+            p_data_centroid = None
+            # VRC, DBI, PMB
+            p_cluster_centroids = None
+            # distance between segments and their cluster's centroid - VRC, DBI, PMB
+            p_dist_seg_cluster_centroid = None
+            p_dist_cluster_centroids = None  # distance between the cluster centroids - PMB, DBI
+
+            if ClusteringQualityMeasures.dbi in self.__internal_measures:
+                if p_cluster_centroids is None:
+                    p_cluster_centroids = calculate_cluster_centroids(p_label, p_data_np)
+                if p_dist_cluster_centroids is None:
+                    p_dist_cluster_centroids = calculate_distances_between_cluster_centroids(
+                        p_cluster_centroids,
+                        self.distance_measure)
+                if p_dist_seg_cluster_centroid is None:
+                    p_dist_seg_cluster_centroid = calculate_distances_between_each_segment_and_its_cluster_centroid(
+                        p_label,
+                        p_cluster_centroids,
+                        self.distance_measure)
+
+                dbi = calculate_dbi(p_dist_seg_cluster_centroid, p_dist_cluster_centroids)
+                dbis.append(dbi)
+
+            if ClusteringQualityMeasures.vrc in self.__internal_measures:
+                if p_data_centroid is None:
+                    p_data_centroid = calculate_overall_data_correlation(p_data_np)
+                if p_cluster_centroids is None:
+                    p_cluster_centroids = calculate_cluster_centroids(p_label, p_data_np)
+                p_dist_cluster_centroids_data = calculate_distance_between_cluster_centroids_and_data(
+                    p_cluster_centroids, p_data_centroid, self.distance_measure)
+
+                if p_dist_seg_cluster_centroid is None:
+                    p_dist_seg_cluster_centroid = calculate_distances_between_each_segment_and_its_cluster_centroid(
+                        p_label,
+                        p_cluster_centroids,
+                        self.distance_measure)
+
+                vrc = calculate_vrc(p_dist_seg_cluster_centroid, p_dist_cluster_centroids_data)
+                vrcs.append(vrc)
+
             if ClusteringQualityMeasures.pmb in self.__internal_measures:
-                p_data_centroid = calculate_overall_data_correlation(p_data_np)
-                p_cluster_centroids = calculate_cluster_centroids(p_label, p_data_np)
+                if p_data_centroid is None:
+                    p_data_centroid = calculate_overall_data_correlation(p_data_np)
+                if p_cluster_centroids is None:
+                    p_cluster_centroids = calculate_cluster_centroids(p_label, p_data_np)
                 # distances between each segment to overall correlation of data
                 p_dist_seg_overall_data = calculate_distance_between_segment_and_data_centroid(p_label,
                                                                                                p_data_centroid,
                                                                                                self.distance_measure)
                 # distances between each segment to their cluster centroid
-                p_dist_seg_cluster = calculate_distances_between_each_segment_and_its_cluster_centroid(
-                    p_label,
-                    p_cluster_centroids,
-                    self.distance_measure)
+                if p_dist_seg_cluster_centroid is None:
+                    p_dist_seg_cluster_centroid = calculate_distances_between_each_segment_and_its_cluster_centroid(
+                        p_label,
+                        p_cluster_centroids,
+                        self.distance_measure)
+                flat_p_dist_seg_cluster_centroid = [item for clusterslist in p_dist_seg_cluster_centroid.values() for
+                                                    item in
+                                                    clusterslist]
                 # distances between all cluster centroids
                 p_dist_between_clusters = calculate_distances_between_cluster_centroids(p_cluster_centroids,
                                                                                         self.distance_measure)
-                pmb = calculate_pmb(p_dist_seg_overall_data, p_dist_seg_cluster, p_dist_between_clusters.values())
+                pmb = calculate_pmb(p_dist_seg_overall_data, flat_p_dist_seg_cluster_centroid,
+                                    p_dist_between_clusters.values())
                 pmbs.append(pmb)
 
         # put summary df together
@@ -228,6 +327,12 @@ class DescribeBadPartitions:
 
         if ClusteringQualityMeasures.silhouette_score in self.__internal_measures:
             self.summary_df[ClusteringQualityMeasures.silhouette_score] = sils
+
+        if ClusteringQualityMeasures.dbi in self.__internal_measures:
+            self.summary_df[ClusteringQualityMeasures.dbi] = dbis
+
+        if ClusteringQualityMeasures.vrc in self.__internal_measures:
+            self.summary_df[ClusteringQualityMeasures.vrc] = vrcs
 
         if ClusteringQualityMeasures.pmb in self.__internal_measures:
             self.summary_df[ClusteringQualityMeasures.pmb] = pmbs

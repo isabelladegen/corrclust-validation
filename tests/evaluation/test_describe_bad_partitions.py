@@ -11,7 +11,8 @@ from tests.test_utils.configurations_for_testing import TEST_DATA_DIR, TEST_ROOT
     TEST_GENERATED_DATASETS_FILE_PATH
 
 ds_name = "misty-forest-56"
-internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb]
+internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb,
+                     ClusteringQualityMeasures.dbi, ClusteringQualityMeasures.vrc]
 distance_measure = DistanceMeasures.l1_cor_dist
 test_data_dir = TEST_DATA_DIR
 describe = DescribeBadPartitions(ds_name, distance_measure=distance_measure, internal_measures=internal_measures,
@@ -77,6 +78,18 @@ def test_calculates_internal_measures_for_the_given_distance_measure():
     assert_that(describe.summary_df.iloc[2][ClusteringQualityMeasures.pmb], is_(0.002))
     assert_that(describe.summary_df.iloc[3][ClusteringQualityMeasures.pmb], is_(0.059))
     assert_that(describe.summary_df.iloc[4][ClusteringQualityMeasures.pmb], is_(0.001))
+
+    assert_that(describe.summary_df.iloc[0][ClusteringQualityMeasures.vrc], is_(11315.355))
+    assert_that(describe.summary_df.iloc[1][ClusteringQualityMeasures.vrc], is_(385.374))
+    assert_that(describe.summary_df.iloc[2][ClusteringQualityMeasures.vrc], is_(1.831))
+    assert_that(describe.summary_df.iloc[3][ClusteringQualityMeasures.vrc], is_(23.604))
+    assert_that(describe.summary_df.iloc[4][ClusteringQualityMeasures.vrc], is_(1.403))
+
+    assert_that(describe.summary_df.iloc[0][ClusteringQualityMeasures.dbi], is_(0.044))
+    assert_that(describe.summary_df.iloc[1][ClusteringQualityMeasures.dbi], is_(0.199))
+    assert_that(describe.summary_df.iloc[2][ClusteringQualityMeasures.dbi], is_(6.124))
+    assert_that(describe.summary_df.iloc[3][ClusteringQualityMeasures.dbi], is_(1.393))
+    assert_that(describe.summary_df.iloc[4][ClusteringQualityMeasures.dbi], is_(7.193))
 
 
 def test_only_calculates_the_internal_measure_provided():
