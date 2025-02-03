@@ -1,16 +1,48 @@
 import numpy as np
-import sklearn as sk
+from sklearn import metrics
+
+
+def calculate_dbi(distances_seg_cluster_centroid: {}, distances_cluster_centroids: {}, round_to: int = 3) -> float:
+    """
+    Calculates the davies bouldin index - lower is better (lowest is 0)
+    :param distances_seg_cluster_centroid:
+    :param distances_cluster_centroids:
+    :returns dbi index
+    """
+    clusters = list(distances_seg_cluster_centroid.keys())
+    n_clusters = len(clusters)
+    max_per_cluster = []
+    # find max for each cluster
+    for cluster in clusters:
+        segs_in_cluster = distances_seg_cluster_centroid[cluster]
+        sigma_k = sum(segs_in_cluster) / len(segs_in_cluster)
+        clusters_excluding_cluster = [c for c in clusters if c != cluster]
+        calc_for_y = []
+        for y in clusters_excluding_cluster:
+            segs_in_y_cluster = distances_seg_cluster_centroid[y]
+            sigma_y = sum(segs_in_y_cluster) / len(segs_in_y_cluster)
+            # lookup cluster centroid distance between cluster and y
+            distance = distances_cluster_centroids.get((cluster, y)) if (cluster,
+                                                                         y) in distances_cluster_centroids else distances_cluster_centroids.get(
+                (y, cluster))
+            calc_for_y.append((sigma_k + sigma_y) / distance)
+
+        # pick max for y to sum up in the end
+        max_per_cluster.append(max(calc_for_y))
+
+    sum_of_maxes = sum(max_per_cluster)
+    return round(sum_of_maxes / n_clusters, round_to)
 
 
 def calculate_pmb(distances_between_segments_to_overall_data: [], distances_between_segments_to_cluster: [],
                   distances_between_cluster_centroids: [], round_to: int = 3):
-    """ Calculates PMB as PMB=(1/k * e_1/e_k *
-    d_k)^2
-    :param distances_between_segments_to_overall_data: list of distances between all segments to the overall data
+    """
+    Calculates PMB as PMB=(1/k * e_1/e_k *d_k)^2 - higher is better, >>100!
+    :param distances_between_segments_to_overall_data: e_1 list of distances between all segments to the overall data
     centroid, shape: list of length number of segments
-    :param distances_between_segments_to_cluster: list of distances between all segments to their cluster centroid,
+    :param distances_between_segments_to_cluster: e_k = list of distances between all segments to their cluster centroid,
     shape: length number of clusters
-    :param distances_between_cluster_centroids: list of distance between all cluster centroids, shape:
+    :param distances_between_cluster_centroids: D_k = list of distance between all cluster centroids, shape:
      list of length number of 2 pairs combination of clusters
     :param round_to: number of decimals places to return
     """
@@ -20,7 +52,7 @@ def calculate_pmb(distances_between_segments_to_overall_data: [], distances_betw
     # the sum of the distances of the segments of each cluster to their centroid
     e_k = sum(distances_between_segments_to_cluster)
     # largest distance between two cluster centroids
-    d_k = max(distances_between_cluster_centroids.values())
+    d_k = max(distances_between_cluster_centroids)
     pmb = pow((d_k * e_1) / (no_cluster * e_k), 2)  # pow raises to the power of
     return round(pmb, round_to)
 
@@ -46,11 +78,11 @@ def clustering_jaccard_coeff(y_pred_clusters: [], ground_truth_clusters: [], rou
     return round(clustering_jaccard_coefficient, round_to)
 
 
-def silhouette_avg_from_distances(distances: np.array, y_pred: [] = None, round_to: int = 3):
+def silhouette_avg_from_distances(distances: np.array, y_pred: [], round_to: int = 3):
     """
-    Return silhouette avg for precomputed distances
-    :param y_pred: provide a y_pred if not all segments were used in the distance calculation
+    Return silhouette avg for precomputed distances -> 1 is best, -1 is worst, less than 0.5 is not good
     :param distances: 2d ndarray of shape (no_segments, no_segments)
+    :param y_pred: cluster assignment 1d len(no_segments), cluster each segment is assigned to
     :param round_to: number of decimals places to return
     """
     if np.any(np.isnan(distances)):
@@ -62,10 +94,6 @@ def silhouette_avg_from_distances(distances: np.array, y_pred: [] = None, round_
     if not len(np.unique(y_pred)) < distances.shape[0]:
         print("Cannot use silhouette analysis as each remaining segment has a different cluster")
         return None
-    try:
-        result = sk.metrics.silhouette_score(distances, y_pred, metric='precomputed')
-    except:
-        print(distances.shape)
-        return None
+    result = metrics.silhouette_score(distances, y_pred, metric='precomputed')
 
     return round(result, round_to)

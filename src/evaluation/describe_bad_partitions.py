@@ -158,7 +158,7 @@ class DescribeBadPartitions:
             # distances between all cluster centroids
             self.gt_dist_between_clusters = calculate_distances_between_cluster_centroids(self.gt_cluster_centroids,
                                                                                           self.distance_measure)
-            pmb = calculate_pmb(self.gt_dist_seg_overall_data, self.gt_dist_seg_cluster, self.gt_dist_between_clusters)
+            pmb = calculate_pmb(self.gt_dist_seg_overall_data, self.gt_dist_seg_cluster, self.gt_dist_between_clusters.values())
             pmbs.append(pmb)
 
         # to calculate the shift
@@ -209,7 +209,7 @@ class DescribeBadPartitions:
                 # distances between all cluster centroids
                 p_dist_between_clusters = calculate_distances_between_cluster_centroids(p_cluster_centroids,
                                                                                         self.distance_measure)
-                pmb = calculate_pmb(p_dist_seg_overall_data, p_dist_seg_cluster, p_dist_between_clusters)
+                pmb = calculate_pmb(p_dist_seg_overall_data, p_dist_seg_cluster, p_dist_between_clusters.values())
                 pmbs.append(pmb)
 
         # put summary df together
