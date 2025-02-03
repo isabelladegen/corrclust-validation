@@ -4,13 +4,13 @@ from dataclasses import dataclass
 
 import pandas as pd
 
+from src.utils.clustering_quality_measures import silhouette_avg_from_distances, calculate_pmb, clustering_jaccard_coeff
 from src.utils.configurations import SYNTHETIC_DATA_DIR, SyntheticDataVariates, \
     get_internal_measures_summary_file_name, GENERATED_DATASETS_FILE_PATH, ROOT_RESULTS_DIR, \
     internal_measure_calculation_dir_for
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols, \
     recalculate_labels_df_from_data
 from src.utils.distance_measures import DistanceMeasures
-from src.utils.internal_measures import silhouette_avg_from_distances, calculate_pmb, clustering_jaccard_coeff
 from src.utils.labels_utils import calculate_overall_data_correlation, \
     calculate_distance_between_segment_and_data_centroid, calculate_cluster_centroids, \
     calculate_distances_between_each_segment_and_its_cluster_centroid, calculate_distances_between_cluster_centroids, \
@@ -158,7 +158,8 @@ class DescribeBadPartitions:
             # distances between all cluster centroids
             self.gt_dist_between_clusters = calculate_distances_between_cluster_centroids(self.gt_cluster_centroids,
                                                                                           self.distance_measure)
-            pmb = calculate_pmb(self.gt_dist_seg_overall_data, self.gt_dist_seg_cluster, self.gt_dist_between_clusters.values())
+            pmb = calculate_pmb(self.gt_dist_seg_overall_data, self.gt_dist_seg_cluster,
+                                self.gt_dist_between_clusters.values())
             pmbs.append(pmb)
 
         # to calculate the shift

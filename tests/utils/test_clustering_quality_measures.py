@@ -1,9 +1,9 @@
 import numpy as np
 from hamcrest import *
 
+from src.utils.clustering_quality_measures import silhouette_avg_from_distances, calculate_pmb, \
+    clustering_jaccard_coeff, calculate_dbi, calculate_vrc
 from src.utils.distance_measures import distance_calculation_method_for, DistanceMeasures
-from src.utils.internal_measures import silhouette_avg_from_distances, calculate_pmb, clustering_jaccard_coeff, \
-    calculate_dbi, calculate_vrc
 
 # test scenario with two clusters
 # cluster 1
