@@ -8,6 +8,7 @@ from scipy.stats import pearsonr
 
 from src.evaluation.describe_bad_partitions import default_internal_measures, default_external_measures, \
     DescribeBadPartCols, DescribeBadPartitions, read_internal_measures_calculation
+from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import GENERATED_DATASETS_FILE_PATH, ROOT_RESULTS_DIR, \
     internal_measure_assessment_dir_for, SYNTHETIC_DATA_DIR, \
     get_internal_measures_summary_file_name
@@ -188,7 +189,7 @@ class InternalMeasureAssessment:
         for internal_measure in self.__internal_measures:
             effect_size, lo_ci, hi_ci, standard_error = self.effect_size_and_ci_of_difference_of_means_gt_and_worst_partition(
                 internal_measure=internal_measure,
-                worst_ranked_by=DescribeBadPartCols.jaccard_index)
+                worst_ranked_by=ClusteringQualityMeasures.jaccard_index)
             names.append(internal_measure)
             effect_sizes.append(effect_size)
             lo_cis.append(lo_ci)
@@ -244,8 +245,8 @@ def run_internal_measure_assessment__datasets(overall_ds_name: str,
                                               data_type: str = SyntheticDataType.non_normal_correlated,
                                               data_dir: str = SYNTHETIC_DATA_DIR,
                                               results_dir: str = ROOT_RESULTS_DIR,
-                                              internal_measures: [str] = [DescribeBadPartCols.silhouette_score,
-                                                                          DescribeBadPartCols.pmb],
+                                              internal_measures: [str] = [ClusteringQualityMeasures.silhouette_score,
+                                                                          ClusteringQualityMeasures.pmb],
                                               n_dropped_clusters: [int] = [],
                                               n_dropped_segments: [int] = [],
                                               ):

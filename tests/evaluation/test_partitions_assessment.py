@@ -1,5 +1,6 @@
 from hamcrest import *
 
+from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import internal_measure_assessment_dir_for, \
     get_image_results_path
 from src.utils.distance_measures import DistanceMeasures
@@ -34,8 +35,8 @@ def test_loads_all_partitions_for_each_datasets_ordered_by_worst_jaccard_to_best
     # sorted partitions from worst to best
     worst_partition = a_df.iloc[0]
     best_partition = a_df.iloc[9]
-    assert_that(worst_partition[DescribeBadPartCols.jaccard_index], is_(0.0))
-    assert_that(best_partition[DescribeBadPartCols.jaccard_index], is_(1.0))
+    assert_that(worst_partition[ClusteringQualityMeasures.jaccard_index], is_(0.0))
+    assert_that(best_partition[ClusteringQualityMeasures.jaccard_index], is_(1.0))
     assert_that(a_df.index[0], is_(0))
 
     # includes all information
@@ -44,12 +45,13 @@ def test_loads_all_partitions_for_each_datasets_ordered_by_worst_jaccard_to_best
                                                          DescribeBadPartCols.n_observations, DescribeBadPartCols.errors,
                                                          DescribeBadPartCols.n_wrong_clusters,
                                                          DescribeBadPartCols.n_obs_shifted,
-                                                         DescribeBadPartCols.jaccard_index,
-                                                         DescribeBadPartCols.silhouette_score, DescribeBadPartCols.pmb))
+                                                         ClusteringQualityMeasures.jaccard_index,
+                                                         ClusteringQualityMeasures.silhouette_score,
+                                                         ClusteringQualityMeasures.pmb))
 
 
 def test_calculates_statistics_per_partition_across_n_30_datasets():
-    df = pal1ref.calculate_describe_statistics_for_partitions(column=DescribeBadPartCols.jaccard_index)
+    df = pal1ref.calculate_describe_statistics_for_partitions(column=ClusteringQualityMeasures.jaccard_index)
 
     assert_that(len(df.columns), is_(10))  # partitions are now columns, describe is across the 30 ds
     assert_that(df.loc['mean', 0], is_(0))
@@ -57,19 +59,19 @@ def test_calculates_statistics_per_partition_across_n_30_datasets():
 
 
 def test_plot_descriptive_statistics_for_partitions_for_column():
-    fig = pal1ref.plot_describe_statistics_for_partitions_for_column(column=DescribeBadPartCols.jaccard_index,
+    fig = pal1ref.plot_describe_statistics_for_partitions_for_column(column=ClusteringQualityMeasures.jaccard_index,
                                                                      backend=backend)
 
     assert_that(fig, is_not(None))
     fig.savefig(get_image_results_path(l1ref_results_dir, 'bad_partitions_jaccard.png'))
 
-    fig = pal1ref.plot_describe_statistics_for_partitions_for_column(column=DescribeBadPartCols.silhouette_score,
+    fig = pal1ref.plot_describe_statistics_for_partitions_for_column(column=ClusteringQualityMeasures.silhouette_score,
                                                                      backend=backend)
 
     assert_that(fig, is_not(None))
     fig.savefig(get_image_results_path(l1ref_results_dir, 'bad_partitions_scw.png'))
 
-    fig = pal1ref.plot_describe_statistics_for_partitions_for_column(column=DescribeBadPartCols.pmb,
+    fig = pal1ref.plot_describe_statistics_for_partitions_for_column(column=ClusteringQualityMeasures.pmb,
                                                                      backend=backend)
 
     assert_that(fig, is_not(None))
@@ -107,12 +109,12 @@ def test_plot_descriptive_statistics_for_partitions_for_column_for_l2_measure():
 
     pal2 = PartitionAssessment(overall_dataset_name, data_type, results_dir, data_dir, DistanceMeasures.l2_cor_dist,
                                generated_ds_csv=TEST_GENERATED_DATASETS_FILE_PATH)
-    fig = pal2.plot_describe_statistics_for_partitions_for_column(column=DescribeBadPartCols.silhouette_score,
+    fig = pal2.plot_describe_statistics_for_partitions_for_column(column=ClusteringQualityMeasures.silhouette_score,
                                                                   backend=backend)
     assert_that(fig, is_not(None))
     fig.savefig(get_image_results_path(l2_results_dir, 'bad_partitions_scw_L2.png'))
 
-    fig = pal2.plot_describe_statistics_for_partitions_for_column(column=DescribeBadPartCols.pmb,
+    fig = pal2.plot_describe_statistics_for_partitions_for_column(column=ClusteringQualityMeasures.pmb,
                                                                   backend=backend)
     assert_that(fig, is_not(None))
     fig.savefig(get_image_results_path(l2_results_dir, 'bad_partitions_pmb_L2.png'))
@@ -125,12 +127,12 @@ def test_plot_descriptive_statistics_for_partitions_for_column_for_l1_measure():
 
     pal1 = PartitionAssessment(overall_dataset_name, data_type, results_dir, data_dir,
                                DistanceMeasures.l1_cor_dist, generated_ds_csv=TEST_GENERATED_DATASETS_FILE_PATH)
-    fig = pal1.plot_describe_statistics_for_partitions_for_column(column=DescribeBadPartCols.silhouette_score,
+    fig = pal1.plot_describe_statistics_for_partitions_for_column(column=ClusteringQualityMeasures.silhouette_score,
                                                                   backend=backend)
     assert_that(fig, is_not(None))
     fig.savefig(get_image_results_path(l1_results_dir, 'bad_partitions_scw_L1.png'))
 
-    fig = pal1.plot_describe_statistics_for_partitions_for_column(column=DescribeBadPartCols.pmb,
+    fig = pal1.plot_describe_statistics_for_partitions_for_column(column=ClusteringQualityMeasures.pmb,
                                                                   backend=backend)
     assert_that(fig, is_not(None))
     fig.savefig(get_image_results_path(l1_results_dir, 'bad_partitions_pmb_L1.png'))

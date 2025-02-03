@@ -1,6 +1,7 @@
 import pandas as pd
 from matplotlib import pyplot as plt
 
+from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import GENERATED_DATASETS_FILE_PATH
 from src.utils.plots.matplotlib_helper_functions import reset_matplotlib, Backends, fontsize, set_axis_label_font_size
 from src.evaluation.describe_bad_partitions import DescribeBadPartCols, read_internal_measures_calculation
@@ -26,7 +27,7 @@ class PartitionAssessment:
                                                                      self.n_clusters, self.n_segments,
                                                                      self.generated_ds_csv)
 
-    def calculate_describe_statistics_for_partitions(self, column=DescribeBadPartCols.jaccard_index):
+    def calculate_describe_statistics_for_partitions(self, column=ClusteringQualityMeasures.jaccard_index):
         """
         Calculates the describe statistics for the worst to the best partition for each dataset for the given column
         :returns pd.DataFrame - columns are the 67 partitions, rows are mean, count, sd, etc
@@ -48,7 +49,7 @@ class PartitionAssessment:
         df_column = df_column.T
         return df_column
 
-    def plot_describe_statistics_for_partitions_for_column(self, column=DescribeBadPartCols.jaccard_index,
+    def plot_describe_statistics_for_partitions_for_column(self, column=ClusteringQualityMeasures.jaccard_index,
                                                            backend: Backends = Backends.none.value):
 
         reset_matplotlib(backend)
@@ -77,10 +78,10 @@ class PartitionAssessment:
                                 sharex=True,
                                 figsize=fig_size)
 
-        self.__plot_for_column(axs[0, 0], DescribeBadPartCols.jaccard_index)
+        self.__plot_for_column(axs[0, 0], ClusteringQualityMeasures.jaccard_index)
         self.__plot_for_column(axs[0, 1], DescribeBadPartCols.errors)
-        self.__plot_for_column(axs[1, 0], DescribeBadPartCols.silhouette_score)
-        self.__plot_for_column(axs[1, 1], DescribeBadPartCols.pmb)
+        self.__plot_for_column(axs[1, 0], ClusteringQualityMeasures.silhouette_score)
+        self.__plot_for_column(axs[1, 1], ClusteringQualityMeasures.pmb)
 
         axs[1, 0].set_xlabel("Partitions", fontsize=fontsize)
         axs[1, 1].set_xlabel("Partitions", fontsize=fontsize)

@@ -3,6 +3,7 @@ from hamcrest import *
 from src.evaluation.describe_bad_partitions import DescribeBadPartitions, DescribeBadPartCols, select_data_from_df, \
     run_internal_measure_calculation_for_dataset, read_internal_measures_calculation
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
+from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.labels_utils import calculate_y_pred_from
 from src.utils.load_synthetic_data import SyntheticDataType
@@ -10,7 +11,7 @@ from tests.test_utils.configurations_for_testing import TEST_DATA_DIR, TEST_ROOT
     TEST_GENERATED_DATASETS_FILE_PATH
 
 ds_name = "misty-forest-56"
-internal_measures = [DescribeBadPartCols.silhouette_score, DescribeBadPartCols.pmb]
+internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb]
 distance_measure = DistanceMeasures.l1_cor_dist
 test_data_dir = TEST_DATA_DIR
 describe = DescribeBadPartitions(ds_name, distance_measure=distance_measure, internal_measures=internal_measures,
@@ -50,11 +51,11 @@ def test_describe_bad_partition_returns_list_of_ground_truth_cluster_for_each_ob
 
 
 def test_calculates_jaccard_index_for_each_gt_and_partition():
-    assert_that(describe.summary_df.iloc[0][DescribeBadPartCols.jaccard_index], is_(1))
-    assert_that(describe.summary_df.iloc[1][DescribeBadPartCols.jaccard_index], is_(0.982))
-    assert_that(describe.summary_df.iloc[2][DescribeBadPartCols.jaccard_index], is_(0.377))
-    assert_that(describe.summary_df.iloc[3][DescribeBadPartCols.jaccard_index], is_(0.896))
-    assert_that(describe.summary_df.iloc[4][DescribeBadPartCols.jaccard_index], is_(0.293))
+    assert_that(describe.summary_df.iloc[0][ClusteringQualityMeasures.jaccard_index], is_(1))
+    assert_that(describe.summary_df.iloc[1][ClusteringQualityMeasures.jaccard_index], is_(0.982))
+    assert_that(describe.summary_df.iloc[2][ClusteringQualityMeasures.jaccard_index], is_(0.377))
+    assert_that(describe.summary_df.iloc[3][ClusteringQualityMeasures.jaccard_index], is_(0.896))
+    assert_that(describe.summary_df.iloc[4][ClusteringQualityMeasures.jaccard_index], is_(0.293))
 
     # mean MAE for comparison
     assert_that(describe.summary_df.iloc[0][DescribeBadPartCols.errors], is_(0.112))
@@ -65,30 +66,32 @@ def test_calculates_jaccard_index_for_each_gt_and_partition():
 
 
 def test_calculates_internal_measures_for_the_given_distance_measure():
-    assert_that(describe.summary_df.iloc[0][DescribeBadPartCols.silhouette_score], is_(0.97))
-    assert_that(describe.summary_df.iloc[1][DescribeBadPartCols.silhouette_score], is_(0.829))
-    assert_that(describe.summary_df.iloc[2][DescribeBadPartCols.silhouette_score], is_(-0.337))
-    assert_that(describe.summary_df.iloc[3][DescribeBadPartCols.silhouette_score], is_(0.673))
-    assert_that(describe.summary_df.iloc[4][DescribeBadPartCols.silhouette_score], is_(-0.383))
+    assert_that(describe.summary_df.iloc[0][ClusteringQualityMeasures.silhouette_score], is_(0.97))
+    assert_that(describe.summary_df.iloc[1][ClusteringQualityMeasures.silhouette_score], is_(0.829))
+    assert_that(describe.summary_df.iloc[2][ClusteringQualityMeasures.silhouette_score], is_(-0.337))
+    assert_that(describe.summary_df.iloc[3][ClusteringQualityMeasures.silhouette_score], is_(0.673))
+    assert_that(describe.summary_df.iloc[4][ClusteringQualityMeasures.silhouette_score], is_(-0.383))
 
-    assert_that(describe.summary_df.iloc[0][DescribeBadPartCols.pmb], is_(12.769))
-    assert_that(describe.summary_df.iloc[1][DescribeBadPartCols.pmb], is_(0.509))
-    assert_that(describe.summary_df.iloc[2][DescribeBadPartCols.pmb], is_(0.002))
-    assert_that(describe.summary_df.iloc[3][DescribeBadPartCols.pmb], is_(0.059))
-    assert_that(describe.summary_df.iloc[4][DescribeBadPartCols.pmb], is_(0.001))
+    assert_that(describe.summary_df.iloc[0][ClusteringQualityMeasures.pmb], is_(12.769))
+    assert_that(describe.summary_df.iloc[1][ClusteringQualityMeasures.pmb], is_(0.509))
+    assert_that(describe.summary_df.iloc[2][ClusteringQualityMeasures.pmb], is_(0.002))
+    assert_that(describe.summary_df.iloc[3][ClusteringQualityMeasures.pmb], is_(0.059))
+    assert_that(describe.summary_df.iloc[4][ClusteringQualityMeasures.pmb], is_(0.001))
 
 
 def test_only_calculates_the_internal_measure_provided():
-    bp1 = DescribeBadPartitions(ds_name, distance_measure=distance_measure, internal_measures=[DescribeBadPartCols.pmb],
+    bp1 = DescribeBadPartitions(ds_name, distance_measure=distance_measure,
+                                internal_measures=[ClusteringQualityMeasures.pmb],
                                 data_dir=test_data_dir)
     columns = list(bp1.summary_df.columns)
-    assert_that(DescribeBadPartCols.silhouette_score not in columns, is_(True))
+    assert_that(ClusteringQualityMeasures.silhouette_score not in columns, is_(True))
 
 
 def test_randomly_drops_n_clusters_from_all_partitions():
     n_clusters = 20
     bp1 = DescribeBadPartitions(ds_name, distance_measure=distance_measure,
-                                internal_measures=[DescribeBadPartCols.silhouette_score], drop_n_clusters=n_clusters,
+                                internal_measures=[ClusteringQualityMeasures.silhouette_score],
+                                drop_n_clusters=n_clusters,
                                 data_dir=test_data_dir)
 
     labels = bp1.gt_label
@@ -144,7 +147,8 @@ def test_randomly_drops_n_clusters_from_all_partitions():
 
 def test_randomly_drop_n_segments_from_all_partitions():
     n_segments = 90
-    bp1 = DescribeBadPartitions(ds_name, distance_measure=distance_measure, internal_measures=[DescribeBadPartCols.pmb],
+    bp1 = DescribeBadPartitions(ds_name, distance_measure=distance_measure,
+                                internal_measures=[ClusteringQualityMeasures.pmb],
                                 drop_n_segments=n_segments, data_dir=test_data_dir)
 
     labels = bp1.gt_label
@@ -200,7 +204,8 @@ def test_randomly_drop_n_segments_from_all_partitions():
 def test_can_randomly_drop_both_clusters_and_segments():
     n_segments = 90
     n_clusters = 20
-    bp1 = DescribeBadPartitions(ds_name, distance_measure=distance_measure, internal_measures=[DescribeBadPartCols.pmb],
+    bp1 = DescribeBadPartitions(ds_name, distance_measure=distance_measure,
+                                internal_measures=[ClusteringQualityMeasures.pmb],
                                 drop_n_clusters=n_clusters, drop_n_segments=n_segments, data_dir=test_data_dir)
 
     labels = bp1.gt_label
@@ -269,8 +274,8 @@ def test_can_run_calculation_for_internal_measures_on_all_datasets():
                                                  data_type=data_type,
                                                  data_dir=test_data_dir,
                                                  results_dir=test_results_dir,
-                                                 internal_measures=[DescribeBadPartCols.silhouette_score,
-                                                                    DescribeBadPartCols.pmb],
+                                                 internal_measures=[ClusteringQualityMeasures.silhouette_score,
+                                                                    ClusteringQualityMeasures.pmb],
                                                  n_dropped_clusters=[],
                                                  n_dropped_segments=[],
                                                  )
@@ -298,15 +303,15 @@ def test_can_run_calculation_for_internal_measures_on_all_datasets_when_dropping
                                                  data_type=data_type,
                                                  data_dir=test_data_dir,
                                                  results_dir=test_results_dir,
-                                                 internal_measures=[DescribeBadPartCols.silhouette_score,
-                                                                    DescribeBadPartCols.pmb],
+                                                 internal_measures=[ClusteringQualityMeasures.silhouette_score,
+                                                                    ClusteringQualityMeasures.pmb],
                                                  n_dropped_clusters=[5, 15],
                                                  n_dropped_segments=[],
                                                  )
 
     # read the files from disk
     datasets_drop5 = read_internal_measures_calculation(overall_ds_name=overall_ds_name, data_type=data_type,
-                                                        root_results_dir=test_results_dir,  data_dir=test_data_dir,
+                                                        root_results_dir=test_results_dir, data_dir=test_data_dir,
                                                         distance_measure=distance_measure, n_dropped_clusters=5,
                                                         generated_ds_csv=runs)
 
@@ -337,8 +342,8 @@ def test_can_run_calculation_for_internal_measures_on_all_datasets_when_dropping
                                                  data_type=data_type,
                                                  data_dir=test_data_dir,
                                                  results_dir=test_results_dir,
-                                                 internal_measures=[DescribeBadPartCols.silhouette_score,
-                                                                    DescribeBadPartCols.pmb],
+                                                 internal_measures=[ClusteringQualityMeasures.silhouette_score,
+                                                                    ClusteringQualityMeasures.pmb],
                                                  n_dropped_clusters=[],
                                                  n_dropped_segments=[50],
                                                  )

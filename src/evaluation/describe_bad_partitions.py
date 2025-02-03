@@ -4,7 +4,8 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from src.utils.clustering_quality_measures import silhouette_avg_from_distances, calculate_pmb, clustering_jaccard_coeff
+from src.utils.clustering_quality_measures import silhouette_avg_from_distances, calculate_pmb, \
+    clustering_jaccard_coeff, ClusteringQualityMeasures
 from src.utils.configurations import SYNTHETIC_DATA_DIR, SyntheticDataVariates, \
     get_internal_measures_summary_file_name, GENERATED_DATASETS_FILE_PATH, ROOT_RESULTS_DIR, \
     internal_measure_calculation_dir_for
@@ -22,9 +23,6 @@ from src.utils.load_synthetic_data import SyntheticDataType, load_synthetic_data
 @dataclass
 class DescribeBadPartCols:
     n_seg_outside_tol = "n segments outside tolerance"
-    pmb: str = "PMB"
-    silhouette_score: str = "SCW"
-    jaccard_index: str = "Jaccard"
     name: str = "file name"
     n_patterns: str = "n patterns"
     n_segments: str = "n segments"
@@ -34,8 +32,8 @@ class DescribeBadPartCols:
     n_obs_shifted: str = "n obs shifted"
 
 
-default_internal_measures = [DescribeBadPartCols.silhouette_score]
-default_external_measures = [DescribeBadPartCols.jaccard_index]
+default_internal_measures = [ClusteringQualityMeasures.silhouette_score]
+default_external_measures = [ClusteringQualityMeasures.jaccard_index]
 
 
 def select_data_from_df(data: pd.DataFrame, label: pd.DataFrame):
@@ -134,16 +132,16 @@ class DescribeBadPartitions:
         n_wrong_clusters.append(0)
         n_obs_shifted.append(0)
 
-        if DescribeBadPartCols.jaccard_index in self.__external_measures:
+        if ClusteringQualityMeasures.jaccard_index in self.__external_measures:
             jaccards.append(1)
 
-        if DescribeBadPartCols.silhouette_score in self.__internal_measures:
+        if ClusteringQualityMeasures.silhouette_score in self.__internal_measures:
             # 2D np array of dimension n_segments x n_segments with 0 diagonal and symmetric
             self.gt_distance_matrix = calculate_distance_matrix_for(self.gt_label, self.distance_measure)
             sil_avg = silhouette_avg_from_distances(self.gt_distance_matrix, self.gt_patterns)
             sils.append(sil_avg)
 
-        if DescribeBadPartCols.pmb in self.__internal_measures:
+        if ClusteringQualityMeasures.pmb in self.__internal_measures:
             self.data_centroid = calculate_overall_data_correlation(self.gt_data_np)
             self.gt_cluster_centroids = calculate_cluster_centroids(self.gt_label, self.gt_data_np)
 
@@ -184,18 +182,18 @@ class DescribeBadPartitions:
             n_obs_shifted.append(p_first_seg_end_idx - gt_first_seg_end_idx)
 
             # calculate external and internal measures
-            if DescribeBadPartCols.jaccard_index in self.__external_measures:
+            if ClusteringQualityMeasures.jaccard_index in self.__external_measures:
                 p_y_pred, p_y_pred_gt = calculate_y_pred_and_updated_gt_y_pred_from(p_label, full_gt_y_pred)
                 p_jacc = clustering_jaccard_coeff(p_y_pred, p_y_pred_gt, round_to)
                 jaccards.append(p_jacc)
 
-            if DescribeBadPartCols.silhouette_score in self.__internal_measures:
+            if ClusteringQualityMeasures.silhouette_score in self.__internal_measures:
                 # 2D np array of dimension n_segments x n_segments with 0 diagonal and symmetric
                 p_distance_matrix = calculate_distance_matrix_for(p_label, self.distance_measure)
                 sil_avg = silhouette_avg_from_distances(p_distance_matrix, p_patterns)
                 sils.append(sil_avg)
 
-            if DescribeBadPartCols.pmb in self.__internal_measures:
+            if ClusteringQualityMeasures.pmb in self.__internal_measures:
                 p_data_centroid = calculate_overall_data_correlation(p_data_np)
                 p_cluster_centroids = calculate_cluster_centroids(p_label, p_data_np)
                 # distances between each segment to overall correlation of data
@@ -225,14 +223,14 @@ class DescribeBadPartitions:
             DescribeBadPartCols.n_obs_shifted: n_obs_shifted,
         })
 
-        if DescribeBadPartCols.jaccard_index in self.__external_measures:
-            self.summary_df[DescribeBadPartCols.jaccard_index] = jaccards
+        if ClusteringQualityMeasures.jaccard_index in self.__external_measures:
+            self.summary_df[ClusteringQualityMeasures.jaccard_index] = jaccards
 
-        if DescribeBadPartCols.silhouette_score in self.__internal_measures:
-            self.summary_df[DescribeBadPartCols.silhouette_score] = sils
+        if ClusteringQualityMeasures.silhouette_score in self.__internal_measures:
+            self.summary_df[ClusteringQualityMeasures.silhouette_score] = sils
 
-        if DescribeBadPartCols.pmb in self.__internal_measures:
-            self.summary_df[DescribeBadPartCols.pmb] = pmbs
+        if ClusteringQualityMeasures.pmb in self.__internal_measures:
+            self.summary_df[ClusteringQualityMeasures.pmb] = pmbs
 
     def __drop_clusters_or_segments(self):
         """
@@ -354,7 +352,7 @@ class DescribeBadPartitions:
         """
             Calculate and return jaccard stats df across the partitions for the dataset
         """
-        return self.summary_df[DescribeBadPartCols.jaccard_index].describe().round(round_to)
+        return self.summary_df[ClusteringQualityMeasures.jaccard_index].describe().round(round_to)
 
     def n_wrong_cluster_stats(self, round_to: int = 3):
         """
@@ -405,7 +403,7 @@ def read_internal_measures_calculation(overall_ds_name: str, data_type: str, roo
         file_to_read = os.path.join(results_dir, file_name)
         df = pd.read_csv(file_to_read, index_col=0)
         # sort by Jaccard index
-        df = df.sort_values(by=DescribeBadPartCols.jaccard_index)
+        df = df.sort_values(by=ClusteringQualityMeasures.jaccard_index)
         df.reset_index(drop=True, inplace=True)
         results_for_run.append(df)
     return results_for_run
@@ -443,8 +441,8 @@ def run_internal_measure_calculation_for_dataset(overall_ds_name: str,
                                                  data_type: str = SyntheticDataType.non_normal_correlated,
                                                  data_dir: str = SYNTHETIC_DATA_DIR,
                                                  results_dir: str = ROOT_RESULTS_DIR,
-                                                 internal_measures: [str] = [DescribeBadPartCols.silhouette_score,
-                                                                             DescribeBadPartCols.pmb],
+                                                 internal_measures: [str] = [ClusteringQualityMeasures.silhouette_score,
+                                                                             ClusteringQualityMeasures.pmb],
                                                  n_dropped_clusters: [int] = [],
                                                  n_dropped_segments: [int] = [],
                                                  ):

@@ -1,8 +1,20 @@
+from dataclasses import dataclass
+
 import numpy as np
 from sklearn import metrics
 
 
-def calculate_vrc(distances_seg_cluster_centroid: {}, distance_cluster_centroids_to_data: {}, round_to: int = 3) -> float:
+@dataclass
+class ClusteringQualityMeasures:
+    pmb: str = "PMB"
+    silhouette_score: str = "SCW"
+    vrc_index: str = "VRC"
+    dbi_index: str = "DBI"
+    jaccard_index: str = "Jaccard"
+
+
+def calculate_vrc(distances_seg_cluster_centroid: {}, distance_cluster_centroids_to_data: {},
+                  round_to: int = 3) -> float:
     """
     Calculates the calinkski harabasz index (VRC) - higher is better (lowest is 0)
     :param distances_seg_cluster_centroid: dictionary with key cluster id and values list of distances for each

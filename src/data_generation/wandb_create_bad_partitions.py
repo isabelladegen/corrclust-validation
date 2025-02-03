@@ -11,6 +11,7 @@ from dataclasses import dataclass, field, asdict
 from src.data_generation.create_bad_partitions import CreateBadSyntheticPartitions
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.evaluation.describe_bad_partitions import DescribeBadPartitions, DescribeBadPartCols
+from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import WandbConfiguration, SYNTHETIC_DATA_DIR, SyntheticDataVariates, \
     GENERATED_DATASETS_FILE_PATH, bad_partition_dir_for_data_type, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR
 from src.utils.load_synthetic_data import SyntheticDataType
@@ -197,7 +198,7 @@ def create_bad_partitions(config: CreateBadPartitionsConfig, ds_name: str, idx: 
         # note distance measure is not used therefore set to ""
         bp = DescribeBadPartitions(ds_name=ds_name, data_type=config.data_type, distance_measure="",
                                    data_cols=config.data_cols, internal_measures=[],
-                                   external_measures=[DescribeBadPartCols.jaccard_index], seed=config.seed,
+                                   external_measures=[ClusteringQualityMeasures.jaccard_index], seed=config.seed,
                                    drop_n_segments=0, drop_n_clusters=0, data_dir=config.data_dir)
         summary = bp.summary_df
         summary_table = wandb.Table(dataframe=summary, allow_mixed_types=True)

@@ -2,7 +2,8 @@ import os
 
 from hamcrest import *
 
-from src.evaluation.describe_bad_partitions import DescribeBadPartitions, DescribeBadPartCols
+from src.evaluation.describe_bad_partitions import DescribeBadPartitions
+from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import internal_measure_assessment_dir_for
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
@@ -17,7 +18,7 @@ ds1_name = "misty-forest-56"
 ds2_name = "twilight-fog-55"
 ds3_name = "playful-thunder-52"
 distance_measure = DistanceMeasures.l1_cor_dist
-internal_measures = [DescribeBadPartCols.silhouette_score, DescribeBadPartCols.pmb]
+internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb]
 test_data_dir = TEST_DATA_DIR
 
 bp1 = DescribeBadPartitions(ds1_name, distance_measure=distance_measure, internal_measures=internal_measures,
@@ -65,8 +66,8 @@ def test_calculate_correlation_between_internal_and_external_measures_for_each_d
 
 def test_effect_size_d_of_difference_in_means_between_gt_and_worst_partition_for_sil():
     effect_size, lo_ci, hi_ci, standard_error = ia.effect_size_and_ci_of_difference_of_means_gt_and_worst_partition(
-        internal_measure=DescribeBadPartCols.silhouette_score,
-        worst_ranked_by=DescribeBadPartCols.jaccard_index)
+        internal_measure=ClusteringQualityMeasures.silhouette_score,
+        worst_ranked_by=ClusteringQualityMeasures.jaccard_index)
 
     assert_that(round(effect_size, 3), is_(72.963))
     assert_that(round(lo_ci, 3), is_(1.363))
@@ -76,8 +77,8 @@ def test_effect_size_d_of_difference_in_means_between_gt_and_worst_partition_for
 
 def test_effect_size_d_of_difference_in_means_between_gt_and_worst_partition_for_pmb():
     effect_size, lo_ci, hi_ci, standard_error = ia.effect_size_and_ci_of_difference_of_means_gt_and_worst_partition(
-        internal_measure=DescribeBadPartCols.pmb,
-        worst_ranked_by=DescribeBadPartCols.jaccard_index)
+        internal_measure=ClusteringQualityMeasures.pmb,
+        worst_ranked_by=ClusteringQualityMeasures.jaccard_index)
 
     assert_that(round(effect_size, 3), is_(13.051))
     assert_that(round(lo_ci, 3), is_(12.951))
@@ -178,8 +179,8 @@ def test_can_run_assessment_on_full_dataset_and_store_results_for_runs_with_all_
                                               data_type=data_type,
                                               data_dir=test_data_dir,
                                               results_dir=test_results_dir,
-                                              internal_measures=[DescribeBadPartCols.silhouette_score,
-                                                                 DescribeBadPartCols.pmb],
+                                              internal_measures=[ClusteringQualityMeasures.silhouette_score,
+                                                                 ClusteringQualityMeasures.pmb],
                                               n_dropped_clusters=[],
                                               n_dropped_segments=[],
                                               )
@@ -213,8 +214,8 @@ def test_can_run_assessment_and_store_results_for_runs_with_dropping_clusters():
                                               data_type=data_type,
                                               data_dir=test_data_dir,
                                               results_dir=test_results_dir,
-                                              internal_measures=[DescribeBadPartCols.silhouette_score,
-                                                                 DescribeBadPartCols.pmb],
+                                              internal_measures=[ClusteringQualityMeasures.silhouette_score,
+                                                                 ClusteringQualityMeasures.pmb],
                                               n_dropped_clusters=[5, 15],
                                               n_dropped_segments=[],
                                               )
@@ -250,8 +251,8 @@ def test_can_run_assessment_and_store_results_for_runs_with_dropping_segments():
                                               data_type=data_type,
                                               data_dir=test_data_dir,
                                               results_dir=test_results_dir,
-                                              internal_measures=[DescribeBadPartCols.silhouette_score,
-                                                                 DescribeBadPartCols.pmb],
+                                              internal_measures=[ClusteringQualityMeasures.silhouette_score,
+                                                                 ClusteringQualityMeasures.pmb],
                                               n_dropped_clusters=[],
                                               n_dropped_segments=[50],
                                               )

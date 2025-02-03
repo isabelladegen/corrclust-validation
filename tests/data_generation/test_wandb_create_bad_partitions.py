@@ -2,6 +2,7 @@ from hamcrest import *
 
 from src.data_generation.wandb_create_bad_partitions import CreateBadPartitionsConfig, create_bad_partitions
 from src.evaluation.describe_bad_partitions import DescribeBadPartCols
+from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.utils.wandb_utils import set_test_configurations
@@ -23,7 +24,7 @@ def test_wandb_create_bad_partitions():
     bad_part_summary, wandb_summary = create_bad_partitions(config, ds_name=ds_name, idx=0)
 
     assert_that(bad_part_summary.shape[0], is_(10))
-    assert_that(bad_part_summary.loc[0, DescribeBadPartCols.jaccard_index], is_(1))
+    assert_that(bad_part_summary.loc[0, ClusteringQualityMeasures.jaccard_index], is_(1))
     assert_that(bad_part_summary.loc[0, DescribeBadPartCols.n_wrong_clusters], is_(0))
     assert_that(bad_part_summary.loc[0, DescribeBadPartCols.n_obs_shifted], is_(0))
 
