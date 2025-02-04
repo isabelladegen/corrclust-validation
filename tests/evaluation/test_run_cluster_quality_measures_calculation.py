@@ -19,7 +19,7 @@ def test_can_run_calculation_for_internal_measures_on_all_datasets():
     overall_ds_name = "test_stuff"
     # distance_measure = DistanceMeasures.l2_cor_dist
     # distance_measure = DistanceMeasures.l1_with_ref
-    # distance_measure = DistanceMeasures.l1_cor_dist
+    distance_measure = DistanceMeasures.l1_cor_dist
     data_type = SyntheticDataType.normal_correlated
     test_results_dir = TEST_ROOT_RESULTS_DIR
     run_internal_measure_calculation_for_dataset(overall_ds_name=overall_ds_name,

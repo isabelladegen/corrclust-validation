@@ -8,7 +8,8 @@ from scipy.stats import pearsonr
 
 from src.evaluation.describe_bad_partitions import default_internal_measures, default_external_measures, \
     DescribeBadPartCols
-from src.evaluation.run_cluster_quality_measures_calculation import run_internal_measure_calculation_for_dataset
+from src.evaluation.run_cluster_quality_measures_calculation import run_internal_measure_calculation_for_dataset, \
+    read_clustering_quality_measures
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import GENERATED_DATASETS_FILE_PATH, ROOT_RESULTS_DIR, \
     internal_measure_assessment_dir_for, SYNTHETIC_DATA_DIR
@@ -207,13 +208,14 @@ def assess_internal_measures(overall_dataset_name: str, run_names: [str], data_t
                              distance_measure: str,
                              internal_measures: [str], n_clusters=0, n_segments=0):
     # load all the internal measure calculation summaries
-    partitions = run_internal_measure_calculation_for_dataset(overall_ds_name=overall_dataset_name, run_names=run_names,
-                                                              data_type=data_type,
-                                                              results_dir=root_results_dir, data_dir=data_dir,
-                                                              internal_measures=internal_measures,
-                                                              distance_measure=distance_measure,
-                                                              n_dropped_clusters=n_clusters,
-                                                              n_dropped_segments=n_segments)
+    partitions = read_clustering_quality_measures(overall_ds_name=overall_dataset_name,
+                                                  data_type=data_type,
+                                                  root_results_dir=root_results_dir,
+                                                  data_dir=data_dir,
+                                                  distance_measure=distance_measure,
+                                                  n_dropped_clusters=n_clusters,
+                                                  n_dropped_segments=n_segments,
+                                                  run_names=run_names)
 
     ia = InternalMeasureAssessment(distance_measure=distance_measure, dataset_results=partitions,
                                    internal_measures=internal_measures)
@@ -249,7 +251,7 @@ def run_internal_measure_assessment_datasets(overall_ds_name: str,
                                              data_dir: str = SYNTHETIC_DATA_DIR,
                                              results_dir: str = ROOT_RESULTS_DIR,
                                              internal_measures: [str] = [ClusteringQualityMeasures.silhouette_score,
-                                                                          ClusteringQualityMeasures.pmb],
+                                                                         ClusteringQualityMeasures.pmb],
                                              n_dropped_clusters: [int] = [],
                                              n_dropped_segments: [int] = [],
                                              ):

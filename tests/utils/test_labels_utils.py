@@ -95,8 +95,9 @@ def test_calculates_distances_between_each_segment_to_each_cluster_centroid():
     centroids = calculate_cluster_centroids(gt_label, data[SyntheticDataVariates.columns()].to_numpy())
     l1_dist = calculate_distances_between_each_segment_and_its_cluster_centroid(gt_label, centroids,
                                                                                 DistanceMeasures.l1_cor_dist)
-
-    assert_that(len(l1_dist), is_(gt_label.shape[0]))
+    # flatten dictionary
+    dists_for_segments = [item for clusterslist in l1_dist.values() for item in clusterslist]
+    assert_that(len(dists_for_segments), is_(gt_label.shape[0]))
 
 
 def test_calculates_distances_between_all_cluster_centroids():

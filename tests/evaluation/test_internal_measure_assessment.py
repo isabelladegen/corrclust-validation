@@ -1,5 +1,6 @@
 import os
 
+import pandas as pd
 from hamcrest import *
 
 from src.evaluation.describe_bad_partitions import DescribeBadPartitions
@@ -19,6 +20,8 @@ ds3_name = "playful-thunder-52"
 distance_measure = DistanceMeasures.l1_cor_dist
 internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb]
 test_data_dir = TEST_DATA_DIR
+run_names = pd.read_csv(TEST_GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
+
 
 bp1 = DescribeBadPartitions(ds1_name, distance_measure=distance_measure, internal_measures=internal_measures,
                             data_dir=test_data_dir)
@@ -54,11 +57,11 @@ def test_calculate_correlation_between_internal_and_external_measures_for_each_d
 
     # assert pmb score corr
     r_col_name = ia.measures_corr_col_names[1]
-    assert_that(df.iloc[0][r_col_name], is_(0.494))
+    assert_that(df.iloc[0][r_col_name], is_(0.495))
     assert_that(df.iloc[1][r_col_name], is_(0.603))
     assert_that(df.iloc[2][r_col_name], is_(0.446))
     p_col_name = ia.measures_p_col_names[1]
-    assert_that(df.iloc[0][p_col_name], is_(0.398))
+    assert_that(df.iloc[0][p_col_name], is_(0.397))
     assert_that(df.iloc[1][p_col_name], is_(0.282))
     assert_that(df.iloc[2][p_col_name], is_(0.451))
 
@@ -158,7 +161,7 @@ def test_can_assess_different_distance_measures():
     # assert pmb score corr
     r_col_name = ial2.measures_corr_col_names[1]
     p_col_name = ial2.measures_p_col_names[1]
-    assert_that(df.iloc[0][r_col_name], is_(0.491))
+    assert_that(df.iloc[0][r_col_name], is_(0.492))
     assert_that(df.iloc[1][r_col_name], is_(0.603))
     assert_that(df.iloc[0][p_col_name], is_(0.4))
     assert_that(df.iloc[1][p_col_name], is_(0.282))
@@ -173,16 +176,15 @@ def test_can_run_assessment_on_full_dataset_and_store_results_for_runs_with_all_
     data_type = SyntheticDataType.normal_correlated
     test_results_dir = TEST_ROOT_RESULTS_DIR
     run_internal_measure_assessment_datasets(overall_ds_name=overall_ds_name,
-                                             run_names=TEST_GENERATED_DATASETS_FILE_PATH,
+                                             run_names=run_names,
                                              distance_measure=distance_measure,
                                              data_type=data_type,
                                              data_dir=test_data_dir,
                                              results_dir=test_results_dir,
                                              internal_measures=[ClusteringQualityMeasures.silhouette_score,
-                                                                 ClusteringQualityMeasures.pmb],
+                                                                ClusteringQualityMeasures.pmb],
                                              n_dropped_clusters=[],
-                                             n_dropped_segments=[],
-                                             )
+                                             n_dropped_segments=[])
 
     # check if the files have been created
     results_folder = internal_measure_assessment_dir_for(
@@ -208,13 +210,13 @@ def test_can_run_assessment_and_store_results_for_runs_with_dropping_clusters():
     data_type = SyntheticDataType.normal_correlated
     test_results_dir = TEST_ROOT_RESULTS_DIR
     run_internal_measure_assessment_datasets(overall_ds_name=overall_ds_name,
-                                             run_names=TEST_GENERATED_DATASETS_FILE_PATH,
+                                             run_names=run_names,
                                              distance_measure=distance_measure,
                                              data_type=data_type,
                                              data_dir=test_data_dir,
                                              results_dir=test_results_dir,
                                              internal_measures=[ClusteringQualityMeasures.silhouette_score,
-                                                                 ClusteringQualityMeasures.pmb],
+                                                                ClusteringQualityMeasures.pmb],
                                              n_dropped_clusters=[5, 15],
                                              n_dropped_segments=[],
                                              )
@@ -245,13 +247,13 @@ def test_can_run_assessment_and_store_results_for_runs_with_dropping_segments():
     data_type = SyntheticDataType.normal_correlated
     test_results_dir = TEST_ROOT_RESULTS_DIR
     run_internal_measure_assessment_datasets(overall_ds_name=overall_ds_name,
-                                             run_names=TEST_GENERATED_DATASETS_FILE_PATH,
+                                             run_names=run_names,
                                              distance_measure=distance_measure,
                                              data_type=data_type,
                                              data_dir=test_data_dir,
                                              results_dir=test_results_dir,
                                              internal_measures=[ClusteringQualityMeasures.silhouette_score,
-                                                                 ClusteringQualityMeasures.pmb],
+                                                                ClusteringQualityMeasures.pmb],
                                              n_dropped_clusters=[],
                                              n_dropped_segments=[50],
                                              )
