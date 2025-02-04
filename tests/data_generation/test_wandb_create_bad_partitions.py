@@ -31,7 +31,7 @@ def test_wandb_create_bad_partitions():
     # test wandb log summary
     assert_that(wandb_summary["mean n segments within tolerance"], is_(49.1))
     assert_that(wandb_summary["median n segments outside tolerance"], is_(47.0))
-    assert_that(wandb_summary["median MAE"], is_(0.25))
+    assert_that(wandb_summary["median MAE"], is_(0.159))
     assert_that(wandb_summary["std segment length"], is_(0.0))
     assert_that(wandb_summary["min Jaccard"], is_(0.0))
     assert_that(wandb_summary["mean n wrong clusters"], is_(35.3))

@@ -24,7 +24,7 @@ class DescribeBadPartCols:
     n_patterns: str = "n patterns"
     n_segments: str = "n segments"
     n_observations: str = "n observations"
-    errors: str = "mean mae"
+    errors: str = "mean relaxed mae"  # using relaxed mae now
     n_wrong_clusters: str = "n wrong clusters"
     n_obs_shifted: str = "n obs shifted"
 
@@ -126,7 +126,7 @@ class DescribeBadPartitions:
         patterns_count.append(len(self.gt_label[SyntheticDataSegmentCols.pattern_id].unique()))
         segments_count.append(self.gt_label.shape[0])
         n_observations.append(calculate_n_observations_for(self.gt_label))
-        mean_mae.append(round(self.gt_label[SyntheticDataSegmentCols.mae].mean(), round_to))
+        mean_mae.append(round(self.gt_label[SyntheticDataSegmentCols.relaxed_mae].mean(), round_to))
         n_segments_outside_tolerance.append(calculate_n_segments_outside_tolerance_for(self.gt_label))
         n_wrong_clusters.append(0)
         n_obs_shifted.append(0)
@@ -213,7 +213,7 @@ class DescribeBadPartitions:
 
         for file_name, p_label in self.partitions.items():
             p_data_np = self.data[self.__cols].to_numpy()
-            p_mean_mae_error = round(p_label[SyntheticDataSegmentCols.mae].mean(), round_to)
+            p_mean_mae_error = round(p_label[SyntheticDataSegmentCols.relaxed_mae].mean(), round_to)
             p_patterns = p_label[SyntheticDataSegmentCols.pattern_id].to_numpy()
 
             # calculate and add info to new df for this partition
@@ -435,7 +435,7 @@ class DescribeBadPartitions:
         """
         labels_dfs = list(self.partitions.values())
         labels_dfs.append(self.gt_label)  # add ground truth
-        partition_means = [df[SyntheticDataSegmentCols.mae].mean() for df in labels_dfs]
+        partition_means = [df[SyntheticDataSegmentCols.relaxed_mae].mean() for df in labels_dfs]
         return pd.Series(partition_means).describe().round(round_to)
 
     def segment_length_stats(self, round_to: int = 3):

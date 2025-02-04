@@ -28,7 +28,7 @@ def test_describe_bad_partitions():
     assert_that(gt_row[DescribeBadPartCols.n_observations], is_(1226400))
     assert_that(describe.data.shape[0], is_(1226400))
     assert_that(describe.gt_label[SyntheticDataSegmentCols.length].sum(), is_(1226400))
-    assert_that(gt_row[DescribeBadPartCols.errors].round(2), is_(0.11))
+    assert_that(gt_row[DescribeBadPartCols.errors].round(2), is_(0.02))
     assert_that(gt_row[DescribeBadPartCols.n_obs_shifted], is_(0))
     assert_that(gt_row[DescribeBadPartCols.n_wrong_clusters], is_(0))
 
@@ -56,37 +56,37 @@ def test_calculates_jaccard_index_for_each_gt_and_partition():
     assert_that(describe.summary_df.iloc[4][ClusteringQualityMeasures.jaccard_index], is_(0.293))
 
     # mean MAE for comparison
-    assert_that(describe.summary_df.iloc[0][DescribeBadPartCols.errors], is_(0.112))
-    assert_that(describe.summary_df.iloc[1][DescribeBadPartCols.errors], is_(0.141))
-    assert_that(describe.summary_df.iloc[2][DescribeBadPartCols.errors], is_(0.558))
-    assert_that(describe.summary_df.iloc[3][DescribeBadPartCols.errors], is_(0.175))
-    assert_that(describe.summary_df.iloc[4][DescribeBadPartCols.errors], is_(0.612))
+    assert_that(describe.summary_df.iloc[0][DescribeBadPartCols.errors], is_(0.024))
+    assert_that(describe.summary_df.iloc[1][DescribeBadPartCols.errors], is_(0.052))
+    assert_that(describe.summary_df.iloc[2][DescribeBadPartCols.errors], is_(0.472))
+    assert_that(describe.summary_df.iloc[3][DescribeBadPartCols.errors], is_(0.086))
+    assert_that(describe.summary_df.iloc[4][DescribeBadPartCols.errors], is_(0.534))
 
 
 def test_calculates_internal_measures_for_the_given_distance_measure():
     assert_that(describe.summary_df.iloc[0][ClusteringQualityMeasures.silhouette_score], is_(0.97))
-    assert_that(describe.summary_df.iloc[1][ClusteringQualityMeasures.silhouette_score], is_(0.829))
+    assert_that(describe.summary_df.iloc[1][ClusteringQualityMeasures.silhouette_score], is_(0.83))
     assert_that(describe.summary_df.iloc[2][ClusteringQualityMeasures.silhouette_score], is_(-0.337))
     assert_that(describe.summary_df.iloc[3][ClusteringQualityMeasures.silhouette_score], is_(0.673))
     assert_that(describe.summary_df.iloc[4][ClusteringQualityMeasures.silhouette_score], is_(-0.383))
 
     assert_that(describe.summary_df.iloc[0][ClusteringQualityMeasures.pmb], is_(12.769))
-    assert_that(describe.summary_df.iloc[1][ClusteringQualityMeasures.pmb], is_(0.509))
+    assert_that(describe.summary_df.iloc[1][ClusteringQualityMeasures.pmb], is_(0.527))
     assert_that(describe.summary_df.iloc[2][ClusteringQualityMeasures.pmb], is_(0.002))
-    assert_that(describe.summary_df.iloc[3][ClusteringQualityMeasures.pmb], is_(0.059))
+    assert_that(describe.summary_df.iloc[3][ClusteringQualityMeasures.pmb], is_(0.06))
     assert_that(describe.summary_df.iloc[4][ClusteringQualityMeasures.pmb], is_(0.001))
 
     assert_that(describe.summary_df.iloc[0][ClusteringQualityMeasures.vrc], is_(11315.355))
-    assert_that(describe.summary_df.iloc[1][ClusteringQualityMeasures.vrc], is_(385.374))
-    assert_that(describe.summary_df.iloc[2][ClusteringQualityMeasures.vrc], is_(1.831))
-    assert_that(describe.summary_df.iloc[3][ClusteringQualityMeasures.vrc], is_(23.604))
-    assert_that(describe.summary_df.iloc[4][ClusteringQualityMeasures.vrc], is_(1.403))
+    assert_that(describe.summary_df.iloc[1][ClusteringQualityMeasures.vrc], is_(389.338))
+    assert_that(describe.summary_df.iloc[2][ClusteringQualityMeasures.vrc], is_(1.834))
+    assert_that(describe.summary_df.iloc[3][ClusteringQualityMeasures.vrc], is_(23.681))
+    assert_that(describe.summary_df.iloc[4][ClusteringQualityMeasures.vrc], is_(1.404))
 
     assert_that(describe.summary_df.iloc[0][ClusteringQualityMeasures.dbi], is_(0.044))
-    assert_that(describe.summary_df.iloc[1][ClusteringQualityMeasures.dbi], is_(0.199))
-    assert_that(describe.summary_df.iloc[2][ClusteringQualityMeasures.dbi], is_(6.124))
-    assert_that(describe.summary_df.iloc[3][ClusteringQualityMeasures.dbi], is_(1.393))
-    assert_that(describe.summary_df.iloc[4][ClusteringQualityMeasures.dbi], is_(7.193))
+    assert_that(describe.summary_df.iloc[1][ClusteringQualityMeasures.dbi], is_(0.196))
+    assert_that(describe.summary_df.iloc[2][ClusteringQualityMeasures.dbi], is_(6.12))
+    assert_that(describe.summary_df.iloc[3][ClusteringQualityMeasures.dbi], is_(1.389))
+    assert_that(describe.summary_df.iloc[4][ClusteringQualityMeasures.dbi], is_(7.19))
 
 
 def test_only_calculates_the_internal_measure_provided():
@@ -273,31 +273,31 @@ def test_calculates_n_segment_within_tolerance_stats():
     """ Calculate and return stats df across the partitions for the dataset"""
     n_within = describe.n_segment_within_tolerance_stats()
 
-    assert_that(n_within['mean'], is_(65.6))
-    assert_that(n_within['std'], is_(31.919))
-    assert_that(n_within['50%'], is_(73.000))
-    assert_that(n_within['min'], is_(23))
+    assert_that(n_within['mean'], is_(64.0))
+    assert_that(n_within['std'], is_(31.836))
+    assert_that(n_within['50%'], is_(69.000))
+    assert_that(n_within['min'], is_(22))
     assert_that(n_within['max'], is_(98))
 
 
 def test_calculates_n_segment_outside_tolerance_stats():
     n_outside = describe.n_segment_outside_tolerance_stats()
 
-    assert_that(n_outside['mean'], is_(34.4))
-    assert_that(n_outside['std'], is_(31.919))
-    assert_that(n_outside['50%'], is_(27))
+    assert_that(n_outside['mean'], is_(36.0))
+    assert_that(n_outside['std'], is_(31.836))
+    assert_that(n_outside['50%'], is_(31))
     assert_that(n_outside['min'], is_(2))
-    assert_that(n_outside['max'], is_(77))
+    assert_that(n_outside['max'], is_(78))
 
 
 def test_calculates_mae_stats():
     mae = describe.mae_stats()
 
-    assert_that(mae['mean'], is_(0.320))
-    assert_that(mae['std'], is_(0.244))
-    assert_that(mae['50%'], is_(0.175))
-    assert_that(mae['min'], is_(0.112))
-    assert_that(mae['max'], is_(0.612))
+    assert_that(mae['mean'], is_(0.234))
+    assert_that(mae['std'], is_(0.248))
+    assert_that(mae['50%'], is_(0.086))
+    assert_that(mae['min'], is_(0.024))
+    assert_that(mae['max'], is_(0.534))
 
 
 def test_calculates_segment_length_stats():

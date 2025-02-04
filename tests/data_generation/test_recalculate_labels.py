@@ -117,6 +117,42 @@ def test_recalculate_all_labels_files_to_allow_for_distance_measure_calculation(
                 recalculated_labels_df.to_csv(labels_file_name)
 
 
+@pytest.mark.skip(reason="this is a once off calculation to update correlations for bad partitions labels files")
+def test_recalculate_all_labels_files_to_allow_for_distance_measure_calculation_for_bad_partitions():
+    """
+    This is a once off to recalculate all the labels files to allow for distance calculation
+    We change the correlation 0.99 to not get rounded to 1 and keep 3 decimals for correlations
+    We also now calculate the relaxed MAE
+    This does not include bad partitions!
+    """
+    dataset_types = [SyntheticDataType.normal_correlated]
+    data_dirs = [TEST_IRREGULAR_P90_DATA_DIR]
+
+    # run_names = ['amber-glade-10', 'gallant-galaxy-1', 'misty-forest-56', 'playful-thunder-52', 'splendid-sunset-12',
+    #              'twilight-fog-55']
+    # run_names = ['amber-glade-10', 'misty-forest-56', 'splendid-sunset-12',
+    #              'test-run']
+    run_names = ['misty-forest-56']
+
+    # run_names = pd.read_csv(GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
+
+    for data_dir in data_dirs:
+        for data_type in dataset_types:
+            for run_name in run_names:
+                data, gt_label, partitions = load_synthetic_data_and_labels_for_bad_partitions(run_name,
+                                                                                               data_type=data_type,
+                                                                                               data_dir=data_dir)
+                for file_name, partition_labels_df in partitions.items():
+                    recalculated_labels_df = recalculate_labels_df_from_data(data, partition_labels_df)
+                    # drop cor regularisation column
+                    if SyntheticDataSegmentCols.regularisation in recalculated_labels_df.columns:
+                        recalculated_labels_df = recalculated_labels_df.drop(SyntheticDataSegmentCols.regularisation,
+                                                                             axis=1)
+                    bad_partitions_dir = bad_partition_dir_for_data_type(data_type, data_dir)
+                    labels_file_name = Path(bad_partitions_dir, file_name)
+                    recalculated_labels_df.to_csv(labels_file_name)
+
+
 @dataclass
 class OldEvaluationCriteria:
     inter_i: str = "Interpretability: L_0 close to zero"
