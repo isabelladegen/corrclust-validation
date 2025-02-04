@@ -221,22 +221,27 @@ def create_bad_partitions(config: CreateBadPartitionsConfig, ds_name: str, idx: 
 
 
 if __name__ == "__main__":
-    config = CreateBadPartitionsConfig()
-    # this will create bad partitions for irregular sampled version of the below data type
-    # config.data_dir = IRREGULAR_P90_DATA_DIR
-    config.data_dir = SYNTHETIC_DATA_DIR
-    config.data_type = SyntheticDataType.rs_1min
+    dataset_types = [SyntheticDataType.raw,
+                     SyntheticDataType.normal_correlated,
+                     SyntheticDataType.non_normal_correlated,
+                     SyntheticDataType.rs_1min]
+    data_dirs = [SYNTHETIC_DATA_DIR,
+                 IRREGULAR_P30_DATA_DIR,
+                 IRREGULAR_P90_DATA_DIR]
+    for data_dir in data_dirs:
+        for data_type in dataset_types:
+            if data_dir == SYNTHETIC_DATA_DIR and data_type == SyntheticDataType.rs_1min:
+                continue  # already done
+            config = CreateBadPartitionsConfig()
+            config.data_dir = data_dir
+            config.data_type =data_type
 
-    # test config
-    # config.data_dir = TEST_DATA_DIR
-    # config.csv_of_runs = TEST_GENERATED_DATASETS_FILE_PATH_1
+            run_names = pd.read_csv(config.csv_of_runs)['Name'].tolist()
 
-    generated_ds = pd.read_csv(config.csv_of_runs)['Name'].tolist()
+            n_datasets = len(run_names)
+            n_partitions = config.n_partitions
+            # *3 for the different three strategies
+            print("Generating " + str(n_partitions * 3) + " bad partitions for " + str(n_datasets) + " datasets")
 
-    n_datasets = len(generated_ds)
-    n_partitions = config.n_partitions
-    # *3 for the different three strategies
-    print("Generating " + str(n_partitions * 3) + " bad partitions for " + str(n_datasets) + " datasets")
-
-    for idx, ds_name in enumerate(generated_ds):
-        create_bad_partitions(config, ds_name=ds_name, idx=idx)
+            for idx, ds_name in enumerate(run_names):
+                create_bad_partitions(config, ds_name=ds_name, idx=idx)

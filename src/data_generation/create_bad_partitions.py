@@ -89,7 +89,6 @@ class CreateBadSyntheticPartitions:
         new_labels = []
 
         for p in range(n_partitions):
-            print(p)
             labels_df = self.labels.copy()
             add_obs = n_observations[p]
             # add obs to each start idx other than the first
