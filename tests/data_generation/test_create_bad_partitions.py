@@ -158,3 +158,21 @@ def test_creates_bad_partitions_both_shifting_segments_end_idx_and_assigning_ran
     # recalculated MAE which is now bigger
     assert_that(a_new_label.loc[0, SyntheticDataSegmentCols.mae],
                 greater_than(bp.labels.loc[0, SyntheticDataSegmentCols.mae]))
+
+
+def test_generate_bad_partitions_for_resampled_data_deal_with_shifting_more_than_last_segment_length():
+    rs_bp = CreateBadSyntheticPartitions(run_name="breezy-leaf-30", data_type=SyntheticDataType.rs_1min,
+                                         data_dir=test_data_dir)
+    last_segment_length = rs_bp.labels["length"].iloc[-1]
+    resulting_labels = rs_bp.shift_segments_end_index(n_partitions=1, n_observations=[3 * last_segment_length])
+
+    assert_that(resulting_labels[0].shape[0], is_(rs_bp.labels.shape[0] - 2))
+
+
+def test_generate_bad_partitions_so_that_last_segment_is_too_short():
+    rs_bp = CreateBadSyntheticPartitions(run_name="breezy-leaf-30", data_type=SyntheticDataType.rs_1min,
+                                         data_dir=test_data_dir)
+    last_segment_length = rs_bp.labels["length"].iloc[-1]
+    resulting_labels = rs_bp.shift_segments_end_index(n_partitions=1, n_observations=[last_segment_length-2])
+
+    assert_that(resulting_labels[0].shape[0], is_(rs_bp.labels.shape[0] - 1))

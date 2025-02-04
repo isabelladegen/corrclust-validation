@@ -1,4 +1,7 @@
 import random
+
+import numpy as np
+
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols, \
     recalculate_labels_df_from_data
 from src.data_generation.model_correlation_patterns import ModelCorrelationPatterns
@@ -80,12 +83,13 @@ class CreateBadSyntheticPartitions:
         but the cluster ids stay the same
 
            :param n_partitions: number of new partitions to create
-           :param n_observations: number of observations to shift end index by
+           :param n_observations: list number of observations to shift end index by for each of n_partition
            :return: a list of labels dataframes for the new partitions with updated correlations
         """
         new_labels = []
 
         for p in range(n_partitions):
+            print(p)
             labels_df = self.labels.copy()
             add_obs = n_observations[p]
             # add obs to each start idx other than the first
@@ -104,6 +108,23 @@ class CreateBadSyntheticPartitions:
             labels_df.loc[labels_df.index[-1], SyntheticDataSegmentCols.length] = labels_df.loc[
                                                                                       labels_df.index[
                                                                                           -1], SyntheticDataSegmentCols.length] - add_obs
+
+            # drop segments that have been shifted outside of data length or less than n-variates long
+            max_end_idx = self.__data.shape[0] - 1 - len(self.__data_cols)
+            first_exceed_idx = labels_df[labels_df[SyntheticDataSegmentCols.end_idx] > max_end_idx].index.min()
+            if not np.isnan(first_exceed_idx):
+                labels_df = labels_df.loc[:first_exceed_idx]
+                # in sure last row ends on data end (we might have dropped a segment with just 1 obs)
+                # -1 due to zero based indexing
+                labels_df.loc[labels_df.index[-1], SyntheticDataSegmentCols.end_idx] = self.__data.shape[0] - 1
+                # make length correct, +1 due to end_idx being selected too
+                length = labels_df.loc[labels_df.index[-1], SyntheticDataSegmentCols.end_idx] - labels_df.loc[
+                    labels_df.index[-1], SyntheticDataSegmentCols.start_idx] + 1
+                labels_df.loc[labels_df.index[-1], SyntheticDataSegmentCols.length] = length
+
+            # check lengths in labels_df match data length
+            assert labels_df[SyntheticDataSegmentCols.length].sum() == self.__data.shape[
+                0], "Length mismatch for shifting segments by p " + str(p)
 
             # recalculate labels df (will recalculate correlations)
             updated_new_label = recalculate_labels_df_from_data(self.__data, labels_df)

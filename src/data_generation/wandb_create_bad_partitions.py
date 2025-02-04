@@ -223,8 +223,9 @@ def create_bad_partitions(config: CreateBadPartitionsConfig, ds_name: str, idx: 
 if __name__ == "__main__":
     config = CreateBadPartitionsConfig()
     # this will create bad partitions for irregular sampled version of the below data type
-    config.data_dir = IRREGULAR_P90_DATA_DIR
-    config.data_type = SyntheticDataType.non_normal_correlated
+    # config.data_dir = IRREGULAR_P90_DATA_DIR
+    config.data_dir = SYNTHETIC_DATA_DIR
+    config.data_type = SyntheticDataType.rs_1min
 
     # test config
     # config.data_dir = TEST_DATA_DIR
