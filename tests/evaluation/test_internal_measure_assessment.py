@@ -9,8 +9,7 @@ from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.stats import ConfidenceIntervalCols
 from src.evaluation.internal_measure_assessment import InternalMeasureAssessment, InternalMeasureCols, \
-    run_internal_measure_assessment__datasets, get_internal_measures_summary_file_name, \
-    get_full_filename_for_results_csv, IAResultsCSV
+    run_internal_measure_assessment_datasets, get_full_filename_for_results_csv, IAResultsCSV
 from tests.test_utils.configurations_for_testing import TEST_DATA_DIR, TEST_GENERATED_DATASETS_FILE_PATH, \
     TEST_ROOT_RESULTS_DIR
 
@@ -173,17 +172,17 @@ def test_can_run_assessment_on_full_dataset_and_store_results_for_runs_with_all_
     distance_measure = DistanceMeasures.l1_cor_dist
     data_type = SyntheticDataType.normal_correlated
     test_results_dir = TEST_ROOT_RESULTS_DIR
-    run_internal_measure_assessment__datasets(overall_ds_name=overall_ds_name,
-                                              generated_ds_csv=TEST_GENERATED_DATASETS_FILE_PATH,
-                                              distance_measure=distance_measure,
-                                              data_type=data_type,
-                                              data_dir=test_data_dir,
-                                              results_dir=test_results_dir,
-                                              internal_measures=[ClusteringQualityMeasures.silhouette_score,
+    run_internal_measure_assessment_datasets(overall_ds_name=overall_ds_name,
+                                             run_names=TEST_GENERATED_DATASETS_FILE_PATH,
+                                             distance_measure=distance_measure,
+                                             data_type=data_type,
+                                             data_dir=test_data_dir,
+                                             results_dir=test_results_dir,
+                                             internal_measures=[ClusteringQualityMeasures.silhouette_score,
                                                                  ClusteringQualityMeasures.pmb],
-                                              n_dropped_clusters=[],
-                                              n_dropped_segments=[],
-                                              )
+                                             n_dropped_clusters=[],
+                                             n_dropped_segments=[],
+                                             )
 
     # check if the files have been created
     results_folder = internal_measure_assessment_dir_for(
@@ -208,17 +207,17 @@ def test_can_run_assessment_and_store_results_for_runs_with_dropping_clusters():
     distance_measure = DistanceMeasures.l1_cor_dist
     data_type = SyntheticDataType.normal_correlated
     test_results_dir = TEST_ROOT_RESULTS_DIR
-    run_internal_measure_assessment__datasets(overall_ds_name=overall_ds_name,
-                                              generated_ds_csv=TEST_GENERATED_DATASETS_FILE_PATH,
-                                              distance_measure=distance_measure,
-                                              data_type=data_type,
-                                              data_dir=test_data_dir,
-                                              results_dir=test_results_dir,
-                                              internal_measures=[ClusteringQualityMeasures.silhouette_score,
+    run_internal_measure_assessment_datasets(overall_ds_name=overall_ds_name,
+                                             run_names=TEST_GENERATED_DATASETS_FILE_PATH,
+                                             distance_measure=distance_measure,
+                                             data_type=data_type,
+                                             data_dir=test_data_dir,
+                                             results_dir=test_results_dir,
+                                             internal_measures=[ClusteringQualityMeasures.silhouette_score,
                                                                  ClusteringQualityMeasures.pmb],
-                                              n_dropped_clusters=[5, 15],
-                                              n_dropped_segments=[],
-                                              )
+                                             n_dropped_clusters=[5, 15],
+                                             n_dropped_segments=[],
+                                             )
 
     # check if the files have been created
     results_folder_cl15 = internal_measure_assessment_dir_for(
@@ -245,17 +244,17 @@ def test_can_run_assessment_and_store_results_for_runs_with_dropping_segments():
     distance_measure = DistanceMeasures.l1_cor_dist
     data_type = SyntheticDataType.normal_correlated
     test_results_dir = TEST_ROOT_RESULTS_DIR
-    run_internal_measure_assessment__datasets(overall_ds_name=overall_ds_name,
-                                              generated_ds_csv=TEST_GENERATED_DATASETS_FILE_PATH,
-                                              distance_measure=distance_measure,
-                                              data_type=data_type,
-                                              data_dir=test_data_dir,
-                                              results_dir=test_results_dir,
-                                              internal_measures=[ClusteringQualityMeasures.silhouette_score,
+    run_internal_measure_assessment_datasets(overall_ds_name=overall_ds_name,
+                                             run_names=TEST_GENERATED_DATASETS_FILE_PATH,
+                                             distance_measure=distance_measure,
+                                             data_type=data_type,
+                                             data_dir=test_data_dir,
+                                             results_dir=test_results_dir,
+                                             internal_measures=[ClusteringQualityMeasures.silhouette_score,
                                                                  ClusteringQualityMeasures.pmb],
-                                              n_dropped_clusters=[],
-                                              n_dropped_segments=[50],
-                                              )
+                                             n_dropped_clusters=[],
+                                             n_dropped_segments=[50],
+                                             )
 
     # check if the files have been created
     results_folder_seg50 = internal_measure_assessment_dir_for(

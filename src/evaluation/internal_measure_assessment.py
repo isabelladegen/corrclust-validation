@@ -7,11 +7,11 @@ import pandas as pd
 from scipy.stats import pearsonr
 
 from src.evaluation.describe_bad_partitions import default_internal_measures, default_external_measures, \
-    DescribeBadPartCols, DescribeBadPartitions, read_internal_measures_calculation
+    DescribeBadPartCols
+from src.evaluation.run_cluster_quality_measures_calculation import run_internal_measure_calculation_for_dataset
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import GENERATED_DATASETS_FILE_PATH, ROOT_RESULTS_DIR, \
-    internal_measure_assessment_dir_for, SYNTHETIC_DATA_DIR, \
-    get_internal_measures_summary_file_name
+    internal_measure_assessment_dir_for, SYNTHETIC_DATA_DIR
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.stats import standardized_effect_size_of_mean_difference, calculate_hi_lo_difference_ci, \
@@ -202,15 +202,18 @@ class InternalMeasureAssessment:
         return result.round(self.__round_to)
 
 
-def assess_internal_measures(overall_dataset_name, generated_ds_csv, data_type: str,
+def assess_internal_measures(overall_dataset_name: str, run_names: [str], data_type: str,
                              root_results_dir: str, data_dir: str,
                              distance_measure: str,
                              internal_measures: [str], n_clusters=0, n_segments=0):
     # load all the internal measure calculation summaries
-    partitions = read_internal_measures_calculation(overall_dataset_name, data_type,
-                                                    root_results_dir, data_dir, distance_measure,
-                                                    n_clusters, n_segments,
-                                                    generated_ds_csv)
+    partitions = run_internal_measure_calculation_for_dataset(overall_ds_name=overall_dataset_name, run_names=run_names,
+                                                              data_type=data_type,
+                                                              results_dir=root_results_dir, data_dir=data_dir,
+                                                              internal_measures=internal_measures,
+                                                              distance_measure=distance_measure,
+                                                              n_dropped_clusters=n_clusters,
+                                                              n_dropped_segments=n_segments)
 
     ia = InternalMeasureAssessment(distance_measure=distance_measure, dataset_results=partitions,
                                    internal_measures=internal_measures)
@@ -239,20 +242,20 @@ def assess_internal_measures(overall_dataset_name, generated_ds_csv, data_type: 
         get_full_filename_for_results_csv(store_results_in, IAResultsCSV.ci_of_differences_between_measures))
 
 
-def run_internal_measure_assessment__datasets(overall_ds_name: str,
-                                              generated_ds_csv: str = GENERATED_DATASETS_FILE_PATH,
-                                              distance_measure: str = DistanceMeasures.l1_cor_dist,
-                                              data_type: str = SyntheticDataType.non_normal_correlated,
-                                              data_dir: str = SYNTHETIC_DATA_DIR,
-                                              results_dir: str = ROOT_RESULTS_DIR,
-                                              internal_measures: [str] = [ClusteringQualityMeasures.silhouette_score,
+def run_internal_measure_assessment_datasets(overall_ds_name: str,
+                                             run_names: [str],
+                                             distance_measure: str = DistanceMeasures.l1_cor_dist,
+                                             data_type: str = SyntheticDataType.non_normal_correlated,
+                                             data_dir: str = SYNTHETIC_DATA_DIR,
+                                             results_dir: str = ROOT_RESULTS_DIR,
+                                             internal_measures: [str] = [ClusteringQualityMeasures.silhouette_score,
                                                                           ClusteringQualityMeasures.pmb],
-                                              n_dropped_clusters: [int] = [],
-                                              n_dropped_segments: [int] = [],
-                                              ):
+                                             n_dropped_clusters: [int] = [],
+                                             n_dropped_segments: [int] = [],
+                                             ):
     """ Runs the internal measure assessment on all ds in the csv files of the generated runs
     :param overall_ds_name: a name for the dataset we're using e.g. n30 or n2
-    :param generated_ds_csv: full path to the csv file of the generated runs, using the names to locate the data
+    :param run_names: list of run_names to load (subjects)
     :param distance_measure: name of distance measure to run assessment for
     :param data_type: which datatype to use see SyntheticDataType
     :param data_dir: where to read the data from
@@ -267,20 +270,21 @@ def run_internal_measure_assessment__datasets(overall_ds_name: str,
     # decide which assessment to run
     if len(n_dropped_clusters) == 0 and len(n_dropped_segments) == 0:
 
-        assess_internal_measures(overall_dataset_name=overall_ds_name, generated_ds_csv=generated_ds_csv,
-                                 data_type=data_type, root_results_dir=results_dir, data_dir=data_dir, distance_measure=distance_measure,
+        assess_internal_measures(overall_dataset_name=overall_ds_name, run_names=run_names,
+                                 data_type=data_type, root_results_dir=results_dir, data_dir=data_dir,
+                                 distance_measure=distance_measure,
                                  internal_measures=internal_measures)
     else:
         # run evaluation for all dropped clusters and for all dropped segments separately
         # for this we just do clusters first
         for n_clus in n_dropped_clusters:
-            assess_internal_measures(overall_dataset_name=overall_ds_name, generated_ds_csv=generated_ds_csv,
+            assess_internal_measures(overall_dataset_name=overall_ds_name, run_names=run_names,
                                      data_type=data_type, root_results_dir=results_dir, data_dir=data_dir,
                                      distance_measure=distance_measure,
                                      internal_measures=internal_measures, n_clusters=n_clus)
         # and second we do segments
         for n_seg in n_dropped_segments:
-            assess_internal_measures(overall_dataset_name=overall_ds_name, generated_ds_csv=generated_ds_csv,
+            assess_internal_measures(overall_dataset_name=overall_ds_name, run_names=run_names,
                                      data_type=data_type, root_results_dir=results_dir, data_dir=data_dir,
                                      distance_measure=distance_measure,
                                      internal_measures=internal_measures, n_segments=n_seg)
@@ -288,4 +292,6 @@ def run_internal_measure_assessment__datasets(overall_ds_name: str,
 
 if __name__ == "__main__":
     overall_ds_name = "n2"
-    run_internal_measure_assessment__datasets(overall_ds_name)
+    run_names = pd.read_csv(GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
+
+    run_internal_measure_assessment_datasets(overall_ds_name, run_names=run_names)
