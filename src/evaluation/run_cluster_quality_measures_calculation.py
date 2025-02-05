@@ -121,6 +121,9 @@ if __name__ == "__main__":
     for data_dir in data_dirs:
         for data_type in data_types:
             for distance_measure in distance_measures:
+                print("Calculate Clustering Quality Measures for completeness:")
+                print(data_dir)
+                print("and data type: " + data_type)
                 run_internal_measure_calculation_for_dataset(overall_dataset_name, run_names=run_names,
                                                              distance_measure=distance_measure, data_type=data_type,
                                                              data_dir=data_dir, results_dir=results_dir,

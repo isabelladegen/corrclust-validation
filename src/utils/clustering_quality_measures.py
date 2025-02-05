@@ -48,19 +48,27 @@ def calculate_vrc(distances_seg_cluster_centroid: {}, distance_cluster_centroids
     return round(bcv / wcv, round_to)
 
 
-def calculate_dbi(distances_seg_cluster_centroid: {}, distances_cluster_centroids: {}, round_to: int = 3) -> float:
+def calculate_dbi(distances_seg_cluster_centroid: {}, distances_cluster_centroids: {},
+                  min_cluster_centroid_dist: float = 1e-15, round_to: int = 3) -> float:
     """
     Calculates the davies bouldin index - lower is better (lowest is 0)
     :param distances_seg_cluster_centroid: dictionary with key cluster id and values list of distances for each
     segment in the cluster to the centroid. Shape len(k)= number of clusters, len(distances) = n_segment in that cluster
     :param distances_cluster_centroids: dictionary with key (cluster1, cluster2) and value distance between these
     two cluster centroids
+    :param min_cluster_centroid_dist: this avoids division by zero while keeping the index poor (high) for clusters
+    that should not have been separated
     :param round_to: optional to adjust rounding
     :returns dbi index
     """
     clusters = list(distances_seg_cluster_centroid.keys())
     n_clusters = len(clusters)
     max_per_cluster = []
+    # set cluster distances to min distance
+    centroid_distances = distances_cluster_centroids.copy()
+    centroid_distances = {key: (value if value > 0 else min_cluster_centroid_dist) for key, value in
+                          centroid_distances.items()}
+
     # find max for each cluster
     for cluster in clusters:
         segs_in_cluster = distances_seg_cluster_centroid[cluster]
@@ -71,8 +79,8 @@ def calculate_dbi(distances_seg_cluster_centroid: {}, distances_cluster_centroid
             segs_in_y_cluster = distances_seg_cluster_centroid[y]
             sigma_y = sum(segs_in_y_cluster) / len(segs_in_y_cluster)
             # lookup cluster centroid distance between cluster and y
-            distance = distances_cluster_centroids.get((cluster, y)) if (cluster,
-                                                                         y) in distances_cluster_centroids else distances_cluster_centroids.get(
+            distance = centroid_distances.get((cluster, y)) if (cluster,
+                                                                y) in centroid_distances else centroid_distances.get(
                 (y, cluster))
             calc_for_y.append((sigma_k + sigma_y) / distance)
 

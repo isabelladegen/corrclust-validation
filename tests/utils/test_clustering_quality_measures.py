@@ -126,6 +126,20 @@ def test_davies_bouldin_index():
     assert_that(dbi_ok, less_than(dbi_bad))
 
 
+def test_davies_bouldin_index_with_identical_cluster_centroids():
+    # if cluster centroids are identical, we set the cluster centroid a small number to avoid division by zero
+    distances_m = DistanceMeasures.l1_cor_dist
+    distances_segments_to_cluster_centroid = calculate_distances_between_segments_and_cluster_centroids(seg_clusters_gt,
+                                                                                                        distances_m)
+
+    # assume zero distance between the cluster centroids
+    distances_cluster_centroids = {(1, 2): 0.0}
+
+    dbi_gt = calculate_dbi(distances_segments_to_cluster_centroid, distances_cluster_centroids)
+
+    assert_that(dbi_gt, is_(876666666666666.6))
+
+
 def test_calinski_harabasz_index():
     distances_m = DistanceMeasures.l1_cor_dist
     dist_cluster_centroids_gt = calculate_distances_between_segments_and_cluster_centroids(seg_clusters_gt, distances_m)
