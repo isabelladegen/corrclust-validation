@@ -7,10 +7,12 @@ from src.utils.plots.matplotlib_helper_functions import reset_matplotlib, Backen
 from src.evaluation.describe_bad_partitions import DescribeBadPartCols
 
 
-class PartitionAssessment:
+class PartitionVisualisation:
     def __init__(self, overall_dataset_name: str, data_type: str, root_results_dir: str, data_dir: str,
                  distance_measure: str, run_names: [str], n_clusters: int = 0,
                  n_segments: int = 0):
+        """ Loads all 66 partitions + ground truth for the given run_names, the given data completeness
+        (data_dir), generation stage (data_type) and distance measure"""
 
         self.overall_dataset_name = overall_dataset_name
         self.data_type = data_type

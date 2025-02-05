@@ -7,8 +7,8 @@ from src.utils.configurations import internal_measure_assessment_dir_for, \
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
-from src.evaluation.partitions_assessment import PartitionAssessment
 from src.evaluation.describe_bad_partitions import DescribeBadPartCols
+from src.visualisation.partitions_visualisation import PartitionVisualisation
 from tests.test_utils.configurations_for_testing import TEST_IMAGES_DIR, TEST_GENERATED_DATASETS_FILE_PATH, \
     TEST_ROOT_RESULTS_DIR, TEST_DATA_DIR
 
@@ -20,13 +20,15 @@ overall_dataset_name = "test_stuff"
 run_names = pd.read_csv(TEST_GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
 l1ref_results_dir = internal_measure_assessment_dir_for(overall_dataset_name, data_type, results_dir, data_dir,
                                                         DistanceMeasures.l1_with_ref)
-pal1ref = PartitionAssessment(overall_dataset_name, data_type, results_dir, data_dir, DistanceMeasures.l1_with_ref,
-                              run_names=run_names)
+pal1ref = PartitionVisualisation(overall_dataset_name, data_type, results_dir, data_dir, DistanceMeasures.l1_with_ref,
+                                 run_names=run_names)
 backend = Backends.none.value
+
+
 # backend = Backends.visible_tests.value
 
 
-# these tests need results to run - run the internal distance measures first
+# these tests need results to run - run the quality measures calculation first
 def test_loads_all_partitions_for_each_datasets_ordered_by_worst_jaccard_to_best():
     # read all datasets
     assert_that(len(pal1ref.partition_outcomes), is_(2))
@@ -115,8 +117,8 @@ def test_plot_descriptive_statistics_for_partitions_for_column_for_l2_measure():
     l2_results_dir = internal_measure_assessment_dir_for(overall_dataset_name, data_type, results_dir, data_dir,
                                                          DistanceMeasures.l2_cor_dist)
 
-    pal2 = PartitionAssessment(overall_dataset_name, data_type, results_dir, data_dir, DistanceMeasures.l2_cor_dist,
-                               run_names=run_names)
+    pal2 = PartitionVisualisation(overall_dataset_name, data_type, results_dir, data_dir, DistanceMeasures.l2_cor_dist,
+                                  run_names=run_names)
     fig = pal2.plot_describe_statistics_for_partitions_for_column(column=ClusteringQualityMeasures.silhouette_score,
                                                                   backend=backend)
     assert_that(fig, is_not(None))
@@ -133,8 +135,8 @@ def test_plot_descriptive_statistics_for_partitions_for_column_for_l1_measure():
                                                          results_dir, data_dir,
                                                          DistanceMeasures.l1_cor_dist)
 
-    pal1 = PartitionAssessment(overall_dataset_name, data_type, results_dir, data_dir, DistanceMeasures.l1_cor_dist,
-                               run_names=run_names)
+    pal1 = PartitionVisualisation(overall_dataset_name, data_type, results_dir, data_dir, DistanceMeasures.l1_cor_dist,
+                                  run_names=run_names)
     fig = pal1.plot_describe_statistics_for_partitions_for_column(column=ClusteringQualityMeasures.silhouette_score,
                                                                   backend=backend)
     assert_that(fig, is_not(None))
