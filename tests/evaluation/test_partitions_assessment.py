@@ -23,6 +23,7 @@ l1ref_results_dir = internal_measure_assessment_dir_for(overall_dataset_name, da
 pal1ref = PartitionAssessment(overall_dataset_name, data_type, results_dir, data_dir, DistanceMeasures.l1_with_ref,
                               run_names=run_names)
 backend = Backends.none.value
+# backend = Backends.visible_tests.value
 
 
 # these tests need results to run - run the internal distance measures first
@@ -143,3 +144,11 @@ def test_plot_descriptive_statistics_for_partitions_for_column_for_l1_measure():
                                                                   backend=backend)
     assert_that(fig, is_not(None))
     fig.savefig(get_image_results_path(l1_results_dir, 'bad_partitions_pmb_L1.png'))
+
+
+def test_plots_all_three_descriptive_measures_in_one_column_for_paper():
+    columns = [ClusteringQualityMeasures.jaccard_index,
+               DescribeBadPartCols.n_wrong_clusters,
+               DescribeBadPartCols.n_obs_shifted]
+    fig = pal1ref.plot_multiple_quality_measures(columns=columns, backend=backend)
+    assert_that(fig, is_not(None))

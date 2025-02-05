@@ -109,3 +109,27 @@ class PartitionAssessment:
         ax.grid(axis='y', linestyle='dotted')
         ax.set_ylabel(column, fontsize=fontsize)
         set_axis_label_font_size(ax)
+
+    def plot_multiple_quality_measures(self, columns: [str], backend: str = Backends.none.value):
+        reset_matplotlib(backend)
+
+        # Create figure with subplots sharing x axis
+        fig, axes = plt.subplots(nrows=len(columns),
+                                 ncols=1,
+                                 sharex=True,
+                                 figsize=(10, 10))
+
+        # Get legend handles and labels from first plot only
+        for idx, (ax, column) in enumerate(zip(axes, columns)):
+            self.__plot_for_column(ax, column)
+
+            # Add legend only to first subplot
+            if idx == 0:
+                ax.legend(loc="upper left")
+
+        # Set shared x label only on bottom plot
+        axes[-1].set_xlabel("Segmented Clusterings", fontsize=fontsize)
+
+        plt.tight_layout()
+        plt.show()
+        return fig
