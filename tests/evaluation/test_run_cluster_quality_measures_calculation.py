@@ -14,14 +14,15 @@ test_data_dir = TEST_DATA_DIR
 runs = pd.read_csv(TEST_GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
 
 
-def test_can_run_calculation_for_internal_measures_on_all_datasets():
+def test_can_run_calculation_for_internal_measures_on_all_datasets(tmp_path):
     # run test_wandb_create_bad_partitions to create bad partitions if they don't exist for your configuration
     overall_ds_name = "test_stuff"
     # distance_measure = DistanceMeasures.l2_cor_dist
     # distance_measure = DistanceMeasures.l1_with_ref
     distance_measure = DistanceMeasures.l1_cor_dist
     data_type = SyntheticDataType.normal_correlated
-    test_results_dir = TEST_ROOT_RESULTS_DIR
+    # test_results_dir = TEST_ROOT_RESULTS_DIR
+    test_results_dir = str(tmp_path)
     run_internal_measure_calculation_for_dataset(overall_ds_name=overall_ds_name,
                                                  run_names=runs,
                                                  distance_measure=distance_measure,

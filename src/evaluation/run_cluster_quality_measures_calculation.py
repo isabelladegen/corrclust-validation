@@ -113,12 +113,9 @@ if __name__ == "__main__":
                          DistanceMeasures.foerstner_cor_dist]
     internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb,
                          ClusteringQualityMeasures.vrc, ClusteringQualityMeasures.dbi]
-    # data_types = [SyntheticDataType.raw, SyntheticDataType.normal_correlated,
-    #               SyntheticDataType.non_normal_correlated, SyntheticDataType.rs_1min]
     data_types = [SyntheticDataType.raw, SyntheticDataType.normal_correlated,
                   SyntheticDataType.non_normal_correlated, SyntheticDataType.rs_1min]
-    data_dirs = [SYNTHETIC_DATA_DIR]
-    # data_dirs = [SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR]
+    data_dirs = [SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR]
     results_dir = ROOT_RESULTS_DIR
 
     for data_dir in data_dirs:
