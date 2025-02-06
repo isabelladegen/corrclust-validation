@@ -32,6 +32,7 @@ OVERALL_SEGMENT_LENGTH_IMAGE = 'overall_segment_length_distributions.png'
 OVERALL_MAE_IMAGE = 'overall_mae_distributions.png'
 CRITERIA_RANK_DISTRIBUTION = 'criteria_rank_distributions_across_runs.png'
 AVERAGE_RANK_DISTRIBUTION = 'average_rank_distributions_across_runs.png'
+PARTITIONS_QUALITY_DESCRIPTION = 'descriptive_statistics_for_segmented_clusterings.png'
 HEATMAP_OF_RANKS = 'heat_map_of_ranks.png'
 HEATMAP_OF_BEST_MEASURES_RAW_VALUES = 'heat_map_of_top_2_measures_raw_values.png'
 OVERALL_DISTRIBUTION_IMAGE = 'overall_distributions.png'
@@ -61,10 +62,10 @@ class RunInformationCols:
 
 @dataclass
 class ResultsType:
-    internal_measure_assessment: str = 'internal-measures-assessment'
-    internal_measures: str = 'internal-measures-evaluation'
-    distance_measure_assessment: str = 'distance-measures-assessment'
-    distance_measure_evaluation: str = 'distance-measures-evaluation'
+    internal_measure_evaluation: str = 'internal-measures-evaluation'  # images, statistics
+    internal_measures_calculation: str = 'internal-measures-calculation'  # the calculation of the indices
+    distance_measure_assessment: str = 'distance-measures-assessment'  # per distance measure assessments
+    distance_measure_evaluation: str = 'distance-measures-evaluation'  # statistical differences of distance measures
     dataset_description: str = 'dataset-description'
 
 
@@ -190,13 +191,13 @@ def internal_measure_calculation_dir_for(overall_dataset_name: str, data_type: s
           results/internal_assessment/raw/n_dropped_clusters/L1 or results/internal_assessment/raw/n_dropped_segments/L1
           or results/internal_assessment/raw/n_dropped_clusters_m_dropped_segments/L1
       """
-    return get_folder_name_for(results_type=ResultsType.internal_measures,
+    return get_folder_name_for(results_type=ResultsType.internal_measures_calculation,
                                overall_dataset_name=overall_dataset_name, data_type=data_type,
                                distance_measure=distance_measure, results_dir=results_dir, data_dir=data_dir,
                                drop_clusters=drop_clusters, drop_segments=drop_segments)
 
 
-def internal_measure_assessment_dir_for(overall_dataset_name: str, data_type: str, results_dir: str, data_dir: str,
+def internal_measure_evaluation_dir_for(overall_dataset_name: str, data_type: str, results_dir: str, data_dir: str,
                                         distance_measure: str, drop_clusters: int = 0, drop_segments: int = 0):
     """
     Returns directory for internal measures assessment results tables for the given data type and distance measure
@@ -213,7 +214,7 @@ def internal_measure_assessment_dir_for(overall_dataset_name: str, data_type: st
     results/internal_assessment/raw/n_dropped_clusters/L1 or results/internal_assessment/raw/n_dropped_segments/L1
     or results/internal_assessment/raw/n_dropped_clusters_m_dropped_segments/L1
     """
-    return get_folder_name_for(results_type=ResultsType.internal_measure_assessment,
+    return get_folder_name_for(results_type=ResultsType.internal_measure_evaluation,
                                overall_dataset_name=overall_dataset_name, data_type=data_type, data_dir=data_dir,
                                distance_measure=distance_measure, results_dir=results_dir, drop_clusters=drop_clusters,
                                drop_segments=drop_segments)

@@ -14,6 +14,7 @@ test_data_dir = TEST_DATA_DIR
 runs = pd.read_csv(TEST_GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
 
 
+# the commented out lines create test data for other tests!
 def test_can_run_calculation_for_internal_measures_on_all_datasets(tmp_path):
     # run test_wandb_create_bad_partitions to create bad partitions if they don't exist for your configuration
     overall_ds_name = "test_stuff"

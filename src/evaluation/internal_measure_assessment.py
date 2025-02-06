@@ -12,7 +12,7 @@ from src.evaluation.run_cluster_quality_measures_calculation import run_internal
     read_clustering_quality_measures
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import GENERATED_DATASETS_FILE_PATH, ROOT_RESULTS_DIR, \
-    internal_measure_assessment_dir_for, SYNTHETIC_DATA_DIR
+    internal_measure_evaluation_dir_for, SYNTHETIC_DATA_DIR
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.stats import standardized_effect_size_of_mean_difference, calculate_hi_lo_difference_ci, \
@@ -220,7 +220,7 @@ def assess_internal_measures(overall_dataset_name: str, run_names: [str], data_t
     ia = InternalMeasureAssessment(distance_measure=distance_measure, dataset_results=partitions,
                                    internal_measures=internal_measures)
 
-    store_results_in = internal_measure_assessment_dir_for(
+    store_results_in = internal_measure_evaluation_dir_for(
         overall_dataset_name=overall_dataset_name,
         data_type=data_type,
         results_dir=root_results_dir, data_dir=data_dir,

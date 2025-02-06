@@ -2,7 +2,7 @@ import pandas as pd
 from hamcrest import *
 
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
-from src.utils.configurations import internal_measure_assessment_dir_for, \
+from src.utils.configurations import internal_measure_evaluation_dir_for, \
     get_image_results_path
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
@@ -18,7 +18,7 @@ data_dir = TEST_DATA_DIR
 data_type = SyntheticDataType.normal_correlated
 overall_dataset_name = "test_stuff"
 run_names = pd.read_csv(TEST_GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
-l1ref_results_dir = internal_measure_assessment_dir_for(overall_dataset_name, data_type, results_dir, data_dir,
+l1ref_results_dir = internal_measure_evaluation_dir_for(overall_dataset_name, data_type, results_dir, data_dir,
                                                         DistanceMeasures.l1_with_ref)
 pal1ref = PartitionVisualisation(overall_dataset_name, data_type, results_dir, data_dir, DistanceMeasures.l1_with_ref,
                                  run_names=run_names)
@@ -114,7 +114,7 @@ def test_plot_describe_statistics_for_partitions():
 
 
 def test_plot_descriptive_statistics_for_partitions_for_column_for_l2_measure():
-    l2_results_dir = internal_measure_assessment_dir_for(overall_dataset_name, data_type, results_dir, data_dir,
+    l2_results_dir = internal_measure_evaluation_dir_for(overall_dataset_name, data_type, results_dir, data_dir,
                                                          DistanceMeasures.l2_cor_dist)
 
     pal2 = PartitionVisualisation(overall_dataset_name, data_type, results_dir, data_dir, DistanceMeasures.l2_cor_dist,
@@ -131,7 +131,7 @@ def test_plot_descriptive_statistics_for_partitions_for_column_for_l2_measure():
 
 
 def test_plot_descriptive_statistics_for_partitions_for_column_for_l1_measure():
-    l1_results_dir = internal_measure_assessment_dir_for(overall_dataset_name, data_type,
+    l1_results_dir = internal_measure_evaluation_dir_for(overall_dataset_name, data_type,
                                                          results_dir, data_dir,
                                                          DistanceMeasures.l1_cor_dist)
 

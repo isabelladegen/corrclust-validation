@@ -5,8 +5,8 @@ from pathlib import Path
 import pandas as pd
 
 from src.evaluation.knn_for_synthetic_wrapper import KNNForSyntheticWrapper
-from src.utils.configurations import SYNTHETIC_DATA_DIR, GENERATED_DATASETS_FILE_PATH, \
-    distance_measure_assessment_dir_for, ROOT_RESULTS_DIR
+from src.utils.configurations import SYNTHETIC_DATA_DIR, GENERATED_DATASETS_FILE_PATH, ROOT_RESULTS_DIR, \
+    distance_measure_assessment_dir_for
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
 
@@ -81,7 +81,8 @@ class KnnAllSyntheticDatasets:
 
         for measure in self.measures:
             results_folder = distance_measure_assessment_dir_for(self.__overall_ds_name, self.data_type,
-                                                                 self.__root_results_dir, self.data_dir, measure)
+                                                                 self.__root_results_dir, self.data_dir,
+                                                                 measure)
 
             knn_for_measure = KNNForSyntheticWrapper(measure=measure, n_neighbors=self.n_neighbours,
                                                      data_dir=self.data_dir, backend=self.backend)

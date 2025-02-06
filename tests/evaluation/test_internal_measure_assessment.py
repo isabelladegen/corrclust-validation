@@ -5,7 +5,7 @@ from hamcrest import *
 
 from src.evaluation.describe_bad_partitions import DescribeBadPartitions
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
-from src.utils.configurations import internal_measure_assessment_dir_for
+from src.utils.configurations import internal_measure_evaluation_dir_for
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.stats import ConfidenceIntervalCols
@@ -187,7 +187,7 @@ def test_can_run_assessment_on_full_dataset_and_store_results_for_runs_with_all_
                                              n_dropped_segments=[])
 
     # check if the files have been created
-    results_folder = internal_measure_assessment_dir_for(
+    results_folder = internal_measure_evaluation_dir_for(
         overall_dataset_name=overall_ds_name,
         data_type=data_type,
         results_dir=test_results_dir, data_dir=test_data_dir,
@@ -222,7 +222,7 @@ def test_can_run_assessment_and_store_results_for_runs_with_dropping_clusters():
                                              )
 
     # check if the files have been created
-    results_folder_cl15 = internal_measure_assessment_dir_for(
+    results_folder_cl15 = internal_measure_evaluation_dir_for(
         overall_dataset_name=overall_ds_name,
         data_type=data_type,
         results_dir=test_results_dir, data_dir=test_data_dir,
@@ -259,7 +259,7 @@ def test_can_run_assessment_and_store_results_for_runs_with_dropping_segments():
                                              )
 
     # check if the files have been created
-    results_folder_seg50 = internal_measure_assessment_dir_for(
+    results_folder_seg50 = internal_measure_evaluation_dir_for(
         overall_dataset_name=overall_ds_name,
         data_type=data_type,
         results_dir=test_results_dir, data_dir=test_data_dir,
