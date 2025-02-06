@@ -35,7 +35,6 @@ def partition_visualisation(data_dirs, dataset_types, run_names, root_results_di
                     distance_measure=distance_measure)
                 folder = path.join(folder, "images")
                 os.makedirs(folder, exist_ok=True)
-                # todo testing
                 image_name = get_image_name_based_on_data_dir_and_data_type(PARTITIONS_QUALITY_DESCRIPTION, data_dir,
                                                                             data_type)
                 fig.savefig(path.join(folder, image_name), dpi=300, bbox_inches='tight')
