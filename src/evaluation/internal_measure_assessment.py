@@ -4,13 +4,13 @@ from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
-from scipy.stats import pearsonr
+from scipy.stats import pearsonr, ttest_rel
 
 from src.evaluation.describe_bad_partitions import default_internal_measures, default_external_measures, \
     DescribeBadPartCols
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.stats import standardized_effect_size_of_mean_difference, calculate_hi_lo_difference_ci, \
-    ConfidenceIntervalCols
+    ConfidenceIntervalCols, StatsCols, calculate_power, cohens_d
 
 
 @dataclass
@@ -147,6 +147,65 @@ class InternalMeasureAssessment:
         """
         return self.correlation_summary[self.measures_corr_col_names].describe().round(2)
 
+    def paired_samples_t_test_on_fisher_transformed_correlation_coefficients(self, alpha=0.05,
+                                                                             alternative: str = 'two-sided'):
+        """
+        Calculates a paired samples t-test for fisher transformed correlation coefficients.
+        This test takes into consideration that the correlations are with a dependent variable (Jaccard) - hence the
+        fisher tranformation as well as that there are multiple subject's correlation on 67 partitions available - hence
+        the paird t test.
+        :param alpha: what alpha to use for the power calculation
+        :param alternative: what alternative hypothesis to use for the power calculation
+        :return: df where the rows are indexed by StatCols p-value, statistics, the columns are the different internal
+         measures combinations
+        """
+        error_msg = "Calculate at least two internal indices to be able to compare them"
+        assert len(self.__comparing_internal_measures) > 0, error_msg
+
+        # calculate fisher z score of each of the correlation coefficient
+        # use the absolute of the values as we don't care about the direction of the correlation just the strength
+        df = self.correlation_summary[self.measures_corr_col_names]
+        df = pd.DataFrame(np.arctanh(abs(df.values)), index=df.index, columns=df.columns)
+
+        # measures that we need to compared
+        compare = self.__comparing_internal_measures
+
+        # results
+        names = []
+        p_values = []
+        statistics = []
+        effect_sizes = []
+        powers = []
+
+        # perform paired t-test on the transformed scores
+        for idx, measure_pair in enumerate(compare):
+            m1_coefficients = df[measure_pair[0]]
+            m2_coefficients = df[measure_pair[1]]
+
+            # calculate statistic
+            t_stat, p_value = ttest_rel(m1_coefficients, m2_coefficients)
+
+            # calculate effect size (Cohen's d for paired samples)
+            d = np.mean(m1_coefficients - m2_coefficients) / np.std(m1_coefficients - m2_coefficients, ddof=1)
+
+            power = calculate_power(effect_size=d, n_samples=len(m1_coefficients), alpha=alpha, alternative=alternative)
+
+            names.append(self.compare_internal_measures_cols[idx])
+            p_values.append(p_value)
+            statistics.append(t_stat)
+            effect_sizes.append(d)
+            powers.append(power)
+
+        result = pd.DataFrame({
+            InternalMeasureCols.name: names,
+            StatsCols.p_value: p_values,
+            StatsCols.statistic: statistics,
+            StatsCols.effect_size: effect_sizes,
+            StatsCols.achieved_power: powers,
+        })
+        result = result.set_index(keys=InternalMeasureCols.name).T.round(self.__round_to)
+        return result
+
     def ci_of_differences_between_internal_measure_correlations(self, z=1.96):
         """ Calculates the CI of mean difference between each of the internal measures correlation.
         the rows are indexed by lo, hi ci and standard error, the columns are the different internal measures combinations
@@ -166,6 +225,8 @@ class InternalMeasureAssessment:
         lo_cis = []
         hi_cis = []
         standard_errors = []
+        effect_sizes = []
+        powers = []
 
         for idx, measure_pair in enumerate(compare):
             m1 = abs(mean[measure_pair[0]])
@@ -176,17 +237,20 @@ class InternalMeasureAssessment:
             s2 = std[measure_pair[1]]
 
             lo_ci, hi_ci, standard_error = calculate_hi_lo_difference_ci(n1, n2, s1, s2, m1, m2, z)
+            effect_size = cohens_d(m1, m2, s1, s2)
 
             names.append(self.compare_internal_measures_cols[idx])
             lo_cis.append(lo_ci)
             hi_cis.append(hi_ci)
             standard_errors.append(standard_error)
+            effect_sizes.append(effect_size)
 
         result = pd.DataFrame({
             InternalMeasureCols.name: names,
             ConfidenceIntervalCols.ci_96lo: lo_cis,
             ConfidenceIntervalCols.ci_96hi: hi_cis,
             ConfidenceIntervalCols.standard_error: standard_errors,
+            StatsCols.effect_size: effect_sizes,
         })
         result = result.set_index(keys=InternalMeasureCols.name).T.round(self.__round_to)
         return result

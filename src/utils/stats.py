@@ -94,6 +94,7 @@ class WilcoxResult:
             alternative='two-sided',
             nobs=None
         )
+
         return np.ceil(required_n)
 
     def as_series(self, variant_name: str, target_power: float = 0.8, alpha: float = 0.05, bonferroni_adjust: int = 1):
@@ -109,6 +110,23 @@ class WilcoxResult:
             StatsCols.statistic: self.statistic,
             StatsCols.n_pairs: self.n_pairs,
         })
+
+
+def calculate_power(effect_size: float, n_samples: int, alpha: float = 0.05, alternative: str = 'two-sided'):
+    """
+    Calculate power for paired t-test of Fisher z-transformed correlations
+
+    :param effect_size: Cohen's d
+    :param samples: Number of correlation pairs
+    :param alpha: Significance level
+    :param alternative: what alternative to use (two-sided, larger, smaller)
+    """
+    power_analysis = TTestPower()
+    power = power_analysis.power(effect_size=abs(effect_size),
+                                 nobs=n_samples,
+                                 alpha=alpha,
+                                 alternative=alternative)
+    return power
 
 
 def calculate_hi_ci(mean_series, std_df, count_df):

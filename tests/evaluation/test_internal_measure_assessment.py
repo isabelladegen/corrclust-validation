@@ -4,7 +4,7 @@ from hamcrest import *
 from src.evaluation.describe_bad_partitions import DescribeBadPartitions
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.distance_measures import DistanceMeasures
-from src.utils.stats import ConfidenceIntervalCols
+from src.utils.stats import ConfidenceIntervalCols, StatsCols
 from src.evaluation.internal_measure_assessment import InternalMeasureAssessment, InternalMeasureCols
 from tests.test_utils.configurations_for_testing import TEST_DATA_DIR, TEST_GENERATED_DATASETS_FILE_PATH
 
@@ -123,10 +123,12 @@ def test_calculate_ci_of_differences_between_mean_correlation_between_internal_m
     lo_ci = df.loc[ConfidenceIntervalCols.ci_96lo]
     hi_ci = df.loc[ConfidenceIntervalCols.ci_96hi]
     se = df.loc[ConfidenceIntervalCols.standard_error]
+    effect_sizes = df.loc[StatsCols.effect_size]
 
     assert_that(lo_ci[col_name], is_(0.343))
     assert_that(hi_ci[col_name], is_(0.557))
     assert_that(se[col_name], is_(0.054))
+    assert_that(effect_sizes[col_name], is_(6.746))
 
 
 def test_calculate_ci_of_differences_for_internal_measures_can_handle_inverted_measures():
@@ -145,10 +147,36 @@ def test_calculate_ci_of_differences_for_internal_measures_can_handle_inverted_m
     lo_ci = df.loc[ConfidenceIntervalCols.ci_96lo]
     hi_ci = df.loc[ConfidenceIntervalCols.ci_96hi]
     se = df.loc[ConfidenceIntervalCols.standard_error]
+    effect_sizes = df.loc[StatsCols.effect_size]
 
     assert_that(lo_ci[col_name], is_(-0.08))
     assert_that(hi_ci[col_name], is_(0.08))
     assert_that(se[col_name], is_(0.041))
+    assert_that(effect_sizes[col_name], is_(0.0))
+
+
+def test_paired_samples_t_test_on_fisher_transformed_correlation_coefficients_between_internal_measures():
+    ia_dbi = InternalMeasureAssessment(distance_measure=distance_measure,
+                                       internal_measures=[ClusteringQualityMeasures.silhouette_score,
+                                                          ClusteringQualityMeasures.dbi],
+                                       dataset_results=ds)
+
+    df = ia_dbi.paired_samples_t_test_on_fisher_transformed_correlation_coefficients()
+
+    col_name = ia_dbi.compare_internal_measures_cols[0]
+
+    assert_that(col_name, contains_string('DBI'))
+    assert_that(col_name, contains_string('SCW'))
+
+    ps = df.loc[StatsCols.p_value]
+    statistics = df.loc[StatsCols.statistic]
+    effect_sizes = df.loc[StatsCols.effect_size]
+    powers = df.loc[StatsCols.achieved_power]
+
+    assert_that(ps[col_name], is_(0.274))
+    assert_that(statistics[col_name], is_(-1.491))
+    assert_that(effect_sizes[col_name], is_(-0.861))
+    assert_that(powers[col_name], is_(0.148))
 
 
 def test_can_assess_different_distance_measures():
