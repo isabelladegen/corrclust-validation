@@ -3,8 +3,10 @@ from hamcrest import *
 from src.evaluation.describe_bad_partitions import DescribeBadPartitions, DescribeBadPartCols, select_data_from_df
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
+from src.utils.configurations import IRREGULAR_P30_DATA_DIR
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.labels_utils import calculate_y_pred_from
+from src.utils.load_synthetic_data import SyntheticDataType
 from tests.test_utils.configurations_for_testing import TEST_DATA_DIR
 
 ds_name = "misty-forest-56"
@@ -12,8 +14,20 @@ internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQuali
                      ClusteringQualityMeasures.dbi, ClusteringQualityMeasures.vrc]
 distance_measure = DistanceMeasures.l1_cor_dist
 test_data_dir = TEST_DATA_DIR
+
+
 describe = DescribeBadPartitions(ds_name, distance_measure=distance_measure, internal_measures=internal_measures,
                                  data_dir=test_data_dir)
+
+
+def test_dataset_where_foerstner_distance_is_nan_for_silhouette_score():
+    # this is a subject with partitions that produce nan distances for some segments
+    # test uses real data
+    _describe = DescribeBadPartitions(ds_name="easy-waterfall-12", distance_measure=DistanceMeasures.foerstner_cor_dist,
+                                      internal_measures=[ClusteringQualityMeasures.silhouette_score],
+                                      data_dir=IRREGULAR_P30_DATA_DIR, data_type=SyntheticDataType.normal_correlated)
+    df = _describe.summary_df
+    assert_that(df[ClusteringQualityMeasures.silhouette_score].isna().sum(), is_(0))
 
 
 def test_describe_bad_partitions():

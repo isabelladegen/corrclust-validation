@@ -190,6 +190,14 @@ def test_frobenious_distance():
     assert_that(round(vector_dist, 3), is_(28.495))
 
 
+# this still does not work
+# def test_foerstner_distance_with_more_challenging_correlation_matrices():
+#     a_c1 = [-0.721, 0.725, -0.092]
+#     a_c2 = [-0.999, -0.996, 0.999]
+#     dist = calculate_foerstner_matrices_distance_between(a_c1, a_c2)
+#     assert_that(np.isfinite(dist))
+
+
 def test_cosine_similarity():
     nd_matrix = cosine_similarity(np.array(m1), np.array(m2))
     matrix_dist = cosine_similarity(m1, m2)

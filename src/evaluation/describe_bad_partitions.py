@@ -1,6 +1,7 @@
 import random
 from dataclasses import dataclass
 
+import numpy as np
 import pandas as pd
 
 from src.utils.clustering_quality_measures import silhouette_avg_from_distances, calculate_pmb, \

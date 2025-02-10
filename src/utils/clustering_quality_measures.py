@@ -1,3 +1,4 @@
+import warnings
 from dataclasses import dataclass
 
 import numpy as np
@@ -142,15 +143,36 @@ def silhouette_avg_from_distances(distances: np.array, y_pred: [], round_to: int
     :param y_pred: cluster assignment 1d len(no_segments), cluster each segment is assigned to
     :param round_to: number of decimals places to return
     """
-    if np.any(np.isnan(distances)):
-        # cannot calculate silhouette scores from nan distances
-        print("Calculating silhouette avg failed due to one or more distance being nan")
-        return
     assert distances.shape[0] == distances.shape[1] == len(
         y_pred), "shapes of distance matrix and y_pred don't match"
     if not len(np.unique(y_pred)) < distances.shape[0]:
         print("Cannot use silhouette analysis as each remaining segment has a different cluster")
         return None
-    result = metrics.silhouette_score(distances, y_pred, metric='precomputed')
+    # result = metrics.silhouette_score(distances, y_pred, metric='precomputed')
+    # remove nan elements
+    nans = np.argwhere(np.isnan(distances))  # col1 row_idx, col2 col_idx
+    vals, counts = np.unique(nans, return_counts=True)
+    # each seg is at least twice in (symmetrical matrix), the ones that are not appear more than 2
+    seg_ids_to_remove = vals[counts > 2]
+    mask = ~np.isin(np.arange(distances.shape[0]), seg_ids_to_remove)
+    only_valid_distances = distances[mask][:, mask]
+    if seg_ids_to_remove > 0:
+        warnings.warn(f"Removed {len(seg_ids_to_remove)} segment(s) due to NaN distances.")
+        print(f"Removed {len(seg_ids_to_remove)} segment(s) due to NaN distances.")
+
+    # check distances matrix is valid for  valid segments
+    if not np.all(np.diagonal(only_valid_distances) == 0):
+        assert False, 'Valid distance matrices need to have 0 diagonals'
+
+    if not np.allclose(only_valid_distances, only_valid_distances.T):
+        assert False, 'Valid distance matrices are symmetrical'
+
+    y_pred = np.array(y_pred) # turn into np array if it's a list
+
+    result = metrics.silhouette_score(
+        only_valid_distances,
+        y_pred[mask],
+        metric='precomputed'
+    )
 
     return round(result, round_to)
