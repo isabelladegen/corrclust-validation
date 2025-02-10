@@ -5,7 +5,7 @@ from src.utils.configurations import GENERATED_DATASETS_FILE_PATH, SYNTHETIC_DAT
     IRREGULAR_P90_DATA_DIR, ROOT_RESULTS_DIR
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
-from src.visualisation.visualise_distributions_of_multiple_datasets import VisualiseDistributionsOfMultipleDatasets
+from src.visualisation.visualise_distributions_of_multiple_data_variants import VisualiseDistributionsOfMultipleDatasets
 
 # backend = Backends.visible_tests.value
 backend = Backends.none.value

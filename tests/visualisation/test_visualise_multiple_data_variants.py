@@ -1,11 +1,10 @@
 from hamcrest import *
-from matplotlib import pyplot as plt
 
 from src.utils.configurations import ROOT_RESULTS_DIR, GENERATED_DATASETS_FILE_PATH, SYNTHETIC_DATA_DIR, \
     IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
-from src.visualisation.visualise_multiple_datasets import VisualiseMultipleDatasets
+from src.visualisation.visualise_multiple_data_variants import VisualiseMultipleDatasets
 
 # backend = Backends.visible_tests.value
 backend = Backends.none.value
