@@ -12,18 +12,19 @@ ds1_name = "misty-forest-56"
 ds2_name = "twilight-fog-55"
 ds3_name = "playful-thunder-52"
 distance_measure = DistanceMeasures.l1_cor_dist
-internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb]
 test_data_dir = TEST_DATA_DIR
 run_names = pd.read_csv(TEST_GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
-
-bp1 = DescribeBadPartitions(ds1_name, distance_measure=distance_measure, internal_measures=internal_measures,
+calculate_results_index = internal_measures = [ClusteringQualityMeasures.silhouette_score,
+                                               ClusteringQualityMeasures.pmb, ClusteringQualityMeasures.dbi]
+bp1 = DescribeBadPartitions(ds1_name, distance_measure=distance_measure, internal_measures=calculate_results_index,
                             data_dir=test_data_dir)
-bp2 = DescribeBadPartitions(ds2_name, distance_measure=distance_measure, internal_measures=internal_measures,
+bp2 = DescribeBadPartitions(ds2_name, distance_measure=distance_measure, internal_measures=calculate_results_index,
                             data_dir=test_data_dir)
-bp3 = DescribeBadPartitions(ds3_name, distance_measure=distance_measure, internal_measures=internal_measures,
+bp3 = DescribeBadPartitions(ds3_name, distance_measure=distance_measure, internal_measures=calculate_results_index,
                             data_dir=test_data_dir)
 
 ds = [bp1.summary_df, bp2.summary_df, bp3.summary_df]
+internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb]
 ia = InternalMeasureAssessment(distance_measure=distance_measure, internal_measures=internal_measures,
                                dataset_results=ds)
 
@@ -116,6 +117,9 @@ def test_calculate_ci_of_differences_between_mean_correlation_between_internal_m
 
     col_name = ia.compare_internal_measures_cols[0]
 
+    assert_that(col_name, contains_string('PMB'))
+    assert_that(col_name, contains_string('SCW'))
+
     lo_ci = df.loc[ConfidenceIntervalCols.ci_96lo]
     hi_ci = df.loc[ConfidenceIntervalCols.ci_96hi]
     se = df.loc[ConfidenceIntervalCols.standard_error]
@@ -123,6 +127,28 @@ def test_calculate_ci_of_differences_between_mean_correlation_between_internal_m
     assert_that(lo_ci[col_name], is_(0.343))
     assert_that(hi_ci[col_name], is_(0.557))
     assert_that(se[col_name], is_(0.054))
+
+
+def test_calculate_ci_of_differences_for_internal_measures_can_handle_inverted_measures():
+    ia_dbi = InternalMeasureAssessment(distance_measure=distance_measure,
+                                       internal_measures=[ClusteringQualityMeasures.silhouette_score,
+                                                          ClusteringQualityMeasures.dbi],
+                                       dataset_results=ds)
+
+    df = ia_dbi.ci_of_differences_between_internal_measure_correlations()
+
+    col_name = ia_dbi.compare_internal_measures_cols[0]
+
+    assert_that(col_name, contains_string('DBI'))
+    assert_that(col_name, contains_string('SCW'))
+
+    lo_ci = df.loc[ConfidenceIntervalCols.ci_96lo]
+    hi_ci = df.loc[ConfidenceIntervalCols.ci_96hi]
+    se = df.loc[ConfidenceIntervalCols.standard_error]
+
+    assert_that(lo_ci[col_name], is_(-0.08))
+    assert_that(hi_ci[col_name], is_(0.08))
+    assert_that(se[col_name], is_(0.041))
 
 
 def test_can_assess_different_distance_measures():

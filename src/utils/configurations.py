@@ -62,7 +62,7 @@ class RunInformationCols:
 
 @dataclass
 class ResultsType:
-    internal_measure_evaluation: str = 'internal-measures-evaluation'  # images, statistics
+    internal_measure_evaluation: str = 'internal-measures-assessment'  # images, statistics
     internal_measures_calculation: str = 'internal-measures-calculation'  # the calculation of the indices
     distance_measure_assessment: str = 'distance-measures-assessment'  # per distance measure assessments
     distance_measure_evaluation: str = 'distance-measures-evaluation'  # statistical differences of distance measures

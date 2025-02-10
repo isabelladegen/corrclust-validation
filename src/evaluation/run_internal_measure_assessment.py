@@ -5,7 +5,7 @@ from src.evaluation.internal_measure_assessment import get_full_filename_for_res
 from src.evaluation.run_cluster_quality_measures_calculation import read_clustering_quality_measures
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import GENERATED_DATASETS_FILE_PATH, internal_measure_evaluation_dir_for, \
-    SYNTHETIC_DATA_DIR, ROOT_RESULTS_DIR
+    SYNTHETIC_DATA_DIR, ROOT_RESULTS_DIR, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 
@@ -51,17 +51,9 @@ def assess_internal_measures(overall_dataset_name: str, run_names: [str], data_t
         get_full_filename_for_results_csv(store_results_in, IAResultsCSV.ci_of_differences_between_measures))
 
 
-def run_internal_measure_assessment_datasets(overall_ds_name: str,
-                                             run_names: [str],
-                                             distance_measure: str = DistanceMeasures.l1_cor_dist,
-                                             data_type: str = SyntheticDataType.non_normal_correlated,
-                                             data_dir: str = SYNTHETIC_DATA_DIR,
-                                             results_dir: str = ROOT_RESULTS_DIR,
-                                             internal_measures: [str] = [ClusteringQualityMeasures.silhouette_score,
-                                                                         ClusteringQualityMeasures.pmb],
-                                             n_dropped_clusters: [int] = [],
-                                             n_dropped_segments: [int] = [],
-                                             ):
+def run_internal_measure_assessment_datasets(overall_ds_name: str, run_names: [str], distance_measure: str,
+                                             data_type: str, data_dir: str, results_dir: str, internal_measures: [str],
+                                             n_dropped_clusters: [int] = [], n_dropped_segments: [int] = []):
     """ Runs the internal measure assessment on all ds in the csv files of the generated runs
     :param overall_ds_name: a name for the dataset we're using e.g. n30 or n2
     :param run_names: list of run_names to load (subjects)
@@ -100,7 +92,34 @@ def run_internal_measure_assessment_datasets(overall_ds_name: str,
 
 
 if __name__ == "__main__":
-    overall_ds_name = "n2"
+    overall_ds_name = "n30"
+    root_result_dir = ROOT_RESULTS_DIR
+    dataset_types = [SyntheticDataType.raw,
+                     SyntheticDataType.normal_correlated,
+                     SyntheticDataType.non_normal_correlated,
+                     SyntheticDataType.rs_1min]
+    data_dirs = [SYNTHETIC_DATA_DIR,
+                 IRREGULAR_P30_DATA_DIR,
+                 IRREGULAR_P90_DATA_DIR]
+
+    distance_measures = [DistanceMeasures.l1_cor_dist,
+                         DistanceMeasures.l1_with_ref,
+                         DistanceMeasures.foerstner_cor_dist]
+
+    internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb,
+                         ClusteringQualityMeasures.dbi, ClusteringQualityMeasures.vrc]
+
     run_names = pd.read_csv(GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
 
-    run_internal_measure_assessment_datasets(overall_ds_name, run_names=run_names)
+    for distance_measure in distance_measures:
+        for data_dir in data_dirs:
+            for data_type in dataset_types:
+                print(
+                    "Distance measure: " + distance_measure + " , Dataset type: " + data_type + ", Compactness: " + data_dir)
+                run_internal_measure_assessment_datasets(overall_ds_name="n30",
+                                                         run_names=run_names,
+                                                         distance_measure=distance_measure,
+                                                         data_type=data_type,
+                                                         data_dir=data_dir,
+                                                         results_dir=root_result_dir,
+                                                         internal_measures=internal_measures)

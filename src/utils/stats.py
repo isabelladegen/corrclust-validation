@@ -150,6 +150,8 @@ def standard_error_for_big_samples(n1, n2, s1, s2):
 def standardized_effect_size_of_mean_difference(n1, n2, s1, s2, m1, m2):
     """Cohens'd effect size for mean differences when number of samples >30 in each group"""
     diff_mean = m1 - m2
+    if diff_mean == 0:
+        return 0
     return diff_mean / standard_error_for_big_samples(n1, n2, s1, s2)
 
 

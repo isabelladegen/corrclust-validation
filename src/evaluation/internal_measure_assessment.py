@@ -8,13 +8,7 @@ from scipy.stats import pearsonr
 
 from src.evaluation.describe_bad_partitions import default_internal_measures, default_external_measures, \
     DescribeBadPartCols
-from src.evaluation.run_cluster_quality_measures_calculation import run_internal_measure_calculation_for_dataset, \
-    read_clustering_quality_measures
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
-from src.utils.configurations import GENERATED_DATASETS_FILE_PATH, ROOT_RESULTS_DIR, \
-    internal_measure_evaluation_dir_for, SYNTHETIC_DATA_DIR
-from src.utils.distance_measures import DistanceMeasures
-from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.stats import standardized_effect_size_of_mean_difference, calculate_hi_lo_difference_ci, \
     ConfidenceIntervalCols
 
@@ -76,13 +70,30 @@ class InternalMeasureAssessment:
             name = ds.iloc[0][DescribeBadPartCols.name]
             n_partition = ds.shape[0]  # partitions including ground truth
 
-            # calculate correlations for each pair
+            # calculate correlations for internal index with jaccard
             for p_idx, pair in enumerate(self.measures_combinations):
                 m1_values = ds[pair[0]].to_numpy()
                 m2_values = ds[pair[1]].to_numpy()
-                stat_result = pearsonr(m1_values, m2_values)
-                cor = stat_result.statistic
-                p = stat_result.pvalue
+                # handle constants
+                if (m1_values == m1_values[0]).all() or (m2_values == m2_values[0]).all():
+                    # correlation is not defined as the variance of one or more is zero
+                    if (m1_values == m1_values[0]).all() and (m2_values == m2_values[0]).all():
+                        # both are constants (should not happen for Jaccard as not calculated on data)
+                        cor = 1  # choice to call two constants perfectly correlated
+                        p = 1  # we have no evidence for this though as we couldn't examine any variation
+                    else:
+                        # only one is a constant
+                        cor = 0  # choice to call a constants unrelated to a variable that varies
+                        p = 1  # we have no evidence for this as we couldn't examine any variation
+                elif np.any(~np.isfinite(m1_values)) or np.any(~np.isfinite(m2_values)):
+                    print("oh common")
+                    cor = np.nan
+                    p = 1
+                else:
+                    # actually calculating the correlation
+                    stat_result = pearsonr(m1_values, m2_values)
+                    cor = stat_result.statistic
+                    p = stat_result.pvalue
                 # update result
                 correlations[self.measures_corr_col_names[p_idx]].append(round(cor, round_to))
                 p_values[self.measures_p_col_names[p_idx]].append(round(p, round_to))
@@ -140,6 +151,8 @@ class InternalMeasureAssessment:
         """ Calculates the CI of mean difference between each of the internal measures correlation.
         the rows are indexed by lo, hi ci and standard error, the columns are the different internal measures combinations
         """
+        assert len(
+            self.__comparing_internal_measures) > 0, "Calculate at least two internal indices to be able to compare them"
         df = self.descriptive_statistics_for_internal_measures_correlation()
 
         mean = df.loc['mean']
@@ -155,8 +168,8 @@ class InternalMeasureAssessment:
         standard_errors = []
 
         for idx, measure_pair in enumerate(compare):
-            m1 = mean[measure_pair[0]]
-            m2 = mean[measure_pair[1]]
+            m1 = abs(mean[measure_pair[0]])
+            m2 = abs(mean[measure_pair[1]])
             n1 = count[measure_pair[0]]
             n2 = count[measure_pair[1]]
             s1 = std[measure_pair[0]]
@@ -201,6 +214,3 @@ class InternalMeasureAssessment:
                                ConfidenceIntervalCols.ci_96lo: lo_cis, ConfidenceIntervalCols.ci_96hi: hi_cis,
                                ConfidenceIntervalCols.standard_error: standard_errors})
         return result.round(self.__round_to)
-
-
-
