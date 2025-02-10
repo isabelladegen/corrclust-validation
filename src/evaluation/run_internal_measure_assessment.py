@@ -50,6 +50,10 @@ def assess_internal_measures(overall_dataset_name: str, run_names: [str], data_t
     ia.ci_of_differences_between_internal_measure_correlations().to_csv(
         get_full_filename_for_results_csv(store_results_in, IAResultsCSV.ci_of_differences_between_measures))
 
+    # paired samples t test on fisher transformed correlation coefficients
+    df = ia.paired_samples_t_test_on_fisher_transformed_correlation_coefficients(alpha=0.05, alternative='two-sided')
+    df.to_csv(get_full_filename_for_results_csv(store_results_in, IAResultsCSV.paired_t_test))
+
 
 def run_internal_measure_assessment_datasets(overall_ds_name: str, run_names: [str], distance_measure: str,
                                              data_type: str, data_dir: str, results_dir: str, internal_measures: [str],

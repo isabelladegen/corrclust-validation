@@ -19,6 +19,7 @@ class IAResultsCSV:
     effect_size_difference_worst_best: str = "effect_size_difference_of_worst_to_best_partition.csv"
     descriptive_statistics_measure_summary: str = "descriptive_statistics_internal_measures_correlation.csv"
     ci_of_differences_between_measures: str = "ci_differences_between_internal_measure_correlation.csv"
+    paired_t_test: str = "paired_t_test_between_internal_measure_correlation.csv"
 
 
 def get_full_filename_for_results_csv(full_results_dir: str, csv_filename: str):
@@ -226,7 +227,6 @@ class InternalMeasureAssessment:
         hi_cis = []
         standard_errors = []
         effect_sizes = []
-        powers = []
 
         for idx, measure_pair in enumerate(compare):
             m1 = abs(mean[measure_pair[0]])
