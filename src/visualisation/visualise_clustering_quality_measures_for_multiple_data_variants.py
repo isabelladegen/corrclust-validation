@@ -1,28 +1,58 @@
+from matplotlib import pyplot as plt
+
+from src.evaluation.describe_clustering_quality_for_data_variant import DescribeClusteringQualityForDataVariant
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
-from src.visualisation.visualise_multiple_data_variants import get_row_name_from
+from src.visualisation.visualise_multiple_data_variants import get_row_name_from, create_violin_grid
 
 
 class VisualiseClusteringQualityMeasuresForDataVariants:
     def __init__(self, run_file: str, overall_ds_name: str, dataset_types: [str], data_dirs: [str],
-                 distance_measure: str, clustering_quality_measure: [str], backend: str = Backends.none.value):
+                 result_root_dir: str, distance_measure: str, backend: str = Backends.none.value):
         self.run_file = run_file
         self.overall_ds_name = overall_ds_name
         self.dataset_types = dataset_types
         self.data_dirs = data_dirs
+        self.result_root_dir = result_root_dir
         self.distance_measure = distance_measure
-        self.clustering_quality_measure = clustering_quality_measure
         self.backend = backend
         self.row_names = []
-        self.all_data = {}
-        for folder in data_dirs:
-            row_name = get_row_name_from(folder)
+        self.all_variants_describe = {}
+        for data_dir in data_dirs:
+            row_name = get_row_name_from(data_dir)  # data completeness
             self.row_names.append(row_name)
-            column_results = {}
-            for ds_type in dataset_types:
-                column_name = SyntheticDataType.get_display_name_for_data_type(ds_type)
-                ds = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name,
-                                              data_type=ds_type, data_dir=folder)
-                column_results[column_name] = ds
-            self.all_data[row_name] = column_results
+            generation_stages = {}
+            for data_type in dataset_types:
+                generation_stage = SyntheticDataType.get_display_name_for_data_type(data_type)
+                describe = DescribeClusteringQualityForDataVariant(wandb_run_file=self.run_file,
+                                                                   overall_ds_name=self.overall_ds_name,
+                                                                   data_type=data_type, data_dir=data_dir,
+                                                                   results_root_dir=self.result_root_dir,
+                                                                   distance_measure=self.distance_measure)
+                generation_stages[generation_stage] = describe
+            self.all_variants_describe[row_name] = generation_stages
         self.col_names = [SyntheticDataType.get_display_name_for_data_type(ds_type) for ds_type in dataset_types]
+
+    def violin_plots_for_quality_measure(self, quality_measure: str, save_fig: bool = False):
+        """
+        Plots grid of data variants with the data generation stages as columns and the data completeness as row.
+        Each subplot shows the distribution of the given quality measure for that data variant
+        :param quality_measure: see ClusteringQualityMeasures for options
+        :param save_fig: whether to save the figure or not
+        :return:
+        """
+        # create data dict for mae, for this all ds are different so we plot all
+        data_dict = {}
+        for row, row_data in self.all_variants_describe.items():
+            row_dict = {}
+            for col, col_data in row_data.items():
+                row_dict[col] = col_data.all_values_for_clustering_quality_measure(quality_measure)
+            data_dict[row] = row_dict
+
+        fig = create_violin_grid(data_dict=data_dict, backend=self.backend, figsize=(15, 10))
+        plt.show()
+
+        # if save_fig:
+        #     folder = base_dataset_result_folder_for_type(root_result_dir, ResultsType.dataset_description)
+        #     fig.savefig(str(path.join(folder, OVERALL_MAE_IMAGE)), dpi=300, bbox_inches='tight')
+        return fig

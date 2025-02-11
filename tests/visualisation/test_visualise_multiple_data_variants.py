@@ -4,15 +4,15 @@ from src.utils.configurations import ROOT_RESULTS_DIR, GENERATED_DATASETS_FILE_P
     IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
-from src.visualisation.visualise_multiple_data_variants import VisualiseMultipleDatasets
+from src.visualisation.visualise_multiple_data_variants import VisualiseMultipleDataVariants
 
 # backend = Backends.visible_tests.value
 backend = Backends.none.value
-vds = VisualiseMultipleDatasets(run_file=GENERATED_DATASETS_FILE_PATH, overall_ds_name="n30",
-                                dataset_types=[SyntheticDataType.raw, SyntheticDataType.normal_correlated,
+vds = VisualiseMultipleDataVariants(run_file=GENERATED_DATASETS_FILE_PATH, overall_ds_name="n30",
+                                    dataset_types=[SyntheticDataType.raw, SyntheticDataType.normal_correlated,
                                                SyntheticDataType.non_normal_correlated, SyntheticDataType.rs_1min],
-                                data_dirs=[SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR],
-                                backend=backend)
+                                    data_dirs=[SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR],
+                                    backend=backend)
 
 
 def test_can_visualise_overall_segment_lengths_distributions():

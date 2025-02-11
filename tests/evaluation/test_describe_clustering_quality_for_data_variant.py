@@ -14,9 +14,8 @@ results_dir = ROOT_RESULTS_DIR
 distance_measure = DistanceMeasures.l1_with_ref
 clustering_quality_measures = [ClusteringQualityMeasures.jaccard_index, ClusteringQualityMeasures.silhouette_score]
 describe = DescribeClusteringQualityForDataVariant(wandb_run_file=run_file, overall_ds_name=overall_ds_name,
-                                                   data_dir=data_dir, data_type=non_normal,
-                                                   results_root_dir=results_dir, distance_measure=distance_measure,
-                                                   clustering_quality_measures=clustering_quality_measures)
+                                                   data_type=non_normal, data_dir=data_dir,
+                                                   results_root_dir=results_dir, distance_measure=distance_measure)
 
 
 def test_returns_overall_clustering_quality_measure_for_data_variant():

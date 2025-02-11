@@ -213,7 +213,7 @@ def create_violin_grid(data_dict: {}, figsize: tuple = (12, 12), backend: str = 
             global_min = min(global_min, np.min(col_data))
             global_max = max(global_max, np.max(col_data))
 
-    # Add padding to global limits (multiplicative for log scale)
+    # Add padding to global limits
     global_min = global_min - 0.2
     global_max = global_max + 0.2
 
@@ -246,7 +246,7 @@ def create_violin_grid(data_dict: {}, figsize: tuple = (12, 12), backend: str = 
             ax.set_xlim(global_min, global_max)
 
             # Format x-axis labels to be more readable
-            ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:,.0f}'.format(x)))
+            ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:,.1f}'.format(x)))
 
             # Remove y-ticks and labels
             ax.set_yticks([])
@@ -279,8 +279,8 @@ def create_violin_grid(data_dict: {}, figsize: tuple = (12, 12), backend: str = 
     return fig
 
 
-class VisualiseMultipleDatasets:
-    """Use this class for visualising properties from multiple datasets"""
+class VisualiseMultipleDataVariants:
+    """Use this class for visualising data properties from multiple subjects for multiple data variants"""
 
     def __init__(self, run_file: str, overall_ds_name: str, dataset_types: [str], data_dirs: [str],
                  backend: str = Backends.none.value):
@@ -330,7 +330,7 @@ class VisualiseMultipleDatasets:
 
         if save_fig:
             folder = base_dataset_result_folder_for_type(root_result_dir, ResultsType.dataset_description)
-            fig.savefig(path.join(folder, OVERALL_SEGMENT_LENGTH_IMAGE), dpi=300, bbox_inches='tight')
+            fig.savefig(str(path.join(folder, OVERALL_SEGMENT_LENGTH_IMAGE)), dpi=300, bbox_inches='tight')
         return fig
 
     def violin_plots_of_overall_mae(self, root_result_dir: str, save_fig=False):
@@ -354,5 +354,5 @@ class VisualiseMultipleDatasets:
 
         if save_fig:
             folder = base_dataset_result_folder_for_type(root_result_dir, ResultsType.dataset_description)
-            fig.savefig(path.join(folder, OVERALL_MAE_IMAGE), dpi=300, bbox_inches='tight')
+            fig.savefig(str(path.join(folder, OVERALL_MAE_IMAGE)), dpi=300, bbox_inches='tight')
         return fig
