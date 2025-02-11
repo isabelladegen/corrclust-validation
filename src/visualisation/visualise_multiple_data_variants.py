@@ -9,6 +9,7 @@ from matplotlib.ticker import AutoMinorLocator, LogLocator
 
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.evaluation.describe_subjects_for_data_variant import DescribeSubjectsForDataVariant
+from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import get_irregular_folder_name_from, base_dataset_result_folder_for_type, ResultsType, \
     OVERALL_SEGMENT_LENGTH_IMAGE, OVERALL_MAE_IMAGE
 from src.utils.load_synthetic_data import SyntheticDataType
@@ -263,6 +264,143 @@ def create_violin_grid(data_dict: {}, figsize: tuple = (12, 12), backend: str = 
             add_stats(data, ax, 0)
 
         axes.append(row_axes)
+
+    # Adjust layout
+    plt.tight_layout()
+    return fig
+
+
+def create_scatter_grid(data_dict: {}, measure_cols: list, figsize: tuple = (12, 12),
+                        backend: str = Backends.none.value) -> plt.Figure:
+    """
+    Create a grid of scatter plots using dictionary keys as labels.
+
+    :param data_dict : {str, {str, pd.DataFrame}} Nested dictionary containing data for each plot square
+        Format: {'row_name': {'column_name': list_of_dataframes}}
+        Where each DataFrame has the measures as columns and columns refer to the data generation stages and
+        rows refer to the data completeness
+    :param measure_cols : list of str, columns to plot from the DataFrames
+    :param figsize : tuple, optional Figure size in inches (width, height)
+    :returns: matplotlib.figure.Figure
+    """
+
+    # Extract row and column names from dictionary structure
+    row_names = list(data_dict.keys())
+    column_names = list(list(data_dict.values())[0].keys())
+
+    # Set the style for publication-quality figures
+    reset_matplotlib(backend)
+
+    # Create figure with standard size (no extra width needed now)
+    fig = plt.figure(figsize=figsize)
+    gs = GridSpec(len(row_names), len(column_names))
+    fig.subplots_adjust(hspace=0.5, wspace=0.3, right=0.85)
+
+    # Set up colors for different measures
+    measure_colors = sns.color_palette("husl", n_colors=len(measure_cols))
+    markers = ['o', 'x', 's', '^']  # Marker styles
+
+    # Find global min and max for shared y-axis
+    global_min = [float('inf')] * len(measure_cols)
+    global_max = [float('-inf')] * len(measure_cols)
+    for row_data in data_dict.values():
+        for dfs in row_data.values():
+            for df in dfs:  # Iterate through list of DataFrames
+                for k, measure in enumerate(measure_cols):
+                    min_val = min(global_min[k], df[measure].min())
+                    max_val = max(global_max[k], df[measure].max())
+                    global_min[k] = min_val
+                    global_max[k] = max_val
+
+    # Add padding to global limits
+    global_min = [el - 0.2 for el in global_min]
+    global_max = [el + 0.2 for el in global_max]
+
+    # Plot each subplot
+    axes = []
+    legend_handles = []  # Will store handles for the legend
+    for i, row in enumerate(row_names):
+        row_axes = []
+        for j, measure in enumerate(column_names):
+            ax = fig.add_subplot(gs[i, j])
+            ax2 = ax.twinx()  # Create secondary axis
+
+            row_axes.append(ax)
+
+            try:
+                dfs = data_dict[row][measure]
+            except KeyError:
+                print(f"Warning: No data found for condition: row='{row}', column='{measure}'")
+                continue
+
+            # Plot each measure for each DataFrame
+            # for k, measure in enumerate(measure_cols):
+            for df in dfs:
+                ax.scatter(df.index, df[measure_cols[0]],
+                           alpha=0.6,
+                           color=measure_colors[0],
+                           s=20,
+                           marker=markers[0])
+
+                ax2.scatter(df.index, df[measure_cols[1]],
+                            alpha=0.6,
+                            color=measure_colors[1],
+                            s=20,
+                            marker=markers[1])
+
+            # Customize appearance
+            if i == 0:  # Add column titles only to the top row
+                ax.set_title(measure, fontsize=fontsize, fontweight='bold')
+
+            # Set axis limits
+            ax.set_ylim(global_min[0], global_max[0])  # Set primary axis limits
+            if measure_cols[1] == ClusteringQualityMeasures.silhouette_score:
+                # the other measures have outliers and so we cannot use this
+                ax2.set_ylim(global_min[1], global_max[1])  # Set secondary axis limits
+            ax.set_xlim(-2, 69)  # slight padding around 0-67
+
+            # Format axis labels
+            ax.yaxis.set_major_formatter(plt.FuncFormatter(custom_number_text_formatter))
+
+            ax2.grid(False)  # Turn off secondary grid to avoid double grid
+
+            if j == 0:
+                ax.set_ylabel(row, fontsize=fontsize, fontweight='bold')
+
+            # Only show x-axis elements for bottom row
+            if i == len(row_names) - 1:
+                plt.setp(ax.get_xticklabels(), fontsize=fontsize)
+            else:
+                ax.set_xlabel('')
+                ax.set_xticklabels([])
+                ax.tick_params(axis='x', which='both', length=0)
+
+            # Add grid
+            ax.grid(True, linestyle='-', alpha=0.3, which='major')
+            ax.grid(True, linestyle='--', alpha=0.2, which='minor')
+            ax.xaxis.set_minor_locator(AutoMinorLocator())
+            ax.yaxis.set_minor_locator(AutoMinorLocator())
+
+            # Customize spines
+            sns.despine(ax=ax)
+
+        axes.append(row_axes)
+
+    # Add legend directly in the last subplot
+    for k, measure in enumerate(measure_cols):
+        legend_handles.append(plt.Line2D([0], [0],
+                                         marker=markers[k],
+                                         color=measure_colors[k],
+                                         label=measure,
+                                         markersize=8,
+                                         linestyle='None'))
+    last_ax = axes[-1][-1]
+    legend = last_ax.legend(handles=legend_handles,
+                            loc='upper left',
+                            fontsize=fontsize - 2,
+                            frameon=True,
+                            edgecolor='black',
+                            facecolor='white')
 
     # Adjust layout
     plt.tight_layout()

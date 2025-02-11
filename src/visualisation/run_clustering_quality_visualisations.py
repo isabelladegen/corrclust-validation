@@ -1,3 +1,5 @@
+from matplotlib import pyplot as plt
+
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import ROOT_RESULTS_DIR, SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, \
     IRREGULAR_P90_DATA_DIR, GENERATED_DATASETS_FILE_PATH
@@ -22,6 +24,9 @@ def clustering_quality_visualisations(data_dirs: [str], data_types: [str], run_f
             vds.violin_plots_for_quality_measure(quality_measure=quality_measure, save_fig=save_fig)
             if quality_measure != ClusteringQualityMeasures.jaccard_index:
                 vds.violin_plots_for_correlation_coefficients(quality_measure=quality_measure, save_fig=save_fig)
+                vds.scatter_plots_for_quality_measures(
+                    quality_measures=[ClusteringQualityMeasures.jaccard_index, quality_measure], save_fig=save_fig)
+            plt.close('all')
 
 
 if __name__ == "__main__":

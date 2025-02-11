@@ -5,11 +5,11 @@ from src.evaluation.describe_clustering_quality_for_data_variant import Describe
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import get_image_results_path, \
     get_clustering_quality_multiple_data_variants_result_folder, ResultsType, OVERALL_CLUSTERING_QUALITY_DISTRIBUTION, \
-    OVERALL_CORRELATION_COEFFICIENT_DISTRIBUTION
+    OVERALL_CORRELATION_COEFFICIENT_DISTRIBUTION, OVERALL_CLUSTERING_SCATTER_PLOT
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.visualisation.visualise_multiple_data_variants import get_row_name_from, create_violin_grid, \
-    create_violin_grid_log_scale_x_axis
+    create_violin_grid_log_scale_x_axis, create_scatter_grid
 
 
 class VisualiseClusteringQualityMeasuresForDataVariants:
@@ -114,5 +114,41 @@ class VisualiseClusteringQualityMeasuresForDataVariants:
                 distance_measure=self.distance_measure)
             # add an image results folder
             file_name = get_image_results_path(folder, quality_measure + OVERALL_CORRELATION_COEFFICIENT_DISTRIBUTION)
+            fig.savefig(file_name, dpi=300, bbox_inches='tight')
+        return fig
+
+    def scatter_plots_for_quality_measures(self, quality_measures: [str], save_fig: bool = False):
+        """
+        Plots grid of data variants with the data generation stages as columns and the data completeness as row.
+        Each subplot shows a scatter plots of the given quality measures for that data variant. y is the value
+        of the measure and x the different segmented clusterings
+        :param quality_measures: see ClusteringQualityMeasures for options, will use a different color for each
+        :param save_fig: whether to save the figure or not
+        :return:
+        """
+        # create data dict to plot which matches the row, column structure of the plot
+        data_dict = {}
+        for row, row_data in self.all_variants_describe.items():
+            row_dict = {}
+            for col, col_data in row_data.items():
+                # df of quality measure calculation summary for each subject, has columns for the measures, rows are
+                # partitions (segmented clusterings)
+                row_dict[col] = list(col_data.quality_measures_results.values())
+            data_dict[row] = row_dict
+
+        fig = create_scatter_grid(data_dict=data_dict, measure_cols=quality_measures, backend=self.backend,
+                                  figsize=(18, 10))
+
+        plt.show()
+
+        if save_fig:
+            folder = get_clustering_quality_multiple_data_variants_result_folder(
+                results_type=ResultsType.internal_measures_calculation,
+                overall_dataset_name=self.overall_ds_name,
+                results_dir=self.result_root_dir,
+                distance_measure=self.distance_measure)
+            # add an image results folder
+            file_name = get_image_results_path(folder, quality_measures[0] + '_with_' + quality_measures[
+                1] + OVERALL_CLUSTERING_SCATTER_PLOT)
             fig.savefig(file_name, dpi=300, bbox_inches='tight')
         return fig

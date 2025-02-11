@@ -9,8 +9,8 @@ from src.utils.plots.matplotlib_helper_functions import Backends
 from src.visualisation.visualise_clustering_quality_measures_for_multiple_data_variants import \
     VisualiseClusteringQualityMeasuresForDataVariants
 
-backend = Backends.visible_tests.value
-# backend = Backends.none.value
+# backend = Backends.visible_tests.value
+backend = Backends.none.value
 
 root_results_dir = ROOT_RESULTS_DIR
 data_types = [SyntheticDataType.raw,
@@ -52,4 +52,30 @@ def test_can_visualise_correlation_coefficient_distributions_for_all_data_varian
     assert_that(vds.row_names, contains_exactly('Complete 100%', 'Partial 70%', 'Sparse 10%'))
     fig = vds.violin_plots_for_correlation_coefficients(quality_measure=ClusteringQualityMeasures.silhouette_score,
                                                         save_fig=False)
+    assert_that(fig, is_not(None))
+
+
+def test_can_visualise_scatter_plots_for_the_quality_measures_across_data_variants():
+    column_names = [SyntheticDataType.get_display_name_for_data_type(SyntheticDataType.raw),
+                    SyntheticDataType.get_display_name_for_data_type(SyntheticDataType.normal_correlated),
+                    SyntheticDataType.get_display_name_for_data_type(SyntheticDataType.non_normal_correlated),
+                    SyntheticDataType.get_display_name_for_data_type(SyntheticDataType.rs_1min)]
+    assert_that(vds.col_names, contains_exactly(*column_names))
+    assert_that(vds.row_names, contains_exactly('Complete 100%', 'Partial 70%', 'Sparse 10%'))
+    fig = vds.scatter_plots_for_quality_measures(
+        quality_measures=[ClusteringQualityMeasures.jaccard_index,
+                          ClusteringQualityMeasures.vrc],
+        save_fig=False)
+    vds.scatter_plots_for_quality_measures(
+        quality_measures=[ClusteringQualityMeasures.jaccard_index,
+                          ClusteringQualityMeasures.silhouette_score],
+        save_fig=False)
+    vds.scatter_plots_for_quality_measures(
+        quality_measures=[ClusteringQualityMeasures.jaccard_index,
+                          ClusteringQualityMeasures.dbi],
+        save_fig=False)
+    vds.scatter_plots_for_quality_measures(
+        quality_measures=[ClusteringQualityMeasures.jaccard_index,
+                          ClusteringQualityMeasures.pmb],
+        save_fig=False)
     assert_that(fig, is_not(None))
