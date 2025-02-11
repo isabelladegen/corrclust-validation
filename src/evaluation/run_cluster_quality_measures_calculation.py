@@ -12,7 +12,8 @@ from src.utils.load_synthetic_data import SyntheticDataType
 
 
 def read_clustering_quality_measures(overall_ds_name: str, data_type: str, root_results_dir: str, data_dir: str,
-                                     distance_measure: str, run_names: str, n_dropped_clusters=0, n_dropped_segments=0):
+                                     distance_measure: str, run_names: [str], n_dropped_clusters=0,
+                                     n_dropped_segments=0):
     """ Reads the summary results files from the internal measure calculation for the datasets in the overall_ds_name
     :param overall_ds_name: a name for the dataset we're using e.g. n30 or n2
     :param data_type: which datatype to use see SyntheticDataType

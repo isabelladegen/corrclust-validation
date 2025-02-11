@@ -77,17 +77,18 @@ def combine_all_ds_variations_multiple_description_summary_dfs(result_root_dir: 
     combined_result = pd.concat(results, axis=1)
     if save_combined_results:
         folder = base_dataset_result_folder_for_type(result_root_dir, ResultsType.dataset_description)
-        combined_result.to_csv(path.join(folder, MULTIPLE_DS_SUMMARY_FILE))
+        combined_result.to_csv(str(path.join(folder, MULTIPLE_DS_SUMMARY_FILE)))
     return combined_result
 
 
-class DescribeMultipleDatasets:
+class DescribeSubjectsForDataVariant:
     """
-    Use this class to describe multiple datasets that are part of a variation. The class can do both give
-    overall statistics - e.g. when segment length is analysed from all segment lengths in all datasets in the collection
-    - as well as variations across the dataset for which we usually have a single number that describes the dataset
-    and calculate statistics from that number across the datasets (if we did this for segment length we would calculate
-    a mean segment length per dataset - this is none sense for our data as the mean is the same for each dataset).
+    Use this class to describe the data for multiple subjects that are part of a data variant.
+    The class can do both give overall statistics - e.g. when segment length is analysed from all segment lengths
+    in all subjects in the collection - as well as variations across a subjects for which we usually have a single
+    number that describes each subject and calculate statistics from that number across the subjects
+    (if we did this for segment length we would calculate a mean segment length per subject - this is none sense for o
+    ur data as the mean is the same for each subject).
     Overall analysis makes sense for example for segment length, MAE...
     Variations across ds makes sense for n observations, MAE (this time we see how much this varies), n segments
     outside tolerance...
@@ -373,20 +374,20 @@ if __name__ == '__main__':
 
     # do regular sampled ones
     for ds_type in dataset_types:
-        ds = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=ds_type,
-                                      data_dir=SYNTHETIC_DATA_DIR)
+        ds = DescribeSubjectsForDataVariant(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=ds_type,
+                                            data_dir=SYNTHETIC_DATA_DIR)
         ds.save_summary(root_results_dir)
 
     # do irregular p30 sampled ones
     for ds_type in dataset_types:
-        ds = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=ds_type,
-                                      data_dir=IRREGULAR_P30_DATA_DIR)
+        ds = DescribeSubjectsForDataVariant(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=ds_type,
+                                            data_dir=IRREGULAR_P30_DATA_DIR)
         ds.save_summary(root_results_dir)
 
     # do irregular p90 sampled ones
     for ds_type in dataset_types:
-        ds = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=ds_type,
-                                      data_dir=IRREGULAR_P90_DATA_DIR)
+        ds = DescribeSubjectsForDataVariant(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=ds_type,
+                                            data_dir=IRREGULAR_P90_DATA_DIR)
         ds.save_summary(root_results_dir)
 
     # write combined results (this also reads all files and then writes a result)

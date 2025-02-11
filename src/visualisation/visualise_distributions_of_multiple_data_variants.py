@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 from matplotlib.gridspec import GridSpec
 from scipy import stats
 
-from src.evaluation.describe_multiple_datasets import DescribeMultipleDatasets, DistParams
+from src.evaluation.describe_subjects_for_data_variant import DescribeSubjectsForDataVariant, DistParams
 from src.utils.configurations import base_dataset_result_folder_for_type, ResultsType, get_image_name_based_on_data_dir, \
     OVERALL_DISTRIBUTION_IMAGE
 from src.utils.load_synthetic_data import SyntheticDataType
@@ -284,8 +284,8 @@ class VisualiseDistributionsOfMultipleDatasets:
         self.dataset_variates = {}
         for ds_type in dataset_types:
             column_name = SyntheticDataType.get_display_name_for_data_type(ds_type)
-            ds = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name,
-                                          data_type=ds_type, data_dir=self.data_dir, load_data=True)
+            ds = DescribeSubjectsForDataVariant(wandb_run_file=run_file, overall_ds_name=overall_ds_name,
+                                                data_type=ds_type, data_dir=self.data_dir, load_data=True)
             self.dataset_variates[column_name] = ds
         # dataset variate names
         self.col_names = [SyntheticDataType.get_display_name_for_data_type(ds_type) for ds_type in dataset_types]

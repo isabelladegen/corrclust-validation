@@ -6,7 +6,7 @@ from hamcrest import *
 import scipy.stats as stats
 
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
-from src.evaluation.describe_multiple_datasets import DescribeMultipleDatasets, SummaryStatistics, \
+from src.evaluation.describe_subjects_for_data_variant import DescribeSubjectsForDataVariant, SummaryStatistics, \
     combine_all_ds_variations_multiple_description_summary_dfs, DistParams
 from src.utils.configurations import SYNTHETIC_DATA_DIR, GENERATED_DATASETS_FILE_PATH, IRREGULAR_P90_DATA_DIR, \
     dataset_description_dir, MULTIPLE_DS_SUMMARY_FILE, IRREGULAR_P30_DATA_DIR, ROOT_RESULTS_DIR, SyntheticDataVariates
@@ -18,8 +18,8 @@ data_dir = SYNTHETIC_DATA_DIR
 raw = SyntheticDataType.raw
 overall_ds_name = "test_stuff"
 results_dir = TEST_ROOT_RESULTS_DIR
-ds_raw = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=raw,
-                                  data_dir=data_dir)
+ds_raw = DescribeSubjectsForDataVariant(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=raw,
+                                        data_dir=data_dir)
 
 
 # these tests read real data, but they save results in a test result folder!
@@ -53,9 +53,9 @@ def test_calculates_various_stats_on_across_the_datasets():
 
 
 def test_can_load_base_non_normal_datasets():
-    ds_nn = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name,
-                                     data_type=SyntheticDataType.non_normal_correlated,
-                                     data_dir=data_dir)
+    ds_nn = DescribeSubjectsForDataVariant(wandb_run_file=run_file, overall_ds_name=overall_ds_name,
+                                           data_type=SyntheticDataType.non_normal_correlated,
+                                           data_dir=data_dir)
 
     assert_that(len(ds_nn.run_names), is_(30))  # 30 files
     assert_that(len(ds_nn.label_dfs), is_(30))  # 30 files
@@ -67,9 +67,9 @@ def test_can_load_base_non_normal_datasets():
 
 
 def test_can_irregular_p90_non_normal_dataset():
-    ds_irr_p90nn = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name,
-                                            data_type=SyntheticDataType.non_normal_correlated,
-                                            data_dir=IRREGULAR_P90_DATA_DIR)
+    ds_irr_p90nn = DescribeSubjectsForDataVariant(wandb_run_file=run_file, overall_ds_name=overall_ds_name,
+                                                  data_type=SyntheticDataType.non_normal_correlated,
+                                                  data_dir=IRREGULAR_P90_DATA_DIR)
 
     assert_that(len(ds_irr_p90nn.run_names), is_(30))  # 30 files
     assert_that(len(ds_irr_p90nn.label_dfs), is_(30))  # 30 files
@@ -97,8 +97,8 @@ def test_saves_summary_df_of_statistics_in_provide_results_root_using_ds_descrip
     ds_raw.save_summary(root_results_dir=results_dir)
 
     # save p30 raw
-    ds_p30_raw = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=raw,
-                                          data_dir=IRREGULAR_P30_DATA_DIR)
+    ds_p30_raw = DescribeSubjectsForDataVariant(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=raw,
+                                                data_dir=IRREGULAR_P30_DATA_DIR)
     ds_p30_raw.save_summary(root_results_dir=results_dir)
 
     # read standard raw
@@ -136,9 +136,9 @@ def test_combines_all_datasets_into_one_table():
 
 
 def test_returns_name_of_dataset_with_worst_mae():
-    partial_nn = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name,
-                                          data_type=SyntheticDataType.non_normal_correlated,
-                                          data_dir=IRREGULAR_P30_DATA_DIR)
+    partial_nn = DescribeSubjectsForDataVariant(wandb_run_file=run_file, overall_ds_name=overall_ds_name,
+                                                data_type=SyntheticDataType.non_normal_correlated,
+                                                data_dir=IRREGULAR_P30_DATA_DIR)
     name, mae = partial_nn.name_for_worst_relaxed_mae()
     assert_that(name, is_('trim-fire-24'))
     assert_that(mae, is_(0.034))
@@ -201,8 +201,8 @@ def test_loads_distribution_parameters_from_run_file():
 
 
 def test_can_load_data_if_required():
-    full_data_ds = DescribeMultipleDatasets(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=raw,
-                                            data_dir=data_dir, load_data=True)
+    full_data_ds = DescribeSubjectsForDataVariant(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=raw,
+                                                  data_dir=data_dir, load_data=True)
     assert_that(len(full_data_ds.data_dfs), is_(30))
     assert_that(len(full_data_ds.label_dfs), is_(30))
     assert_that(full_data_ds.data_dfs.keys(), is_(full_data_ds.label_dfs.keys()))
