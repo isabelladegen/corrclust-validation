@@ -5,7 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import seaborn as sns
 from matplotlib.gridspec import GridSpec
-from matplotlib.ticker import AutoMinorLocator
+from matplotlib.ticker import AutoMinorLocator, LogLocator
 
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.evaluation.describe_subjects_for_data_variant import DescribeSubjectsForDataVariant
@@ -45,7 +45,7 @@ def add_stats(data: np.ndarray, ax: plt.Axes, y_pos: float) -> None:
 
 def get_row_name_from(folder):
     irr_folder_name = get_irregular_folder_name_from(folder)
-    if irr_folder_name is "":
+    if irr_folder_name == "":
         return "Complete 100%"
     # change _p30 to partial 30%
     match_no = re.search(r'p(\d+)$', irr_folder_name)
@@ -151,7 +151,6 @@ def create_violin_grid_log_scale_x_axis(data_dict: {}, figsize: tuple = (18, 15)
             # Add prominent vertical grid lines
             ax.grid(True, axis='x', linestyle='-', alpha=0.3, which='both')
             ax.grid(True, axis='x', linestyle='-', alpha=0.6, which='major')
-            ax.xaxis.set_minor_locator(AutoMinorLocator())  # minor grid spacing
 
             # Customize spines
             sns.despine(ax=ax, left=True)

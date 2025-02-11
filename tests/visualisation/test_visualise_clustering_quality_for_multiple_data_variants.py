@@ -9,8 +9,8 @@ from src.utils.plots.matplotlib_helper_functions import Backends
 from src.visualisation.visualise_clustering_quality_measures_for_multiple_data_variants import \
     VisualiseClusteringQualityMeasuresForDataVariants
 
-# backend = Backends.visible_tests.value
-backend = Backends.none.value
+backend = Backends.visible_tests.value
+# backend = Backends.none.value
 
 root_results_dir = ROOT_RESULTS_DIR
 data_types = [SyntheticDataType.raw,
