@@ -22,3 +22,12 @@ def test_returns_overall_clustering_quality_measure_for_data_variant():
     values = describe.all_values_for_clustering_quality_measure(ClusteringQualityMeasures.jaccard_index)
     # load the result for each segmented clustering (67) for each subject (30)
     assert_that(len(values), is_(30 * 67))
+
+
+def test_returns_overall_correlation_coefficients_of_quality_measure_with_jaccard_index_for_data_variant():
+    values = describe.all_values_for_correlations_with_jaccard_index_for_quality_measure(
+        ClusteringQualityMeasures.silhouette_score)
+    # load the result for each segmented clustering (67) for each subject (30) and correlated it with jaccard
+    assert_that(len(values), is_(30))
+    assert_that(values.min(), is_(0.877))
+    assert_that(values.max(), is_(0.93))

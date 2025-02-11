@@ -1,11 +1,16 @@
 import pandas as pd
 from hamcrest import *
 
+import pandas.testing as tm
+
 from src.evaluation.describe_bad_partitions import DescribeBadPartitions
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
+from src.utils.configurations import internal_measure_evaluation_dir_for
 from src.utils.distance_measures import DistanceMeasures
+from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.stats import ConfidenceIntervalCols, StatsCols
-from src.evaluation.internal_measure_assessment import InternalMeasureAssessment, InternalMeasureCols
+from src.evaluation.internal_measure_assessment import InternalMeasureAssessment, InternalMeasureCols, \
+    get_full_filename_for_results_csv, IAResultsCSV, read_internal_assessment_result_for
 from tests.test_utils.configurations_for_testing import TEST_DATA_DIR, TEST_GENERATED_DATASETS_FILE_PATH
 
 ds1_name = "misty-forest-56"
@@ -16,11 +21,15 @@ test_data_dir = TEST_DATA_DIR
 run_names = pd.read_csv(TEST_GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
 calculate_results_index = internal_measures = [ClusteringQualityMeasures.silhouette_score,
                                                ClusteringQualityMeasures.pmb, ClusteringQualityMeasures.dbi]
-bp1 = DescribeBadPartitions(ds1_name, distance_measure=distance_measure, internal_measures=calculate_results_index,
+data_type = SyntheticDataType.non_normal_correlated
+bp1 = DescribeBadPartitions(ds1_name, data_type=data_type, distance_measure=distance_measure,
+                            internal_measures=calculate_results_index,
                             data_dir=test_data_dir)
-bp2 = DescribeBadPartitions(ds2_name, distance_measure=distance_measure, internal_measures=calculate_results_index,
+bp2 = DescribeBadPartitions(ds2_name, data_type=data_type, distance_measure=distance_measure,
+                            internal_measures=calculate_results_index,
                             data_dir=test_data_dir)
-bp3 = DescribeBadPartitions(ds3_name, distance_measure=distance_measure, internal_measures=calculate_results_index,
+bp3 = DescribeBadPartitions(ds3_name, data_type=data_type, distance_measure=distance_measure,
+                            internal_measures=calculate_results_index,
                             data_dir=test_data_dir)
 
 ds = [bp1.summary_df, bp2.summary_df, bp3.summary_df]
@@ -212,3 +221,26 @@ def test_can_assess_different_distance_measures():
     assert_that(df.iloc[1][r_col_name], is_(0.603))
     assert_that(df.iloc[0][p_col_name], is_(0.4))
     assert_that(df.iloc[1][p_col_name], is_(0.282))
+
+
+def test_can_read_result_for_internal_measure_assessment_summary_df(tmp_path):
+    root_result_dir = str(tmp_path)
+    overall_dataset_name = "test"
+    summary_df = ia.correlation_summary
+
+    # save correlation summary
+    store_results_in = internal_measure_evaluation_dir_for(overall_dataset_name=overall_dataset_name,
+                                                           results_dir=root_result_dir, data_type=data_type,
+                                                           data_dir=test_data_dir,
+                                                           distance_measure=distance_measure)
+    summary_df.to_csv(get_full_filename_for_results_csv(store_results_in, IAResultsCSV.correlation_summary))
+
+    # read correlation summary
+    read_df = read_internal_assessment_result_for(result_type=IAResultsCSV.correlation_summary,
+                                                  overall_dataset_name=overall_dataset_name,
+                                                  results_dir=root_result_dir, data_type=data_type,
+                                                  data_dir=test_data_dir,
+                                                  distance_measure=distance_measure)
+
+    # check saved and reloaded dataframe are the same
+    tm.assert_frame_equal(read_df, summary_df)

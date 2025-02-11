@@ -20,6 +20,8 @@ def clustering_quality_visualisations(data_dirs: [str], data_types: [str], run_f
                                                                     distance_measure=distance_measure,
                                                                     backend=backend)
             vds.violin_plots_for_quality_measure(quality_measure=quality_measure, save_fig=save_fig)
+            if quality_measure != ClusteringQualityMeasures.jaccard_index:
+                vds.violin_plots_for_correlation_coefficients(quality_measure=quality_measure, save_fig=save_fig)
 
 
 if __name__ == "__main__":

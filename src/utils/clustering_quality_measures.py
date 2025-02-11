@@ -167,7 +167,7 @@ def silhouette_avg_from_distances(distances: np.array, y_pred: [], round_to: int
     if not np.allclose(only_valid_distances, only_valid_distances.T):
         assert False, 'Valid distance matrices are symmetrical'
 
-    y_pred = np.array(y_pred) # turn into np array if it's a list
+    y_pred = np.array(y_pred)  # turn into np array if it's a list
 
     result = metrics.silhouette_score(
         only_valid_distances,

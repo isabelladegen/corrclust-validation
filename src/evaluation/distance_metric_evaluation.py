@@ -433,5 +433,4 @@ def read_csv_of_raw_values_for_all_criteria(run_name: str, data_type: str, data_
     file_name = DISTANCE_MEASURE_EVALUATION_CRITERIA_RESULTS_FILE
     full_path = path.join(result_dir, file_name)
     columns = pd.read_csv(full_path, nrows=0, index_col=0).columns
-    pd.read_csv(full_path, index_col=0, converters={col: ast.literal_eval for col in columns})
     return pd.read_csv(full_path, index_col=0, converters={col: ast.literal_eval for col in columns})

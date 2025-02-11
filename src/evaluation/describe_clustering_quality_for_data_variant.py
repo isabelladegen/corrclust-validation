@@ -1,7 +1,10 @@
 import pandas as pd
 
 from src.evaluation.describe_bad_partitions import DescribeBadPartCols
+from src.evaluation.internal_measure_assessment import IAResultsCSV, InternalMeasureCols, \
+    column_name_correlation_coefficient_for, read_internal_assessment_result_for
 from src.evaluation.run_cluster_quality_measures_calculation import read_clustering_quality_measures
+from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 
 
 class DescribeClusteringQualityForDataVariant:
@@ -47,13 +50,35 @@ class DescribeClusteringQualityForDataVariant:
                                                    distance_measure=self.__distance_measure, run_names=[name])[0] for
             name in self.run_names}
 
-    def all_values_for_clustering_quality_measure(self, clustering_quality_measure: str):
+        # correlation summary (one df with one row per run)
+        self.correlation_summary_results = read_internal_assessment_result_for(
+            result_type=IAResultsCSV.correlation_summary,
+            overall_dataset_name=self.__overall_ds_name,
+            results_dir=self.__results_root_dir, data_type=self.__data_type,
+            data_dir=self.__data_dir,
+            distance_measure=self.__distance_measure)
+
+    def all_values_for_clustering_quality_measure(self, quality_measure: str):
         """
         Returns all values for the given clustering quality measure across all subjects
-        :param clustering_quality_measure: see ClusteringQualityMeasures for options
+        :param quality_measure: see ClusteringQualityMeasures for options
         :return: Series of values
         """
         # create list of measures series
-        combined_series = pd.concat([df.set_index(DescribeBadPartCols.name)[clustering_quality_measure] for df in
+        combined_series = pd.concat([df.set_index(DescribeBadPartCols.name)[quality_measure] for df in
                                      self.quality_measures_results.values()])
         return combined_series
+
+    def all_values_for_correlations_with_jaccard_index_for_quality_measure(self, quality_measure: str):
+        """
+        Returns all correlation coefficients for the given clustering quality measure correlated to the
+        Jaccard index across all subjects
+        :param quality_measure: see ClusteringQualityMeasures for options (cannot be Jaccard Index)
+        :return: Series of values
+        """
+        msg = "Provide an other quality measure that is compared to the Jaccard Index"
+        assert quality_measure != ClusteringQualityMeasures.jaccard_index, msg
+        # create list of measures series with subject name as index
+        col_name = column_name_correlation_coefficient_for(quality_measure)
+        result = self.correlation_summary_results.set_index(InternalMeasureCols.name)[col_name]
+        return result

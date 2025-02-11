@@ -9,6 +9,7 @@ from scipy.stats import pearsonr, ttest_rel
 from src.evaluation.describe_bad_partitions import default_internal_measures, default_external_measures, \
     DescribeBadPartCols
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
+from src.utils.configurations import internal_measure_evaluation_dir_for
 from src.utils.stats import standardized_effect_size_of_mean_difference, calculate_hi_lo_difference_ci, \
     ConfidenceIntervalCols, StatsCols, calculate_power, cohens_d
 
@@ -38,6 +39,23 @@ class InternalMeasureCols:
     persons_r: str = 'r'
     p_value: str = 'P'
     effect_size: str = 'd'
+
+
+def read_internal_assessment_result_for(result_type, overall_dataset_name: str, results_dir: str, data_type: str,
+                                        data_dir: str, distance_measure: str):
+    store_results_in = internal_measure_evaluation_dir_for(overall_dataset_name=overall_dataset_name,
+                                                           results_dir=results_dir, data_type=data_type,
+                                                           data_dir=data_dir,
+                                                           distance_measure=distance_measure)
+    file_name = get_full_filename_for_results_csv(store_results_in, result_type)
+    df = pd.read_csv(file_name, index_col=0)
+    return df
+
+
+def column_name_correlation_coefficient_for(internal_index: str,
+                                            external_index: str = ClusteringQualityMeasures.jaccard_index) -> str:
+    measure_pair = internal_index + ', ' + external_index
+    return InternalMeasureCols.persons_r + ' ' + measure_pair
 
 
 class InternalMeasureAssessment:
