@@ -1,9 +1,13 @@
+import numpy as np
 from matplotlib import pyplot as plt
 
 from src.evaluation.describe_clustering_quality_for_data_variant import DescribeClusteringQualityForDataVariant
+from src.utils.configurations import get_image_results_path, \
+    get_clustering_quality_multiple_data_variants_result_folder, ResultsType, OVERALL_CLUSTERING_QUALITY_DISTRIBUTION
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
-from src.visualisation.visualise_multiple_data_variants import get_row_name_from, create_violin_grid
+from src.visualisation.visualise_multiple_data_variants import get_row_name_from, create_violin_grid, \
+    create_violin_grid_log_scale_x_axis
 
 
 class VisualiseClusteringQualityMeasuresForDataVariants:
@@ -49,10 +53,28 @@ class VisualiseClusteringQualityMeasuresForDataVariants:
                 row_dict[col] = col_data.all_values_for_clustering_quality_measure(quality_measure)
             data_dict[row] = row_dict
 
-        fig = create_violin_grid(data_dict=data_dict, backend=self.backend, figsize=(15, 10))
+        # find mean of data to decide if we're using log or linear x-axis scale
+        max_mean = 0
+        for row_data in data_dict.values():
+            for col_data in row_data.values():
+                max_mean = max(max_mean, np.mean(col_data))
+
+        if max_mean > 10000:
+            # use log scale axes
+            fig = create_violin_grid_log_scale_x_axis(data_dict=data_dict, backend=self.backend, figsize=(15, 10))
+        else:
+            # use linear axes
+            fig = create_violin_grid(data_dict=data_dict, backend=self.backend, figsize=(15, 10))
+
         plt.show()
 
-        # if save_fig:
-        #     folder = base_dataset_result_folder_for_type(root_result_dir, ResultsType.dataset_description)
-        #     fig.savefig(str(path.join(folder, OVERALL_MAE_IMAGE)), dpi=300, bbox_inches='tight')
+        if save_fig:
+            folder = get_clustering_quality_multiple_data_variants_result_folder(
+                results_type=ResultsType.internal_measures_calculation,
+                overall_dataset_name=self.overall_ds_name,
+                results_dir=self.result_root_dir,
+                distance_measure=self.distance_measure)
+            # add an image results folder
+            file_name = get_image_results_path(folder, quality_measure + OVERALL_CLUSTERING_QUALITY_DISTRIBUTION)
+            fig.savefig(file_name, dpi=300, bbox_inches='tight')
         return fig

@@ -5,6 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import seaborn as sns
 from matplotlib.gridspec import GridSpec
+from matplotlib.ticker import AutoMinorLocator
 
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.evaluation.describe_subjects_for_data_variant import DescribeSubjectsForDataVariant
@@ -12,6 +13,34 @@ from src.utils.configurations import get_irregular_folder_name_from, base_datase
     OVERALL_SEGMENT_LENGTH_IMAGE, OVERALL_MAE_IMAGE
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import reset_matplotlib, Backends, fontsize
+
+
+def custom_number_text_formatter(x, _):
+    if abs(x) > 1000:
+        return f'{x:.0e}'  # Scientific notation for large numbers
+    else:
+        return f'{x:.1f}'  # Regular format for other numbers
+
+
+def add_stats(data: np.ndarray, ax: plt.Axes, y_pos: float) -> None:
+    """Add min, max and mean annotations to the plot."""
+    mean = np.mean(data)
+    min_val = np.min(data)
+    max_val = np.max(data)
+
+    # Add mean annotation centered above the box
+    x_center = np.mean(ax.get_xlim())
+    ax.text(x_center, y_pos + 0.2, f'μ={custom_number_text_formatter(mean, "-")}',
+            verticalalignment='center', horizontalalignment='center',
+            fontsize=fontsize, fontweight='bold')
+
+    # Add min/max annotations with adjusted positions
+    ax.text(min_val, y_pos - 0.3, f'min={custom_number_text_formatter(min_val, "-")}',
+            verticalalignment='center', horizontalalignment='left',
+            fontsize=fontsize)
+    ax.text(max_val, y_pos - 0.15, f'max={custom_number_text_formatter(max_val, "-")}',
+            verticalalignment='center', horizontalalignment='left',
+            fontsize=fontsize)
 
 
 def get_row_name_from(folder):
@@ -59,25 +88,6 @@ def create_violin_grid_log_scale_x_axis(data_dict: {}, figsize: tuple = (18, 15)
     # Set up colors
     colors = sns.color_palette("husl", n_colors=len(column_names))
 
-    def add_stats(data: np.ndarray, ax: plt.Axes, y_pos: float) -> None:
-        """Add statistical annotations to the plot."""
-        mean = np.mean(data)
-        min_val = np.min(data)
-        max_val = np.max(data)
-
-        # Add mean annotation centered above the box
-        ax.text(mean - 0.2, y_pos + 0.15, f'μ={mean:.2f}',
-                verticalalignment='center', horizontalalignment='center',
-                fontsize=fontsize, fontweight='bold')
-
-        # Add min/max annotations with adjusted positions
-        ax.text(min_val, y_pos - 0.15, f'min={int(min_val)}',
-                verticalalignment='center', horizontalalignment='center',
-                fontsize=fontsize)
-        ax.text(max_val, y_pos - 0.15, f'max={int(max_val)}',
-                verticalalignment='center', horizontalalignment='center',
-                fontsize=fontsize)
-
     # Find global and column min and max for shared x-axis
     global_min = float('inf')
     global_max = float('-inf')
@@ -122,7 +132,7 @@ def create_violin_grid_log_scale_x_axis(data_dict: {}, figsize: tuple = (18, 15)
             ax.set_xlim(global_min, global_max)
 
             # Format x-axis labels to be more readable
-            ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:,.0f}'.format(x)))
+            ax.xaxis.set_major_formatter(plt.FuncFormatter(custom_number_text_formatter))
 
             # Remove y-ticks and labels
             ax.set_yticks([])
@@ -141,6 +151,7 @@ def create_violin_grid_log_scale_x_axis(data_dict: {}, figsize: tuple = (18, 15)
             # Add prominent vertical grid lines
             ax.grid(True, axis='x', linestyle='-', alpha=0.3, which='both')
             ax.grid(True, axis='x', linestyle='-', alpha=0.6, which='major')
+            ax.xaxis.set_minor_locator(AutoMinorLocator())  # minor grid spacing
 
             # Customize spines
             sns.despine(ax=ax, left=True)
@@ -185,27 +196,7 @@ def create_violin_grid(data_dict: {}, figsize: tuple = (12, 12), backend: str = 
     # Set up colors
     colors = sns.color_palette("husl", n_colors=len(column_names))
 
-    def add_stats(data: np.ndarray, ax: plt.Axes, y_pos: float) -> None:
-        """Add statistical annotations to the plot."""
-        mean = np.mean(data)
-        min_val = np.min(data)
-        max_val = np.max(data)
-
-        # Add mean annotation centered above the box
-        ax.text(mean, y_pos + 0.2, f'μ={mean:.2f}',
-                verticalalignment='center', horizontalalignment='center',
-                fontsize=fontsize, fontweight='bold')
-
-        # Add min/max annotations with adjusted positions
-        ax.text(min_val, y_pos - 0.3, f'min={min_val:.2f}',
-                verticalalignment='center', horizontalalignment='left',
-                fontsize=fontsize)
-        ax.text(max_val, y_pos - 0.15, f'max={max_val:.2f}',
-                verticalalignment='center', horizontalalignment='left',
-                fontsize=fontsize)
-
-        # Find global min and max for shared x-axis
-
+    # Find global min and max for shared x-axis
     global_min = float('inf')
     global_max = float('-inf')
     for row_data in data_dict.values():
@@ -246,7 +237,7 @@ def create_violin_grid(data_dict: {}, figsize: tuple = (12, 12), backend: str = 
             ax.set_xlim(global_min, global_max)
 
             # Format x-axis labels to be more readable
-            ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:,.1f}'.format(x)))
+            ax.xaxis.set_major_formatter(plt.FuncFormatter(custom_number_text_formatter))
 
             # Remove y-ticks and labels
             ax.set_yticks([])
@@ -264,7 +255,7 @@ def create_violin_grid(data_dict: {}, figsize: tuple = (12, 12), backend: str = 
             # Add prominent vertical grid lines
             ax.grid(True, axis='x', linestyle='-', alpha=0.5, which='major', color='gray')  # major grid
             ax.grid(True, axis='x', linestyle='--', alpha=0.3, which='minor', color='gray')  # minor grid
-            ax.xaxis.set_minor_locator(plt.MultipleLocator(0.2))  # minor grid spacing
+            ax.xaxis.set_minor_locator(AutoMinorLocator())  # minor grid spacing
 
             # Customize spines
             sns.despine(ax=ax, left=True)

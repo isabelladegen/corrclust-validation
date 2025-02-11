@@ -9,8 +9,8 @@ from src.utils.plots.matplotlib_helper_functions import Backends
 from src.visualisation.visualise_clustering_quality_measures_for_multiple_data_variants import \
     VisualiseClusteringQualityMeasuresForDataVariants
 
-backend = Backends.visible_tests.value
-# backend = Backends.none.value
+# backend = Backends.visible_tests.value
+backend = Backends.none.value
 
 root_results_dir = ROOT_RESULTS_DIR
 data_types = [SyntheticDataType.raw,
@@ -26,7 +26,7 @@ vds = VisualiseClusteringQualityMeasuresForDataVariants(run_file=GENERATED_DATAS
                                                         distance_measure=DistanceMeasures.l1_with_ref, backend=backend)
 
 
-def test_can_visualise_correlation_coefficients_for_all_data_variants():
+def test_can_visualise_quality_measures_for_all_data_variants():
     column_names = [SyntheticDataType.get_display_name_for_data_type(SyntheticDataType.raw),
                     SyntheticDataType.get_display_name_for_data_type(SyntheticDataType.normal_correlated),
                     SyntheticDataType.get_display_name_for_data_type(SyntheticDataType.non_normal_correlated),
@@ -35,3 +35,10 @@ def test_can_visualise_correlation_coefficients_for_all_data_variants():
     assert_that(vds.row_names, contains_exactly('Complete 100%', 'Partial 70%', 'Sparse 10%'))
     fig = vds.violin_plots_for_quality_measure(quality_measure=ClusteringQualityMeasures.jaccard_index, save_fig=False)
     assert_that(fig, is_not(None))
+
+
+def test_can_visualise_extreme_valued_dbi_measure_for_all_data_variants():
+    # dbi has extremely large numbers that screw the plots - use log scale instead
+    fig = vds.violin_plots_for_quality_measure(quality_measure=ClusteringQualityMeasures.dbi, save_fig=False)
+    assert_that(fig, is_not(None))
+

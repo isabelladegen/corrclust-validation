@@ -30,6 +30,7 @@ GENERATED_DATASETS_FILE_PATH = path.join(SYNTHETIC_DATA_DIR, 'synthetic-correlat
 MULTIPLE_DS_SUMMARY_FILE = 'multiple-datasets-summary.csv'
 OVERALL_SEGMENT_LENGTH_IMAGE = 'overall_segment_length_distributions.png'
 OVERALL_MAE_IMAGE = 'overall_mae_distributions.png'
+OVERALL_CLUSTERING_QUALITY_DISTRIBUTION = '_distributions.png'
 CRITERIA_RANK_DISTRIBUTION = 'criteria_rank_distributions_across_runs.png'
 AVERAGE_RANK_DISTRIBUTION = 'average_rank_distributions_across_runs.png'
 PARTITIONS_QUALITY_DESCRIPTION = 'descriptive_statistics_for_segmented_clusterings.png'
@@ -218,6 +219,28 @@ def internal_measure_evaluation_dir_for(overall_dataset_name: str, data_type: st
                                overall_dataset_name=overall_dataset_name, data_type=data_type, data_dir=data_dir,
                                distance_measure=distance_measure, results_dir=results_dir, drop_clusters=drop_clusters,
                                drop_segments=drop_segments)
+
+
+def get_clustering_quality_multiple_data_variants_result_folder(results_type: str, overall_dataset_name: str,
+                                                                results_dir: str, distance_measure: str):
+    """
+        Returns directory for the given results type assuming that it summarises multiple data variants
+        :param overall_dataset_name: a name to identify the dataset overall e.g n30 or n2
+        :param results_dir: the directory for results, this is the main directory, the internal_assessment folder will be
+        added
+        :param distance_measure: the distance measures used for the internal assessment, see DistanceMeasures
+        :return: the path name to the results folder e.g. results/internal_assessment/overall_ds_name/
+    """
+    # put in folder internal_assessment
+    results_folder = path.join(results_dir, results_type)
+    # put in sub folder e.g. n30
+    results_folder = path.join(results_folder, overall_dataset_name)
+    # put in sub folder e.g. for distance measure
+    if distance_measure != "":
+        results_folder = path.join(results_folder, folder_name_for_distance_measure(distance_measure))
+    # creates the folder if it does not exist
+    Path(results_folder).mkdir(parents=True, exist_ok=True)
+    return results_folder
 
 
 def get_folder_name_for(results_type: str, overall_dataset_name: str, data_type: str, results_dir: str,
