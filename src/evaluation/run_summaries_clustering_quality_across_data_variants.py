@@ -87,6 +87,10 @@ def summarise_clustering_quality(data_dirs: [str], data_types: [str], run_file: 
         get_row_name_from(SYNTHETIC_DATA_DIR)
     ]
 
+    prefix = ""
+    if len(distance_measures) == 1:
+        prefix = distance_measures[0] + '_'
+
     mean_corr_df = mean_corr_df.sort_values(
         by=[IntSummaryCols.data_stage, IntSummaryCols.data_completeness],
         ascending=[True, True],
@@ -98,7 +102,7 @@ def summarise_clustering_quality(data_dirs: [str], data_types: [str], run_file: 
         overall_dataset_name=overall_ds_name,
         results_dir=root_results_dir,
         distance_measure="")
-    file_name = path.join(folder, IAResultsCSV.mean_correlation_data_variant)
+    file_name = path.join(folder, prefix + IAResultsCSV.mean_correlation_data_variant)
     mean_corr_df.to_csv(str(file_name))
 
     gt_worst_df = gt_worst_df.sort_values(
@@ -107,7 +111,7 @@ def summarise_clustering_quality(data_dirs: [str], data_types: [str], run_file: 
         key=lambda x: pd.Categorical(x,
                                      categories=data_stage_order if x.name == IntSummaryCols.data_stage else completeness_order)
     )
-    gt_worst_file_name = path.join(folder, IAResultsCSV.gt_worst_measure_data_variants)
+    gt_worst_file_name = path.join(folder, prefix + IAResultsCSV.gt_worst_measure_data_variants)
     gt_worst_df.to_csv(str(gt_worst_file_name))
 
     paired_t_test_df = paired_t_test_df.sort_values(
@@ -116,7 +120,7 @@ def summarise_clustering_quality(data_dirs: [str], data_types: [str], run_file: 
         key=lambda x: pd.Categorical(x,
                                      categories=data_stage_order if x.name == IntSummaryCols.data_stage else completeness_order)
     )
-    paired_t_file_name = path.join(folder, IAResultsCSV.paired_t_test_data_variant)
+    paired_t_file_name = path.join(folder, prefix + IAResultsCSV.paired_t_test_data_variant)
     paired_t_test_df.to_csv(str(paired_t_file_name))
 
 
@@ -138,6 +142,11 @@ if __name__ == "__main__":
     distance_measures = [DistanceMeasures.l1_cor_dist,
                          DistanceMeasures.l1_with_ref,
                          DistanceMeasures.foerstner_cor_dist]
+
+    # Config for L2 only ran for downsampled, complete data
+    # distance_measures = [DistanceMeasures.l2_cor_dist]
+    # dataset_types = [SyntheticDataType.rs_1min]
+    # data_dirs = [SYNTHETIC_DATA_DIR]
 
     clustering_quality_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.dbi]
 

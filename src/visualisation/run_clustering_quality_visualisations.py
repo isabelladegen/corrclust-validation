@@ -48,6 +48,11 @@ if __name__ == "__main__":
                          DistanceMeasures.l1_with_ref,
                          DistanceMeasures.foerstner_cor_dist]
 
+    # Config for L2 only ran for downsampled, complete data
+    # distance_measures = [DistanceMeasures.l2_cor_dist]
+    # dataset_types = [SyntheticDataType.rs_1min]
+    # data_dirs = [SYNTHETIC_DATA_DIR]
+
     clustering_quality_measures = [ClusteringQualityMeasures.jaccard_index,
                                    ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.dbi,
                                    ClusteringQualityMeasures.vrc, ClusteringQualityMeasures.pmb]
