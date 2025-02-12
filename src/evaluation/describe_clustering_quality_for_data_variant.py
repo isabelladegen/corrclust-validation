@@ -1,3 +1,4 @@
+import itertools
 from dataclasses import dataclass
 
 import pandas as pd
@@ -8,6 +9,7 @@ from src.evaluation.internal_measure_assessment import IAResultsCSV, InternalMea
 from src.evaluation.run_cluster_quality_measures_calculation import read_clustering_quality_measures
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
+from src.utils.stats import StatsCols
 from src.visualisation.visualise_multiple_data_variants import get_row_name_from
 
 
@@ -75,6 +77,13 @@ class DescribeClusteringQualityForDataVariant:
             data_dir=self.__data_dir,
             distance_measure=self.__distance_measure)
 
+        self.paired_t_test_results = read_internal_assessment_result_for(
+            result_type=IAResultsCSV.paired_t_test,
+            overall_dataset_name=self.__overall_ds_name,
+            results_dir=self.__results_root_dir, data_type=self.__data_type,
+            data_dir=self.__data_dir,
+            distance_measure=self.__distance_measure)
+
     def all_values_for_clustering_quality_measure(self, quality_measure: str):
         """
         Returns all values for the given clustering quality measure across all subjects
@@ -104,8 +113,7 @@ class DescribeClusteringQualityForDataVariant:
         """
         Returns mean (sd) of correlation coefficients for the given quality measures
         :param quality_measures: which measures to return
-        :return: pd.Dataframe with one row and columns: data generation stage, data completeness, double index first
-        level measures, second level distance metric
+        :return: pd.Dataframe with one row and columns: data generation stage, data completeness, quality measure
         """
         row = {
             IntSummaryCols.data_stage: [SyntheticDataType.get_display_name_for_data_type(self.__data_type)],
@@ -119,6 +127,48 @@ class DescribeClusteringQualityForDataVariant:
             mean = values['mean']
             sd = values['std']
             row[measure] = [f"{mean:.2f} ({sd:.2f})"]
+
+        # Create the summary dataframe
+        summary_df = pd.DataFrame(row)
+
+        return summary_df
+
+    def p_value_and_effect_size_of_correlation_for(self, quality_measures: [str]):
+        """
+        Returns p_value (effect size) of correlation between the given quality measures and their correlation with
+        the Jaccard Index
+        :param quality_measures: which measures to return
+        :return: pd.Dataframe with one row and columns: data generation stage, data completeness, tuple of quality
+        measures compared
+        """
+        row = {
+            IntSummaryCols.data_stage: [SyntheticDataType.get_display_name_for_data_type(self.__data_type)],
+            IntSummaryCols.data_completeness: [get_row_name_from(self.__data_dir)]
+        }
+
+        # create column names for measure pairs to compare (don't know which order they will be so very messy)
+        two_combinations = list(itertools.combinations(quality_measures, 2))
+        measures_corr_col_names = {
+            measure: InternalMeasureCols.persons_r + ' ' + measure + ", " + ClusteringQualityMeasures.jaccard_index for
+            measure in
+            quality_measures}
+        col_names = {}
+        for m1, m2 in two_combinations:
+            m1_cor_name = measures_corr_col_names[m1]
+            m2_cor_name = measures_corr_col_names[m2]
+            name1 = m1_cor_name + ' vs ' + m2_cor_name
+            name2 = m2_cor_name + ' vs ' + m1_cor_name
+            if name1 in self.paired_t_test_results.columns:
+                col_names[(m1, m2)] = name1
+            if name2 in self.paired_t_test_results.columns:
+                col_names[(m2, m1)] = name2
+
+        # Add p_value (effect size) for each measure pair
+        for measures, col_name in col_names.items():
+            values = self.paired_t_test_results[col_name]
+            p_value = values[StatsCols.p_value]
+            d = values[StatsCols.effect_size]
+            row[measures] = [f"{p_value:.2f} ({d:.2f})"]
 
         # Create the summary dataframe
         summary_df = pd.DataFrame(row)

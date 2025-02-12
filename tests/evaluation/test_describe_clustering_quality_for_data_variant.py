@@ -41,3 +41,14 @@ def test_returns_mean_and_sd_of_correlation_for_data_variant_and_distance_level(
     assert_that(df[IntSummaryCols.data_completeness][0], is_(get_row_name_from(data_dir)))
     assert_that(df[ClusteringQualityMeasures.silhouette_score][0], is_('0.90 (0.01)'))
     assert_that(df[ClusteringQualityMeasures.dbi][0], is_('-0.89 (0.08)'))
+
+
+def test_returns_p_value_and_effect_size_of_correlation_for_data_variant_and_distance_level():
+    measures = [ClusteringQualityMeasures.vrc, ClusteringQualityMeasures.dbi,
+                ClusteringQualityMeasures.silhouette_score]
+    df = describe.p_value_and_effect_size_of_correlation_for(quality_measures=measures)
+    assert_that(df[IntSummaryCols.data_stage][0], is_(SyntheticDataType.get_display_name_for_data_type(non_normal)))
+    assert_that(df[IntSummaryCols.data_completeness][0], is_(get_row_name_from(data_dir)))
+    assert_that(df[(ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.dbi)][0], is_('0.71 (-0.07)'))
+    assert_that(df[(ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.vrc)][0], is_('0.00 (14.83)'))
+    assert_that(df[(ClusteringQualityMeasures.dbi, ClusteringQualityMeasures.vrc)][0], is_('0.00 (4.68)'))
