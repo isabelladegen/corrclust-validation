@@ -117,6 +117,10 @@ if __name__ == "__main__":
     data_types = [SyntheticDataType.raw, SyntheticDataType.normal_correlated,
                   SyntheticDataType.non_normal_correlated, SyntheticDataType.rs_1min]
     data_dirs = [SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR]
+    # Config for L2 only ran for downsampled, complete data
+    # distance_measures = [DistanceMeasures.l2_cor_dist]
+    # data_types = [SyntheticDataType.rs_1min]
+    # data_dirs = [SYNTHETIC_DATA_DIR]
     results_dir = ROOT_RESULTS_DIR
 
     for data_dir in data_dirs:
