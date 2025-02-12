@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 import pandas as pd
 
 from src.evaluation.describe_bad_partitions import DescribeBadPartCols
@@ -5,6 +7,14 @@ from src.evaluation.internal_measure_assessment import IAResultsCSV, InternalMea
     column_name_correlation_coefficient_for, read_internal_assessment_result_for
 from src.evaluation.run_cluster_quality_measures_calculation import read_clustering_quality_measures
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
+from src.utils.load_synthetic_data import SyntheticDataType
+from src.visualisation.visualise_multiple_data_variants import get_row_name_from
+
+
+@dataclass
+class IntSummaryCols:
+    data_stage: str = "Generation Stage"
+    data_completeness: str = "Completeness"
 
 
 class DescribeClusteringQualityForDataVariant:
@@ -58,6 +68,13 @@ class DescribeClusteringQualityForDataVariant:
             data_dir=self.__data_dir,
             distance_measure=self.__distance_measure)
 
+        self.descriptive_corr_results = read_internal_assessment_result_for(
+            result_type=IAResultsCSV.descriptive_statistics_measure_summary,
+            overall_dataset_name=self.__overall_ds_name,
+            results_dir=self.__results_root_dir, data_type=self.__data_type,
+            data_dir=self.__data_dir,
+            distance_measure=self.__distance_measure)
+
     def all_values_for_clustering_quality_measure(self, quality_measure: str):
         """
         Returns all values for the given clustering quality measure across all subjects
@@ -82,3 +99,28 @@ class DescribeClusteringQualityForDataVariant:
         col_name = column_name_correlation_coefficient_for(quality_measure)
         result = self.correlation_summary_results.set_index(InternalMeasureCols.name)[col_name]
         return result
+
+    def mean_sd_correlation_for(self, quality_measures: [str]):
+        """
+        Returns mean (sd) of correlation coefficients for the given quality measures
+        :param quality_measures: which measures to return
+        :return: pd.Dataframe with one row and columns: data generation stage, data completeness, double index first
+        level measures, second level distance metric
+        """
+        row = {
+            IntSummaryCols.data_stage: [SyntheticDataType.get_display_name_for_data_type(self.__data_type)],
+            IntSummaryCols.data_completeness: [get_row_name_from(self.__data_dir)]
+        }
+
+        # Add mean(sd) for each measure
+        for measure in quality_measures:
+            col_name = column_name_correlation_coefficient_for(measure)
+            values = self.descriptive_corr_results[col_name]
+            mean = values['mean']
+            sd = values['std']
+            row[measure] = [f"{mean:.2f} ({sd:.2f})"]
+
+        # Create the summary dataframe
+        summary_df = pd.DataFrame(row)
+
+        return summary_df
