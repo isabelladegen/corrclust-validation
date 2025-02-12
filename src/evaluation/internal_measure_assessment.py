@@ -23,6 +23,7 @@ class IAResultsCSV:
     paired_t_test: str = "paired_t_test_between_internal_measure_correlation.csv"
     mean_correlation_data_variant: str = "mean_correlation_data_variants.csv"
     paired_t_test_data_variant: str = "paired_t_test_data_variants.csv"
+    gt_worst_measure_data_variants: str = "gt_worst_measure_data_variants.csv"
 
 
 def get_full_filename_for_results_csv(full_results_dir: str, csv_filename: str):

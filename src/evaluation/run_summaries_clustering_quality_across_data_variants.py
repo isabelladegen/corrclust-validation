@@ -22,11 +22,13 @@ def summarise_clustering_quality(data_dirs: [str], data_types: [str], run_file: 
                     ClusteringQualityMeasures.vrc, ClusteringQualityMeasures.pmb]
     all_mean_corr_dfs = []
     all_paired_t_test_dfs = []
+    all_gt_worst_dfs = []
     for data_type in data_types:
         for data_dir in data_dirs:
             # turn row data into dictionary grouping all distance measures into same row
             mean_cor_row_data = {}
             paired_t_row_data = {}
+            gt_worst_row_data = {}
             for distance_measure in distance_measures:
                 describe = DescribeClusteringQualityForDataVariant(wandb_run_file=run_file,
                                                                    overall_ds_name=overall_ds_name,
@@ -39,8 +41,21 @@ def summarise_clustering_quality(data_dirs: [str], data_types: [str], run_file: 
                 mean_cor_row_data[IntSummaryCols.data_completeness] = df[IntSummaryCols.data_completeness].iloc[0]
                 for quality_measure in clustering_quality_measures:
                     mean_cor_row_data[(quality_measure, distance_measure)] = df[quality_measure].iloc[0]
-                # Combine distance measure results for paired t-test into one row
 
+                # Combine distance measure results for gt and worst value
+                gtwdf = describe.mean_sd_measure_values_for_ground_truth_and_lowest_jaccard_index(
+                    quality_measures=all_measures)
+                gt_worst_row_data[IntSummaryCols.data_stage] = gtwdf[IntSummaryCols.data_stage].iloc[0]
+                gt_worst_row_data[IntSummaryCols.data_completeness] = gtwdf[IntSummaryCols.data_completeness].iloc[0]
+                for quality_measure in all_measures:
+                    # gt
+                    gt_worst_row_data[(quality_measure, IntSummaryCols.gt, distance_measure)] = \
+                        gtwdf[(quality_measure, IntSummaryCols.gt)].iloc[0]
+                    # worst
+                    gt_worst_row_data[(quality_measure, IntSummaryCols.worst, distance_measure)] = \
+                        gtwdf[(quality_measure, IntSummaryCols.worst)].iloc[0]
+
+                # Combine distance measure results for paired t-test into one row
                 ptdf = describe.p_value_and_effect_size_of_correlation_for(quality_measures=all_measures)
                 paired_t_row_data[IntSummaryCols.data_stage] = ptdf[IntSummaryCols.data_stage].iloc[0]
                 paired_t_row_data[IntSummaryCols.data_completeness] = ptdf[IntSummaryCols.data_completeness].iloc[0]
@@ -51,10 +66,12 @@ def summarise_clustering_quality(data_dirs: [str], data_types: [str], run_file: 
                     paired_t_row_data[(column, distance_measure)] = ptdf[column].iloc[0]
 
             all_mean_corr_dfs.append(mean_cor_row_data)
+            all_gt_worst_dfs.append(gt_worst_row_data)
             all_paired_t_test_dfs.append(paired_t_row_data)
 
     mean_corr_df = pd.DataFrame(all_mean_corr_dfs)
     paired_t_test_df = pd.DataFrame(all_paired_t_test_dfs)
+    gt_worst_df = pd.DataFrame(all_gt_worst_dfs)
 
     # sort the rows
     data_stage_order = [
@@ -83,6 +100,15 @@ def summarise_clustering_quality(data_dirs: [str], data_types: [str], run_file: 
         distance_measure="")
     file_name = path.join(folder, IAResultsCSV.mean_correlation_data_variant)
     mean_corr_df.to_csv(str(file_name))
+
+    gt_worst_df = gt_worst_df.sort_values(
+        by=[IntSummaryCols.data_stage, IntSummaryCols.data_completeness],
+        ascending=[True, True],
+        key=lambda x: pd.Categorical(x,
+                                     categories=data_stage_order if x.name == IntSummaryCols.data_stage else completeness_order)
+    )
+    gt_worst_file_name = path.join(folder, IAResultsCSV.gt_worst_measure_data_variants)
+    gt_worst_df.to_csv(str(gt_worst_file_name))
 
     paired_t_test_df = paired_t_test_df.sort_values(
         by=[IntSummaryCols.data_stage, IntSummaryCols.data_completeness],

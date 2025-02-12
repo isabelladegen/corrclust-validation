@@ -52,3 +52,17 @@ def test_returns_p_value_and_effect_size_of_correlation_for_data_variant_and_dis
     assert_that(df[(ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.dbi)][0], is_('0.71 (-0.07)'))
     assert_that(df[(ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.vrc)][0], is_('0.00 (14.83)'))
     assert_that(df[(ClusteringQualityMeasures.dbi, ClusteringQualityMeasures.vrc)][0], is_('0.00 (4.68)'))
+
+
+def test_returns_measures_values_for_ground_truth_and_lowest_jaccard_index():
+    measures = [ClusteringQualityMeasures.vrc, ClusteringQualityMeasures.dbi,
+                ClusteringQualityMeasures.silhouette_score]
+    df = describe.mean_sd_measure_values_for_ground_truth_and_lowest_jaccard_index(quality_measures=measures)
+    assert_that(df[IntSummaryCols.data_stage][0], is_(SyntheticDataType.get_display_name_for_data_type(non_normal)))
+    assert_that(df[IntSummaryCols.data_completeness][0], is_(get_row_name_from(data_dir)))
+    assert_that(df[(ClusteringQualityMeasures.vrc, IntSummaryCols.gt)][0], is_('14582.24 (4622.20)'))
+    assert_that(df[(ClusteringQualityMeasures.silhouette_score, IntSummaryCols.gt)][0], is_('0.97 (0.00)'))
+    assert_that(df[(ClusteringQualityMeasures.dbi, IntSummaryCols.gt)][0], is_('0.05 (0.01)'))
+    assert_that(df[(ClusteringQualityMeasures.vrc, IntSummaryCols.worst)][0], is_('1.00 (0.22)'))
+    assert_that(df[(ClusteringQualityMeasures.silhouette_score, IntSummaryCols.worst)][0], is_('-0.45 (0.04)'))
+    assert_that(df[(ClusteringQualityMeasures.dbi, IntSummaryCols.worst)][0], is_('9.39 (2.02)'))

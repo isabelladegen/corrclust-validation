@@ -17,6 +17,10 @@ from src.visualisation.visualise_multiple_data_variants import get_row_name_from
 class IntSummaryCols:
     data_stage: str = "Generation Stage"
     data_completeness: str = "Completeness"
+    gt: str = "GT"
+    worst: str = "Worst"
+    min: str = "Min"
+    max: str = "Max"
 
 
 class DescribeClusteringQualityForDataVariant:
@@ -169,6 +173,43 @@ class DescribeClusteringQualityForDataVariant:
             p_value = values[StatsCols.p_value]
             d = values[StatsCols.effect_size]
             row[measures] = [f"{p_value:.2f} ({d:.2f})"]
+
+        # Create the summary dataframe
+        summary_df = pd.DataFrame(row)
+
+        return summary_df
+
+    def mean_sd_measure_values_for_ground_truth_and_lowest_jaccard_index(self, quality_measures: [str]):
+        """
+        Returns mean values and sd for ground truth and lowest jaccard index segmented clustering for the given quality
+        measures
+        :param quality_measures: which measures to return
+        :return: pd.Dataframe with one row and columns: data generation stage, data completeness, quality measure's mean
+        value (SD) for ground truth and worst segmented clustering
+        """
+        # get all subjects ground truth row and worst row (dfs are sorted by jaccard index so last row is best)
+        ground_truth_df = pd.DataFrame([df[quality_measures].iloc[-1] for df in self.quality_measures_results.values()])
+        worst_df = pd.DataFrame([df[quality_measures].iloc[0] for df in self.quality_measures_results.values()])
+
+        # calculate mean and std
+        mean_sd_gt_df = ground_truth_df.agg(['mean', 'std'])
+        mean_sd_worst_df = worst_df.agg(['mean', 'std'])
+
+        # build as a single row for all measures
+        row = {
+            IntSummaryCols.data_stage: [SyntheticDataType.get_display_name_for_data_type(self.__data_type)],
+            IntSummaryCols.data_completeness: [get_row_name_from(self.__data_dir)]
+        }
+
+        # Add mean(sd) for each measure for ground truth and for worst partition
+        for measure in quality_measures:
+            gt_mean = mean_sd_gt_df.loc['mean', measure]
+            gt_sd = mean_sd_gt_df.loc['std', measure]
+            row[(measure, IntSummaryCols.gt)] = [f"{gt_mean:.2f} ({gt_sd:.2f})"]
+
+            worst_mean = mean_sd_worst_df.loc['mean', measure]
+            worst_sd = mean_sd_worst_df.loc['std', measure]
+            row[(measure, IntSummaryCols.worst)] = [f"{worst_mean:.2f} ({worst_sd:.2f})"]
 
         # Create the summary dataframe
         summary_df = pd.DataFrame(row)
