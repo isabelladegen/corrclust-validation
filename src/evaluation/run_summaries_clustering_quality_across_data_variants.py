@@ -18,11 +18,15 @@ from src.visualisation.visualise_multiple_data_variants import get_row_name_from
 
 def summarise_clustering_quality(data_dirs: [str], data_types: [str], run_file: str, root_results_dir: str,
                                  distance_measures: [str], clustering_quality_measures: [str], overall_ds_name: str):
-    all_dfs = []
+    all_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.dbi,
+                    ClusteringQualityMeasures.vrc, ClusteringQualityMeasures.pmb]
+    all_mean_corr_dfs = []
+    all_paired_t_test_dfs = []
     for data_type in data_types:
         for data_dir in data_dirs:
             # turn row data into dictionary grouping all distance measures into same row
-            row_data = {}
+            mean_cor_row_data = {}
+            paired_t_row_data = {}
             for distance_measure in distance_measures:
                 describe = DescribeClusteringQualityForDataVariant(wandb_run_file=run_file,
                                                                    overall_ds_name=overall_ds_name,
@@ -30,15 +34,27 @@ def summarise_clustering_quality(data_dirs: [str], data_types: [str], run_file: 
                                                                    results_root_dir=root_results_dir,
                                                                    distance_measure=distance_measure)
                 df = describe.mean_sd_correlation_for(quality_measures=clustering_quality_measures)
-                # group all distance measure to the same row data
-                row_data[IntSummaryCols.data_stage] = df[IntSummaryCols.data_stage].iloc[0]
-                row_data[IntSummaryCols.data_completeness] = df[IntSummaryCols.data_completeness].iloc[0]
+                # Combine distance measure results for correlation into one row
+                mean_cor_row_data[IntSummaryCols.data_stage] = df[IntSummaryCols.data_stage].iloc[0]
+                mean_cor_row_data[IntSummaryCols.data_completeness] = df[IntSummaryCols.data_completeness].iloc[0]
                 for quality_measure in clustering_quality_measures:
-                    row_data[(quality_measure, distance_measure)] = df[quality_measure].iloc[0]
+                    mean_cor_row_data[(quality_measure, distance_measure)] = df[quality_measure].iloc[0]
+                # Combine distance measure results for paired t-test into one row
 
-            all_dfs.append(row_data)
+                ptdf = describe.p_value_and_effect_size_of_correlation_for(quality_measures=all_measures)
+                paired_t_row_data[IntSummaryCols.data_stage] = ptdf[IntSummaryCols.data_stage].iloc[0]
+                paired_t_row_data[IntSummaryCols.data_completeness] = ptdf[IntSummaryCols.data_completeness].iloc[0]
+                cols = list(ptdf.columns)
+                cols.remove(IntSummaryCols.data_stage)
+                cols.remove(IntSummaryCols.data_completeness)
+                for column in cols:
+                    paired_t_row_data[(column, distance_measure)] = ptdf[column].iloc[0]
 
-    mean_corr_df = pd.DataFrame(all_dfs)
+            all_mean_corr_dfs.append(mean_cor_row_data)
+            all_paired_t_test_dfs.append(paired_t_row_data)
+
+    mean_corr_df = pd.DataFrame(all_mean_corr_dfs)
+    paired_t_test_df = pd.DataFrame(all_paired_t_test_dfs)
 
     # sort the rows
     data_stage_order = [
@@ -68,9 +84,18 @@ def summarise_clustering_quality(data_dirs: [str], data_types: [str], run_file: 
     file_name = path.join(folder, IAResultsCSV.mean_correlation_data_variant)
     mean_corr_df.to_csv(str(file_name))
 
+    paired_t_test_df = paired_t_test_df.sort_values(
+        by=[IntSummaryCols.data_stage, IntSummaryCols.data_completeness],
+        ascending=[True, True],
+        key=lambda x: pd.Categorical(x,
+                                     categories=data_stage_order if x.name == IntSummaryCols.data_stage else completeness_order)
+    )
+    paired_t_file_name = path.join(folder, IAResultsCSV.paired_t_test_data_variant)
+    paired_t_test_df.to_csv(str(paired_t_file_name))
+
 
 if __name__ == "__main__":
-    # violin plots for all clustering quality measures for each dataset in the N30 and each distance measure
+    # creates summary table for all data variants of various results for different distance measures
     # backend = Backends.visible_tests.value
     backend = Backends.none.value
     save_fig = True
