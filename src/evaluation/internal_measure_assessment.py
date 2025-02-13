@@ -205,7 +205,7 @@ class InternalMeasureAssessment:
             m2_coefficients = df[measure_pair[1]]
 
             # calculate statistic
-            t_stat, p_value = ttest_rel(m1_coefficients, m2_coefficients)
+            t_stat, p_value = ttest_rel(m1_coefficients, m2_coefficients, alternative=alternative)
 
             # calculate effect size (Cohen's d for paired samples)
             d = np.mean(m1_coefficients - m2_coefficients) / np.std(m1_coefficients - m2_coefficients, ddof=1)
