@@ -11,7 +11,7 @@ from src.evaluation.describe_bad_partitions import default_internal_measures, de
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import internal_measure_evaluation_dir_for
 from src.utils.stats import standardized_effect_size_of_mean_difference, calculate_hi_lo_difference_ci, \
-    ConfidenceIntervalCols, StatsCols, calculate_power, cohens_d
+    ConfidenceIntervalCols, StatsCols, calculate_power, cohens_d, cohens_d_paired
 
 
 @dataclass
@@ -24,6 +24,10 @@ class IAResultsCSV:
     mean_correlation_data_variant: str = "mean_correlation_data_variants.csv"
     paired_t_test_data_variant: str = "paired_t_test_data_variants.csv"
     gt_worst_measure_data_variants: str = "gt_worst_measure_data_variants.csv"
+
+
+def get_name_paired_t_test_between_distance_measures(internal_measure: str) -> str:
+    return internal_measure + "_paired_t_test_distance_measures.csv"
 
 
 def get_full_filename_for_results_csv(full_results_dir: str, csv_filename: str):
@@ -211,7 +215,7 @@ class InternalMeasureAssessment:
             t_stat, p_value = ttest_rel(m1_coefficients, m2_coefficients, alternative=alternative)
 
             # calculate effect size (Cohen's d for paired samples)
-            d = np.mean(m1_coefficients - m2_coefficients) / np.std(m1_coefficients - m2_coefficients, ddof=1)
+            d = cohens_d_paired(m1_coefficients, m2_coefficients)
 
             power = calculate_power(effect_size=d, n_samples=len(m1_coefficients), alpha=alpha, alternative=alternative)
 

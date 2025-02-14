@@ -367,3 +367,19 @@ def filter_mean_diffs(mean_diff_df, variate, ci_relationship, old_mean_ci_dict):
 def cohens_d(m1, m2, s1, s2):
     """Cohen's d for assumption n1=n2, simple pooled standard deviation"""
     return (m1 - m2) / np.sqrt((s1 ** 2 + s2 ** 2) / 2)
+
+
+def cohens_d_paired(v1, v2):
+    """
+    Cohen's d for assumption n1=n2, simple pooled standard deviation
+    but for paired samples (same participants in each group)
+    this also handles the denominator getting 0 by putting it to
+    np.inf if means are not the same and to 0 if means are the same
+    """
+    diff_mean = np.mean(v1 - v2)
+    diff_std = np.std(v1 - v2, ddof=1)
+
+    if diff_std == 0:
+        return 0 if diff_mean == 0 else np.inf
+
+    return diff_mean / diff_std

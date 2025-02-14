@@ -8,7 +8,7 @@ from src.evaluation.internal_measure_assessment import read_internal_assessment_
     InternalMeasureCols
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.distance_measures import short_distance_measure_names
-from src.utils.stats import StatsCols, calculate_power
+from src.utils.stats import StatsCols, calculate_power, cohens_d_paired
 
 
 def get_col_name_distance_internal_corr(internal_measure: str, distance_measure: str) -> str:
@@ -104,7 +104,7 @@ class ImpactDistanceMeasureAssessment:
             t_stat, p_value = ttest_rel(m1_coefficients.to_numpy(), m2_coefficients.to_numpy(), alternative=alternative)
 
             # calculate effect size (Cohen's d for paired samples)
-            d = np.mean(m1_coefficients - m2_coefficients) / np.std(m1_coefficients - m2_coefficients, ddof=1)
+            d = cohens_d_paired(m1_coefficients, m2_coefficients)
 
             power = calculate_power(effect_size=d, n_samples=len(m1_coefficients), alpha=alpha, alternative=alternative)
 
