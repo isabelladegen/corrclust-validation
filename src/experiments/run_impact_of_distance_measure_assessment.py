@@ -92,13 +92,14 @@ if __name__ == "__main__":
                          DistanceMeasures.l1_with_ref,
                          DistanceMeasures.foerstner_cor_dist]
 
-    internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.dbi,
-                         ClusteringQualityMeasures.vrc, ClusteringQualityMeasures.pmb]
-
     # Config for L2 only ran for downsampled, complete data
-    # distance_measures = [DistanceMeasures.l2_cor_dist]
+    # distance_measures = [DistanceMeasures.l1_cor_dist, DistanceMeasures.l1_with_ref,
+    #                      DistanceMeasures.foerstner_cor_dist, DistanceMeasures.l2_cor_dist]
     # dataset_types = [SyntheticDataType.rs_1min]
     # data_dirs = [SYNTHETIC_DATA_DIR]
+
+    internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.dbi,
+                         ClusteringQualityMeasures.vrc, ClusteringQualityMeasures.pmb]
 
     run_names = pd.read_csv(GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
 
