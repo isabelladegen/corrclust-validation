@@ -2,7 +2,7 @@ import pandas as pd
 from hamcrest import *
 
 from src.evaluation.describe_bad_partitions import DescribeBadPartCols
-from src.evaluation.run_cluster_quality_measures_calculation import read_clustering_quality_measures, \
+from src.experiments.run_cluster_quality_measures_calculation import read_clustering_quality_measures, \
     run_internal_measure_calculation_for_dataset
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.distance_measures import DistanceMeasures

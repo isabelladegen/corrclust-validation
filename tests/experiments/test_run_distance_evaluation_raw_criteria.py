@@ -2,7 +2,7 @@ import pandas as pd
 from hamcrest import *
 
 from src.evaluation.distance_metric_evaluation import read_csv_of_raw_values_for_all_criteria
-from src.evaluation.run_distance_evaluation_raw_criteria import run_distance_evaluation_raw_criteria_for_ds
+from src.experiments.run_distance_evaluation_raw_criteria import run_distance_evaluation_raw_criteria_for_ds
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 from tests.test_utils.configurations_for_testing import TEST_IRREGULAR_P30_DATA_DIR, TEST_IRREGULAR_P90_DATA_DIR, \

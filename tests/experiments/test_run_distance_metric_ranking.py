@@ -5,8 +5,8 @@ from hamcrest import *
 from src.evaluation.distance_metric_evaluation import EvaluationCriteria
 from src.evaluation.distance_metric_ranking import read_csv_of_ranks_for_all_criteria, \
     read_csv_of_overall_rank_per_dataset, read_csv_of_average_criteria_across_datasets, RankingStats
-from src.evaluation.run_distance_distance_metric_ranking import run_ranking_for
-from src.evaluation.run_distance_evaluation_raw_criteria import run_distance_evaluation_raw_criteria_for_ds
+from src.experiments.run_distance_distance_metric_ranking import run_ranking_for
+from src.experiments.run_distance_evaluation_raw_criteria import run_distance_evaluation_raw_criteria_for_ds
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 from tests.test_utils.configurations_for_testing import TEST_IRREGULAR_P30_DATA_DIR, TEST_IRREGULAR_P90_DATA_DIR, \

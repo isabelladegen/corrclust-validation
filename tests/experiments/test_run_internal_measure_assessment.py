@@ -4,7 +4,7 @@ import pandas as pd
 from hamcrest import *
 
 from src.evaluation.internal_measure_assessment import get_full_filename_for_results_csv, IAResultsCSV
-from src.evaluation.run_internal_measure_assessment import run_internal_measure_assessment_datasets
+from src.experiments.run_internal_measure_assessment import run_internal_measure_assessment_datasets
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import internal_measure_evaluation_dir_for
 from src.utils.distance_measures import DistanceMeasures

@@ -2,7 +2,7 @@ import pandas as pd
 
 from src.evaluation.internal_measure_assessment import get_full_filename_for_results_csv, IAResultsCSV, \
     InternalMeasureAssessment
-from src.evaluation.run_cluster_quality_measures_calculation import read_clustering_quality_measures
+from src.experiments.run_cluster_quality_measures_calculation import read_clustering_quality_measures
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import GENERATED_DATASETS_FILE_PATH, internal_measure_evaluation_dir_for, \
     SYNTHETIC_DATA_DIR, ROOT_RESULTS_DIR, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR
