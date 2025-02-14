@@ -174,8 +174,8 @@ class InternalMeasureAssessment:
         """
         Calculates a paired samples t-test for fisher transformed correlation coefficients.
         This test takes into consideration that the correlations are with a dependent variable (Jaccard) - hence the
-        fisher tranformation as well as that there are multiple subject's correlation on 67 partitions available - hence
-        the paird t test.
+        fisher transformation as well as that there are multiple subject's correlation on 67 partitions available - hence
+        the paired t test.
         :param alpha: what alpha to use for the power calculation
         :param alternative: what alternative hypothesis to use for the power calculation
         :return: df where the rows are indexed by StatCols p-value, statistics, the columns are the different internal
@@ -187,7 +187,10 @@ class InternalMeasureAssessment:
         # calculate fisher z score of each of the correlation coefficient
         # use the absolute of the values as we don't care about the direction of the correlation just the strength
         df = self.correlation_summary[self.measures_corr_col_names]
-        df = pd.DataFrame(np.arctanh(abs(df.values)), index=df.index, columns=df.columns)
+        dbi_cols = [col for col in df.columns if ClusteringQualityMeasures.dbi in col]
+        # for DBI where lower values are better we need to invert the correlation coefficients for a fair comparison
+        df[dbi_cols] = df[dbi_cols].multiply(-1)
+        df = pd.DataFrame(np.arctanh(df.values), index=df.index, columns=df.columns)
 
         # measures that we need to compared
         compare = self.__comparing_internal_measures

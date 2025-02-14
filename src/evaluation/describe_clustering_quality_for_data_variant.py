@@ -6,7 +6,7 @@ import pandas as pd
 from src.evaluation.describe_bad_partitions import DescribeBadPartCols
 from src.evaluation.internal_measure_assessment import IAResultsCSV, InternalMeasureCols, \
     column_name_correlation_coefficient_for, read_internal_assessment_result_for
-from src.evaluation.run_cluster_quality_measures_calculation import read_clustering_quality_measures
+from src.experiments.run_cluster_quality_measures_calculation import read_clustering_quality_measures
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.stats import StatsCols
