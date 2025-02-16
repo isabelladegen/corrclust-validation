@@ -20,6 +20,7 @@ PATTERNS_TO_MODEL_PATH = path.join(ROOT_DIR, 'src/data_generation/config/correla
 DISTRIBUTION_PARAMS_TO_MODEL_PATH = path.join(ROOT_DIR,
                                               'src/data_generation/config/n30_genextreme_nbinom_genextreme_params.csv')
 SYNTHETIC_DATA_DIR = path.join(ROOT_DIR, 'data/synthetic_data')
+ROOT_REDUCED_SYNTHETIC_DATA_DIR = path.join(SYNTHETIC_DATA_DIR, "reduced-data")
 IRREGULAR_P30_DATA_DIR = path.join(SYNTHETIC_DATA_DIR, ExtensionNames.irregular_p30)
 IRREGULAR_P90_DATA_DIR = path.join(SYNTHETIC_DATA_DIR, ExtensionNames.irregular_p90)
 ROOT_RESULTS_DIR = path.join(ROOT_DIR, 'results')
@@ -70,6 +71,20 @@ class ResultsType:
     distance_measure_assessment: str = 'distance-measures-assessment'  # per distance measure assessments
     distance_measure_evaluation: str = 'distance-measures-evaluation'  # statistical differences of distance measures
     dataset_description: str = 'dataset-description'
+
+
+def get_root_folder_for_reduced_cluster(root_folder: str, n_dropped: int) -> str:
+    folder = path.join(root_folder, 'clusters_dropped_' + str(n_dropped))
+    # created folder if it doesn't exit
+    Path(folder).mkdir(parents=True, exist_ok=True)
+    return folder
+
+
+def get_root_folder_for_reduced_segments(root_folder: str, n_dropped: int) -> str:
+    folder = path.join(root_folder, 'segments_dropped_' + str(n_dropped))
+    # created folder if it doesn't exit
+    Path(folder).mkdir(parents=True, exist_ok=True)
+    return folder
 
 
 def get_filename_for_statistical_validation_between_measures(measure1: str, measure2: str):
