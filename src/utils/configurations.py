@@ -25,6 +25,7 @@ ROOT_REDUCED_SYNTHETIC_DATA_DIR = path.join(SYNTHETIC_DATA_DIR, "reduced-data")
 IRREGULAR_P30_DATA_DIR = path.join(SYNTHETIC_DATA_DIR, DataCompleteness.irregular_p30)
 IRREGULAR_P90_DATA_DIR = path.join(SYNTHETIC_DATA_DIR, DataCompleteness.irregular_p90)
 ROOT_RESULTS_DIR = path.join(ROOT_DIR, 'results')
+ROOT_REDUCED_RESULTS_DIR = path.join(ROOT_RESULTS_DIR, "reduced-data")
 DISTANCE_MEASURE_ASSESSMENT_RESULTS_FOLDER_NAME = 'distance-measures-assessment'
 IMAGES_FOLDER_NAME = 'images'
 GENERATED_DATASETS_FILE_PATH = path.join(SYNTHETIC_DATA_DIR, 'synthetic-correlated-data-n30.csv')
