@@ -106,7 +106,7 @@ class CreateReducedDatasets:
         keep_data = []
         select_start_end_idx = list(zip(reduced_labels_df[SyntheticDataSegmentCols.start_idx],
                                         reduced_labels_df[SyntheticDataSegmentCols.end_idx]))
-        new_start_idx = new_end_idx = 0
+        new_start_idx = 0
         for idx, (start_idx, end_idx) in enumerate(select_start_end_idx):
             seg_data = data.iloc[start_idx:end_idx + 1, :]
             # check selection
@@ -115,8 +115,8 @@ class CreateReducedDatasets:
 
             # update indices in labels to be correct with new data
             new_end_idx = new_start_idx + (length - 1)  # zero based indexing
-            reduced_labels_df.iloc[idx][SyntheticDataSegmentCols.start_idx] = new_start_idx
-            reduced_labels_df.iloc[idx][SyntheticDataSegmentCols.end_idx] = new_end_idx
+            reduced_labels_df.loc[idx, SyntheticDataSegmentCols.start_idx] = new_start_idx
+            reduced_labels_df.loc[idx, SyntheticDataSegmentCols.end_idx] = new_end_idx
             new_start_idx = new_end_idx + 1
 
             # safe data to list

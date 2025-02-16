@@ -37,3 +37,27 @@ def test_keeps_n_clusters_at_random():
     assert_that(len(pattern_ids), is_(6))
     assert_that(rd.reduced_labels_segments[drop_n_segments[0]][run_names[0]].shape[0], is_(50))
     assert_that(rd.reduced_labels_segments[drop_n_segments[1]][run_names[0]].shape[0], is_(25))
+
+    # check index has been updated correctly for clusters
+    a_reduced_cluster_label = rd.reduced_labels_patterns[drop_n_clusters[0]][run_names[0]]
+    a_reduced_cluster_data = rd.reduced_data_patterns[drop_n_clusters[0]][run_names[0]]
+    assert_that(a_reduced_cluster_label[SyntheticDataSegmentCols.length].sum(), is_(a_reduced_cluster_data.shape[0]))
+    start = a_reduced_cluster_label.iloc[0][SyntheticDataSegmentCols.start_idx]
+    end = a_reduced_cluster_label.iloc[0][SyntheticDataSegmentCols.end_idx]
+    length = a_reduced_cluster_label.iloc[0][SyntheticDataSegmentCols.length]
+    assert_that(start, is_(0))
+    assert_that(end, is_(start + length - 1))
+    # data is zero indexed and continuous
+    assert_that(all(a_reduced_cluster_data.index == range(a_reduced_cluster_data.shape[0])))
+
+    # check index has been updated correctly for segments
+    a_reduced_segment_label = rd.reduced_labels_segments[drop_n_segments[0]][run_names[0]]
+    a_reduced_segment_data = rd.reduced_data_segments[drop_n_segments[0]][run_names[0]]
+    assert_that(a_reduced_segment_label[SyntheticDataSegmentCols.length].sum(), is_(a_reduced_segment_data.shape[0]))
+    start = a_reduced_segment_label.iloc[0][SyntheticDataSegmentCols.start_idx]
+    end = a_reduced_segment_label.iloc[0][SyntheticDataSegmentCols.end_idx]
+    length = a_reduced_segment_label.iloc[0][SyntheticDataSegmentCols.length]
+    assert_that(start, is_(0))
+    assert_that(end, is_(start + length - 1))
+    # data is zero indexed and continuous
+    assert_that(all(a_reduced_segment_data.index == range(a_reduced_segment_data.shape[0])))

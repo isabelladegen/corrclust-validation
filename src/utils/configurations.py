@@ -10,7 +10,8 @@ from src.utils.distance_measures import short_distance_measure_names
 
 
 @dataclass
-class ExtensionNames:
+class DataCompleteness:
+    complete: str = ''
     irregular_p30: str = 'irregular_p30'
     irregular_p90: str = 'irregular_p90'
 
@@ -21,8 +22,8 @@ DISTRIBUTION_PARAMS_TO_MODEL_PATH = path.join(ROOT_DIR,
                                               'src/data_generation/config/n30_genextreme_nbinom_genextreme_params.csv')
 SYNTHETIC_DATA_DIR = path.join(ROOT_DIR, 'data/synthetic_data')
 ROOT_REDUCED_SYNTHETIC_DATA_DIR = path.join(SYNTHETIC_DATA_DIR, "reduced-data")
-IRREGULAR_P30_DATA_DIR = path.join(SYNTHETIC_DATA_DIR, ExtensionNames.irregular_p30)
-IRREGULAR_P90_DATA_DIR = path.join(SYNTHETIC_DATA_DIR, ExtensionNames.irregular_p90)
+IRREGULAR_P30_DATA_DIR = path.join(SYNTHETIC_DATA_DIR, DataCompleteness.irregular_p30)
+IRREGULAR_P90_DATA_DIR = path.join(SYNTHETIC_DATA_DIR, DataCompleteness.irregular_p90)
 ROOT_RESULTS_DIR = path.join(ROOT_DIR, 'results')
 DISTANCE_MEASURE_ASSESSMENT_RESULTS_FOLDER_NAME = 'distance-measures-assessment'
 IMAGES_FOLDER_NAME = 'images'
@@ -71,6 +72,10 @@ class ResultsType:
     distance_measure_assessment: str = 'distance-measures-assessment'  # per distance measure assessments
     distance_measure_evaluation: str = 'distance-measures-evaluation'  # statistical differences of distance measures
     dataset_description: str = 'dataset-description'
+
+
+def get_data_dir(root_data_dir: str = SYNTHETIC_DATA_DIR, extension_type: str = DataCompleteness.complete) -> str:
+    return path.join(root_data_dir, extension_type)
 
 
 def get_root_folder_for_reduced_cluster(root_folder: str, n_dropped: int) -> str:
