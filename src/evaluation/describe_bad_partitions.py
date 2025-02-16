@@ -1,14 +1,11 @@
-import random
 from dataclasses import dataclass
 
-import numpy as np
 import pandas as pd
 
 from src.utils.clustering_quality_measures import silhouette_avg_from_distances, calculate_pmb, \
     clustering_jaccard_coeff, ClusteringQualityMeasures, calculate_dbi, calculate_vrc
 from src.utils.configurations import SYNTHETIC_DATA_DIR, SyntheticDataVariates
-from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols, \
-    recalculate_labels_df_from_data
+from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.utils.labels_utils import calculate_overall_data_correlation, \
     calculate_distance_between_segment_and_data_centroid, calculate_cluster_centroids, \
     calculate_distances_between_each_segment_and_its_cluster_centroid, calculate_distances_between_cluster_centroids, \
@@ -61,18 +58,13 @@ def select_data_from_df(data: pd.DataFrame, label: pd.DataFrame):
 class DescribeBadPartitions:
     def __init__(self, ds_name, distance_measure: str, data_type: str = SyntheticDataType.non_normal_correlated,
                  internal_measures: [] = default_internal_measures, external_measures: [] = default_external_measures,
-                 data_cols: [str] = SyntheticDataVariates.columns(), drop_n_clusters: int = 0, drop_n_segments: int = 0,
-                 seed: int = 600,
+                 data_cols: [str] = SyntheticDataVariates.columns(), seed: int = 600,
                  data_dir: str = SYNTHETIC_DATA_DIR, round_to: int = 3):
         self.ds_name = ds_name
         self.distance_measure = distance_measure
         self.__internal_measures = internal_measures
         self.__external_measures = external_measures
         self.__seed = seed
-        # number of clusters to drop, if None this is 0
-        self.__drop_n_clusters = drop_n_clusters
-        # number of segments to drop, if None this is 0
-        self.__drop_n_segments = drop_n_segments
         self.__data_dir = data_dir
         self.__data_type = data_type
         self.__cols = data_cols
@@ -87,20 +79,12 @@ class DescribeBadPartitions:
                                                                                        data_type=self.__data_type,
                                                                                        data_dir=self.__data_dir)
 
-        self.data = data  # time series data df this will not be modified if we drop clusters or segments
-        self.gt_label = gt_label  # ground truth labels df this will be modified if we drop clusters or segments
+        self.data = data  # time series data df
+        self.gt_label = gt_label  # ground truth labels df
         self.partitions = partitions  # dictionary of filename as key and bad partition labels_df as value
 
-        # calculate full y pred for ground truth before dropping segments or clusters, this is required for
-        # jaccard index of partitions where the indices have shifted we need to select the to original pattern
-        # of the new indices after some segments might have been dropped
+        # calculate full y pred for ground truth
         full_gt_y_pred = calculate_y_pred_from(self.gt_label)
-
-        # To reduce the number of clusters and segments in the data we can give a number of clusters or segments
-        # to select. In that case clusters and segments get dropped. The data remains unchanged
-        if self.__drop_clusters_or_segments():
-            self.gt_label, self.partitions, selected_patterns, selected_segs = self.__drop_clusters_or_segments_from_data(
-                self.data, self.gt_label, self.partitions)
 
         # 1D np array of length n_segments
         self.gt_patterns = self.gt_label[SyntheticDataSegmentCols.pattern_id].to_numpy()
@@ -334,88 +318,6 @@ class DescribeBadPartitions:
         if ClusteringQualityMeasures.pmb in self.__internal_measures:
             self.summary_df[ClusteringQualityMeasures.pmb] = pmbs
 
-    def __drop_clusters_or_segments(self):
-        """
-        Check if we need to drop clusters or segments from the data
-        :return: True if clusters, segments or both need to be dropped, otherwise False
-        """
-        return self.__drop_n_clusters > 0 or self.__drop_n_segments > 0
-
-    def __drop_clusters_or_segments_from_data(self, data: pd.DataFrame, gt_labels: pd.DataFrame, part_labels: {}):
-        """
-            Selects at random a specific number of clusters and segments
-            - you need at least 2 clusters
-            :param data: pd.DataFrame of the observations (timeseries data)
-            :param gt_labels: pd.DataFrame of the ground truth labels df
-            :param part_labels: dict of all the partitions labels df as values and filenames as keys
-            :return
-        """
-        data_ = data.copy()
-        gt_labels_ = gt_labels.copy()
-
-        # select at random but set seed
-        random.seed(self.__seed)
-        total_clusters = len(gt_labels_[SyntheticDataSegmentCols.pattern_id].unique())
-        total_segments = gt_labels_.shape[0]
-
-        # clusters to select
-        n_clusters = total_clusters - self.__drop_n_clusters
-        assert n_clusters >= 2, "Min number of clusters to keep is 2 otherwise internal measures are not valid"
-
-        # from pattern ids select n at random
-        clusters = gt_labels_[SyntheticDataSegmentCols.pattern_id].unique().tolist()
-        selected_patterns = random.sample(clusters, n_clusters)
-
-        # segments to select
-        n_segment = total_segments - self.__drop_n_segments
-        # check how many segments that are left
-        segments_left = gt_labels_[gt_labels_[SyntheticDataSegmentCols.pattern_id].isin(selected_patterns)][
-            SyntheticDataSegmentCols.segment_id].unique().tolist()
-
-        # if there are still sufficient segment lefts select n_segments from them (haven't been dropped by
-        # dropping clusters
-        if n_segment < len(segments_left):
-            selected_segs = random.sample(segments_left, n_segment)
-        else:
-            selected_segs = segments_left
-
-        # update data and labels df accordingly
-        gt_labels_, p_labels_ = self.__select_segments_and_patterns_from(data_, gt_labels_, part_labels,
-                                                                         selected_patterns, selected_segs)
-
-        return gt_labels_, p_labels_, selected_patterns, selected_segs
-
-    @staticmethod
-    def __select_segments_and_patterns_from(data_, gt_labels_, partitions: {}, selected_patterns, selected_segs):
-        """
-        This method updates all the labels df and recalculates their data, the data remains unchanged as the labels df
-        is used to access the right observations in the data
-        :param data_: pd.DataFrame of timeseries data (observations)
-        :param gt_labels_: pd.DataFrame of ground truth labels
-        :param partitions: dictionary of key filename and value pd.DataFrame of partitions labels
-        :param selected_patterns: patterns to keep
-        :param selected_segs: segments to keep
-        :return: pd.DataFrame of for ground truth, dictionary of filename aas key and pd.DataFrame as partition
-        labels df
-        """
-        # 1. Update all labels df to only contain selected segments and patterns
-        gt_labels_ = update_labels_df(gt_labels_, selected_patterns, selected_segs)
-        partitions_ = {file_name: update_labels_df(label, selected_patterns, selected_segs) for file_name, label in
-                       partitions.items()}
-
-        # ensure we have two clusters and 2 left
-        assert len(gt_labels_[SyntheticDataSegmentCols.pattern_id].unique()) > 1, "We need at least two clusters"
-        for file_name, p_labels in partitions_.items():
-            error_msg = "We need at least two clusters. Not the case for " + file_name
-            assert len(p_labels[SyntheticDataSegmentCols.pattern_id].unique()) > 1, error_msg
-
-        # 2. Recalculate the actual correlations and mae
-        gt_labels_ = recalculate_labels_df_from_data(data_, gt_labels_)
-        updated_partitions = {file_name: recalculate_labels_df_from_data(data_, label) for file_name, label in
-                              partitions_.items()}
-
-        return gt_labels_, updated_partitions
-
     def n_segment_within_tolerance_stats(self, round_to: int = 3):
         """ Calculate and return stats df across the partitions for the dataset"""
         labels_dfs = list(self.partitions.values())
@@ -467,12 +369,3 @@ class DescribeBadPartitions:
            Calculate and return n obs shifted stats df across the partitions for the dataset
         """
         return self.summary_df[DescribeBadPartCols.n_obs_shifted].describe().round(round_to)
-
-
-def update_labels_df(df, patterns, segments):
-    # first select patterns
-    df = df[df[SyntheticDataSegmentCols.pattern_id].isin(patterns)]
-    # from the left over df select the segments
-    df = df[df[SyntheticDataSegmentCols.segment_id].isin(segments)]
-    df = df.reset_index(drop=True)
-    return df

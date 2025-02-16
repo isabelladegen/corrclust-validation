@@ -17,8 +17,8 @@ if __name__ == "__main__":
     data_dirs = [SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR]
 
     # drop 50% and 75% of clusters and segments
-    n_dropped_clusters = [12, 6]
-    n_dropped_segments = [50, 25]
+    n_dropped_clusters = [12, 17]
+    n_dropped_segments = [50, 75]
 
     results_dir = ROOT_RESULTS_DIR
 
@@ -31,6 +31,4 @@ if __name__ == "__main__":
                 run_internal_measure_calculation_for_dataset(overall_dataset_name, run_names=run_names,
                                                              distance_measure=distance_measure, data_type=data_type,
                                                              data_dir=data_dir, results_dir=results_dir,
-                                                             internal_measures=internal_measures,
-                                                             n_dropped_clusters=n_dropped_clusters,
-                                                             n_dropped_segments=n_dropped_segments)
+                                                             internal_measures=internal_measures)

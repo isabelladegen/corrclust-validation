@@ -12,24 +12,19 @@ from src.utils.load_synthetic_data import SyntheticDataType
 
 
 def read_clustering_quality_measures(overall_ds_name: str, data_type: str, root_results_dir: str, data_dir: str,
-                                     distance_measure: str, run_names: [str], n_dropped_clusters=0,
-                                     n_dropped_segments=0):
+                                     distance_measure: str, run_names: [str]):
     """ Reads the summary results files from the internal measure calculation for the datasets in the overall_ds_name
     :param overall_ds_name: a name for the dataset we're using e.g. n30 or n2
     :param data_type: which datatype to use see SyntheticDataType
     :param root_results_dir: directory where to store the results, it will use a subdirectory based on
     the distance measure, and the data type and other information
     :param run_names: names of all the runs to read
-    :param n_dropped_clusters: number of clusters that were dropped if 0 it reads results from full ds
-    :param n_dropped_segments: number of segments that were dropped if 0 it reads results from full ds
     """
     results_dir = internal_measure_calculation_dir_for(overall_ds_name,
                                                        data_type,
                                                        root_results_dir,
                                                        data_dir,
-                                                       distance_measure,
-                                                       n_dropped_clusters,
-                                                       n_dropped_segments)
+                                                       distance_measure)
 
     results_for_run = []
     for run_name in run_names:
@@ -43,36 +38,9 @@ def read_clustering_quality_measures(overall_ds_name: str, data_type: str, root_
     return results_for_run
 
 
-def calculate_internal_measures_for_all_partitions(overall_ds_name: str, dataset_names: [str], data_type: str,
-                                                   data_dir: str,
-                                                   results_dir: str,
-                                                   distance_measure: str,
-                                                   internal_measures: [str], drop_clusters=0, drop_segments=0):
-    store_results_in = internal_measure_calculation_dir_for(
-        overall_dataset_name=overall_ds_name,
-        data_type=data_type,
-        results_dir=results_dir,
-        data_dir=data_dir,
-        distance_measure=distance_measure,
-        drop_clusters=drop_clusters,
-        drop_segments=drop_segments)
-    partitions = []
-    for ds_name in dataset_names:
-        print(ds_name)
-        # we don't vary the seed so all datasets will select the same clusters and segments
-        sum_df = DescribeBadPartitions(ds_name=ds_name, data_type=data_type, data_dir=data_dir,
-                                       distance_measure=distance_measure,
-                                       internal_measures=internal_measures, drop_n_segments=drop_segments,
-                                       drop_n_clusters=drop_clusters).summary_df.copy()
-        file_name = get_internal_measures_summary_file_name(ds_name)
-        sum_df.to_csv(str(os.path.join(store_results_in, file_name)))
-        partitions.append(sum_df)
-
-
 def run_internal_measure_calculation_for_dataset(overall_ds_name: str, run_names: [str], distance_measure: str,
                                                  data_type: str, data_dir: str, results_dir: str,
-                                                 internal_measures: [str], n_dropped_clusters: [int] = [],
-                                                 n_dropped_segments: [int] = []):
+                                                 internal_measures: [str]):
     """
     Calculates the internal measure assessment for all ds in the csv files of the generated runs
     :param overall_ds_name: a name for the dataset we're using e.g. n30 or n2
@@ -83,28 +51,24 @@ def run_internal_measure_calculation_for_dataset(overall_ds_name: str, run_names
     :param results_dir: directory where to store the results, it will use a subdirectory based on the distance measure,
     and the data type
     :param internal_measures: list of internal measures to assess
-    :param n_dropped_clusters: list of the number of clusters to drop in each run, if empty then we run the assessment
     on all the cluster
-    :param n_dropped_segments: list of the number of segments to drop in each run, if empty then we run the assessment
     using all segments
     """
-    # decide which assessment to run
-    if len(n_dropped_clusters) == 0 and len(n_dropped_segments) == 0:
-        calculate_internal_measures_for_all_partitions(overall_ds_name, run_names, data_type, data_dir, results_dir,
-                                                       distance_measure,
-                                                       internal_measures)
-    else:
-        # run evaluation for all dropped clusters and for all dropped segments separately
-        # for this we just do clusters first
-        for n_clus in n_dropped_clusters:
-            calculate_internal_measures_for_all_partitions(overall_ds_name, run_names, data_type, data_dir,
-                                                           results_dir, distance_measure,
-                                                           internal_measures, drop_clusters=n_clus)
-        # and second we do segments
-        for n_seg in n_dropped_segments:
-            calculate_internal_measures_for_all_partitions(overall_ds_name, run_names, data_type, data_dir,
-                                                           results_dir, distance_measure,
-                                                           internal_measures, drop_segments=n_seg)
+    store_results_in = internal_measure_calculation_dir_for(
+        overall_dataset_name=overall_ds_name,
+        data_type=data_type,
+        results_dir=results_dir,
+        data_dir=data_dir,
+        distance_measure=distance_measure)
+    partitions = []
+    for ds_name in run_names:
+        print(ds_name)
+        # we don't vary the seed so all datasets will select the same clusters and segments
+        sum_df = DescribeBadPartitions(ds_name=ds_name, distance_measure=distance_measure, data_type=data_type,
+                                       internal_measures=internal_measures, data_dir=data_dir).summary_df.copy()
+        file_name = get_internal_measures_summary_file_name(ds_name)
+        sum_df.to_csv(str(os.path.join(store_results_in, file_name)))
+        partitions.append(sum_df)
 
 
 if __name__ == "__main__":

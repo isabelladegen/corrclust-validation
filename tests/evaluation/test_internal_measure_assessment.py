@@ -22,15 +22,12 @@ run_names = pd.read_csv(TEST_GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
 calculate_results_index = internal_measures = [ClusteringQualityMeasures.silhouette_score,
                                                ClusteringQualityMeasures.pmb, ClusteringQualityMeasures.dbi]
 data_type = SyntheticDataType.non_normal_correlated
-bp1 = DescribeBadPartitions(ds1_name, data_type=data_type, distance_measure=distance_measure,
-                            internal_measures=calculate_results_index,
-                            data_dir=test_data_dir)
-bp2 = DescribeBadPartitions(ds2_name, data_type=data_type, distance_measure=distance_measure,
-                            internal_measures=calculate_results_index,
-                            data_dir=test_data_dir)
-bp3 = DescribeBadPartitions(ds3_name, data_type=data_type, distance_measure=distance_measure,
-                            internal_measures=calculate_results_index,
-                            data_dir=test_data_dir)
+bp1 = DescribeBadPartitions(ds1_name, distance_measure=distance_measure, data_type=data_type,
+                            internal_measures=calculate_results_index, data_dir=test_data_dir)
+bp2 = DescribeBadPartitions(ds2_name, distance_measure=distance_measure, data_type=data_type,
+                            internal_measures=calculate_results_index, data_dir=test_data_dir)
+bp3 = DescribeBadPartitions(ds3_name, distance_measure=distance_measure, data_type=data_type,
+                            internal_measures=calculate_results_index, data_dir=test_data_dir)
 
 ds = [bp1.summary_df, bp2.summary_df, bp3.summary_df]
 internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb]

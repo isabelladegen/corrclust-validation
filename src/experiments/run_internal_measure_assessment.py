@@ -15,14 +15,9 @@ def assess_internal_measures(overall_dataset_name: str, run_names: [str], data_t
                              distance_measure: str,
                              internal_measures: [str], n_clusters=0, n_segments=0):
     # load all the internal measure calculation summaries
-    partitions = read_clustering_quality_measures(overall_ds_name=overall_dataset_name,
-                                                  data_type=data_type,
-                                                  root_results_dir=root_results_dir,
-                                                  data_dir=data_dir,
-                                                  distance_measure=distance_measure,
-                                                  n_dropped_clusters=n_clusters,
-                                                  n_dropped_segments=n_segments,
-                                                  run_names=run_names)
+    partitions = read_clustering_quality_measures(overall_ds_name=overall_dataset_name, data_type=data_type,
+                                                  root_results_dir=root_results_dir, data_dir=data_dir,
+                                                  distance_measure=distance_measure, run_names=run_names)
 
     ia = InternalMeasureAssessment(distance_measure=distance_measure, dataset_results=partitions,
                                    internal_measures=internal_measures)
