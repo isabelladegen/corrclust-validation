@@ -93,7 +93,7 @@ class InternalMeasureAssessment:
 
         # calculate correlations for each dataset and each measure pair
         for ds in self.dataset_results:
-            name = ds.iloc[0][DescribeBadPartCols.name]
+            name = ds.iloc[-1][DescribeBadPartCols.name] # last name is the proper name
             n_partition = ds.shape[0]  # partitions including ground truth
 
             # calculate correlations for internal index with jaccard

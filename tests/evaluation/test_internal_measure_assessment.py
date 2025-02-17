@@ -4,8 +4,10 @@ from hamcrest import *
 import pandas.testing as tm
 
 from src.evaluation.describe_bad_partitions import DescribeBadPartitions
+from src.experiments.run_cluster_quality_measures_calculation import read_clustering_quality_measures
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
-from src.utils.configurations import internal_measure_evaluation_dir_for
+from src.utils.configurations import internal_measure_evaluation_dir_for, ROOT_RESULTS_DIR, \
+    GENERATED_DATASETS_FILE_PATH, IRREGULAR_P30_DATA_DIR
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.stats import ConfidenceIntervalCols, StatsCols
@@ -241,3 +243,15 @@ def test_can_read_result_for_internal_measure_assessment_summary_df(tmp_path):
 
     # check saved and reloaded dataframe are the same
     tm.assert_frame_equal(read_df, summary_df)
+
+
+def test_names_summary_files_right():
+    # this is on production data as the test data does not create the mistake
+    runs = pd.read_csv(GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
+    partitions = read_clustering_quality_measures(overall_ds_name="n30", data_type=SyntheticDataType.normal_correlated,
+                                                  root_results_dir=ROOT_RESULTS_DIR, data_dir=IRREGULAR_P30_DATA_DIR,
+                                                  distance_measure=DistanceMeasures.l1_cor_dist, run_names=runs)
+    assessment = InternalMeasureAssessment(distance_measure=distance_measure, dataset_results=partitions,
+                                           internal_measures=[ClusteringQualityMeasures.vrc])
+    df = assessment.correlation_summary
+    assert_that(df[InternalMeasureCols.name], contains_exactly(*runs))

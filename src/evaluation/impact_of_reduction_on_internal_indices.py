@@ -46,10 +46,10 @@ class ImpactReductionOnInternalIndices:
         :param unreduced_data_dir: data dir for unreduced ata
         :param data_completeness: see DataCompleteness for options
         :param n_dropped: list of segments or clusters dropped
-        :param reduction_type:
-        :param internal_measure:
-        :param n:
-        :param round_to:
+        :param reduction_type: whether we're reducing clusters or segments see ReductionType for options
+        :param internal_measure: which internal measure to assess see ClusteringQualityMeasures for options
+        :param distance_measure: which distance measure to use see DistanceMeasures for options
+        :param round_to: optional what numbers to round to, default 3
         """
         self.overall_ds_name = overall_ds_name
         self.reduced_root_result_dir = reduced_root_result_dir
@@ -81,6 +81,7 @@ class ImpactReductionOnInternalIndices:
                                                           data_type=self.data_type,
                                                           data_dir=self.unreduced_data_dir,
                                                           distance_measure=self.distance_measure)
+        corr_sum_df = corr_sum_df[[InternalMeasureCols.name, self.corr_col_name]].copy()
         corr_sum_df = corr_sum_df.rename(columns={
             self.corr_col_name: get_col_name_reduction_internal_corr(self.__internal_measure, 0, self.reduction_type)})
         # set name as index for concat
