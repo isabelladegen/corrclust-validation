@@ -12,7 +12,8 @@ from src.visualisation.visualise_clustering_quality_measures_for_multiple_data_v
 
 def clustering_quality_visualisations(data_dirs: [str], data_types: [str], run_file: str, root_results_dir: str,
                                       distance_measures: [str], clustering_quality_measures: [str],
-                                      overall_ds_name: str, backend: str, save_fig=True):
+                                      overall_ds_name: str, backend: str, save_fig=True, figsize1=(15, 10),
+                                      figsize2=(18, 10)):
     for distance_measure in distance_measures:
         for quality_measure in clustering_quality_measures:
             vds = VisualiseClusteringQualityMeasuresForDataVariants(run_file=run_file,
@@ -21,11 +22,13 @@ def clustering_quality_visualisations(data_dirs: [str], data_types: [str], run_f
                                                                     result_root_dir=root_results_dir,
                                                                     distance_measure=distance_measure,
                                                                     backend=backend)
-            vds.violin_plots_for_quality_measure(quality_measure=quality_measure, save_fig=save_fig)
+            vds.violin_plots_for_quality_measure(quality_measure=quality_measure, save_fig=save_fig, figsize=figsize1)
             if quality_measure != ClusteringQualityMeasures.jaccard_index:
-                vds.violin_plots_for_correlation_coefficients(quality_measure=quality_measure, save_fig=save_fig)
+                vds.violin_plots_for_correlation_coefficients(quality_measure=quality_measure, save_fig=save_fig,
+                                                              figsize=figsize1)
                 vds.scatter_plots_for_quality_measures(
-                    quality_measures=[ClusteringQualityMeasures.jaccard_index, quality_measure], save_fig=save_fig)
+                    quality_measures=[ClusteringQualityMeasures.jaccard_index, quality_measure], save_fig=save_fig,
+                    figsize=figsize2)
             plt.close('all')
 
 
