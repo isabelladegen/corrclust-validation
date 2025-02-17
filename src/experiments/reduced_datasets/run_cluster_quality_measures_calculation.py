@@ -26,11 +26,11 @@ if __name__ == "__main__":
 
     # Evaluate for clusters
     print("CALCULATE FOR DROPPED CLUSTERS")
-    for dropped_seg in n_dropped_clusters:
-        dir_for_segments = get_root_folder_for_reduced_cluster(root_reduced_dir, dropped_seg)
-        results_dir = get_root_folder_for_reduced_cluster(base_results_dir, dropped_seg)
+    for dropped_cluster in n_dropped_clusters:
+        dir_for_cluster = get_root_folder_for_reduced_cluster(root_reduced_dir, dropped_cluster)
+        results_dir = get_root_folder_for_reduced_cluster(base_results_dir, dropped_cluster)
         for complete in data_completenesses:
-            data_dir = get_data_dir(dir_for_segments, complete)
+            data_dir = get_data_dir(dir_for_cluster, complete)
             for data_type in data_types:
                 for distance_measure in distance_measures:
                     print("Calculate Clustering Quality Measures data in:")
