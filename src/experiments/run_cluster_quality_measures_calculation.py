@@ -51,8 +51,6 @@ def run_internal_measure_calculation_for_dataset(overall_ds_name: str, run_names
     :param results_dir: directory where to store the results, it will use a subdirectory based on the distance measure,
     and the data type
     :param internal_measures: list of internal measures to assess
-    on all the cluster
-    using all segments
     """
     store_results_in = internal_measure_calculation_dir_for(
         overall_dataset_name=overall_ds_name,

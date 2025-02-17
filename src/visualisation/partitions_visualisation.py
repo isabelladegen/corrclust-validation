@@ -1,7 +1,7 @@
 import pandas as pd
 from matplotlib import pyplot as plt
 
-from src.evaluation.run_cluster_quality_measures_calculation import read_clustering_quality_measures
+from src.experiments.run_cluster_quality_measures_calculation import read_clustering_quality_measures
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.plots.matplotlib_helper_functions import reset_matplotlib, Backends, fontsize, set_axis_label_font_size
 from src.evaluation.describe_bad_partitions import DescribeBadPartCols
@@ -9,8 +9,7 @@ from src.evaluation.describe_bad_partitions import DescribeBadPartCols
 
 class PartitionVisualisation:
     def __init__(self, overall_dataset_name: str, data_type: str, root_results_dir: str, data_dir: str,
-                 distance_measure: str, run_names: [str], n_clusters: int = 0,
-                 n_segments: int = 0):
+                 distance_measure: str, run_names: [str]):
         """ Loads all 66 partitions + ground truth for the given run_names, the given data completeness
         (data_dir), generation stage (data_type) and distance measure"""
 
@@ -19,8 +18,6 @@ class PartitionVisualisation:
         self.root_results_dir = root_results_dir
         self.data_dir = data_dir
         self.distance_measure = distance_measure
-        self.n_clusters = n_clusters
-        self.n_segments = n_segments
         self.run_names = run_names
         # list of dfs of outcomes for each partition in each of the datasets
         self.partition_outcomes = read_clustering_quality_measures(overall_ds_name=self.overall_dataset_name,
@@ -28,8 +25,6 @@ class PartitionVisualisation:
                                                                    root_results_dir=self.root_results_dir,
                                                                    data_dir=self.data_dir,
                                                                    distance_measure=self.distance_measure,
-                                                                   n_dropped_clusters=self.n_clusters,
-                                                                   n_dropped_segments=self.n_segments,
                                                                    run_names=self.run_names)
 
     def calculate_describe_statistics_for_partitions(self, column=ClusteringQualityMeasures.jaccard_index):
