@@ -10,24 +10,31 @@ from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 
 
-def assess_internal_measures(overall_dataset_name: str, run_names: [str], data_type: str,
-                             root_results_dir: str, data_dir: str,
-                             distance_measure: str,
-                             internal_measures: [str], n_clusters=0, n_segments=0):
+def run_internal_measure_assessment_datasets(overall_ds_name: str, run_names: [str], distance_measure: str,
+                                             data_type: str, data_dir: str, results_dir: str, internal_measures: [str]):
+    """ Runs the internal measure assessment on all ds in the csv files of the generated runs
+    :param overall_ds_name: a name for the dataset we're using e.g. n30 or n2
+    :param run_names: list of run_names to load (subjects)
+    :param distance_measure: name of distance measure to run assessment for
+    :param data_type: which datatype to use see SyntheticDataType
+    :param data_dir: where to read the data from
+    :param results_dir: directory where to store the results, it will use a subdirectory based on the distance measure,
+    and the data type
+    :param internal_measures: list of internal measures to assess
+    on all the cluster
+    using all segments
+    """
     # load all the internal measure calculation summaries
-    partitions = read_clustering_quality_measures(overall_ds_name=overall_dataset_name, data_type=data_type,
-                                                  root_results_dir=root_results_dir, data_dir=data_dir,
+    partitions = read_clustering_quality_measures(overall_ds_name=overall_ds_name, data_type=data_type,
+                                                  root_results_dir=results_dir, data_dir=data_dir,
                                                   distance_measure=distance_measure, run_names=run_names)
-
     ia = InternalMeasureAssessment(distance_measure=distance_measure, dataset_results=partitions,
                                    internal_measures=internal_measures)
-
     store_results_in = internal_measure_evaluation_dir_for(
-        overall_dataset_name=overall_dataset_name,
+        overall_dataset_name=overall_ds_name,
         data_type=data_type,
-        results_dir=root_results_dir, data_dir=data_dir,
-        distance_measure=distance_measure,
-        drop_segments=n_segments, drop_clusters=n_clusters)
+        results_dir=results_dir, data_dir=data_dir,
+        distance_measure=distance_measure)
 
     # correlation summary
     ia.correlation_summary.to_csv(
@@ -48,46 +55,6 @@ def assess_internal_measures(overall_dataset_name: str, run_names: [str], data_t
     # paired samples t test on fisher transformed correlation coefficients
     df = ia.paired_samples_t_test_on_fisher_transformed_correlation_coefficients(alpha=0.05, alternative='two-sided')
     df.to_csv(get_full_filename_for_results_csv(store_results_in, IAResultsCSV.paired_t_test))
-
-
-def run_internal_measure_assessment_datasets(overall_ds_name: str, run_names: [str], distance_measure: str,
-                                             data_type: str, data_dir: str, results_dir: str, internal_measures: [str],
-                                             n_dropped_clusters: [int] = [], n_dropped_segments: [int] = []):
-    """ Runs the internal measure assessment on all ds in the csv files of the generated runs
-    :param overall_ds_name: a name for the dataset we're using e.g. n30 or n2
-    :param run_names: list of run_names to load (subjects)
-    :param distance_measure: name of distance measure to run assessment for
-    :param data_type: which datatype to use see SyntheticDataType
-    :param data_dir: where to read the data from
-    :param results_dir: directory where to store the results, it will use a subdirectory based on the distance measure,
-    and the data type
-    :param internal_measures: list of internal measures to assess
-    :param n_dropped_clusters: list of the number of clusters to drop in each run, if empty then we run the assessment
-    on all the cluster
-    :param n_dropped_segments: list of the number of segments to drop in each run, if empty then we run the assessment
-    using all segments
-    """
-    # decide which assessment to run
-    if len(n_dropped_clusters) == 0 and len(n_dropped_segments) == 0:
-
-        assess_internal_measures(overall_dataset_name=overall_ds_name, run_names=run_names,
-                                 data_type=data_type, root_results_dir=results_dir, data_dir=data_dir,
-                                 distance_measure=distance_measure,
-                                 internal_measures=internal_measures)
-    else:
-        # run evaluation for all dropped clusters and for all dropped segments separately
-        # for this we just do clusters first
-        for n_clus in n_dropped_clusters:
-            assess_internal_measures(overall_dataset_name=overall_ds_name, run_names=run_names,
-                                     data_type=data_type, root_results_dir=results_dir, data_dir=data_dir,
-                                     distance_measure=distance_measure,
-                                     internal_measures=internal_measures, n_clusters=n_clus)
-        # and second we do segments
-        for n_seg in n_dropped_segments:
-            assess_internal_measures(overall_dataset_name=overall_ds_name, run_names=run_names,
-                                     data_type=data_type, root_results_dir=results_dir, data_dir=data_dir,
-                                     distance_measure=distance_measure,
-                                     internal_measures=internal_measures, n_segments=n_seg)
 
 
 if __name__ == "__main__":
@@ -120,10 +87,7 @@ if __name__ == "__main__":
             for data_type in dataset_types:
                 print(
                     "Distance measure: " + distance_measure + " , Dataset type: " + data_type + ", Compactness: " + data_dir)
-                run_internal_measure_assessment_datasets(overall_ds_name="n30",
-                                                         run_names=run_names,
-                                                         distance_measure=distance_measure,
-                                                         data_type=data_type,
-                                                         data_dir=data_dir,
-                                                         results_dir=root_result_dir,
+                run_internal_measure_assessment_datasets(overall_ds_name="n30", run_names=run_names,
+                                                         distance_measure=distance_measure, data_type=data_type,
+                                                         data_dir=data_dir, results_dir=root_result_dir,
                                                          internal_measures=internal_measures)
