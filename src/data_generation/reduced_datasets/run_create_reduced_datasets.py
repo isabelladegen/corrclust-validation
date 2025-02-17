@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
     for comp in completeness:
         for data_type in data_types:
-            data_dir = get_data_dir(SYNTHETIC_DATA_DIR, comp)
+            data_dir = get_data_dir(SYNTHETIC_DATA_DIR, comp)  # to read data
             rd = CreateReducedDatasets(run_names=run_names, data_type=SyntheticDataType.normal_correlated,
                                        data_dir=data_dir, drop_n_clusters=n_dropped_clusters,
                                        drop_n_segments=n_dropped_segments, base_seed=seed)
