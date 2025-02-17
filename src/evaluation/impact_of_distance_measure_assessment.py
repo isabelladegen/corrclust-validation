@@ -25,10 +25,9 @@ class ImpactDistanceMeasureAssessment:
     of an internal measure for a data variant
     """
 
-    def __init__(self, run_names: [str], overall_ds_name: str, root_result_dir: str, data_type: str, data_dir: str,
-                 internal_measure: str, distance_measures: [str], round_to: int = 3):
+    def __init__(self, overall_ds_name: str, root_result_dir: str, data_type: str, data_dir: str, internal_measure: str,
+                 distance_measures: [str], round_to: int = 3):
         self.distance_measures = distance_measures
-        self.run_names = run_names
         self.overall_ds_name = overall_ds_name
         self.root_result_dir = root_result_dir
         self.data_type = data_type

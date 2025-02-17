@@ -7,17 +7,13 @@ from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.stats import StatsCols
-from tests.test_utils.configurations_for_testing import TEST_DATA_DIR, TEST_ROOT_RESULTS_DIR, \
-    TEST_GENERATED_DATASETS_FILE_PATH
+from tests.test_utils.configurations_for_testing import TEST_DATA_DIR, TEST_ROOT_RESULTS_DIR
 
-run_names = pd.read_csv(TEST_GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
 distance_measures = [DistanceMeasures.l1_cor_dist, DistanceMeasures.l1_with_ref, DistanceMeasures.foerstner_cor_dist]
 internal_measure = ClusteringQualityMeasures.silhouette_score
-da = ImpactDistanceMeasureAssessment(run_names=run_names, overall_ds_name="test_stuff",
-                                     data_type=SyntheticDataType.normal_correlated,
-                                     data_dir=TEST_DATA_DIR, root_result_dir=TEST_ROOT_RESULTS_DIR,
-                                     internal_measure=internal_measure,
-                                     distance_measures=distance_measures)
+da = ImpactDistanceMeasureAssessment(overall_ds_name="test_stuff", root_result_dir=TEST_ROOT_RESULTS_DIR,
+                                     data_type=SyntheticDataType.normal_correlated, data_dir=TEST_DATA_DIR,
+                                     internal_measure=internal_measure, distance_measures=distance_measures)
 
 
 def test_loads_correlation_coefficients_for_given_internal_measure_and_different_distance_measures():

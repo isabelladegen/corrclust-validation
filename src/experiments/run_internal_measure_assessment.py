@@ -21,8 +21,6 @@ def run_internal_measure_assessment_datasets(overall_ds_name: str, run_names: [s
     :param results_dir: directory where to store the results, it will use a subdirectory based on the distance measure,
     and the data type
     :param internal_measures: list of internal measures to assess
-    on all the cluster
-    using all segments
     """
     # load all the internal measure calculation summaries
     partitions = read_clustering_quality_measures(overall_ds_name=overall_ds_name, data_type=data_type,

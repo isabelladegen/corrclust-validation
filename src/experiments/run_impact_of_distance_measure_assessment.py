@@ -60,10 +60,8 @@ def run_impact_of_distance_measure_on_data_variant(overall_ds_name: str, run_nam
                                                            results_dir=results_dir, data_dir=data_dir)
 
     for index in internal_measures:
-        da = ImpactDistanceMeasureAssessment(run_names=run_names, overall_ds_name=overall_ds_name,
-                                             data_type=data_type,
-                                             data_dir=data_dir, root_result_dir=results_dir,
-                                             internal_measure=index,
+        da = ImpactDistanceMeasureAssessment(overall_ds_name=overall_ds_name, root_result_dir=results_dir,
+                                             data_type=data_type, data_dir=data_dir, internal_measure=index,
                                              distance_measures=distance_measures)
         df = da.paired_samples_t_test_on_fisher_transformed_correlation_coefficients()
 
