@@ -192,8 +192,10 @@ class InternalMeasureAssessment:
         # use the absolute of the values as we don't care about the direction of the correlation just the strength
         df = self.correlation_summary[self.measures_corr_col_names]
         dbi_cols = [col for col in df.columns if ClusteringQualityMeasures.dbi in col]
-        # for DBI where lower values are better we need to invert the correlation coefficients for a fair comparison
-        df[dbi_cols] = df[dbi_cols].multiply(-1)
+        # turn copy warning off given that we use the values to create a new df
+        with pd.option_context('mode.chained_assignment', None):
+            # for DBI where lower values are better we need to invert the correlation coefficients for a fair comparison
+            df[dbi_cols] = df[dbi_cols].multiply(-1)
         df = pd.DataFrame(np.arctanh(df.values), index=df.index, columns=df.columns)
 
         # measures that we need to compared
