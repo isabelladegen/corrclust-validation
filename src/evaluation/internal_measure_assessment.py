@@ -24,6 +24,7 @@ class IAResultsCSV:
     mean_correlation_data_variant: str = "mean_correlation_data_variants.csv"
     paired_t_test_data_variant: str = "paired_t_test_data_variants.csv"
     gt_worst_measure_data_variants: str = "gt_worst_measure_data_variants.csv"
+    paired_t_test_reduced_datasets: str = "paired_t_test_reduced_datasets.csv"
 
 
 def get_name_paired_t_test_between_distance_measures(internal_measure: str) -> str:
