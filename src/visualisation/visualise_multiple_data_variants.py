@@ -5,7 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import seaborn as sns
 from matplotlib.gridspec import GridSpec
-from matplotlib.ticker import AutoMinorLocator, LogLocator
+from matplotlib.ticker import AutoMinorLocator
 
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.evaluation.describe_subjects_for_data_variant import DescribeSubjectsForDataVariant
@@ -17,8 +17,19 @@ from src.utils.plots.matplotlib_helper_functions import reset_matplotlib, Backen
 
 
 def custom_number_text_formatter(x, _):
-    if abs(x) > 1000:
+    abs_x = abs(x)
+    if abs_x > 10000:
         return f'{x:.0e}'  # Scientific notation for large numbers
+    elif abs_x >= 10:  # Regular numbers no decimal
+        return f'{x:.0f}'
+    elif abs_x >= 1:  # Regular numbers show one decimal but not .0
+        return f'{x:.1f}'.rstrip('0').rstrip('.')
+    elif abs_x >= 0.1:  # Decimal numbers
+        return f'{x:.1f}'
+    elif abs_x > 0:  # Very small numbers
+        return f'{x:.0e}'  # Scientific notation for tiny numbers no d
+    elif abs_x == 0:
+        return '0'
     else:
         return f'{x:.1f}'  # Regular format for other numbers
 
@@ -300,42 +311,38 @@ def create_scatter_grid(data_dict: {}, measure_cols: list, figsize: tuple = (12,
     measure_colors = sns.color_palette("husl", n_colors=len(measure_cols))
     markers = ['o', 'x', 's', '^']  # Marker styles
 
-    # Find global min and max for shared y-axis
-    global_min = [float('inf')] * len(measure_cols)
-    global_max = [float('-inf')] * len(measure_cols)
-    for row_data in data_dict.values():
-        for dfs in row_data.values():
-            for df in dfs:  # Iterate through list of DataFrames
-                for k, measure in enumerate(measure_cols):
-                    min_val = min(global_min[k], df[measure].min())
-                    max_val = max(global_max[k], df[measure].max())
-                    global_min[k] = min_val
-                    global_max[k] = max_val
-
-    # Add padding to global limits
-    global_min = [el - 0.2 for el in global_min]
-    global_max = [el + 0.2 for el in global_max]
-
     # Plot each subplot
     axes = []
     legend_handles = []  # Will store handles for the legend
-    for i, row in enumerate(row_names):
+    for i, completeness in enumerate(row_names):
         row_axes = []
-        for j, measure in enumerate(column_names):
+        for j, generation_stage in enumerate(column_names):
             ax = fig.add_subplot(gs[i, j])
             ax2 = ax.twinx()  # Create secondary axis
 
             row_axes.append(ax)
 
             try:
-                dfs = data_dict[row][measure]
+                dfs = data_dict[completeness][generation_stage]
             except KeyError:
-                print(f"Warning: No data found for condition: row='{row}', column='{measure}'")
+                print(f"Warning: No data found for condition: row='{completeness}', column='{generation_stage}'")
                 continue
 
-            # Plot each measure for each DataFrame
-            # for k, measure in enumerate(measure_cols):
+            # find min_value across all subjects
+            min_subject_val = np.inf
+            max_subject_val = -np.inf
             for df in dfs:
+                min_val = df[measure_cols[1]].min()
+                max_val = df[measure_cols[1]].max()
+                if min_val < min_subject_val:
+                    min_subject_val = min_val
+                if max_val > max_subject_val:
+                    max_subject_val = max_val
+
+            # Plot each measure for each DataFrame
+            for df in dfs:
+                # min_val = df[measure_cols[1]].min()
+                # print(", ".join([completeness, generation_stage, str(min_val)]))
                 ax.scatter(df.index, df[measure_cols[0]],
                            alpha=0.6,
                            color=measure_colors[0],
@@ -347,25 +354,37 @@ def create_scatter_grid(data_dict: {}, measure_cols: list, figsize: tuple = (12,
                             color=measure_colors[1],
                             s=20,
                             marker=markers[1])
+                # For all but silhouette we must make sure the axis doesn't look 0 when it isn't
+                # and that we do not hide outliers which come from the centroid problems
+                if measure_cols[1] != ClusteringQualityMeasures.silhouette_score:
+                    ax2.set_ylim(min_subject_val, max_subject_val)
+                    ax2.yaxis.set_major_locator(plt.LinearLocator(5))
+                    ticks = ax2.get_yticks()
+                    ticks[0] = min_subject_val
+                    # if next tick too close to new min tick, remove it
+                    if abs(ticks[1] - min_subject_val) < 3:
+                        ticks = np.delete(ticks, 1)
+                    ax2.set_yticks(ticks)
 
             # Customize appearance
             if i == 0:  # Add column titles only to the top row
-                ax.set_title(measure, fontsize=fontsize, fontweight='bold')
+                ax.set_title(generation_stage, fontsize=fontsize, fontweight='bold')
 
-            # Set axis limits
-            ax.set_ylim(global_min[0], global_max[0])  # Set primary axis limits
+            # Set axis limits for silhouette to range of the measure
             if measure_cols[1] == ClusteringQualityMeasures.silhouette_score:
                 # the other measures have outliers and so we cannot use this
-                ax2.set_ylim(global_min[1], global_max[1])  # Set secondary axis limits
+                ax2.set_ylim(-1, 1)  # Set secondary axis limits
             ax.set_xlim(-2, 69)  # slight padding around 0-67
+
 
             # Format axis labels
             ax.yaxis.set_major_formatter(plt.FuncFormatter(custom_number_text_formatter))
+            ax2.yaxis.set_major_formatter(plt.FuncFormatter(custom_number_text_formatter))
 
             ax2.grid(False)  # Turn off secondary grid to avoid double grid
 
             if j == 0:
-                ax.set_ylabel(row, fontsize=fontsize, fontweight='bold')
+                ax.set_ylabel(completeness, fontsize=fontsize, fontweight='bold')
 
             # Only show x-axis elements for bottom row
             if i == len(row_names) - 1:
@@ -387,20 +406,20 @@ def create_scatter_grid(data_dict: {}, measure_cols: list, figsize: tuple = (12,
         axes.append(row_axes)
 
     # Add legend directly in the last subplot
-    for k, measure in enumerate(measure_cols):
+    for k, generation_stage in enumerate(measure_cols):
         legend_handles.append(plt.Line2D([0], [0],
                                          marker=markers[k],
                                          color=measure_colors[k],
-                                         label=measure,
+                                         label=generation_stage,
                                          markersize=8,
                                          linestyle='None'))
     last_ax = axes[-1][-1]
-    legend = last_ax.legend(handles=legend_handles,
-                            loc='upper left',
-                            fontsize=fontsize - 2,
-                            frameon=True,
-                            edgecolor='black',
-                            facecolor='white')
+    last_ax.legend(handles=legend_handles,
+                   loc='upper left',
+                   fontsize=fontsize - 2,
+                   frameon=True,
+                   edgecolor='black',
+                   facecolor='white')
 
     # Adjust layout
     plt.tight_layout()
