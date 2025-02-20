@@ -148,7 +148,8 @@ if __name__ == "__main__":
     # dataset_types = [SyntheticDataType.rs_1min]
     # data_dirs = [SYNTHETIC_DATA_DIR]
 
-    clustering_quality_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.dbi]
+    clustering_quality_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.dbi,
+                                   ClusteringQualityMeasures.vrc, ClusteringQualityMeasures.pmb]
 
     run_file = GENERATED_DATASETS_FILE_PATH
 
