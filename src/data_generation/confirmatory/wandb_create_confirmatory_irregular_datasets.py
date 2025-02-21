@@ -11,7 +11,8 @@ if __name__ == "__main__":
     for p, data_comp in irregular_pairs:
         config = CreateIrregularDSConfig()
         config.p = p
-        config.root_result_data_dir = get_data_dir(root_data_dir=CONFIRMATORY_SYNTHETIC_DATA_DIR,
+        config.data_dir = CONFIRMATORY_SYNTHETIC_DATA_DIR
+        config.root_result_data_dir = get_data_dir(root_data_dir=config.data_dir,
                                                    extension_type=data_comp)
         config.wandb_project_name = WandbConfiguration.wandb_confirmatory_irregular_project_name
 

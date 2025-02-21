@@ -27,7 +27,7 @@ class CreateIrregularDSConfig:
     # Store new data in dir
     root_result_data_dir: str = ''
     # Load data from dir
-    data_dir: str = SYNTHETIC_DATA_DIR
+    data_dir: str = ''
     # data cols to use
     data_cols: [str] = field(default_factory=lambda: SyntheticDataVariates.columns())
     # backend to use for visualisations
@@ -148,6 +148,7 @@ if __name__ == "__main__":
     for p, data_comp in irregular_pairs:
         config = CreateIrregularDSConfig()
         config.p = p
+        config.data_dir = SYNTHETIC_DATA_DIR
         config.root_result_data_dir = get_data_dir(root_data_dir=SYNTHETIC_DATA_DIR, extension_type=data_comp)
         config.wandb_project_name = WandbConfiguration.wandb_irregular_project_name
 
