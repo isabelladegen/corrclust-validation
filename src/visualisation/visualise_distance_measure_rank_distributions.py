@@ -8,6 +8,21 @@ from src.evaluation.distance_metric_evaluation import inverse_criteria
 from src.utils.distance_measures import short_distance_measure_names
 from src.utils.plots.matplotlib_helper_functions import reset_matplotlib, Backends, fontsize
 
+display_name_data_variant = {
+    "complete, raw": "Raw, 100%",
+    "complete, correlated": "Correlated, 100%",
+    "complete, non-normal": "Non-normal, 100%",
+    "complete, downsampled": "Downsampled, 100%",
+    "partial, raw": "70%",
+    "partial, correlated": "70%",
+    "partial, non-normal": "70%",
+    "partial, downsampled": "70%",
+    "sparse, raw": "10%",
+    "sparse, correlated": "10%",
+    "sparse, non-normal": "10%",
+    "sparse, downsampled": "10%",
+}
+
 
 def heatmap_of_raw_values(df: pd.DataFrame, highlight_rows=[], backend=Backends.none.value):
     """
@@ -109,7 +124,8 @@ def heatmap_of_raw_values(df: pd.DataFrame, highlight_rows=[], backend=Backends.
     return fig
 
 
-def heatmap_of_ranks(df: pd.DataFrame, highlight_rows=[], highlight_cols=[], backend=Backends.none.value):
+def heatmap_of_ranks(df: pd.DataFrame, highlight_rows=[], highlight_cols=[], figsize=(16, 12),
+                     backend=Backends.none.value):
     """
     Creates heatmap of rank across data variants
     :param df: Dataframe with rows being data variants and columns being distance measures
@@ -119,25 +135,31 @@ def heatmap_of_ranks(df: pd.DataFrame, highlight_rows=[], highlight_cols=[], bac
     # Create figure and axes
     # Setup plt
     reset_matplotlib(backend)
-    fig = plt.figure(figsize=(16, 12))
+    fig = plt.figure(figsize=figsize)
 
     do_highlight = (len(highlight_rows) + len(highlight_cols)) > 0
 
-    # Create masks for highlighted row and column
-    row_mask = np.zeros_like(df, dtype=bool)
-    col_mask = np.zeros_like(df, dtype=bool)
+    # Create masks with trues for row and cols
+    mask = np.zeros(df.shape, dtype=bool)
+    row_indices = [df.index.get_loc(row) for row in highlight_rows]
+    col_indices = [df.columns.get_loc(col) for col in highlight_cols]
+    for r, c in zip(row_indices, col_indices):
+        mask[r, c] = True
 
     # Set True for the row and column to highlight
-    for row in highlight_rows:
-        row_mask[df.index == row] = True
-    for col in highlight_cols:
-        col_mask[:, df.columns == col] = True
+    # for row in highlight_rows:
+    #     row_mask[df.index == row] = True
+    # for col in highlight_cols:
+    #     col_mask[:, df.columns == col] = True
 
-    # Combine masks and adjust alpha values
-    mask = row_mask | col_mask
+    # Adjust alpha values to be 1.0 for highlight and more transparent for others
+    # mask = row_mask | col_mask
     alpha_matrix = np.ones_like(df, dtype=float)
     alpha_matrix[mask] = 1.0  # Highlighted cells fully opaque
-    alpha_matrix[~mask] = 0.5 if do_highlight else 1.0  # Other cells more transparent unless no highlight
+    alpha_matrix[~mask] = 0.6 if do_highlight else 1.0  # Other cells more transparent unless we're not highlighting
+
+    # translate labels
+    translated_labels = [display_name_data_variant[idx] for idx in df.index]
 
     # Create heatmap
     ax = sns.heatmap(
@@ -154,16 +176,27 @@ def heatmap_of_ranks(df: pd.DataFrame, highlight_rows=[], highlight_cols=[], bac
         linewidths=1,
         linecolor='black',
         clip_on=False,
-        alpha=alpha_matrix
+        alpha=alpha_matrix,
+        yticklabels=translated_labels
     )
     ax.tick_params(left=False, bottom=False)
     ax.grid(False)
+
+    # Add pink borders for masked cells
+    for i in range(len(df.index)):
+        for j in range(len(df.columns)):
+            if mask[i, j]:
+                # Add a rectangle with pink edges around the cell
+                ax.add_patch(plt.Rectangle((j, i), 1, 1, fill=False,
+                                           edgecolor='#BFFF00',
+                                           linewidth=2,
+                                           clip_on=False))
 
     # Set transparency of text
     def text_alpha(is_highlighted):
         if is_highlighted:
             return 1.0
-        return 0.4 if do_highlight else 1.0
+        return 0.8 if do_highlight else 1.0
 
     for i in range(len(df.index)):
         for j in range(len(df.columns)):
