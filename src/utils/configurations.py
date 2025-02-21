@@ -30,6 +30,7 @@ ROOT_REDUCED_RESULTS_DIR = path.join(ROOT_RESULTS_DIR, "reduced-data")
 DISTANCE_MEASURE_ASSESSMENT_RESULTS_FOLDER_NAME = 'distance-measures-assessment'
 IMAGES_FOLDER_NAME = 'images'
 GENERATED_DATASETS_FILE_PATH = path.join(SYNTHETIC_DATA_DIR, 'synthetic-correlated-data-n30.csv')
+CONFIRMATORY_DATASETS_FILE_PATH = path.join(CONFIRMATORY_SYNTHETIC_DATA_DIR, 'confirmatory-synthetic-correlated-data-n30.csv')
 
 MULTIPLE_DS_SUMMARY_FILE = 'multiple-datasets-summary.csv'
 OVERALL_SEGMENT_LENGTH_IMAGE = 'overall_segment_length_distributions.png'
