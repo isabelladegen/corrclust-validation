@@ -236,13 +236,14 @@ def log_dataset_description(describe: DescribeSyntheticDataset, key_id: str):
     })
 
 
-def create_datasets(n: int = 2, tag: str = 'synthetic_creation'):
+def create_datasets(data_dir: str, seed: int, wand_db_project_name: str, n: int = 2, tag: str = 'synthetic_creation'):
     """"
     Create n datasets
     """
     config = SyntheticDataConfig()
     config.tags.append(tag)
-    # config.data_dir = TEST_DATA_DIR  # store this trial in test
+    config.data_dir = data_dir
+    config.wandb_project_name = wand_db_project_name
 
     # load distribution parameters
     mpam = ModelDistributionParams()
@@ -256,7 +257,7 @@ def create_datasets(n: int = 2, tag: str = 'synthetic_creation'):
     scale_igs = mpam.get_params_for(DistParamsCols.scale_ig)
 
     for n in range(n):
-        np.random.seed(666 + n)
+        np.random.seed(seed + n)
         dataset_seed = np.random.randint(low=100, high=1000000)
         # configure distribution params
         index = n % len(c_iobs)
@@ -271,4 +272,7 @@ def create_datasets(n: int = 2, tag: str = 'synthetic_creation'):
 
 
 if __name__ == "__main__":
-    create_datasets(30, '30_ds_creation')
+    # exploratory data creation
+    create_datasets(data_dir=SYNTHETIC_DATA_DIR, seed=666, wand_db_project_name=WandbConfiguration.wandb_project_name,
+                    n=30, tag='30_ds_creation')
+

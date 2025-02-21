@@ -20,6 +20,7 @@ ROOT_DIR = path.realpath(path.join(path.dirname(__file__), '../..'))
 PATTERNS_TO_MODEL_PATH = path.join(ROOT_DIR, 'src/data_generation/config/correlation_patterns_to_model.csv')
 DISTRIBUTION_PARAMS_TO_MODEL_PATH = path.join(ROOT_DIR,
                                               'src/data_generation/config/n30_genextreme_nbinom_genextreme_params.csv')
+CONFIRMATORY_SYNTHETIC_DATA_DIR = path.join(ROOT_DIR, 'data/confirmatory_synthetic_data')
 SYNTHETIC_DATA_DIR = path.join(ROOT_DIR, 'data/synthetic_data')
 ROOT_REDUCED_SYNTHETIC_DATA_DIR = path.join(SYNTHETIC_DATA_DIR, "reduced-data")
 IRREGULAR_P30_DATA_DIR = path.join(SYNTHETIC_DATA_DIR, DataCompleteness.irregular_p30)
@@ -488,3 +489,6 @@ class WandbConfiguration:
     wandb_partitions_project_name: str = config['wandb_partitions_project_name']
     wandb_irregular_project_name: str = config['wandb_irregular_project_name']
     wandb_entity: str = config['wandb_entity']
+    wandb_confirmatory_project_name: str = config['wandb_confirmatory_project_name']
+    wandb_confirmatory_partitions_project_name: str = config['wandb_confirmatory_partitions_project_name']
+    wandb_confirmatory_irregular_project_name: str = config['wandb_confirmatory_irregular_project_name']

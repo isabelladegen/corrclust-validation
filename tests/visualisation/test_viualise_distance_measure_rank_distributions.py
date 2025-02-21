@@ -61,7 +61,7 @@ def test_plots_heatmap_of_ranks_over_data_variant():
         'L1 ref': [1, 2, 3],
         'dt L1': [2, 1, 2],
         'L2': [3, 3, 1]
-    }, index=['Non-normal, complete', 'None-normal, partial', 'None-normal, sparse'])
+    }, index=['complete, non-normal', 'partial, non-normal', 'sparse, non-normal'])
 
-    fig = heatmap_of_ranks(df, backend)
+    fig = heatmap_of_ranks(df=df, backend=backend)
     assert_that(fig, is_(not_none()))
