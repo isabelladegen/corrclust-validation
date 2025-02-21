@@ -17,8 +17,8 @@ from src.visualisation.visualise_distance_measure_rank_distributions import heat
 pattern_keys_ordered = ["complete, correlated", "partial, correlated", "sparse, correlated", "complete, non-normal",
                         "partial, non-normal", "sparse, non-normal", "complete, downsampled"]
 
-no_patterns_keys_ordered = ["complete, raw", "partial, raw", "sparse, raw", "partial, downsampled",
-                            "sparse, downsampled"]
+all_variants_ordered = ["complete, raw", "partial, raw", "sparse, raw", ] + pattern_keys_ordered + [
+    "partial, downsampled", "sparse, downsampled"]
 
 
 def get_key_for_value(dictionary, value):
@@ -46,13 +46,11 @@ def heatmap_for_all_variants(data_dirs, dataset_types, run_names, root_results_d
             # for raw value heatmap
             raw_value_dfs[variant_desc] = interpretation.median_raw_values
 
-    # Order the df based on Raw, Correlated (complete, partial, sparse), Non-correlated, Downsampled
-
     # PLOT RANKING HEATMAP
     fig, top_two_dist = plot_ranking_heat_map(backend, ranks_dfs, pattern_keys_ordered)
 
     # PLOT RAW VALUE HEATMAP
-    fig_raw = plot_raw_values_heat_map_for_top_two_measures(raw_value_dfs, top_two_dist, backend)
+    fig_raw = plot_raw_values_heat_map_for_top_two_measures(raw_value_dfs, top_two_dist, all_variants_ordered, backend)
 
     # save figures
     if save_fig:
@@ -63,23 +61,28 @@ def heatmap_for_all_variants(data_dirs, dataset_types, run_names, root_results_d
         fig_raw.savefig(path.join(folder, HEATMAP_OF_BEST_MEASURES_RAW_VALUES), dpi=300, bbox_inches='tight')
 
 
-def plot_raw_values_heat_map_for_top_two_measures(raw_value_dfs, highlight_cols, backend):
+def plot_raw_values_heat_map_for_top_two_measures(raw_value_dfs, highlight_cols, keys_ordered, backend):
+    # remove keys not in keys ordered
+    filtered_raw_value_dfs = {k: v for k, v in raw_value_dfs.items() if k in keys_ordered}
+
     # create matrix for raw values for top best ranked measures
     top_measures = [get_key_for_value(short_distance_measure_names, m) for m in highlight_cols]
     m1 = top_measures[0]
     m2 = top_measures[1]
     rows = []
-    criteria = list(raw_value_dfs.values())[0].index
-    for variant_name, df in raw_value_dfs.items():
+    criteria = list(filtered_raw_value_dfs.values())[0].index
+    for variant_name, df in filtered_raw_value_dfs.items():
         row_data = {}
         for criterion in criteria:
             row_data[f'{criteria_short_names[criterion]}:{short_distance_measure_names[m1]}'] = df.loc[criterion, m1]
             row_data[f'{criteria_short_names[criterion]}:{short_distance_measure_names[m2]}'] = df.loc[criterion, m2]
         rows.append(row_data)
-    matrix_raw_values = pd.DataFrame(rows, index=list(raw_value_dfs.keys()))
-    partial_nn = data_variant_description[(IRREGULAR_P30_DATA_DIR, SyntheticDataType.non_normal_correlated)]
-    highlight_rows = [partial_nn]
-    fig = heatmap_of_raw_values(matrix_raw_values, highlight_rows=highlight_rows, backend=backend)
+    matrix_raw_values = pd.DataFrame(rows, index=list(filtered_raw_value_dfs.keys()))
+
+    # sort df according to keys_ordered
+    matrix_raw_values = matrix_raw_values.reindex(keys_ordered)
+
+    fig = heatmap_of_raw_values(matrix_raw_values, backend=backend)
     return fig
 
 
@@ -99,7 +102,7 @@ def plot_ranking_heat_map(backend, ranks_dfs, keys_ordered):
     highlight_rows = rank_matrix.index.tolist()
     highlight_cols = min_cols.to_list()
     # plot heatmap
-    fig = heatmap_of_ranks(rank_matrix, highlight_rows=highlight_rows, highlight_cols=highlight_cols, figsize=(16, 7),
+    fig = heatmap_of_ranks(rank_matrix, highlight_rows=highlight_rows, highlight_cols=highlight_cols, figsize=(15, 6),
                            backend=backend)
     return fig, rank_matrix.columns[:2].tolist()
 

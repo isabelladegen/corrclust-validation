@@ -24,7 +24,13 @@ display_name_data_variant = {
 }
 
 
-def heatmap_of_raw_values(df: pd.DataFrame, highlight_rows=[], backend=Backends.none.value):
+def custom_format_cell_text(x):
+    if x == np.round(x):  # If it's a whole number
+        return f'{int(x)}'
+    return f'{x:.1f}'  # If it has decimals
+
+
+def heatmap_of_raw_values(df: pd.DataFrame, figure_size=(16, 12), backend=Backends.none.value):
     """
     Creates heatmap of raw across data variants, for the colour the raw values are scaled, for annotation the actual
     raw values are used
@@ -33,20 +39,7 @@ def heatmap_of_raw_values(df: pd.DataFrame, highlight_rows=[], backend=Backends.
     """
     # Setup plt
     reset_matplotlib(backend)
-    fig = plt.figure(figsize=(16, 12))
-
-    do_highlight = len(highlight_rows) > 0
-    # Create masks for highlighted row and column
-    row_mask = np.zeros_like(df, dtype=bool)
-
-    # Set True for the rows to highlight
-    for row in highlight_rows:
-        row_mask[df.index == row] = True
-
-    # Adjust alpha values
-    alpha_matrix = np.ones_like(df, dtype=float)
-    alpha_matrix[row_mask] = 1.0  # Highlighted cells fully opaque
-    alpha_matrix[~row_mask] = 0.5 if do_highlight else 1.0  # Other cells more transparent unless no highlight
+    fig = plt.figure(figsize=figure_size)
 
     # scale values so that all colors are comparable (dark is good, bright is worse)
     scaled_df = df.copy()
@@ -61,6 +54,9 @@ def heatmap_of_raw_values(df: pd.DataFrame, highlight_rows=[], backend=Backends.
     m2 = measures[1]
 
     for criterion in set(criteria):
+        # don't scale true false criteria as they are already 0 | 1
+        if criterion in ['2. L_d diff']:
+            continue
         col1 = f'{criterion}:{m1}'
         col2 = f'{criterion}:{m2}'
 
@@ -73,39 +69,36 @@ def heatmap_of_raw_values(df: pd.DataFrame, highlight_rows=[], backend=Backends.
             scaled = (df[col] - min_val) / (max_val - min_val)
             scaled_df[col] = 1 - scaled if criterion in inverse_criteria else scaled
 
+    # translate labels
+    translated_labels = [display_name_data_variant[idx] for idx in df.index]
+
+    # custom number formatting
+    annotations = np.vectorize(custom_format_cell_text)(df.values)
+
     # Create heatmap
     ax = sns.heatmap(
         data=scaled_df,  # show scaled values for colour comparison
-        annot=df,  # Show raw values in cell annotation
-        fmt='.2f',  # Format for annotations
+        annot=annotations,  # Show raw values in cell annotation
+        fmt='',  # give as empty to use our custom annotation
         cmap=sns.color_palette("mako", n_colors=256, as_cmap=True).reversed(),
-        cbar_kws={'label': 'Normalised raw values',
+        cbar_kws={
                   'shrink': 1,
-                  'aspect': 30
+                  'aspect': 30,
+                  'ticks': [0, 1],
+                  'pad': 0.01,
                   },
         annot_kws={'size': fontsize, 'weight': 'bold'},
         square=True,
-        alpha=alpha_matrix
+        yticklabels=translated_labels,
     )
     ax.tick_params(left=False, bottom=False, top=False)
     ax.grid(False)
-
-    # Set transparency of text
-    def text_alpha(is_highlighted):
-        if is_highlighted:
-            return 1.0
-        return 0.4 if do_highlight else 1.0
-
-    for i in range(len(df.index)):
-        for j in range(len(df.columns)):
-            text = ax.texts[i * len(df.columns) + j]
-            text.set_alpha(text_alpha(row_mask[i, j]))
 
     # Separate each criterion pair
     n_cols = len(df.columns)
     for i in range(0, n_cols, 2):
         if i > 0:  # Don't draw line at x=0
-            ax.axvline(x=i, color='#B0C4DE', linewidth=3)
+            ax.axvline(x=i, color='white', linewidth=5)
 
     # Axis labels
     plt.yticks(rotation=0, ha='right', fontsize=fontsize)  # data variant
@@ -117,6 +110,10 @@ def heatmap_of_raw_values(df: pd.DataFrame, highlight_rows=[], backend=Backends.
     secondary_ax.set_xticklabels(criteria[::2], fontsize=fontsize)
     secondary_ax.tick_params(axis='x', length=0)  # hide the actual tick marks
     secondary_ax.spines['top'].set_visible(False)  # hide spine that the tick marks are on
+
+    # Modify colour bar
+    cbar = ax.collections[0].colorbar
+    cbar.set_ticklabels(['Worst', 'Best'], fontsize=fontsize)  # The labels themselves
 
     plt.tight_layout()
     plt.show()
@@ -146,14 +143,7 @@ def heatmap_of_ranks(df: pd.DataFrame, highlight_rows=[], highlight_cols=[], fig
     for r, c in zip(row_indices, col_indices):
         mask[r, c] = True
 
-    # Set True for the row and column to highlight
-    # for row in highlight_rows:
-    #     row_mask[df.index == row] = True
-    # for col in highlight_cols:
-    #     col_mask[:, df.columns == col] = True
-
     # Adjust alpha values to be 1.0 for highlight and more transparent for others
-    # mask = row_mask | col_mask
     alpha_matrix = np.ones_like(df, dtype=float)
     alpha_matrix[mask] = 1.0  # Highlighted cells fully opaque
     alpha_matrix[~mask] = 0.6 if do_highlight else 1.0  # Other cells more transparent unless we're not highlighting
@@ -168,8 +158,9 @@ def heatmap_of_ranks(df: pd.DataFrame, highlight_rows=[], highlight_cols=[], fig
         fmt='.1f',  # Format for annotations
         cmap=sns.color_palette("mako", n_colors=256, as_cmap=True),
         cbar_kws={'label': 'Rank',
-                  'shrink': 0.68,
-                  'aspect': 30
+                  'shrink': 1,
+                  'aspect': 30,
+                  'pad': 0.01
                   },
         annot_kws={'size': fontsize, 'weight': 'bold'},
         square=True,
