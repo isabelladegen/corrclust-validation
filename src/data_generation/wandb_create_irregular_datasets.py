@@ -10,11 +10,10 @@ from src.data_generation.create_irregular_datasets import CreateIrregularDataset
 from src.data_generation.wandb_create_synthetic_data import save_data_labels_to_file, log_dataset_description
 from src.evaluation.describe_synthetic_dataset import DescribeSyntheticDataset
 from src.utils.configurations import WandbConfiguration, GENERATED_DATASETS_FILE_PATH, \
-    SyntheticDataVariates, IRREGULAR_P30_DATA_DIR, SYNTHETIC_DATA_DIR, IRREGULAR_P90_DATA_DIR
+    SyntheticDataVariates, SYNTHETIC_DATA_DIR, DataCompleteness, \
+    get_data_dir
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
-from tests.test_utils.configurations_for_testing import TEST_IRREGULAR_P30_DATA_DIR, TEST_DATA_DIR, \
-    TEST_GENERATED_DATASETS_FILE_PATH, TEST_IRREGULAR_P90_DATA_DIR
 
 
 @dataclass
@@ -26,11 +25,9 @@ class CreateIrregularDSConfig:
     tags = ['Synthetic']
 
     # Store new data in dir
-    root_result_data_dir: str = IRREGULAR_P30_DATA_DIR
+    root_result_data_dir: str = ''
     # Load data from dir
     data_dir: str = SYNTHETIC_DATA_DIR
-    # Runs to create irregular versions for
-    csv_of_runs: str = GENERATED_DATASETS_FILE_PATH
     # data cols to use
     data_cols: [str] = field(default_factory=lambda: SyntheticDataVariates.columns())
     # backend to use for visualisations
@@ -146,19 +143,17 @@ def create_irregular_datasets(config: CreateIrregularDSConfig, ds_name: str, see
 
 
 if __name__ == "__main__":
-    config = CreateIrregularDSConfig()
-    config.rs_rule = "1min"
-    config.p = 0.3
-    config.root_result_data_dir = IRREGULAR_P30_DATA_DIR  # ensure this matches your p!
-    csv_of_runs: str = GENERATED_DATASETS_FILE_PATH  # what datasets to create irregular versions of
-    # test config
-    # config.root_result_data_dir = TEST_IRREGULAR_P90  # ensure this matches your p!
-    # config.data_dir = TEST_DATA_DIR
-    # config.csv_of_runs = TEST_GENERATED_DATASETS_FILE_PATH
+    irregular_pairs = [(0.3, DataCompleteness.irregular_p30), (0.9, DataCompleteness.irregular_p90)]
 
-    generated_ds = pd.read_csv(config.csv_of_runs)['Name'].tolist()
-    # we create a run for each ds and we name the run consistently
-    for idx, ds_name in enumerate(generated_ds):
-        np.random.seed(1661 + idx)
-        dataset_seed = np.random.randint(low=100, high=1000000)
-        create_irregular_datasets(config, ds_name, dataset_seed)
+    for p, data_comp in irregular_pairs:
+        config = CreateIrregularDSConfig()
+        config.p = p
+        config.root_result_data_dir = get_data_dir(root_data_dir=SYNTHETIC_DATA_DIR, extension_type=data_comp)
+        config.wandb_project_name = WandbConfiguration.wandb_irregular_project_name
+
+        generated_ds = pd.read_csv(GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
+        # we create a run for each ds and we name the run consistently
+        for idx, ds_name in enumerate(generated_ds):
+            np.random.seed(1661 + idx)
+            dataset_seed = np.random.randint(low=100, high=1000000)
+            create_irregular_datasets(config, ds_name, dataset_seed)
