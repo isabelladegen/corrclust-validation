@@ -14,7 +14,7 @@ data_types = [SyntheticDataType.raw,
               SyntheticDataType.normal_correlated,
               SyntheticDataType.non_normal_correlated,
               SyntheticDataType.rs_1min]
-data_completeness_levels = [DataCompleteness.complete]
+data_completeness_levels = [DataCompleteness.complete, DataCompleteness.irregular_p30, DataCompleteness.irregular_p90]
 
 run_names_exp = pd.read_csv(GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
 run_names_conf = pd.read_csv(CONFIRMATORY_DATASETS_FILE_PATH)['Name'].tolist()
@@ -44,6 +44,12 @@ def test_loads_labels_files_of_exploratory_and_confirmatory_dataset():
 
 
 def test_plots_scatter_plot_of_relaxed_subject_mae():
-    fig = vc.plot_relaxed_mae_per_subject_scatter_plot(figsize=(12, 3))
+    fig = vc.plot_relaxed_mae_per_subject_scatter_plot()
+
+    assert_that(fig, is_not(none()))
+
+
+def test_plots_scatter_plot_of_pattern_id_for_each_segment():
+    fig = vc.plot_pattern_id_for_each_segment()
 
     assert_that(fig, is_not(none()))

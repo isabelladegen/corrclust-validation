@@ -7,10 +7,12 @@ from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDa
 from src.utils.configurations import get_data_dir
 from src.utils.load_synthetic_data import load_labels, SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends, reset_matplotlib, fontsize
+from src.visualisation.visualise_multiple_data_variants import get_row_name_from
 
 
 def create_paired_scatter_grid(exloratory_data_dict: {}, confirmatory_data_dict: {}, data_col_name: str,
-                               figsize: tuple = (12, 12), backend: str = Backends.none.value) -> plt.Figure:
+                               figsize: tuple = (12, 12), y_lim: (float, float) = (0, 1),
+                               backend: str = Backends.none.value) -> plt.Figure:
     """
     Create a grid of scatter plots using dictionary keys as labels.
 
@@ -26,6 +28,7 @@ def create_paired_scatter_grid(exloratory_data_dict: {}, confirmatory_data_dict:
         rows refer to the data completeness
     :param data_col_name : name of column to plot from labels df
     :param figsize : tuple, optional Figure size in inches (width, height)
+    :param y_lim: tuple, optional y axis limits, defaults to (0,1)
     :returns: matplotlib.figure.Figure
     """
 
@@ -81,11 +84,10 @@ def create_paired_scatter_grid(exloratory_data_dict: {}, confirmatory_data_dict:
                 ax.set_title(SyntheticDataType.get_display_name_for_data_type(generation_stage), fontsize=fontsize,
                              fontweight='bold')
 
-            ax.set_ylim(0, 1)  # Set y lim
-            # ax.set_xlim(-2, 69)  # slight padding around 0-67
+            ax.set_ylim(y_lim[0], y_lim[1])  # Set y lim
 
             if j == 0:
-                ax.set_ylabel(completeness, fontsize=fontsize, fontweight='bold')
+                ax.set_ylabel(get_row_name_from(completeness), fontsize=fontsize, fontweight='bold')
 
             # Only show x-axis elements for bottom row
             if i == len(completeness_levels) - 1:
@@ -106,7 +108,7 @@ def create_paired_scatter_grid(exloratory_data_dict: {}, confirmatory_data_dict:
 
         axes.append(row_axes)
 
-    # Add legend directly in the last subplot
+    # Add legend directly in the last column's first subplot
     for k, generation_stage in enumerate(['Exploratory', 'Confirmatory']):
         legend_handles.append(plt.Line2D([0], [0],
                                          marker=markers[k],
@@ -114,7 +116,7 @@ def create_paired_scatter_grid(exloratory_data_dict: {}, confirmatory_data_dict:
                                          label=generation_stage,
                                          markersize=8,
                                          linestyle='None'))
-    last_ax = axes[-1][-1]
+    last_ax = axes[0][-1]
     last_ax.legend(handles=legend_handles,
                    loc='upper left',
                    fontsize=fontsize - 2,
@@ -160,10 +162,20 @@ class VisualiseExploratoryConfirmatoryDatasets:
                     confirmatory_labels.append(label)
                 self.confirmatory_labels[completeness][data_type] = confirmatory_labels
 
-    def plot_relaxed_mae_per_subject_scatter_plot(self, figsize: (float, float) = (12, 12)) -> plt.Figure:
+    def plot_relaxed_mae_per_subject_scatter_plot(self, figsize: (float, float) = (16, 10)) -> plt.Figure:
         fig = create_paired_scatter_grid(exloratory_data_dict=self.exploratory_labels,
                                          confirmatory_data_dict=self.confirmatory_labels,
                                          data_col_name=SyntheticDataSegmentCols.relaxed_mae, backend=self.backend,
+                                         figsize=figsize)
+
+        plt.show()
+        return fig
+
+    def plot_pattern_id_for_each_segment(self, figsize: (float, float) = (16, 10)) -> plt.Figure:
+        fig = create_paired_scatter_grid(exloratory_data_dict=self.exploratory_labels,
+                                         confirmatory_data_dict=self.confirmatory_labels,
+                                         data_col_name=SyntheticDataSegmentCols.pattern_id, backend=self.backend,
+                                         y_lim=(0, 26),
                                          figsize=figsize)
 
         plt.show()
