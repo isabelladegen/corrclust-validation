@@ -22,18 +22,18 @@ from tests.test_utils.configurations_for_testing import TEST_DATA_DIR, TEST_GENE
 
 @dataclass
 class CreateBadPartitionsConfig:
-    wandb_project_name: str = WandbConfiguration.wandb_partitions_project_name
+    wandb_project_name: str = ''
     wandb_entity: str = WandbConfiguration.wandb_entity
     wandb_mode: str = 'online'
     wandb_notes: str = "creates bad partitions of synthetic data"
     tags = ['Synthetic']
 
     # Load and store results from dir
-    data_dir: str = SYNTHETIC_DATA_DIR
+    data_dir: str = ''
     # Runs to create bad partitions from
-    csv_of_runs: str = GENERATED_DATASETS_FILE_PATH
+    csv_of_runs: str = ''
     # Data type to load and create bad partitions from
-    data_type: str = SyntheticDataType.non_normal_correlated
+    data_type: str = ''
     # data cols to use
     data_cols: [str] = field(default_factory=lambda: SyntheticDataVariates.columns())
     # seed to use for random
@@ -227,16 +227,17 @@ if __name__ == "__main__":
     data_dirs = [SYNTHETIC_DATA_DIR,
                  IRREGULAR_P30_DATA_DIR,
                  IRREGULAR_P90_DATA_DIR]
+    config = CreateBadPartitionsConfig()
+    config.wandb_project_name = WandbConfiguration.wandb_partitions_project_name
+    config.seed = 666
+    config.csv_of_runs = GENERATED_DATASETS_FILE_PATH
+
     for data_dir in data_dirs:
         for data_type in dataset_types:
-            if data_dir == SYNTHETIC_DATA_DIR and data_type == SyntheticDataType.rs_1min:
-                continue  # already done
-            config = CreateBadPartitionsConfig()
             config.data_dir = data_dir
-            config.data_type =data_type
+            config.data_type = data_type
 
             run_names = pd.read_csv(config.csv_of_runs)['Name'].tolist()
-
             n_datasets = len(run_names)
             n_partitions = config.n_partitions
             # *3 for the different three strategies
