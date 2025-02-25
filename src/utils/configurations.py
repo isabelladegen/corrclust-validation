@@ -23,6 +23,7 @@ DISTRIBUTION_PARAMS_TO_MODEL_PATH = path.join(ROOT_DIR,
 CONFIRMATORY_SYNTHETIC_DATA_DIR = path.join(ROOT_DIR, 'data/confirmatory_synthetic_data')
 SYNTHETIC_DATA_DIR = path.join(ROOT_DIR, 'data/synthetic_data')
 ROOT_REDUCED_SYNTHETIC_DATA_DIR = path.join(SYNTHETIC_DATA_DIR, "reduced-data")
+CONFIRMATORY_ROOT_REDUCED_SYNTHETIC_DATA_DIR = path.join(CONFIRMATORY_SYNTHETIC_DATA_DIR, "reduced-data")
 IRREGULAR_P30_DATA_DIR = path.join(SYNTHETIC_DATA_DIR, DataCompleteness.irregular_p30)
 IRREGULAR_P90_DATA_DIR = path.join(SYNTHETIC_DATA_DIR, DataCompleteness.irregular_p90)
 ROOT_RESULTS_DIR = path.join(ROOT_DIR, 'results')
