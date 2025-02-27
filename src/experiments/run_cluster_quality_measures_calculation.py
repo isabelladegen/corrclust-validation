@@ -83,6 +83,10 @@ if __name__ == "__main__":
     # distance_measures = [DistanceMeasures.l2_cor_dist]
     # data_types = [SyntheticDataType.rs_1min]
     # data_dirs = [SYNTHETIC_DATA_DIR]
+    # Config for L3 only ran for downsampled, complete data
+    # distance_measures = [DistanceMeasures.l3_cor_dist]
+    # data_types = [SyntheticDataType.rs_1min]
+    # data_dirs = [SYNTHETIC_DATA_DIR]
     results_dir = ROOT_RESULTS_DIR
 
     for data_dir in data_dirs:

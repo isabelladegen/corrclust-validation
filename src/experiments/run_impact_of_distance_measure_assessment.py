@@ -91,6 +91,12 @@ if __name__ == "__main__":
     # dataset_types = [SyntheticDataType.rs_1min]
     # data_dirs = [SYNTHETIC_DATA_DIR]
 
+    # Config for L3 only ran for downsampled, complete data
+    # distance_measures = [DistanceMeasures.l1_cor_dist, DistanceMeasures.l1_with_ref,
+    #                      DistanceMeasures.foerstner_cor_dist, DistanceMeasures.l3_cor_dist]
+    # dataset_types = [SyntheticDataType.rs_1min]
+    # data_dirs = [SYNTHETIC_DATA_DIR]
+
     internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.dbi,
                          ClusteringQualityMeasures.vrc, ClusteringQualityMeasures.pmb]
 
