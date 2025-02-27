@@ -21,8 +21,12 @@ def interpret_distance_metric_for(top_x: [], data_dirs: [], dataset_types: [], r
     # for l2
     # measure1 = DistanceMeasures.l1_cor_dist
     # measure2 = DistanceMeasures.l2_cor_dist
+    # for l3
+    # measure1 = DistanceMeasures.l2_cor_dist
+    # measure2 = DistanceMeasures.l3_cor_dist
     # number of tests run to adjust alpha
-    bonferroni_adjust = len(distance_measures)
+    # bonferroni_adjust = len(distance_measures)
+    bonferroni_adjust = 1
 
     # run all calculation for each of the 12 data variant
     for data_dir in data_dirs:
@@ -62,13 +66,17 @@ if __name__ == "__main__":
     # statistics and top/bottom distance measures
     top_x = [1, 2, 4]
     root_result_dir = ROOT_RESULTS_DIR
-    dataset_types = [SyntheticDataType.raw,
-                     SyntheticDataType.normal_correlated,
-                     SyntheticDataType.non_normal_correlated,
-                     SyntheticDataType.rs_1min]
-    data_dirs = [SYNTHETIC_DATA_DIR,
-                 IRREGULAR_P30_DATA_DIR,
-                 IRREGULAR_P90_DATA_DIR]
+    dataset_types = [
+        SyntheticDataType.raw,
+        SyntheticDataType.normal_correlated,
+        SyntheticDataType.non_normal_correlated,
+        SyntheticDataType.rs_1min
+    ]
+    data_dirs = [
+        SYNTHETIC_DATA_DIR,
+        IRREGULAR_P30_DATA_DIR,
+        IRREGULAR_P90_DATA_DIR
+    ]
 
     # this is an extensive list
     distance_measures = [DistanceMeasures.l1_cor_dist,  # lp norms
