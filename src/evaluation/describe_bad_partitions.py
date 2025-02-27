@@ -58,13 +58,12 @@ def select_data_from_df(data: pd.DataFrame, label: pd.DataFrame):
 class DescribeBadPartitions:
     def __init__(self, ds_name, distance_measure: str, data_type: str = SyntheticDataType.non_normal_correlated,
                  internal_measures: [] = default_internal_measures, external_measures: [] = default_external_measures,
-                 data_cols: [str] = SyntheticDataVariates.columns(), seed: int = 600,
-                 data_dir: str = SYNTHETIC_DATA_DIR, round_to: int = 3):
+                 data_cols: [str] = SyntheticDataVariates.columns(), data_dir: str = SYNTHETIC_DATA_DIR,
+                 round_to: int = 3):
         self.ds_name = ds_name
         self.distance_measure = distance_measure
         self.__internal_measures = internal_measures
         self.__external_measures = external_measures
-        self.__seed = seed
         self.__data_dir = data_dir
         self.__data_type = data_type
         self.__cols = data_cols

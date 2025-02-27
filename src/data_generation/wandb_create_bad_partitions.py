@@ -198,7 +198,7 @@ def create_bad_partitions(config: CreateBadPartitionsConfig, ds_name: str, idx: 
         # note distance measure is not used therefore set to ""
         bp = DescribeBadPartitions(ds_name=ds_name, distance_measure="", data_type=config.data_type,
                                    internal_measures=[], external_measures=[ClusteringQualityMeasures.jaccard_index],
-                                   data_cols=config.data_cols, seed=config.seed, data_dir=config.data_dir)
+                                   data_cols=config.data_cols, data_dir=config.data_dir)
         summary = bp.summary_df
         summary_table = wandb.Table(dataframe=summary, allow_mixed_types=True)
         wandb.log({"Summary Partitions " + ds_name: summary_table})
