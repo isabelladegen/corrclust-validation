@@ -33,6 +33,3 @@ def test_calculates_internal_measures_for_provided_distance_measure_and_ground_t
     assert_that(df.columns, has_item(ClusteringQualityMeasures.pmb))
     assert_that(df.columns, has_item(ClusteringQualityMeasures.vrc))
     assert_that(df.isna().sum().sum(), is_(0))  # no nans
-
-
-    #todo add test for statistical testing, save resutls and statistical tests, create class to run for all data variants
