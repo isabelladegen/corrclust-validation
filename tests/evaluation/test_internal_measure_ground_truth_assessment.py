@@ -44,11 +44,20 @@ def test_reshapes_raw_data_into_raw_scores_df_per_internal_measure():
 
 def test_rank_distance_measures_for_internal_measures():
     ranks = ga.rank_distance_measures_for_each_internal_measure()
+    raw_values = ga.raw_scores_for_each_internal_measure()
 
     assert_that(len(ranks), is_(len(internal_measures)))
 
-    rank_df = ranks[internal_measures[0]]
-    assert_that(rank_df.shape[0], is_(30))
-    # L3 is the best distance measure
-    assert_that(rank_df.iloc[0].idxmin(), is_(DistanceMeasures.l3_cor_dist))
-    assert_that(ranks[internal_measures[1]].shape[0], is_(30))
+    scw_df = ranks[ClusteringQualityMeasures.silhouette_score]
+    assert_that(scw_df.shape[0], is_(30))
+    # SCW = the higher the better
+    highest_raw_value = raw_values[ClusteringQualityMeasures.silhouette_score].iloc[0].idxmax()
+    lowest_rank = scw_df.iloc[0].idxmin()
+    assert_that(lowest_rank, is_(highest_raw_value))
+
+    dbi_df = ranks[ClusteringQualityMeasures.dbi]
+    assert_that(dbi_df.shape[0], is_(30))
+    # DBI = the lower the better
+    lowest_raw_value = raw_values[ClusteringQualityMeasures.dbi].iloc[0].idxmin()
+    lowest_rank = dbi_df.iloc[0].idxmin()
+    assert_that(lowest_rank, is_(lowest_raw_value))
