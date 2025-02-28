@@ -46,12 +46,12 @@ class InternalMeasureGroundTruthAssessment:
         cells=rank for that distance measure for that run
         """
         ranked_dict = {}
+        raw_scores = self.raw_scores_for_each_internal_measure()
 
-        for measure, df in self.internal_measures.items():
+        for internal_measure, df in raw_scores.items():
             # Rank across columns (axis=1) for each row
-            # Method='min' assigns the minimum rank in case of ties
-            ranked_df = df.rank(axis=1, method='dense', ascending=internal_measure_ranking_method[measure])
-            ranked_dict[measure] = ranked_df
+            ranked_df = df.rank(axis=1, method='dense', ascending=internal_measure_ranking_method[internal_measure])
+            ranked_dict[internal_measure] = ranked_df
         return ranked_dict
 
     def raw_scores_for_each_internal_measure(self):

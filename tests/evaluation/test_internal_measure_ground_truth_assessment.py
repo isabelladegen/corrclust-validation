@@ -10,7 +10,7 @@ internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQuali
 distance_measures = [DistanceMeasures.l1_cor_dist, DistanceMeasures.l3_cor_dist,
                      DistanceMeasures.foerstner_cor_dist]
 data_dir = SYNTHETIC_DATA_DIR
-data_type = SyntheticDataType.raw
+data_type = SyntheticDataType.normal_correlated
 name = "n30"
 results_dir = ROOT_RESULTS_DIR
 
@@ -48,3 +48,7 @@ def test_rank_distance_measures_for_internal_measures():
     assert_that(len(ranks), is_(len(internal_measures)))
 
     rank_df = ranks[internal_measures[0]]
+    assert_that(rank_df.shape[0], is_(30))
+    # L3 is the best distance measure
+    assert_that(rank_df.iloc[0].idxmin(), is_(DistanceMeasures.l3_cor_dist))
+    assert_that(ranks[internal_measures[1]].shape[0], is_(30))
