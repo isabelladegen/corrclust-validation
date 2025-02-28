@@ -61,3 +61,17 @@ def test_rank_distance_measures_for_internal_measures():
     lowest_raw_value = raw_values[ClusteringQualityMeasures.dbi].iloc[0].idxmin()
     lowest_rank = dbi_df.iloc[0].idxmin()
     assert_that(lowest_rank, is_(lowest_raw_value))
+
+
+def test_calculate_stats_for_ranking_and_raw_values():
+    rank_stats = ga.stats_for_ranks_across_all_runs()
+    raw_values = ga.stats_for_raw_values_across_all_runs()
+
+    scw_ranks = rank_stats[ClusteringQualityMeasures.silhouette_score]
+    assert_that(scw_ranks.loc['mean', DistanceMeasures.l1_cor_dist], is_(2.0))
+    assert_that(scw_ranks.loc['50%', DistanceMeasures.l1_cor_dist], is_(2.0))
+
+    scw_values = raw_values[ClusteringQualityMeasures.silhouette_score]
+    assert_that(scw_values.loc['mean', DistanceMeasures.l1_cor_dist], is_(0.971))
+    assert_that(scw_values.loc['50%', DistanceMeasures.l1_cor_dist], is_(0.972))
+

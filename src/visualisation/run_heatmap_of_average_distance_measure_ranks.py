@@ -86,9 +86,19 @@ def plot_raw_values_heat_map_for_top_two_measures(raw_value_dfs, highlight_cols,
     return fig
 
 
-def plot_ranking_heat_map(backend, ranks_dfs, keys_ordered):
+def plot_ranking_heat_map(backend, ranks_series, keys_ordered, bar_label='Rank', low_is_best=True):
+    """
+    Plots a ranking heat map where distance measures are sorted by baseline variant
+    :param backend:
+    :param ranks_series: dictionary with key=variate description and value series with distances as index and median
+    (or other) as value
+    :param keys_ordered:
+    :param bar_label:
+    :param low_is_best:
+    :return:
+    """
     # remove keys not in keys ordered
-    filtered_rank_dfs = {k: v for k, v in ranks_dfs.items() if k in keys_ordered}
+    filtered_rank_dfs = {k: v for k, v in ranks_series.items() if k in keys_ordered}
     rank_matrix = pd.concat(filtered_rank_dfs).unstack(level=0).T
     # rename distance measures
     rank_matrix = rank_matrix.rename(columns=lambda x: short_distance_measure_names.get(x, x))
@@ -96,14 +106,17 @@ def plot_ranking_heat_map(backend, ranks_dfs, keys_ordered):
     rank_matrix = rank_matrix.reindex(keys_ordered)
     # sort columns by smallest for our baseline variant
     partial_nn = data_variant_description[(IRREGULAR_P30_DATA_DIR, SyntheticDataType.non_normal_correlated)]
-    rank_matrix = rank_matrix.sort_values(by=partial_nn, axis=1, ascending=True)
-    # for each row highlight minimal cell
-    min_cols = rank_matrix.idxmin(axis=1)
+    rank_matrix = rank_matrix.sort_values(by=partial_nn, axis=1, ascending=low_is_best)
+    # for each row highlight best cell
+    if low_is_best:
+        best_col = rank_matrix.idxmin(axis=1)
+    else:
+        best_col = rank_matrix.idxmax(axis=1)
     highlight_rows = rank_matrix.index.tolist()
-    highlight_cols = min_cols.to_list()
+    highlight_cols = best_col.to_list()
     # plot heatmap
     fig = heatmap_of_ranks(rank_matrix, highlight_rows=highlight_rows, highlight_cols=highlight_cols, figsize=(15, 6),
-                           backend=backend)
+                           low_is_best=low_is_best, bar_label=bar_label, backend=backend)
     return fig, rank_matrix.columns[:2].tolist()
 
 

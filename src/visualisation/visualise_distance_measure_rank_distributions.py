@@ -25,8 +25,29 @@ display_name_data_variant = {
 
 
 def custom_format_cell_text(x):
+    # For very large numbers (thousands or more)
+    if abs(x) >= 1000:
+        if abs(x) >= 1000000:
+            return f'{x / 1000000:.0f}M'
+        elif abs(x) >= 10000:
+            return f'{x / 1000:.0f}k'  # 10K+ uses no decimal
+        else:
+            return f'{x / 1000:.0f}k'  # 1K-9.9K uses one decimal
+
+    if abs(x) >= 10:
+        return f'{x:.0f}'
+
     if x == np.round(x):  # If it's a whole number
         return f'{int(x)}'
+
+    # For smaller decimal values (like 0.6)
+    if 0.1 < abs(x) < 1.0:
+        return f'.{int(np.round(x,2) * 100)}'
+
+    # For very small decimals
+    if 0 < abs(x) < 0.1:
+        return f'.0{int(x * 100)}'
+
     return f'{x:.1f}'  # If it has decimals
 
 
@@ -82,11 +103,11 @@ def heatmap_of_raw_values(df: pd.DataFrame, figure_size=(16, 12), backend=Backen
         fmt='',  # give as empty to use our custom annotation
         cmap=sns.color_palette("mako", n_colors=256, as_cmap=True).reversed(),
         cbar_kws={
-                  'shrink': 1,
-                  'aspect': 30,
-                  'ticks': [0, 1],
-                  'pad': 0.01,
-                  },
+            'shrink': 1,
+            'aspect': 30,
+            'ticks': [0, 1],
+            'pad': 0.01,
+        },
         annot_kws={'size': fontsize, 'weight': 'bold'},
         square=True,
         yticklabels=translated_labels,
@@ -121,13 +142,17 @@ def heatmap_of_raw_values(df: pd.DataFrame, figure_size=(16, 12), backend=Backen
     return fig
 
 
-def heatmap_of_ranks(df: pd.DataFrame, highlight_rows=[], highlight_cols=[], figsize=(16, 12),
-                     backend=Backends.none.value):
+def heatmap_of_ranks(df: pd.DataFrame, highlight_rows=[], highlight_cols=[], figsize=(16, 12), bar_label: str = 'Rank',
+                     low_is_best: bool = True, backend=Backends.none.value):
     """
     Creates heatmap of rank across data variants
     :param df: Dataframe with rows being data variants and columns being distance measures
     :param highlight_cols: sets all other cols transparent
     :param highlight_rows: sets all other rows transparent, if no rows or cols given then everything is as normal
+    :param figsize: size of figure
+    :param bar_label: what to label the colour bar, defaults to rank
+    :param low_is_best: defaults to true which means that lower values are coloured darker indicating better performance
+    :param backend: if showing in ide or not
     """
     # Create figure and axes
     # Setup plt
@@ -151,13 +176,20 @@ def heatmap_of_ranks(df: pd.DataFrame, highlight_rows=[], highlight_cols=[], fig
     # translate labels
     translated_labels = [display_name_data_variant[idx] for idx in df.index]
 
+    # create colour map
+    cmap = sns.color_palette("mako_r" if not low_is_best else "mako", n_colors=256, as_cmap=True)
+    cbar_label = bar_label + (' (lower is better)' if low_is_best else ' (higher is better)')
+
+    # Format numbers
+    annotations = np.vectorize(custom_format_cell_text)(df.values)
+
     # Create heatmap
     ax = sns.heatmap(
         df,
-        annot=True,  # Show values in cells
-        fmt='.1f',  # Format for annotations
-        cmap=sns.color_palette("mako", n_colors=256, as_cmap=True),
-        cbar_kws={'label': 'Rank',
+        annot=annotations,  # Show values in cells
+        fmt='',  # Format for annotations
+        cmap=cmap,
+        cbar_kws={'label': cbar_label,
                   'shrink': 1,
                   'aspect': 30,
                   'pad': 0.01

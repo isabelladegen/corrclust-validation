@@ -76,3 +76,17 @@ class InternalMeasureGroundTruthAssessment:
             result_dict[measure] = measure_df
 
         return result_dict
+
+    def stats_for_ranks_across_all_runs(self):
+        stats_results = {}
+        ranks = self.rank_distance_measures_for_each_internal_measure()
+        for measure in self.internal_measures:
+            stats_results[measure] = ranks[measure].describe().round(self.round_to)
+        return stats_results
+
+    def stats_for_raw_values_across_all_runs(self):
+        stats_results = {}
+        raw_values = self.raw_scores_for_each_internal_measure()
+        for measure in self.internal_measures:
+            stats_results[measure] = raw_values[measure].describe().round(self.round_to)
+        return stats_results
