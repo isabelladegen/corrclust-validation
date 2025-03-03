@@ -75,3 +75,23 @@ def test_calculate_stats_for_ranking_and_raw_values():
     assert_that(scw_values.loc['mean', DistanceMeasures.l1_cor_dist], is_(0.971))
     assert_that(scw_values.loc['50%', DistanceMeasures.l1_cor_dist], is_(0.972))
 
+
+def test_calculate_grouping_for_distance_measure_comparisons():
+    grouping = ga.grouping_for_each_internal_measure(stats_value='50%')
+
+    # has grouping for all internal measure
+    assert_that(len(grouping.keys()), is_(len(internal_measures)))
+
+    scw_groupings = grouping[ClusteringQualityMeasures.silhouette_score]
+    pmb_groupings = grouping[ClusteringQualityMeasures.dbi]
+    # DistanceMeasures.l1_cor_dist, DistanceMeasures.l3_cor_dist,
+    # DistanceMeasures.foerstner_cor_dist
+    assert_that(len(scw_groupings), is_(3))
+    assert_that(scw_groupings[1], contains_exactly(DistanceMeasures.l3_cor_dist))
+    assert_that(scw_groupings[2], contains_exactly(DistanceMeasures.l1_cor_dist))
+    assert_that(scw_groupings[3], contains_exactly(DistanceMeasures.foerstner_cor_dist))
+
+    assert_that(len(pmb_groupings), is_(3))
+    assert_that(pmb_groupings[1], contains_exactly(DistanceMeasures.l3_cor_dist))
+    assert_that(pmb_groupings[2], contains_exactly(DistanceMeasures.l1_cor_dist))
+    assert_that(pmb_groupings[3], contains_exactly(DistanceMeasures.foerstner_cor_dist))

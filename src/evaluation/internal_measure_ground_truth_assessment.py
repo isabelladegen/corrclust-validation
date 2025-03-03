@@ -90,3 +90,33 @@ class InternalMeasureGroundTruthAssessment:
         for measure in self.internal_measures:
             stats_results[measure] = raw_values[measure].describe().round(self.round_to)
         return stats_results
+
+    def grouping_for_each_internal_measure(self, stats_value: str):
+        """
+        Calculates the grouping of distance measures per internal measure. Lower groups
+        are better performing distance measures, higher worse.
+        :param stats_value: which rank stats value to use, e.g. 50% = median ranks across the n=30 pairs
+        :return:
+        """
+        rank_stats = self.stats_for_ranks_across_all_runs()
+        groupings = {}
+        for measure in self.internal_measures:
+            ranks = rank_stats[measure].loc[stats_value]
+            unique_ranks = sorted(ranks.unique())
+
+            # Create a mapping from actual rank to group numbers (1, 2, 3...)
+            rank_to_group = {rank: i + 1 for i, rank in enumerate(unique_ranks)}
+
+            # Group indices (distance measure) by group numbers
+            result = {}
+            for distance_measure, rank in ranks.items():
+                group_num = rank_to_group[rank]
+                if group_num not in result:
+                    result[group_num] = []
+                result[group_num].append(distance_measure)
+
+            # Sort the dictionary by keys
+            result = dict(sorted(result.items()))
+            groupings[measure] = result
+        return groupings
+

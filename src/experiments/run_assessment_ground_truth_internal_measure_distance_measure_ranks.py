@@ -21,9 +21,9 @@ from src.visualisation.run_heatmap_of_average_distance_measure_ranks import patt
 from src.visualisation.visualise_distance_measure_rank_distributions import heatmap_of_ranks, heatmap_of_raw_values
 
 
-def ground_truth_heatmap_for_all_variants(data_dirs, dataset_types, root_results_dir, distance_measures,
-                                          internal_measures, overall_ds_name, backend, stats_value="50%",
-                                          save_fig=True):
+def raw_values_ranks_heatmaps_for_ground_truth(data_dirs, dataset_types, root_results_dir, distance_measures,
+                                               internal_measures, overall_ds_name, backend, stats_value,
+                                               save_fig=True):
     # create variant description that serve as keys
     variant_descriptions = []
     for data_dir in data_dirs:
@@ -100,6 +100,7 @@ if __name__ == "__main__":
     backend = Backends.none.value
     save_fig = True
     root_result_dir = ROOT_RESULTS_DIR
+    stats_value = '50%'  # use median
     dataset_types = [SyntheticDataType.raw,
                      SyntheticDataType.normal_correlated,
                      SyntheticDataType.non_normal_correlated,
@@ -129,6 +130,7 @@ if __name__ == "__main__":
 
     run_names = pd.read_csv(GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
 
-    ground_truth_heatmap_for_all_variants(data_dirs=data_dirs, dataset_types=dataset_types, overall_ds_name="n30",
-                                          root_results_dir=root_result_dir, distance_measures=distance_measures,
-                                          backend=backend, save_fig=save_fig, internal_measures=internal_measures)
+    raw_values_ranks_heatmaps_for_ground_truth(data_dirs=data_dirs, dataset_types=dataset_types, overall_ds_name="n30",
+                                               root_results_dir=root_result_dir, distance_measures=distance_measures,
+                                               backend=backend, save_fig=save_fig, internal_measures=internal_measures,
+                                               stats_value=stats_value)
