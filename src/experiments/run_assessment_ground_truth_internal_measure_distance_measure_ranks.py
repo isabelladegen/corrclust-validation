@@ -4,6 +4,7 @@ from os import path
 import pandas as pd
 
 from src.evaluation.distance_metric_evaluation import criteria_short_names
+from src.evaluation.internal_measure_assessment import IAResultsCSV
 from src.evaluation.internal_measure_ground_truth_assessment import InternalMeasureGroundTruthAssessment, \
     internal_measure_ranking_method
 from src.evaluation.interpretation_distance_metric_ranking import DistanceMetricInterpretation
@@ -11,7 +12,7 @@ from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import ROOT_RESULTS_DIR, SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, \
     IRREGULAR_P90_DATA_DIR, GENERATED_DATASETS_FILE_PATH, base_dataset_result_folder_for_type, ResultsType, \
     AVERAGE_RANK_DISTRIBUTION, HEATMAP_OF_RANKS, HEATMAP_OF_BEST_MEASURES_RAW_VALUES, GROUND_TRUTH_HEATMAP_OF_RANKS, \
-    GROUND_TRUTH_HEATMAP_RAW_VALUES
+    GROUND_TRUTH_HEATMAP_RAW_VALUES, internal_measure_evaluation_dir_for
 from src.utils.distance_measures import DistanceMeasures, short_distance_measure_names
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
@@ -57,14 +58,29 @@ def ground_truth_heatmap_for_all_variants(data_dirs, dataset_types, root_results
                 all_raw_values[internal_measure][variant_desc] = raw_values_for_variant[internal_measure].loc[
                     stats_value]
 
+    store_results_in = internal_measure_evaluation_dir_for(
+        overall_dataset_name=overall_ds_name,
+        data_type='',  # all datatypes as rows
+        results_dir=root_results_dir,
+        data_dir='',  # all data data comp as rows
+        distance_measure='')  # all distances as columns
     # plot data
     for measure in internal_measures:
         # plot ranks
-        rank_fig, top_two_dist = plot_ranking_heat_map(backend, all_ranks[measure], pattern_keys_ordered)
+        rank_fig, rank_matrix = plot_ranking_heat_map(backend, all_ranks[measure], pattern_keys_ordered)
+
+        # save rank data
+        rank_matrix.to_csv(
+            str(os.path.join(store_results_in, measure + "_" + IAResultsCSV.distance_measures_ranks_for_ground_truth)))
 
         # plot raw values
-        raw_value_fig, _ = plot_ranking_heat_map(backend, all_raw_values[measure], pattern_keys_ordered,
-                                                 bar_label="Raw", low_is_best=internal_measure_ranking_method[measure])
+        raw_value_fig, raw_value_matrix = plot_ranking_heat_map(backend, all_raw_values[measure], pattern_keys_ordered,
+                                                                bar_label="Raw",
+                                                                low_is_best=internal_measure_ranking_method[measure])
+        # save raw value data
+        raw_value_matrix.to_csv(
+            str(os.path.join(store_results_in,
+                             measure + "_" + IAResultsCSV.distance_measures_raw_values_for_ground_truth)))
 
         # save figures
         if save_fig:
@@ -78,9 +94,10 @@ def ground_truth_heatmap_for_all_variants(data_dirs, dataset_types, root_results
 
 
 if __name__ == "__main__":
-    # heatmap ov average ranking for each dataset in the N30
+    # calculates raw and rank matrix
+    # plot heatmap ov average ranking for each dataset in the N30
     # y = data variant, x = distance measure, lower ranks are better
-    backend = Backends.visible_tests.value
+    backend = Backends.none.value
     save_fig = True
     root_result_dir = ROOT_RESULTS_DIR
     dataset_types = [SyntheticDataType.raw,

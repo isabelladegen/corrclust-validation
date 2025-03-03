@@ -47,7 +47,8 @@ def heatmap_for_all_variants(data_dirs, dataset_types, run_names, root_results_d
             raw_value_dfs[variant_desc] = interpretation.median_raw_values
 
     # PLOT RANKING HEATMAP
-    fig, top_two_dist = plot_ranking_heat_map(backend, ranks_dfs, pattern_keys_ordered)
+    fig, rank_matrix = plot_ranking_heat_map(backend, ranks_dfs, pattern_keys_ordered)
+    top_two_dist = rank_matrix.columns[:2].tolist()
 
     # PLOT RAW VALUE HEATMAP
     fig_raw = plot_raw_values_heat_map_for_top_two_measures(raw_value_dfs, top_two_dist, all_variants_ordered, backend)
@@ -117,7 +118,7 @@ def plot_ranking_heat_map(backend, ranks_series, keys_ordered, bar_label='Rank',
     # plot heatmap
     fig = heatmap_of_ranks(rank_matrix, highlight_rows=highlight_rows, highlight_cols=highlight_cols, figsize=(15, 6),
                            low_is_best=low_is_best, bar_label=bar_label, backend=backend)
-    return fig, rank_matrix.columns[:2].tolist()
+    return fig, rank_matrix
 
 
 if __name__ == "__main__":

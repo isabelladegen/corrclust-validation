@@ -26,6 +26,8 @@ class IAResultsCSV:
     gt_worst_measure_data_variants: str = "gt_worst_measure_data_variants.csv"
     paired_t_test_reduced_datasets: str = "paired_t_test_reduced_datasets.csv"
     internal_measures_for_ground_truth: str = "internal_measures_for_ground_truth.csv"
+    distance_measures_ranks_for_ground_truth: str = "distance_measures_ranks_for_ground_truth.csv"
+    distance_measures_raw_values_for_ground_truth: str = "distance_measures_raw_values_for_ground_truth.csv"
 
 
 def get_name_paired_t_test_between_distance_measures(internal_measure: str) -> str:
