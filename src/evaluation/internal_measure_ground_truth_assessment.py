@@ -140,7 +140,7 @@ class InternalMeasureGroundTruthAssessment:
 
     def wilcoxons_signed_rank_until_all_significant(self, stats_value: str = '50%', alpha: float = 0.05,
                                                     bonferroni_adjust: int = 1, alternative: str = 'two-sided',
-                                                    non_zero: float = 0.0001):
+                                                    non_zero: float = 0.00000001):
         """ Calculates for each internal measure the wilcoxon's signed rank test until all measures of
         top group are significantly better than the next, or next next group
 
@@ -179,8 +179,8 @@ class InternalMeasureGroundTruthAssessment:
                 wilcox_result = calculate_wilcox_signed_rank(values1=values[m1], values2=values[m2], non_zero=non_zero,
                                                              alternative=alternative)
                 statistics.append(wilcox_result.statistic)
-                p_values.append(wilcox_result.p_value)
-                n_pairs.append(wilcox_result.n_pairs)
+                p_values.append(round(wilcox_result.p_value, 5))
+                n_pairs.append(wilcox_result.non_zero)
                 is_significances.append(wilcox_result.is_significant(alpha=alpha, bonferroni_adjust=bonferroni_adjust))
                 effect_sizes.append(wilcox_result.effect_size(alternative=alternative))
                 achieved_powers.append(
@@ -202,8 +202,8 @@ class InternalMeasureGroundTruthAssessment:
                                                                  non_zero=non_zero,
                                                                  alternative=alternative)
                     statistics.append(wilcox_result.statistic)
-                    p_values.append(wilcox_result.p_value)
-                    n_pairs.append(wilcox_result.n_pairs)
+                    p_values.append(round(wilcox_result.p_value, 5))
+                    n_pairs.append(wilcox_result.non_zero)
                     this_group_significances.append(
                         wilcox_result.is_significant(alpha=alpha, bonferroni_adjust=bonferroni_adjust))
                     is_significances.append(

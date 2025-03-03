@@ -28,6 +28,7 @@ class IAResultsCSV:
     internal_measures_for_ground_truth: str = "internal_measures_for_ground_truth.csv"
     distance_measures_ranks_for_ground_truth: str = "distance_measures_ranks_for_ground_truth.csv"
     distance_measures_raw_values_for_ground_truth: str = "distance_measures_raw_values_for_ground_truth.csv"
+    distance_measures_stat_results_for_ground_truth: str = "distance_measures_stat_results_for_ground_truth.csv"
 
 
 def get_name_paired_t_test_between_distance_measures(internal_measure: str) -> str:

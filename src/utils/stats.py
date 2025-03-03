@@ -41,8 +41,8 @@ class StatsCols:
 
 class WilcoxResult:
     def __init__(self, statistic: float, p_value: float, n_pairs: int, none_zero: int, round_to: int = 3):
-        self.statistic = statistic
-        self.p_value = p_value
+        self.statistic = 0 if np.isnan(statistic) else statistic
+        self.p_value = 1 if np.isnan(p_value) else p_value
         self.n_pairs = n_pairs
         self.non_zero = none_zero
         self.__round_to = round_to
@@ -60,6 +60,8 @@ class WilcoxResult:
         """
         Returns effect size r = z_scores/sqrt(N_non_zero_pairs). Assumes two sided test
         """
+        if self.non_zero == 0:
+            return 0  # we had no pairs to calculate the statistics from so we have no effect size
         if alternative == 'two-sided':
             z_score = norm.ppf(self.p_value / 2)  # divide by 2 for two-tailed test
         else:
@@ -78,6 +80,8 @@ class WilcoxResult:
         :param bonferroni_adjust: optional, int to divide alpha by for multiple tests
         :return: achieved power
         """
+        if self.non_zero == 0:
+            return 0.0 # we had no data to calculate effects from
         adjusted_alpha = self.adjusted_alpha(alpha=alpha, bonferroni_adjust=bonferroni_adjust)
         power_analysis = TTestPower()
         achieved_power = power_analysis.power(

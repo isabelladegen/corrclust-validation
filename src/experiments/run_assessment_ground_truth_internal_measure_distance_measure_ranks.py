@@ -40,6 +40,9 @@ def raw_values_ranks_heatmaps_for_ground_truth(data_dirs, dataset_types, root_re
     # key=internal measure name, value = dict with key=variant description, value will be raw values df
     all_raw_values = {measure: dict_for_variant.copy() for measure in internal_measures}
 
+    # key = internal measure name, value = list of stats df for each variant
+    all_stats_results = {measure: [] for measure in internal_measures}
+
     # calculate ranks & raw values
     for data_dir in data_dirs:
         for data_type in dataset_types:
@@ -52,11 +55,17 @@ def raw_values_ranks_heatmaps_for_ground_truth(data_dirs, dataset_types, root_re
             variant_desc = data_variant_description[(data_dir, data_type)]
             ranks_for_variant = ga.stats_for_ranks_across_all_runs()
             raw_values_for_variant = ga.stats_for_raw_values_across_all_runs()
+            stats_results = ga.wilcoxons_signed_rank_until_all_significant()
 
             for internal_measure in internal_measures:
                 all_ranks[internal_measure][variant_desc] = ranks_for_variant[internal_measure].loc[stats_value]
                 all_raw_values[internal_measure][variant_desc] = raw_values_for_variant[internal_measure].loc[
                     stats_value]
+
+                # change stat results into a df for this variant
+                df = stats_results[internal_measure]
+                df.insert(0, "Data Variant", variant_desc)
+                all_stats_results[internal_measure].append(df)
 
     store_results_in = internal_measure_evaluation_dir_for(
         overall_dataset_name=overall_ds_name,
@@ -66,6 +75,12 @@ def raw_values_ranks_heatmaps_for_ground_truth(data_dirs, dataset_types, root_re
         distance_measure='')  # all distances as columns
     # plot data
     for measure in internal_measures:
+        # save stats results
+        stats_for_measure = all_stats_results[measure]
+        combined_stats_df = pd.concat(stats_for_measure, ignore_index=True)
+        combined_stats_df.to_csv(str(os.path.join(store_results_in,
+                                                  measure + "_" + IAResultsCSV.distance_measures_stat_results_for_ground_truth)))
+
         # plot ranks
         rank_fig, rank_matrix = plot_ranking_heat_map(backend, all_ranks[measure], pattern_keys_ordered)
 
@@ -95,6 +110,7 @@ def raw_values_ranks_heatmaps_for_ground_truth(data_dirs, dataset_types, root_re
 
 if __name__ == "__main__":
     # calculates raw and rank matrix
+    # calculates statistics for groups until all significant
     # plot heatmap ov average ranking for each dataset in the N30
     # y = data variant, x = distance measure, lower ranks are better
     backend = Backends.none.value
