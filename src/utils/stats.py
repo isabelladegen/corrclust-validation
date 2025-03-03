@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 from scipy.stats import norm
+from scipy import stats
 from statsmodels.stats.power import TTestPower
 
 from src.utils.plots.matplotlib_helper_functions import reset_matplotlib, Backends, display_legend, fontsize
@@ -55,11 +56,14 @@ class WilcoxResult:
         is_significant = self.p_value < adjusted_alpha
         return is_significant
 
-    def effect_size(self) -> float:
+    def effect_size(self, alternative: str = 'two-sided') -> float:
         """
         Returns effect size r = z_scores/sqrt(N_non_zero_pairs). Assumes two sided test
         """
-        z_score = norm.ppf(self.p_value / 2)  # divide by 2 for two-tailed test
+        if alternative == 'two-sided':
+            z_score = norm.ppf(self.p_value / 2)  # divide by 2 for two-tailed test
+        else:
+            z_score = norm.ppf(self.p_value)  # divide by 2 for two-tailed test
         r = abs(z_score) / np.sqrt(self.non_zero)
         return round(r, self.__round_to)
 
@@ -67,7 +71,7 @@ class WilcoxResult:
     def adjusted_alpha(alpha: float = 0.05, bonferroni_adjust: int = 1) -> float:
         return round(alpha / bonferroni_adjust, 4)
 
-    def achieved_power(self, alpha: float = 0.05, bonferroni_adjust: int = 1) -> float:
+    def achieved_power(self, alpha: float = 0.05, bonferroni_adjust: int = 1, alternative: str = 'two-sided') -> float:
         """
         Returns the power achieved as float, so 0.7 = 70%
         :param alpha: optional, alpha that should be used
@@ -80,7 +84,7 @@ class WilcoxResult:
             effect_size=self.effect_size(),
             nobs=self.non_zero,
             alpha=adjusted_alpha,
-            alternative='two-sided'
+            alternative=alternative
         )
         return round(achieved_power, self.__round_to)
 
@@ -383,3 +387,12 @@ def cohens_d_paired(v1, v2):
         return 0 if diff_mean == 0 else np.inf
 
     return diff_mean / diff_std
+
+
+def calculate_wilcox_signed_rank(values1, values2, non_zero, alternative="two-sided"):
+    # remove zeros to avoid approximation
+    differences = np.array(values1) - np.array(values2)
+    nonzero_diffs = differences[np.abs(differences) > non_zero]  # don't consider too small differences
+    result = stats.wilcoxon(x=nonzero_diffs, zero_method='wilcox', alternative=alternative, mode='exact')
+    stats_res = WilcoxResult(result.statistic, result.pvalue, len(values1), len(nonzero_diffs))
+    return stats_res

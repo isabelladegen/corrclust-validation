@@ -1,6 +1,7 @@
 from hamcrest import *
 
-from src.evaluation.internal_measure_ground_truth_assessment import InternalMeasureGroundTruthAssessment
+from src.evaluation.internal_measure_ground_truth_assessment import InternalMeasureGroundTruthAssessment, \
+    GroupAssessmentCols
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import SYNTHETIC_DATA_DIR, ROOT_RESULTS_DIR
 from src.utils.distance_measures import DistanceMeasures
@@ -95,3 +96,42 @@ def test_calculate_grouping_for_distance_measure_comparisons():
     assert_that(pmb_groupings[1], contains_exactly(DistanceMeasures.l3_cor_dist))
     assert_that(pmb_groupings[2], contains_exactly(DistanceMeasures.l1_cor_dist))
     assert_that(pmb_groupings[3], contains_exactly(DistanceMeasures.foerstner_cor_dist))
+
+
+def test_wilcoxon_signed_rank_until_significant():
+    result = ga.wilcoxons_signed_rank_until_all_significant()
+
+    # result for each internal measure
+    assert_that(len(result), is_(len(internal_measures)))
+
+    # silhouette results
+    scw_df = result[ClusteringQualityMeasures.silhouette_score]
+    assert_that(scw_df.shape[0], is_(1))
+    assert_that(scw_df[GroupAssessmentCols.alpha].iloc[0], is_(0.05))
+    assert_that(scw_df[GroupAssessmentCols.statistic].iloc[0], is_(0.0))
+    assert_that(round(scw_df[GroupAssessmentCols.p_value].iloc[0], 2), is_(0.0))
+    assert_that(scw_df[GroupAssessmentCols.effect_size].iloc[0], is_(1.097))
+    assert_that(scw_df[GroupAssessmentCols.achieved_power].iloc[0], is_(1.0))
+    assert_that(scw_df[GroupAssessmentCols.non_zero_pairs].iloc[0], is_(30))
+    assert_that(scw_df[GroupAssessmentCols.is_significat].iloc[0], is_(True))
+    assert_that(scw_df[GroupAssessmentCols.group].iloc[0], is_((1, 2)))
+    assert_that(scw_df[GroupAssessmentCols.distance_measures_in_group].iloc[0],
+                contains_exactly(DistanceMeasures.l1_cor_dist))
+    assert_that(scw_df[GroupAssessmentCols.compared_distance_measures].iloc[0],
+                is_((DistanceMeasures.l3_cor_dist, DistanceMeasures.l1_cor_dist)))
+
+    # dbi results
+    dbi_df = result[ClusteringQualityMeasures.dbi]
+    assert_that(dbi_df.shape[0], is_(1))
+    assert_that(dbi_df[GroupAssessmentCols.alpha].iloc[0], is_(0.05))
+    assert_that(dbi_df[GroupAssessmentCols.statistic].iloc[0], is_(0.0))
+    assert_that(round(dbi_df[GroupAssessmentCols.p_value].iloc[0], 2), is_(0.0))
+    assert_that(dbi_df[GroupAssessmentCols.effect_size].iloc[0], is_(1.097))
+    assert_that(dbi_df[GroupAssessmentCols.achieved_power].iloc[0], is_(1.0))
+    assert_that(dbi_df[GroupAssessmentCols.non_zero_pairs].iloc[0], is_(30))
+    assert_that(dbi_df[GroupAssessmentCols.is_significat].iloc[0], is_(True))
+    assert_that(dbi_df[GroupAssessmentCols.group].iloc[0], is_((1, 2)))
+    assert_that(dbi_df[GroupAssessmentCols.distance_measures_in_group].iloc[0],
+                contains_exactly(DistanceMeasures.l1_cor_dist))
+    assert_that(dbi_df[GroupAssessmentCols.compared_distance_measures].iloc[0],
+                is_((DistanceMeasures.l3_cor_dist, DistanceMeasures.l1_cor_dist)))

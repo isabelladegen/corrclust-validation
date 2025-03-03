@@ -1,9 +1,13 @@
+from dataclasses import dataclass
+from itertools import combinations, product
+
 import pandas as pd
 
 from src.evaluation.describe_bad_partitions import DescribeBadPartCols
 from src.experiments.run_calculate_internal_measures_for_ground_truth import \
     read_ground_truth_clustering_quality_measures
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
+from src.utils.stats import calculate_wilcox_signed_rank
 
 # value for ascending, if true lowest value will get rank 1, if falls highest value will get rank 1
 internal_measure_ranking_method = {
@@ -12,6 +16,20 @@ internal_measure_ranking_method = {
     ClusteringQualityMeasures.vrc: False,  # higher is better
     ClusteringQualityMeasures.pmb: False,  # higher is better
 }
+
+
+@dataclass
+class GroupAssessmentCols:
+    alpha: str = "alpha"
+    statistic: str = "statistic"
+    p_value: str = "p value"
+    effect_size: str = "effect size"
+    achieved_power: str = "achieved power"
+    non_zero_pairs: str = "non zero pairs"
+    is_significat: str = "is significant"
+    group: str = "group"
+    distance_measures_in_group: str = "distance measures in group"
+    compared_distance_measures: str = "compared distance measures"
 
 
 class InternalMeasureGroundTruthAssessment:
@@ -120,3 +138,99 @@ class InternalMeasureGroundTruthAssessment:
             groupings[measure] = result
         return groupings
 
+    def wilcoxons_signed_rank_until_all_significant(self, stats_value: str = '50%', alpha: float = 0.05,
+                                                    bonferroni_adjust: int = 1, alternative: str = 'two-sided',
+                                                    non_zero: float = 0.0001):
+        """ Calculates for each internal measure the wilcoxon's signed rank test until all measures of
+        top group are significantly better than the next, or next next group
+
+        """
+        wilxoxons_signed_ranks = {}
+        # get distance measure groupings
+        groupings = self.grouping_for_each_internal_measure(stats_value=stats_value)
+        raw_values = self.raw_scores_for_each_internal_measure()
+        for internal_index in self.internal_measures:
+            # results to build dataframe
+            statistics = []
+            p_values = []
+            effect_sizes = []
+            achieved_powers = []
+            n_pairs = []
+            is_significances = []
+            results_for_group = []
+            distance_measures_in_group = []
+            compares = []
+            alphas_used = []
+
+            groups = groupings[internal_index]
+            # df of columns are distance measures, values are the scores for the runs
+            values = raw_values[internal_index]
+
+            # test group 1
+            group = 1
+            top_group = groups[group]
+            # compare significance within top group
+            # if top group has just one distance measure than compare is empty and this will not be ran
+            compare = list(combinations(top_group, 2))
+            for m1, m2 in compare:
+                compares.append((m1, m2))
+                results_for_group.append(group)
+                distance_measures_in_group.append(groups[group])
+                wilcox_result = calculate_wilcox_signed_rank(values1=values[m1], values2=values[m2], non_zero=non_zero,
+                                                             alternative=alternative)
+                statistics.append(wilcox_result.statistic)
+                p_values.append(wilcox_result.p_value)
+                n_pairs.append(wilcox_result.n_pairs)
+                is_significances.append(wilcox_result.is_significant(alpha=alpha, bonferroni_adjust=bonferroni_adjust))
+                effect_sizes.append(wilcox_result.effect_size(alternative=alternative))
+                achieved_powers.append(
+                    wilcox_result.achieved_power(alpha=alpha, bonferroni_adjust=bonferroni_adjust,
+                                                 alternative=alternative))
+                alphas_used.append(wilcox_result.adjusted_alpha(alpha=alpha, bonferroni_adjust=bonferroni_adjust))
+
+            # test top group with next group(s), stop if significant
+            max_group = max(groups.keys())
+            for group in range(2, max_group + 1):
+                next_group = groups[group]
+                measure_comb = list(product(top_group, next_group))
+                this_group_significances = []
+                for m1, m2 in measure_comb:
+                    compares.append((m1, m2))
+                    results_for_group.append((1, group))
+                    distance_measures_in_group.append(groups[group])
+                    wilcox_result = calculate_wilcox_signed_rank(values1=values[m1], values2=values[m2],
+                                                                 non_zero=non_zero,
+                                                                 alternative=alternative)
+                    statistics.append(wilcox_result.statistic)
+                    p_values.append(wilcox_result.p_value)
+                    n_pairs.append(wilcox_result.n_pairs)
+                    this_group_significances.append(
+                        wilcox_result.is_significant(alpha=alpha, bonferroni_adjust=bonferroni_adjust))
+                    is_significances.append(
+                        wilcox_result.is_significant(alpha=alpha, bonferroni_adjust=bonferroni_adjust))
+                    effect_sizes.append(wilcox_result.effect_size(alternative=alternative))
+                    achieved_powers.append(
+                        wilcox_result.achieved_power(alpha=alpha, bonferroni_adjust=bonferroni_adjust,
+                                                     alternative=alternative))
+                    alphas_used.append(wilcox_result.adjusted_alpha(alpha=alpha, bonferroni_adjust=bonferroni_adjust))
+                if all(this_group_significances):
+                    # we found the top group, all other distance measures score significantly worse
+                    break
+
+            # build dataframe
+            results_dict = {
+                GroupAssessmentCols.group: results_for_group,
+                GroupAssessmentCols.compared_distance_measures: compares,
+                GroupAssessmentCols.p_value: p_values,
+                GroupAssessmentCols.effect_size: effect_sizes,
+                GroupAssessmentCols.achieved_power: achieved_powers,
+                GroupAssessmentCols.non_zero_pairs: n_pairs,
+                GroupAssessmentCols.alpha: alphas_used,
+                GroupAssessmentCols.is_significat: is_significances,
+                GroupAssessmentCols.statistic: statistics,
+                GroupAssessmentCols.distance_measures_in_group: distance_measures_in_group,
+            }
+            df = pd.DataFrame(results_dict)
+            wilxoxons_signed_ranks[internal_index] = df
+
+        return wilxoxons_signed_ranks
