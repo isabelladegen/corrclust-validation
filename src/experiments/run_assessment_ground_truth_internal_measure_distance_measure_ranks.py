@@ -6,7 +6,7 @@ import pandas as pd
 from src.evaluation.distance_metric_evaluation import criteria_short_names
 from src.evaluation.internal_measure_assessment import IAResultsCSV
 from src.evaluation.internal_measure_ground_truth_assessment import InternalMeasureGroundTruthAssessment, \
-    internal_measure_ranking_method
+    internal_measure_lower_values_best
 from src.evaluation.interpretation_distance_metric_ranking import DistanceMetricInterpretation
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import ROOT_RESULTS_DIR, SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, \
@@ -91,7 +91,7 @@ def raw_values_ranks_heatmaps_for_ground_truth(data_dirs, dataset_types, root_re
         # plot raw values
         raw_value_fig, raw_value_matrix = plot_ranking_heat_map(backend, all_raw_values[measure], pattern_keys_ordered,
                                                                 bar_label="Raw",
-                                                                low_is_best=internal_measure_ranking_method[measure])
+                                                                low_is_best=internal_measure_lower_values_best[measure])
         # save raw value data
         raw_value_matrix.to_csv(
             str(os.path.join(store_results_in,

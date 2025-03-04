@@ -10,7 +10,7 @@ from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.stats import calculate_wilcox_signed_rank
 
 # value for ascending, if true lowest value will get rank 1, if falls highest value will get rank 1
-internal_measure_ranking_method = {
+internal_measure_lower_values_best = {
     ClusteringQualityMeasures.silhouette_score: False,  # higher is better
     ClusteringQualityMeasures.dbi: True,  # lower is better
     ClusteringQualityMeasures.vrc: False,  # higher is better
@@ -68,7 +68,7 @@ class InternalMeasureGroundTruthAssessment:
 
         for internal_measure, df in raw_scores.items():
             # Rank across columns (axis=1) for each row
-            ranked_df = df.rank(axis=1, method='dense', ascending=internal_measure_ranking_method[internal_measure])
+            ranked_df = df.rank(axis=1, method='dense', ascending=internal_measure_lower_values_best[internal_measure])
             ranked_dict[internal_measure] = ranked_df
         return ranked_dict
 
@@ -176,7 +176,11 @@ class InternalMeasureGroundTruthAssessment:
                 compares.append((m1, m2))
                 results_for_group.append(group)
                 distance_measures_in_group.append(groups[group])
-                wilcox_result = calculate_wilcox_signed_rank(values1=values[m1], values2=values[m2], non_zero=non_zero,
+                # swap values 1 and values 2 for DBI where lower values are best, so we can interpret the statistical
+                # outcomes sign consistently across internal measures
+                values1 = values[m2] if internal_measure_lower_values_best[internal_index] else values[m1]
+                values2 = values[m1] if internal_measure_lower_values_best[internal_index] else values[m2]
+                wilcox_result = calculate_wilcox_signed_rank(values1=values1, values2=values2, non_zero=non_zero,
                                                              alternative=alternative)
                 statistics.append(wilcox_result.statistic)
                 p_values.append(round(wilcox_result.p_value, 5))
@@ -198,7 +202,11 @@ class InternalMeasureGroundTruthAssessment:
                     compares.append((m1, m2))
                     results_for_group.append((1, group))
                     distance_measures_in_group.append(groups[group])
-                    wilcox_result = calculate_wilcox_signed_rank(values1=values[m1], values2=values[m2],
+                    # swap values 1 and values 2 for DBI where lower values are best, so we can interpret the
+                    # statistical outcomes sign consistently across internal measures
+                    values1 = values[m2] if internal_measure_lower_values_best[internal_index] else values[m1]
+                    values2 = values[m1] if internal_measure_lower_values_best[internal_index] else values[m2]
+                    wilcox_result = calculate_wilcox_signed_rank(values1=values1, values2=values2,
                                                                  non_zero=non_zero,
                                                                  alternative=alternative)
                     statistics.append(wilcox_result.statistic)

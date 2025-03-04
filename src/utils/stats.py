@@ -40,11 +40,13 @@ class StatsCols:
 
 
 class WilcoxResult:
-    def __init__(self, statistic: float, p_value: float, n_pairs: int, none_zero: int, round_to: int = 3):
+    def __init__(self, statistic: float, p_value: float, n_pairs: int, none_zero: int, effect_direction: int,
+                 round_to: int = 3):
         self.statistic = 0 if np.isnan(statistic) else statistic
         self.p_value = 1 if np.isnan(p_value) else p_value
         self.n_pairs = n_pairs
         self.non_zero = none_zero
+        self.effect_direction = effect_direction  # -1 or 1 to symbolise direction of effect
         self.__round_to = round_to
 
     def is_significant(self, alpha: float = 0.05, bonferroni_adjust: int = 1) -> bool:
@@ -66,7 +68,7 @@ class WilcoxResult:
             z_score = norm.ppf(self.p_value / 2)  # divide by 2 for two-tailed test
         else:
             z_score = norm.ppf(self.p_value)  # divide by 2 for two-tailed test
-        r = abs(z_score) / np.sqrt(self.non_zero)
+        r = self.effect_direction * abs(z_score) / np.sqrt(self.non_zero)
         return round(r, self.__round_to)
 
     @staticmethod
@@ -81,7 +83,7 @@ class WilcoxResult:
         :return: achieved power
         """
         if self.non_zero == 0:
-            return 0.0 # we had no data to calculate effects from
+            return 0.0  # we had no data to calculate effects from
         adjusted_alpha = self.adjusted_alpha(alpha=alpha, bonferroni_adjust=bonferroni_adjust)
         power_analysis = TTestPower()
         achieved_power = power_analysis.power(
@@ -397,6 +399,11 @@ def calculate_wilcox_signed_rank(values1, values2, non_zero, alternative="two-si
     # remove zeros to avoid approximation
     differences = np.array(values1) - np.array(values2)
     nonzero_diffs = differences[np.abs(differences) > non_zero]  # don't consider too small differences
+    # sign of difference
+    sign = 1  # if we have no nonezero diffs
+    if len(nonzero_diffs) > 0:
+        sign = 1 if np.median(nonzero_diffs) > 0 else -1 # the majority sign of the diff
     result = stats.wilcoxon(x=nonzero_diffs, zero_method='wilcox', alternative=alternative, mode='exact')
-    stats_res = WilcoxResult(result.statistic, result.pvalue, len(values1), len(nonzero_diffs))
+    stats_res = WilcoxResult(statistic=result.statistic, p_value=result.pvalue, n_pairs=len(values1),
+                             none_zero=len(nonzero_diffs), effect_direction=sign)
     return stats_res
