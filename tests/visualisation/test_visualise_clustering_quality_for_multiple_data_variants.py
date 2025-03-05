@@ -7,7 +7,7 @@ from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.visualisation.visualise_clustering_quality_measures_for_multiple_data_variants import \
-    VisualiseClusteringQualityMeasuresForDataVariants
+    VisualiseClusteringQualityMeasuresForDataVariants, VisualiseGroundTruthClusteringQualityMeasuresForDataVariants
 
 # backend = Backends.visible_tests.value
 backend = Backends.none.value
@@ -79,3 +79,21 @@ def test_can_visualise_scatter_plots_for_the_quality_measures_across_data_varian
                           ClusteringQualityMeasures.pmb],
         save_fig=False)
     assert_that(fig, is_not(None))
+
+
+def test_can_visualise_ci_of_mean_ground_truth_for_measures():
+    internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.dbi]
+    dist_measures = [DistanceMeasures.l5_cor_dist, DistanceMeasures.linf_cor_dist, DistanceMeasures.dot_transform_linf,
+                     DistanceMeasures.l3_cor_dist, DistanceMeasures.l1_cor_dist, DistanceMeasures.l1_with_ref,
+                     DistanceMeasures.log_frob_cor_dist, DistanceMeasures.foerstner_cor_dist]
+    gt_data_types = [SyntheticDataType.normal_correlated,
+                     SyntheticDataType.non_normal_correlated,
+                     SyntheticDataType.rs_1min]
+    gtv = VisualiseGroundTruthClusteringQualityMeasuresForDataVariants(overall_ds_name="n30",
+                                                                       dataset_types=gt_data_types, data_dirs=data_dirs,
+                                                                       result_root_dir=root_results_dir,
+                                                                       internal_measures=internal_measures,
+                                                                       distance_measures=dist_measures,
+                                                                       backend=backend)
+    fig = gtv.ci_mean_ground_truth_for_quality_measures(save_fig=False)
+    assert_that(fig, is_not(none()))
