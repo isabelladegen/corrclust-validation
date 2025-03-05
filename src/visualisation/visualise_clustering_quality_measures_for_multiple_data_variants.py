@@ -157,7 +157,7 @@ class VisualiseGroundTruthClusteringQualityMeasuresForDataVariants:
         self.col_names = [SyntheticDataType.get_display_name_for_data_type(ds_type) for ds_type in dataset_types]
 
     def ci_mean_ground_truth_for_quality_measures(self, alpha=0.05, save_fig: bool = False,
-                                                  figsize: (float, float) = (20, 10)):
+                                                  figsize: (float, float) = (15, 8)):
         """
         Plots grid of ci for ground truth for the given quality measures
         """
