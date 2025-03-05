@@ -23,12 +23,14 @@ from src.visualisation.visualise_distance_measure_rank_distributions import heat
 
 def raw_values_ranks_heatmaps_for_ground_truth(data_dirs, dataset_types, root_results_dir, distance_measures,
                                                internal_measures, overall_ds_name, backend, stats_value,
+                                               distance_measures_for_summary,
                                                save_fig=True):
     # create variant description that serve as keys
     variant_descriptions = []
     for data_dir in data_dirs:
         for data_type in dataset_types:
             variant_desc = data_variant_description[(data_dir, data_type)]
+            variant_descriptions.append(variant_desc)
 
     # create variant description dictionary
     # key= variant name, value = None (will be df once created)
@@ -42,6 +44,12 @@ def raw_values_ranks_heatmaps_for_ground_truth(data_dirs, dataset_types, root_re
 
     # key = internal measure name, value = list of stats df for each variant
     all_stats_results = {measure: [] for measure in internal_measures}
+
+    # key = internal measure name, value = list of stats df for each variant
+    reasonable_mins = []
+    reasonable_maxs = []
+    reasonable_data_variant = []
+    reasonable_index = []
 
     # calculate ranks & raw values
     for data_dir in data_dirs:
@@ -67,12 +75,30 @@ def raw_values_ranks_heatmaps_for_ground_truth(data_dirs, dataset_types, root_re
                 df.insert(0, "Data Variant", variant_desc)
                 all_stats_results[internal_measure].append(df)
 
+                # describe summary for reasonable distance measures
+                stats_df = raw_values_for_variant[internal_measure]
+                reasonable_mins.append(stats_df[reasonable_distance_measures].loc['min'].min())
+                reasonable_maxs.append(stats_df[reasonable_distance_measures].loc['max'].max())
+                reasonable_data_variant.append(variant_desc)
+                reasonable_index.append(internal_measure)
+
     store_results_in = internal_measure_evaluation_dir_for(
         overall_dataset_name=overall_ds_name,
         data_type='',  # all datatypes as rows
         results_dir=root_results_dir,
         data_dir='',  # all data data comp as rows
         distance_measure='')  # all distances as columns
+
+    # build describe df
+    reasonable_summary_df = pd.DataFrame(
+        {'Data variant': reasonable_data_variant,
+         'Internal index': reasonable_index,
+         'min': reasonable_mins,
+         'max': reasonable_maxs,
+         })
+    reasonable_summary_df.to_csv(
+        str(os.path.join(store_results_in, IAResultsCSV.reasonable_distance_measures_ranges_for_ground_truth)))
+
     # plot data
     for measure in internal_measures:
         # save stats results
@@ -144,9 +170,24 @@ if __name__ == "__main__":
                          DistanceMeasures.log_frob_cor_dist,  # correlation metrix
                          DistanceMeasures.foerstner_cor_dist]
 
+    reasonable_distance_measures = [DistanceMeasures.l1_cor_dist,  # lp norms
+                                    DistanceMeasures.l2_cor_dist,
+                                    DistanceMeasures.l3_cor_dist,
+                                    DistanceMeasures.l5_cor_dist,
+                                    DistanceMeasures.linf_cor_dist,
+                                    DistanceMeasures.l1_with_ref,  # lp norms with reference vector
+                                    DistanceMeasures.l2_with_ref,
+                                    DistanceMeasures.l3_with_ref,
+                                    DistanceMeasures.l5_with_ref,
+                                    DistanceMeasures.linf_with_ref,
+                                    DistanceMeasures.dot_transform_l1,  # dot transform + lp norms
+                                    DistanceMeasures.dot_transform_l2,
+                                    DistanceMeasures.dot_transform_linf, ]
+
     run_names = pd.read_csv(GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
 
     raw_values_ranks_heatmaps_for_ground_truth(data_dirs=data_dirs, dataset_types=dataset_types, overall_ds_name="n30",
                                                root_results_dir=root_result_dir, distance_measures=distance_measures,
                                                backend=backend, save_fig=save_fig, internal_measures=internal_measures,
-                                               stats_value=stats_value)
+                                               stats_value=stats_value,
+                                               distance_measures_for_summary=reasonable_distance_measures)
