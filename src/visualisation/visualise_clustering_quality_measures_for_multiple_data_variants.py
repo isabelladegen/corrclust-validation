@@ -115,7 +115,7 @@ def create_ci_grid(data_dict: {}, internal_indices: [str], distance_measures: [s
                                          linestyle='None'))
     last_ax = axes[-1][-1]
     last_ax.legend(handles=legend_handles,
-                   loc='best',
+                   loc='center left',
                    fontsize=fontsize - 2,
                    frameon=True,
                    edgecolor='black',
@@ -181,10 +181,10 @@ class VisualiseGroundTruthClusteringQualityMeasuresForDataVariants:
                 results_type=ResultsType.internal_measure_evaluation,
                 overall_dataset_name=self.overall_ds_name,
                 results_dir=self.result_root_dir,
-                distance_measure=self.distance_measures)
+                distance_measure='')
             # add an image results folder
-            file_name = get_image_results_path(folder, self.internal_measures[0] + '_' + self.internal_measures[
-                1] + GROUND_TRUTH_CI_PLOT)
+            internal_measure_names = '_'.join(self.internal_measures)
+            file_name = get_image_results_path(folder, internal_measure_names + '_' + GROUND_TRUTH_CI_PLOT)
             fig.savefig(file_name, dpi=300, bbox_inches='tight')
         return fig
 
