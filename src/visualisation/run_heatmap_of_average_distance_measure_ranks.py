@@ -7,7 +7,8 @@ from src.evaluation.distance_metric_evaluation import criteria_short_names
 from src.evaluation.interpretation_distance_metric_ranking import DistanceMetricInterpretation
 from src.utils.configurations import ROOT_RESULTS_DIR, SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, \
     IRREGULAR_P90_DATA_DIR, GENERATED_DATASETS_FILE_PATH, base_dataset_result_folder_for_type, ResultsType, \
-    AVERAGE_RANK_DISTRIBUTION, HEATMAP_OF_RANKS, HEATMAP_OF_BEST_MEASURES_RAW_VALUES
+    AVERAGE_RANK_DISTRIBUTION, HEATMAP_OF_RANKS, HEATMAP_OF_BEST_MEASURES_RAW_VALUES, get_irregular_folder_name_from, \
+    DataCompleteness
 from src.utils.distance_measures import DistanceMeasures, short_distance_measure_names
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
@@ -40,7 +41,7 @@ def heatmap_for_all_variants(data_dirs, dataset_types, run_names, root_results_d
                                                           data_dir=data_dir,
                                                           root_results_dir=root_results_dir,
                                                           measures=distance_measures)
-            variant_desc = data_variant_description[(data_dir, data_type)]
+            variant_desc = data_variant_description[(get_irregular_folder_name_from(data_dir), data_type)]
             # for average rank heatmap
             ranks_dfs[variant_desc] = interpretation.stats_for_average_ranks_across_all_runs().loc["50%"]
             # for raw value heatmap
@@ -106,7 +107,7 @@ def plot_ranking_heat_map(backend, ranks_series, keys_ordered, bar_label='Rank',
     # sort df according to keys_ordered
     rank_matrix = rank_matrix.reindex(keys_ordered)
     # sort columns by smallest for our baseline variant
-    partial_nn = data_variant_description[(IRREGULAR_P30_DATA_DIR, SyntheticDataType.non_normal_correlated)]
+    partial_nn = data_variant_description[(DataCompleteness.irregular_p30, SyntheticDataType.non_normal_correlated)]
     rank_matrix = rank_matrix.sort_values(by=partial_nn, axis=1, ascending=low_is_best)
     # for each row highlight best cell
     if low_is_best:

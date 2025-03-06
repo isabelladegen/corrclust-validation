@@ -6,7 +6,7 @@ import pandas as pd
 from src.evaluation.interpretation_distance_metric_ranking import DistanceMetricInterpretation
 from src.utils.configurations import ROOT_RESULTS_DIR, SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, \
     IRREGULAR_P90_DATA_DIR, GENERATED_DATASETS_FILE_PATH, get_filename_for_statistical_validation_between_measures, \
-    ResultsType
+    ResultsType, get_irregular_folder_name_from
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.visualisation.run_average_rank_visualisations import data_variant_description
@@ -43,7 +43,7 @@ def interpret_distance_metric_for(top_x: [], data_dirs: [], dataset_types: [], r
             # calculate statistical significance
             alpha = 0.05
             target_power = 0.8
-            data_variant = data_variant_description[(data_dir, data_type)]
+            data_variant = data_variant_description[(get_irregular_folder_name_from(data_dir), data_type)]
             stats_results.append(wilcox_result.as_series(variant_name=data_variant, target_power=target_power,
                                                          alpha=alpha, bonferroni_adjust=bonferroni_adjust))
 

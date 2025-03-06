@@ -12,7 +12,7 @@ from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import ROOT_RESULTS_DIR, SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, \
     IRREGULAR_P90_DATA_DIR, GENERATED_DATASETS_FILE_PATH, base_dataset_result_folder_for_type, ResultsType, \
     AVERAGE_RANK_DISTRIBUTION, HEATMAP_OF_RANKS, HEATMAP_OF_BEST_MEASURES_RAW_VALUES, GROUND_TRUTH_HEATMAP_OF_RANKS, \
-    GROUND_TRUTH_HEATMAP_RAW_VALUES, internal_measure_evaluation_dir_for
+    GROUND_TRUTH_HEATMAP_RAW_VALUES, internal_measure_evaluation_dir_for, get_irregular_folder_name_from
 from src.utils.distance_measures import DistanceMeasures, short_distance_measure_names
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
@@ -29,7 +29,7 @@ def raw_values_ranks_heatmaps_for_ground_truth(data_dirs, dataset_types, root_re
     variant_descriptions = []
     for data_dir in data_dirs:
         for data_type in dataset_types:
-            variant_desc = data_variant_description[(data_dir, data_type)]
+            variant_desc = data_variant_description[(get_irregular_folder_name_from(data_dir), data_type)]
             variant_descriptions.append(variant_desc)
 
     # create variant description dictionary
@@ -70,7 +70,7 @@ def raw_values_ranks_heatmaps_for_ground_truth(data_dirs, dataset_types, root_re
                                                       data_dir=data_dir,
                                                       data_type=data_type,
                                                       root_results_dir=root_results_dir)
-            variant_desc = data_variant_description[(data_dir, data_type)]
+            variant_desc = data_variant_description[(get_irregular_folder_name_from(data_dir), data_type)]
             ranks_for_variant = ga.stats_for_ranks_across_all_runs()
             raw_values_for_variant = ga.stats_for_raw_values_across_all_runs()
             stats_results = ga.wilcoxons_signed_rank_until_all_significant()
@@ -87,8 +87,8 @@ def raw_values_ranks_heatmaps_for_ground_truth(data_dirs, dataset_types, root_re
 
                 # describe median min-max ranges for reasonable distance measures
                 stats_df = raw_values_for_variant[internal_measure]
-                reasonable_mins.append(stats_df[reasonable_distance_measures].loc['50%'].min())
-                reasonable_maxs.append(stats_df[reasonable_distance_measures].loc['50%'].max())
+                reasonable_mins.append(stats_df[distance_measures_for_summary].loc['50%'].min())
+                reasonable_maxs.append(stats_df[distance_measures_for_summary].loc['50%'].max())
                 reasonable_data_variant.append(variant_desc)
                 reasonable_index.append(internal_measure)
 
@@ -218,8 +218,6 @@ if __name__ == "__main__":
                                     DistanceMeasures.dot_transform_l1,  # dot transform + lp norms
                                     DistanceMeasures.dot_transform_l2,
                                     DistanceMeasures.dot_transform_linf, ]
-
-    run_names = pd.read_csv(GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
 
     raw_values_ranks_heatmaps_for_ground_truth(data_dirs=data_dirs, dataset_types=dataset_types, overall_ds_name="n30",
                                                root_results_dir=root_result_dir, distance_measures=distance_measures,

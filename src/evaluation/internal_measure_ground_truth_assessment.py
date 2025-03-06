@@ -28,6 +28,7 @@ class GroupAssessmentCols:
     non_zero_pairs: str = "non zero pairs"
     is_significat: str = "is significant"
     group: str = "group"
+    compared_counts: str = "compared_counts"
     distance_measures_in_group: str = "distance measures in group"
     compared_distance_measures: str = "compared distance measures"
 

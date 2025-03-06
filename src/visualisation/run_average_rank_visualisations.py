@@ -7,7 +7,7 @@ from src.evaluation.interpretation_distance_metric_ranking import DistanceMetric
 from src.utils.configurations import ROOT_RESULTS_DIR, SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, \
     IRREGULAR_P90_DATA_DIR, GENERATED_DATASETS_FILE_PATH, base_dataset_result_folder_for_type, ResultsType, \
     AVERAGE_RANK_DISTRIBUTION, get_image_name_based_on_data_dir_and_data_type, \
-    CRITERIA_RANK_DISTRIBUTION
+    CRITERIA_RANK_DISTRIBUTION, DataCompleteness, get_irregular_folder_name_from
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
@@ -15,18 +15,18 @@ from src.visualisation.visualise_distance_measure_rank_distributions import \
     violin_plots_of_average_rank_per_distance_measure, violin_plot_grids_per_criteria_for_distance_measure
 
 data_variant_description = {
-    (SYNTHETIC_DATA_DIR, SyntheticDataType.raw): "complete, raw",
-    (SYNTHETIC_DATA_DIR, SyntheticDataType.normal_correlated): "complete, correlated",
-    (SYNTHETIC_DATA_DIR, SyntheticDataType.non_normal_correlated): "complete, non-normal",
-    (SYNTHETIC_DATA_DIR, SyntheticDataType.rs_1min): "complete, downsampled",
-    (IRREGULAR_P30_DATA_DIR, SyntheticDataType.raw): "partial, raw",
-    (IRREGULAR_P30_DATA_DIR, SyntheticDataType.normal_correlated): "partial, correlated",
-    (IRREGULAR_P30_DATA_DIR, SyntheticDataType.non_normal_correlated): "partial, non-normal",
-    (IRREGULAR_P30_DATA_DIR, SyntheticDataType.rs_1min): "partial, downsampled",
-    (IRREGULAR_P90_DATA_DIR, SyntheticDataType.raw): "sparse, raw",
-    (IRREGULAR_P90_DATA_DIR, SyntheticDataType.normal_correlated): "sparse, correlated",
-    (IRREGULAR_P90_DATA_DIR, SyntheticDataType.non_normal_correlated): "sparse, non-normal",
-    (IRREGULAR_P90_DATA_DIR, SyntheticDataType.rs_1min): "sparse, downsampled",
+    (DataCompleteness.complete, SyntheticDataType.raw): "complete, raw",
+    (DataCompleteness.complete, SyntheticDataType.normal_correlated): "complete, correlated",
+    (DataCompleteness.complete, SyntheticDataType.non_normal_correlated): "complete, non-normal",
+    (DataCompleteness.complete, SyntheticDataType.rs_1min): "complete, downsampled",
+    (DataCompleteness.irregular_p30, SyntheticDataType.raw): "partial, raw",
+    (DataCompleteness.irregular_p30, SyntheticDataType.normal_correlated): "partial, correlated",
+    (DataCompleteness.irregular_p30, SyntheticDataType.non_normal_correlated): "partial, non-normal",
+    (DataCompleteness.irregular_p30, SyntheticDataType.rs_1min): "partial, downsampled",
+    (DataCompleteness.irregular_p90, SyntheticDataType.raw): "sparse, raw",
+    (DataCompleteness.irregular_p90, SyntheticDataType.normal_correlated): "sparse, correlated",
+    (DataCompleteness.irregular_p90, SyntheticDataType.non_normal_correlated): "sparse, non-normal",
+    (DataCompleteness.irregular_p90, SyntheticDataType.rs_1min): "sparse, downsampled",
 }
 
 
@@ -39,7 +39,7 @@ def violin_plots_for(data_dirs, dataset_types, run_names, root_results_dir, dist
                                                           data_dir=data_dir,
                                                           root_results_dir=root_results_dir,
                                                           measures=distance_measures)
-            variant_desc = data_variant_description[(data_dir, data_type)]
+            variant_desc = data_variant_description[(get_irregular_folder_name_from(data_dir), data_type)]
             title = "Distribution of Average Ranks for the " + variant_desc + " data variant"
             fig = violin_plots_of_average_rank_per_distance_measure(interpretation.average_rank_per_run,
                                                                     title=title,
