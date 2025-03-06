@@ -58,8 +58,11 @@ def run_internal_measure_assessment_datasets(overall_ds_name: str, run_names: [s
 if __name__ == "__main__":
     overall_ds_name = "n30"
     root_result_dir = ROOT_RESULTS_DIR
-    dataset_types = [SyntheticDataType.raw,
-                     SyntheticDataType.normal_correlated,
+    # dataset_types = [SyntheticDataType.raw,
+    #                  SyntheticDataType.normal_correlated,
+    #                  SyntheticDataType.non_normal_correlated,
+    #                  SyntheticDataType.rs_1min]
+    dataset_types = [SyntheticDataType.normal_correlated,
                      SyntheticDataType.non_normal_correlated,
                      SyntheticDataType.rs_1min]
     data_dirs = [SYNTHETIC_DATA_DIR,
@@ -68,7 +71,9 @@ if __name__ == "__main__":
 
     distance_measures = [DistanceMeasures.l1_cor_dist,
                          DistanceMeasures.l1_with_ref,
-                         DistanceMeasures.foerstner_cor_dist]
+                         DistanceMeasures.l5_cor_dist,
+                         DistanceMeasures.l5_with_ref,
+                         DistanceMeasures.linf_cor_dist]
 
     # Config for L2 only ran for downsampled, complete data
     # distance_measures = [DistanceMeasures.l2_cor_dist]

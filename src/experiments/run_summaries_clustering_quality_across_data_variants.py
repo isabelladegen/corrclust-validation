@@ -71,7 +71,7 @@ def summarise_clustering_quality(data_dirs: [str], data_types: [str], run_file: 
 
     mean_corr_df = pd.DataFrame(all_mean_corr_dfs)
     paired_t_test_df = pd.DataFrame(all_paired_t_test_dfs)
-    gt_worst_df = pd.DataFrame(all_gt_worst_dfs)
+    gt_worst_df = pd.DataFrame(all_gt_worst_dfs) # raw values df
 
     # sort the rows
     data_stage_order = [
@@ -131,17 +131,22 @@ if __name__ == "__main__":
     save_fig = True
     overall_ds_name = "n30"
     root_result_dir = ROOT_RESULTS_DIR
-    dataset_types = [SyntheticDataType.raw,
-                     SyntheticDataType.normal_correlated,
+    dataset_types = [SyntheticDataType.normal_correlated,
                      SyntheticDataType.non_normal_correlated,
                      SyntheticDataType.rs_1min]
     data_dirs = [SYNTHETIC_DATA_DIR,
                  IRREGULAR_P30_DATA_DIR,
                  IRREGULAR_P90_DATA_DIR]
 
+    # distance_measures = [DistanceMeasures.l1_cor_dist,
+    #                      DistanceMeasures.l1_with_ref,
+    #                      DistanceMeasures.foerstner_cor_dist]
+
     distance_measures = [DistanceMeasures.l1_cor_dist,
                          DistanceMeasures.l1_with_ref,
-                         DistanceMeasures.foerstner_cor_dist]
+                         DistanceMeasures.l5_cor_dist,
+                         DistanceMeasures.l5_with_ref,
+                         DistanceMeasures.linf_cor_dist]
 
     # Config for L2 only ran for downsampled, complete data
     # distance_measures = [DistanceMeasures.l2_cor_dist]

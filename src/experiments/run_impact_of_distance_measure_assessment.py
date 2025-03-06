@@ -83,7 +83,9 @@ if __name__ == "__main__":
 
     distance_measures = [DistanceMeasures.l1_cor_dist,
                          DistanceMeasures.l1_with_ref,
-                         DistanceMeasures.foerstner_cor_dist]
+                         DistanceMeasures.l5_cor_dist,
+                         DistanceMeasures.l5_with_ref,
+                         DistanceMeasures.linf_cor_dist]
 
     # Config for L2 only ran for downsampled, complete data
     # distance_measures = [DistanceMeasures.l1_cor_dist, DistanceMeasures.l1_with_ref,

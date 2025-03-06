@@ -45,11 +45,21 @@ def raw_values_ranks_heatmaps_for_ground_truth(data_dirs, dataset_types, root_re
     # key = internal measure name, value = list of stats df for each variant
     all_stats_results = {measure: [] for measure in internal_measures}
 
-    # key = internal measure name, value = list of stats df for each variant
+    # create reasonable_distance_measures_ranges_for_ground_truth.csv
     reasonable_mins = []
     reasonable_maxs = []
     reasonable_data_variant = []
     reasonable_index = []
+
+    # create per_distance_measures_descriptive_stats_for_ground_truth.csv
+    dist_mins = []
+    dist_maxs = []
+    dist_mean = []
+    dist_medians = []
+    dist_stds = []
+    dist_data_variant = []
+    dist_index = []
+    dist_distances = []
 
     # calculate ranks & raw values
     for data_dir in data_dirs:
@@ -75,12 +85,23 @@ def raw_values_ranks_heatmaps_for_ground_truth(data_dirs, dataset_types, root_re
                 df.insert(0, "Data Variant", variant_desc)
                 all_stats_results[internal_measure].append(df)
 
-                # describe summary for reasonable distance measures
+                # describe median min-max ranges for reasonable distance measures
                 stats_df = raw_values_for_variant[internal_measure]
-                reasonable_mins.append(stats_df[reasonable_distance_measures].loc['min'].min())
-                reasonable_maxs.append(stats_df[reasonable_distance_measures].loc['max'].max())
+                reasonable_mins.append(stats_df[reasonable_distance_measures].loc['50%'].min())
+                reasonable_maxs.append(stats_df[reasonable_distance_measures].loc['50%'].max())
                 reasonable_data_variant.append(variant_desc)
                 reasonable_index.append(internal_measure)
+
+                # describe median min-max ranges for all distance measures separately
+                for distance_measure in distance_measures:
+                    dist_mins.append(stats_df[distance_measure].loc['min'])
+                    dist_maxs.append(stats_df[distance_measure].loc['max'])
+                    dist_mean.append(stats_df[distance_measure].loc['mean'])
+                    dist_medians.append(stats_df[distance_measure].loc['50%'])
+                    dist_stds.append(stats_df[distance_measure].loc['std'])
+                    dist_data_variant.append(variant_desc)
+                    dist_index.append(internal_measure)
+                    dist_distances.append(distance_measure)
 
     store_results_in = internal_measure_evaluation_dir_for(
         overall_dataset_name=overall_ds_name,
@@ -89,7 +110,7 @@ def raw_values_ranks_heatmaps_for_ground_truth(data_dirs, dataset_types, root_re
         data_dir='',  # all data data comp as rows
         distance_measure='')  # all distances as columns
 
-    # build describe df
+    # build describe df: reasonable_distance_measures_ranges_for_ground_truth.csv
     reasonable_summary_df = pd.DataFrame(
         {'Data variant': reasonable_data_variant,
          'Internal index': reasonable_index,
@@ -97,7 +118,21 @@ def raw_values_ranks_heatmaps_for_ground_truth(data_dirs, dataset_types, root_re
          'max': reasonable_maxs,
          })
     reasonable_summary_df.to_csv(
-        str(os.path.join(store_results_in, IAResultsCSV.reasonable_distance_measures_ranges_for_ground_truth)))
+        str(os.path.join(store_results_in, IAResultsCSV.reasonable_distance_measures_median_ranges_for_ground_truth)))
+
+    # build per distance measure df
+    per_distance_measure_df = pd.DataFrame(
+        {'Data variant': dist_data_variant,
+         'Internal index': dist_index,
+         'Distance': dist_distances,
+         'mean': dist_mean,
+         'std': dist_stds,
+         'median': dist_medians,
+         'min': dist_mins,
+         'max': dist_maxs,
+         })
+    per_distance_measure_df.to_csv(
+        str(os.path.join(store_results_in, IAResultsCSV.per_distance_measures_descriptive_stats_for_ground_truth)))
 
     # plot data
     for measure in internal_measures:

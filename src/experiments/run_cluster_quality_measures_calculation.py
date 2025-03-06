@@ -72,8 +72,11 @@ def run_internal_measure_calculation_for_dataset(overall_ds_name: str, run_names
 if __name__ == "__main__":
     overall_dataset_name = "n30"
     run_names = pd.read_csv(GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
-    distance_measures = [DistanceMeasures.l1_cor_dist, DistanceMeasures.l1_with_ref,
-                         DistanceMeasures.foerstner_cor_dist]
+    distance_measures = [DistanceMeasures.l1_cor_dist,
+                         DistanceMeasures.l1_with_ref,
+                         DistanceMeasures.l5_cor_dist,
+                         DistanceMeasures.l5_with_ref,
+                         DistanceMeasures.linf_cor_dist]
     internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb,
                          ClusteringQualityMeasures.vrc, ClusteringQualityMeasures.dbi]
     data_types = [SyntheticDataType.raw, SyntheticDataType.normal_correlated,
