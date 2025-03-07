@@ -17,7 +17,7 @@ if __name__ == "__main__":
 
     overall_dataset_name = "n30"
     run_names = pd.read_csv(GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
-    distance_measures = [DistanceMeasures.l1_cor_dist]
+    distance_measures = [DistanceMeasures.l1_cor_dist, DistanceMeasures.l5_cor_dist, DistanceMeasures.linf_cor_dist]
     internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb,
                          ClusteringQualityMeasures.vrc, ClusteringQualityMeasures.dbi]
     data_types = [SyntheticDataType.normal_correlated, SyntheticDataType.non_normal_correlated]
