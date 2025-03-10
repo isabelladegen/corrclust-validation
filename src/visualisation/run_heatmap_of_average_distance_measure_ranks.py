@@ -7,8 +7,7 @@ from src.evaluation.distance_metric_evaluation import criteria_short_names
 from src.evaluation.interpretation_distance_metric_ranking import DistanceMetricInterpretation
 from src.utils.configurations import ROOT_RESULTS_DIR, SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, \
     IRREGULAR_P90_DATA_DIR, GENERATED_DATASETS_FILE_PATH, base_dataset_result_folder_for_type, ResultsType, \
-    AVERAGE_RANK_DISTRIBUTION, HEATMAP_OF_RANKS, HEATMAP_OF_BEST_MEASURES_RAW_VALUES, get_irregular_folder_name_from, \
-    DataCompleteness
+    HEATMAP_OF_RANKS, HEATMAP_OF_BEST_MEASURES_RAW_VALUES, DataCompleteness, get_data_completeness_from
 from src.utils.distance_measures import DistanceMeasures, short_distance_measure_names
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
@@ -41,7 +40,7 @@ def heatmap_for_all_variants(data_dirs, dataset_types, run_names, root_results_d
                                                           data_dir=data_dir,
                                                           root_results_dir=root_results_dir,
                                                           measures=distance_measures)
-            variant_desc = data_variant_description[(get_irregular_folder_name_from(data_dir), data_type)]
+            variant_desc = data_variant_description[(get_data_completeness_from(data_dir), data_type)]
             # for average rank heatmap
             ranks_dfs[variant_desc] = interpretation.stats_for_average_ranks_across_all_runs().loc["50%"]
             # for raw value heatmap
@@ -51,12 +50,30 @@ def heatmap_for_all_variants(data_dirs, dataset_types, run_names, root_results_d
     fig, rank_matrix = plot_ranking_heat_map(backend, ranks_dfs, pattern_keys_ordered)
     top_two_dist = rank_matrix.columns[:2].tolist()
 
+    folder = base_dataset_result_folder_for_type(root_results_dir, ResultsType.distance_measure_evaluation)
+    # save rank matrix
+    rank_matrix.to_csv(str(path.join(folder, "distance_measure_rank_matrix.csv")))
+
+    # save raw values
+    rows = []
+    criteria = list(raw_value_dfs.values())[0].index
+    for variant_name, df in raw_value_dfs.items():
+        row_data = {}
+        for criterion in criteria:
+            for m in distance_measures:
+                row_data[f'{criteria_short_names[criterion]}:{short_distance_measure_names[m]}'] = df.loc[criterion, m]
+                row_data[f'{criteria_short_names[criterion]}:{short_distance_measure_names[m]}'] = df.loc[criterion, m]
+        rows.append(row_data)
+    matrix_raw_values = pd.DataFrame(rows, index=list(raw_value_dfs.keys()))
+    # sort df according to keys_ordered
+    matrix_raw_values = matrix_raw_values.reindex(all_variants_ordered)
+    matrix_raw_values.to_csv(str(path.join(folder, "distance_measure_raw_values_matrix.csv")))
+
     # PLOT RAW VALUE HEATMAP
     fig_raw = plot_raw_values_heat_map_for_top_two_measures(raw_value_dfs, top_two_dist, all_variants_ordered, backend)
 
     # save figures
     if save_fig:
-        folder = base_dataset_result_folder_for_type(root_results_dir, ResultsType.distance_measure_evaluation)
         folder = path.join(folder, "images")
         os.makedirs(folder, exist_ok=True)
         fig.savefig(path.join(folder, HEATMAP_OF_RANKS), dpi=300, bbox_inches='tight')

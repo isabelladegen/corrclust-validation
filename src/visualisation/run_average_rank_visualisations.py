@@ -7,7 +7,7 @@ from src.evaluation.interpretation_distance_metric_ranking import DistanceMetric
 from src.utils.configurations import ROOT_RESULTS_DIR, SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, \
     IRREGULAR_P90_DATA_DIR, GENERATED_DATASETS_FILE_PATH, base_dataset_result_folder_for_type, ResultsType, \
     AVERAGE_RANK_DISTRIBUTION, get_image_name_based_on_data_dir_and_data_type, \
-    CRITERIA_RANK_DISTRIBUTION, DataCompleteness, get_irregular_folder_name_from
+    CRITERIA_RANK_DISTRIBUTION, DataCompleteness, get_irregular_folder_name_from, get_data_completeness_from
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
@@ -39,7 +39,7 @@ def violin_plots_for(data_dirs, dataset_types, run_names, root_results_dir, dist
                                                           data_dir=data_dir,
                                                           root_results_dir=root_results_dir,
                                                           measures=distance_measures)
-            variant_desc = data_variant_description[(get_irregular_folder_name_from(data_dir), data_type)]
+            variant_desc = data_variant_description[(get_data_completeness_from(data_dir), data_type)]
             title = "Distribution of Average Ranks for the " + variant_desc + " data variant"
             fig = violin_plots_of_average_rank_per_distance_measure(interpretation.average_rank_per_run,
                                                                     title=title,

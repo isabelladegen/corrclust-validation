@@ -31,7 +31,8 @@ ROOT_REDUCED_RESULTS_DIR = path.join(ROOT_RESULTS_DIR, "reduced-data")
 DISTANCE_MEASURE_ASSESSMENT_RESULTS_FOLDER_NAME = 'distance-measures-assessment'
 IMAGES_FOLDER_NAME = 'images'
 GENERATED_DATASETS_FILE_PATH = path.join(SYNTHETIC_DATA_DIR, 'synthetic-correlated-data-n30.csv')
-CONFIRMATORY_DATASETS_FILE_PATH = path.join(CONFIRMATORY_SYNTHETIC_DATA_DIR, 'confirmatory-synthetic-correlated-data-n30.csv')
+CONFIRMATORY_DATASETS_FILE_PATH = path.join(CONFIRMATORY_SYNTHETIC_DATA_DIR,
+                                            'confirmatory-synthetic-correlated-data-n30.csv')
 
 MULTIPLE_DS_SUMMARY_FILE = 'multiple-datasets-summary.csv'
 OVERALL_SEGMENT_LENGTH_IMAGE = 'overall_segment_length_distributions.png'
@@ -125,6 +126,15 @@ def get_irregular_folder_name_from(data_dir: str):
     p30, 'p90' if irregular p90"""
     data_dir_match = re.search(r'_(p\d+)$', data_dir)
     return data_dir_match.group(1) if data_dir_match else ""
+
+
+def get_data_completeness_from(data_dir: str):
+    """Returns the data completeness from the data dir"""
+    last_folder_name = os.path.basename(os.path.normpath(data_dir))
+    if 'irregular' in last_folder_name:
+        return last_folder_name
+    else:
+        return ""
 
 
 def dir_for_data_type(data_type: str, data_dir: str = SYNTHETIC_DATA_DIR):
