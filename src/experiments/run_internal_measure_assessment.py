@@ -58,13 +58,13 @@ def run_internal_measure_assessment_datasets(overall_ds_name: str, run_names: [s
 if __name__ == "__main__":
     overall_ds_name = "n30"
     root_result_dir = ROOT_RESULTS_DIR
-    # dataset_types = [SyntheticDataType.raw,
-    #                  SyntheticDataType.normal_correlated,
-    #                  SyntheticDataType.non_normal_correlated,
-    #                  SyntheticDataType.rs_1min]
-    dataset_types = [SyntheticDataType.normal_correlated,
+    dataset_types = [SyntheticDataType.raw,
+                     SyntheticDataType.normal_correlated,
                      SyntheticDataType.non_normal_correlated,
                      SyntheticDataType.rs_1min]
+    # dataset_types = [SyntheticDataType.normal_correlated,
+    #                  SyntheticDataType.non_normal_correlated,
+    #                  SyntheticDataType.rs_1min]
     data_dirs = [SYNTHETIC_DATA_DIR,
                  IRREGULAR_P30_DATA_DIR,
                  IRREGULAR_P90_DATA_DIR]

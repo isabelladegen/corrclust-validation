@@ -13,6 +13,14 @@ class ClusteringQualityMeasures:
     dbi: str = "DBI"
     jaccard_index: str = "Jaccard"
 
+    @staticmethod  # this was required due to a mistake in the naming of silhouette and pbm
+    def get_display_name_for_measure(measure: str):
+        if measure == ClusteringQualityMeasures.pmb:
+            return "PBM"
+        if measure == ClusteringQualityMeasures.silhouette_score:
+            return "SWC"
+        return measure
+
 
 def calculate_vrc(distances_seg_cluster_centroid: {}, distance_cluster_centroids_to_data: {},
                   round_to: int = 3) -> float:

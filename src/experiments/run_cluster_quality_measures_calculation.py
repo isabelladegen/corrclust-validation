@@ -77,6 +77,7 @@ if __name__ == "__main__":
                          DistanceMeasures.l5_cor_dist,
                          DistanceMeasures.l5_with_ref,
                          DistanceMeasures.linf_cor_dist]
+
     internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb,
                          ClusteringQualityMeasures.vrc, ClusteringQualityMeasures.dbi]
     data_types = [SyntheticDataType.raw, SyntheticDataType.normal_correlated,

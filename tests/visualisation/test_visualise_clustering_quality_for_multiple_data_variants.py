@@ -2,15 +2,15 @@ from hamcrest import *
 
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import ROOT_RESULTS_DIR, GENERATED_DATASETS_FILE_PATH, SYNTHETIC_DATA_DIR, \
-    IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR
+    IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR, DataCompleteness
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.visualisation.visualise_clustering_quality_measures_for_multiple_data_variants import \
     VisualiseClusteringQualityMeasuresForDataVariants, VisualiseGroundTruthClusteringQualityMeasuresForDataVariants
 
-# backend = Backends.visible_tests.value
-backend = Backends.none.value
+backend = Backends.visible_tests.value
+# backend = Backends.none.value
 
 root_results_dir = ROOT_RESULTS_DIR
 data_types = [SyntheticDataType.raw,
@@ -78,6 +78,18 @@ def test_can_visualise_scatter_plots_for_the_quality_measures_across_data_varian
         quality_measures=[ClusteringQualityMeasures.jaccard_index,
                           ClusteringQualityMeasures.pmb],
         save_fig=False)
+    assert_that(fig, is_not(None))
+
+
+def test_can_visualise_scatter_plots_for_multiple_measures_and_one_variant():
+    fig = vds.scatter_plots_for_multiple_quality_measures(reference_measure=ClusteringQualityMeasures.jaccard_index,
+                                                          quality_measures=[ClusteringQualityMeasures.silhouette_score,
+                                                                            ClusteringQualityMeasures.dbi,
+                                                                            ClusteringQualityMeasures.vrc,
+                                                                            ClusteringQualityMeasures.pmb],
+                                                          data_type=SyntheticDataType.non_normal_correlated,
+                                                          completeness=DataCompleteness.irregular_p30,
+                                                          save_fig=False)
     assert_that(fig, is_not(None))
 
 

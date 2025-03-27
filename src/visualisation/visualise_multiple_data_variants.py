@@ -376,7 +376,6 @@ def create_scatter_grid(data_dict: {}, measure_cols: list, figsize: tuple = (12,
                 ax2.set_ylim(-1, 1)  # Set secondary axis limits
             ax.set_xlim(-2, 69)  # slight padding around 0-67
 
-
             # Format axis labels
             ax.yaxis.set_major_formatter(plt.FuncFormatter(custom_number_text_formatter))
             ax2.yaxis.set_major_formatter(plt.FuncFormatter(custom_number_text_formatter))
@@ -406,11 +405,12 @@ def create_scatter_grid(data_dict: {}, measure_cols: list, figsize: tuple = (12,
         axes.append(row_axes)
 
     # Add legend directly in the last subplot
-    for k, generation_stage in enumerate(measure_cols):
+    for k, measure in enumerate(measure_cols):
+        measure_name = ClusteringQualityMeasures.get_display_name_for_measure(measure)
         legend_handles.append(plt.Line2D([0], [0],
                                          marker=markers[k],
                                          color=measure_colors[k],
-                                         label=generation_stage,
+                                         label=measure_name,
                                          markersize=8,
                                          linestyle='None'))
     last_ax = axes[-1][-1]
@@ -420,6 +420,112 @@ def create_scatter_grid(data_dict: {}, measure_cols: list, figsize: tuple = (12,
                    frameon=True,
                    edgecolor='black',
                    facecolor='white')
+
+    # Adjust layout
+    plt.tight_layout()
+    return fig
+
+
+def create_scatter_row(data_dict: {}, reference_measure: str, measure_cols: [str],
+                       data_type: str, completeness: str, figsize: tuple = (18, 4),
+                       backend: str = Backends.none.value) -> plt.Figure:
+    """
+    Create a row of scatter plots using dictionary keys as labels.
+
+    :param data_dict : {str, {str, pd.DataFrame}} Nested dictionary containing data for each plot square
+        Format: {'row_name': {'column_name': list_of_dataframes}}
+        Where each DataFrame has the measures as columns and columns refer to the data generation stages and
+        rows refer to the data completeness
+    :param measure_cols : list of str, columns to plot from the DataFrames
+    :param figsize : tuple, optional Figure size in inches (width, height)
+    :returns: matplotlib.figure.Figure
+    """
+    # Set the style for publication-quality figures
+    reset_matplotlib(backend)
+
+    # Create figure with standard size (no extra width needed now)
+    fig = plt.figure(figsize=figsize)
+    gs = GridSpec(1, len(measure_cols))
+    fig.subplots_adjust(hspace=0.5, wspace=0.3, right=0.85)
+
+    # Set up colors for different measures
+    measure_colors = sns.color_palette("husl", n_colors=2)
+    markers = ['o', 'x']  # Marker styles
+
+    for i, measure in enumerate(measure_cols):
+        ax = fig.add_subplot(gs[0, i])
+        ax2 = ax.twinx()  # Create secondary axis
+
+        try:
+            row_name = get_row_name_from(completeness)
+            col_name = SyntheticDataType.get_display_name_for_data_type(data_type)
+            dfs = data_dict[row_name][col_name]
+        except KeyError:
+            print(f"Warning: No data found for condition: row='{completeness}', column='{data_type}'")
+            continue
+
+        # find min_value across all subjects
+        min_subject_val = np.inf
+        max_subject_val = -np.inf
+        for df in dfs:
+            min_val = df[measure].min()
+            max_val = df[measure].max()
+            if min_val < min_subject_val:
+                min_subject_val = min_val
+            if max_val > max_subject_val:
+                max_subject_val = max_val
+
+        # Plot each measure for each DataFrame
+        for df in dfs:
+            ax.scatter(df.index, df[reference_measure],
+                       alpha=0.6,
+                       color=measure_colors[0],
+                       s=20,
+                       marker=markers[0])
+
+            ax2.scatter(df.index, df[measure],
+                        alpha=0.6,
+                        color=measure_colors[1],
+                        s=20,
+                        marker=markers[1])
+            # For all but silhouette we must make sure the axis doesn't look 0 when it isn't
+            # and that we do not hide outliers which come from the centroid problems
+            if measure_cols[1] != ClusteringQualityMeasures.silhouette_score:
+                ax2.set_ylim(min_subject_val, max_subject_val)
+                ax2.yaxis.set_major_locator(plt.LinearLocator(5))
+                ticks = ax2.get_yticks()
+                ticks[0] = min_subject_val
+                # if next tick too close to new min tick, remove it
+                if abs(ticks[1] - min_subject_val) < 3:
+                    ticks = np.delete(ticks, 1)
+                ax2.set_yticks(ticks)
+
+        # Set axis limits for silhouette to range of the measure
+        if measure == ClusteringQualityMeasures.silhouette_score:
+            # the other measures have outliers and so we cannot use this
+            ax2.set_ylim(-1, 1)  # Set secondary axis limits
+
+        ax.set_ylim(bottom=0)
+        ax.set_xlim(-2, 69)  # slight padding around 0-67
+
+        # Format axis labels
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(custom_number_text_formatter))
+        ax2.yaxis.set_major_formatter(plt.FuncFormatter(custom_number_text_formatter))
+
+        ax2.grid(False)  # Turn off secondary grid to avoid double grid
+
+        # set measure as title
+        measure_name = ClusteringQualityMeasures.get_display_name_for_measure(measure)
+        ax.set_title(measure_name, fontsize=fontsize, fontweight='bold', color=measure_colors[1])
+
+        # Add grid
+        ax.grid(True, linestyle='-', alpha=0.3, which='major')
+        ax.grid(True, linestyle='--', alpha=0.2, which='minor')
+        ax.xaxis.set_minor_locator(AutoMinorLocator())
+        ax.yaxis.set_minor_locator(AutoMinorLocator())
+
+        # Customize spines
+        sns.despine(ax=ax)
 
     # Adjust layout
     plt.tight_layout()

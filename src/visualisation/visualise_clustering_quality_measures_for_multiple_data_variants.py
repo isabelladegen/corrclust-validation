@@ -8,12 +8,13 @@ from src.evaluation.internal_measure_ground_truth_assessment import InternalMeas
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import get_image_results_path, \
     get_clustering_quality_multiple_data_variants_result_folder, ResultsType, OVERALL_CLUSTERING_QUALITY_DISTRIBUTION, \
-    OVERALL_CORRELATION_COEFFICIENT_DISTRIBUTION, OVERALL_CLUSTERING_SCATTER_PLOT, GROUND_TRUTH_CI_PLOT
+    OVERALL_CORRELATION_COEFFICIENT_DISTRIBUTION, OVERALL_CLUSTERING_SCATTER_PLOT, GROUND_TRUTH_CI_PLOT, \
+    MULTI_MEASURES_SCATTER_PLOT
 from src.utils.distance_measures import short_distance_measure_names
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends, reset_matplotlib, fontsize
 from src.visualisation.visualise_multiple_data_variants import get_row_name_from, create_violin_grid, \
-    create_violin_grid_log_scale_x_axis, create_scatter_grid
+    create_violin_grid_log_scale_x_axis, create_scatter_grid, create_scatter_row
 
 
 def plot_internal_index(df, ax, color, x_pos, alpha: float = 0.05):
@@ -106,11 +107,11 @@ def create_ci_grid(data_dict: {}, internal_indices: [str], distance_measures: [s
         axes.append(row_axes)
 
     # Add legend directly in the last subplot
-    for k, generation_stage in enumerate(internal_indices):
+    for k, ii in enumerate(internal_indices):
         legend_handles.append(plt.Line2D([0], [0],
                                          marker='s',
                                          color=colours[k],
-                                         label=generation_stage,
+                                         label=ClusteringQualityMeasures.get_display_name_for_measure(ii),
                                          markersize=8,
                                          linestyle='None'))
     last_ax = axes[-1][-1]
@@ -333,5 +334,38 @@ class VisualiseClusteringQualityMeasuresForDataVariants:
             # add an image results folder
             file_name = get_image_results_path(folder, quality_measures[0] + '_with_' + quality_measures[
                 1] + OVERALL_CLUSTERING_SCATTER_PLOT)
+            fig.savefig(file_name, dpi=300, bbox_inches='tight')
+        return fig
+
+    def scatter_plots_for_multiple_quality_measures(self, reference_measure: str, quality_measures: [str],
+                                                    data_type: str, completeness: str,
+                                                    save_fig: bool = False,
+                                                    figsize: (float, float) = (18, 3.5)):
+        # create data dict to plot which matches the row, column structure of the plot
+        data_dict = {}
+        for row, row_data in self.all_variants_describe.items():
+            row_dict = {}
+            for col, col_data in row_data.items():
+                # df of quality measure calculation summary for each subject, has columns for the measures, rows are
+                # partitions (segmented clusterings)
+                row_dict[col] = list(col_data.quality_measures_results.values())
+            data_dict[row] = row_dict
+
+        fig = create_scatter_row(data_dict=data_dict, reference_measure=reference_measure,
+                                 measure_cols=quality_measures, data_type=data_type, completeness=completeness,
+                                 backend=self.backend,
+                                 figsize=figsize)
+
+        plt.show()
+
+        if save_fig:
+            folder = get_clustering_quality_multiple_data_variants_result_folder(
+                results_type=ResultsType.internal_measures_calculation,
+                overall_dataset_name=self.overall_ds_name,
+                results_dir=self.result_root_dir,
+                distance_measure=self.distance_measure)
+            # add an image results folder
+            file_name = "_".join([data_type, completeness, MULTI_MEASURES_SCATTER_PLOT])
+            file_name = get_image_results_path(folder, file_name)
             fig.savefig(file_name, dpi=300, bbox_inches='tight')
         return fig
