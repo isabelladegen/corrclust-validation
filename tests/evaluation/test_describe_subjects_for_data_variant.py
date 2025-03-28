@@ -66,10 +66,11 @@ def test_can_load_base_non_normal_datasets():
     assert_that(mae_stats["min"], is_(0.11))
 
 
-def test_can_irregular_p90_non_normal_dataset():
+def test_can_calculate_time_gaps_for_irregular_p90_non_normal_dataset():
     ds_irr_p90nn = DescribeSubjectsForDataVariant(wandb_run_file=run_file, overall_ds_name=overall_ds_name,
                                                   data_type=SyntheticDataType.non_normal_correlated,
-                                                  data_dir=IRREGULAR_P90_DATA_DIR)
+                                                  data_dir=IRREGULAR_P90_DATA_DIR,
+                                                  load_data=True)
 
     assert_that(len(ds_irr_p90nn.run_names), is_(30))  # 30 files
     assert_that(len(ds_irr_p90nn.label_dfs), is_(30))  # 30 files
@@ -77,6 +78,13 @@ def test_can_irregular_p90_non_normal_dataset():
 
     mae_stats = ds_irr_p90nn.mae_stats(SyntheticDataSegmentCols.mae)
     assert_that(mae_stats["mean"], is_(0.123))
+
+    time_gaps = ds_irr_p90nn.all_time_gaps_in_seconds()
+    assert_that(len(set(time_gaps)), is_(126))
+
+    time_gaps_stats = ds_irr_p90nn.overall_time_gap_stats()
+    assert_that(time_gaps_stats["mean"], is_(10.0))
+    assert_that(time_gaps_stats["max"], is_(135.0))
 
 
 def test_creates_summary_df_of_statistics():
@@ -201,7 +209,8 @@ def test_loads_distribution_parameters_from_run_file():
 
 
 def test_can_load_data_if_required():
-    full_data_ds = DescribeSubjectsForDataVariant(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=raw,
+    full_data_ds = DescribeSubjectsForDataVariant(wandb_run_file=run_file, overall_ds_name=overall_ds_name,
+                                                  data_type=raw,
                                                   data_dir=data_dir, load_data=True)
     assert_that(len(full_data_ds.data_dfs), is_(30))
     assert_that(len(full_data_ds.label_dfs), is_(30))

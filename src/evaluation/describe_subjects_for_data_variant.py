@@ -154,6 +154,27 @@ class DescribeSubjectsForDataVariant:
         values = [label[column] for label in self.label_dfs.values()]
         return values
 
+    def all_time_gaps_in_seconds(self):
+        """
+        Returns a list of all time gaps combined across all subjects for the data variant
+        """
+        dfs = self.data_dfs.values()
+        all_gaps = []
+        for df in dfs:
+            # differences in time in seconds
+            time_diffs = df['datetime'].diff().dropna().dt.total_seconds().values
+            all_gaps.extend(time_diffs)
+        return all_gaps
+
+    def overall_time_gap_stats(self):
+        """
+        Return stats for overall time gaps, here we combine all subject's time gap
+         :returns pandas describe series
+        """
+        # list of list
+        values = self.all_time_gaps_in_seconds()
+        return pd.Series(values).describe().round(3)
+
     def n_segments_outside_tolerance_stats(self):
         """
         Return stats for n segment outside tolerance
