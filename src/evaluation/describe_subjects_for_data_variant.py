@@ -11,8 +11,7 @@ import scipy.stats as stats
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.utils.configurations import SYNTHETIC_DATA_DIR, ROOT_RESULTS_DIR, dataset_description_dir, \
     MULTIPLE_DS_SUMMARY_FILE, GENERATED_DATASETS_FILE_PATH, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR, \
-    get_irregular_folder_name_from, base_dataset_result_folder_for_type, ResultsType, SyntheticDataVariates, \
-    RunInformationCols
+    get_irregular_folder_name_from, base_dataset_result_folder_for_type, ResultsType, RunInformationCols
 from src.utils.labels_utils import calculate_n_segments_outside_tolerance_for
 from src.utils.load_synthetic_data import SyntheticDataType, load_labels, load_synthetic_data
 from src.utils.plots.matplotlib_helper_functions import Backends
@@ -43,6 +42,7 @@ class SummaryStatistics:
     patterns = "n patterns"
     segment_lengths = "segment lengths"  # mean of each labels file across datasets
     overall_segment_lengths = "overall segment lengths"  # all segment lengths
+    overall_interval_gaps = "interval gaps (sec)"  # all gaps between observations
 
 
 def combine_all_ds_variations_multiple_description_summary_dfs(result_root_dir: str,
@@ -173,7 +173,8 @@ class DescribeSubjectsForDataVariant:
         """
         # list of list
         values = self.all_time_gaps_in_seconds()
-        return pd.Series(values).describe().round(3)
+        stats = pd.Series(values).describe().round(3)
+        return stats
 
     def n_segments_outside_tolerance_stats(self):
         """
@@ -250,7 +251,8 @@ class DescribeSubjectsForDataVariant:
             SummaryStatistics.segments: self.n_segments_stats(),
             SummaryStatistics.patterns: self.n_patterns_stats(),
             SummaryStatistics.segment_lengths: self.segment_length_stats(),
-            SummaryStatistics.overall_segment_lengths: self.overall_segment_length_stats()
+            SummaryStatistics.overall_segment_lengths: self.overall_segment_length_stats(),
+            SummaryStatistics.overall_interval_gaps: self.overall_time_gap_stats()
         })
 
     def save_summary(self, root_results_dir: str):
@@ -402,13 +404,13 @@ if __name__ == '__main__':
     # do irregular p30 sampled ones
     for ds_type in dataset_types:
         ds = DescribeSubjectsForDataVariant(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=ds_type,
-                                            data_dir=IRREGULAR_P30_DATA_DIR)
+                                            data_dir=IRREGULAR_P30_DATA_DIR, load_data=True)
         ds.save_summary(root_results_dir)
 
     # do irregular p90 sampled ones
     for ds_type in dataset_types:
         ds = DescribeSubjectsForDataVariant(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=ds_type,
-                                            data_dir=IRREGULAR_P90_DATA_DIR)
+                                            data_dir=IRREGULAR_P90_DATA_DIR, load_data=True)
         ds.save_summary(root_results_dir)
 
     # write combined results (this also reads all files and then writes a result)
