@@ -8,7 +8,8 @@ import numpy as np
 import pandas as pd
 import scipy.stats as stats
 
-from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
+from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols, \
+    recalculate_labels_df_from_data
 from src.utils.configurations import SYNTHETIC_DATA_DIR, ROOT_RESULTS_DIR, dataset_description_dir, \
     MULTIPLE_DS_SUMMARY_FILE, GENERATED_DATASETS_FILE_PATH, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR, \
     get_irregular_folder_name_from, base_dataset_result_folder_for_type, ResultsType, RunInformationCols, \
@@ -81,6 +82,20 @@ def combine_all_ds_variations_multiple_description_summary_dfs(result_root_dir: 
         folder = base_dataset_result_folder_for_type(result_root_dir, ResultsType.dataset_description)
         combined_result.to_csv(str(path.join(folder, MULTIPLE_DS_SUMMARY_FILE)))
     return combined_result
+
+
+def shorten_segments_to(length, labels_df):
+    """
+    Function to change start and end idx in labels to new length
+    """
+    new_labels_df = labels_df.copy()
+    current_lengths = labels_df[SyntheticDataSegmentCols.length]
+    assert all(current_lengths >= length), "Existing segments are already shorter than " + str(length)
+
+    new_labels_df[SyntheticDataSegmentCols.length] = length
+    # -1 because we've been following the convention to select the end_idx
+    new_labels_df[SyntheticDataSegmentCols.end_idx] = new_labels_df[SyntheticDataSegmentCols.start_idx] + (length - 1)
+    return new_labels_df
 
 
 class DescribeSubjectsForDataVariant:
@@ -392,6 +407,29 @@ class DescribeSubjectsForDataVariant:
         # find max mae and name
         name, mae = max(name_mae, key=lambda x: x[1])
         return name, round(mae, self.__round_to)
+
+    def mean_mae_for_segment_lengths(self, lengths):
+        result = {}
+        result['mean'] = []
+        result['50%'] = []
+        result['25%'] = []
+        result['75%'] = []
+        for length in lengths:
+            # all means of all patterns for all subjects
+            means = []
+            for name, labels_df in self.label_dfs.items():
+                # 1. change labels start, end idx and length
+                shorter_labels = shorten_segments_to(length, labels_df)
+
+                # 2. recalculate rest of labels file from data
+                updated_labels = recalculate_labels_df_from_data(self.data_dfs[name], shorter_labels)
+                means.extend(updated_labels[SyntheticDataSegmentCols.relaxed_mae])
+            # 3. Calculate mean for this length
+            result['mean'].append(round(np.mean(means), self.__round_to))
+            result['50%'].append(round(np.median(means), self.__round_to))
+            result['25%'].append(round(np.percentile(means, 25), self.__round_to))
+            result['75%'].append(round(np.percentile(means, 75), self.__round_to))
+        return result
 
 
 def extract_distribution(log_string: str):

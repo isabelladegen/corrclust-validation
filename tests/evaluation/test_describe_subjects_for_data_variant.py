@@ -20,6 +20,9 @@ overall_ds_name = "test_stuff"
 results_dir = TEST_ROOT_RESULTS_DIR
 ds_raw = DescribeSubjectsForDataVariant(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=raw,
                                         data_dir=data_dir)
+ds_nn = DescribeSubjectsForDataVariant(wandb_run_file=run_file, overall_ds_name=overall_ds_name,
+                                       data_type=SyntheticDataType.non_normal_correlated,
+                                       data_dir=data_dir, load_data=True)
 
 
 # these tests read real data, but they save results in a test result folder!
@@ -54,10 +57,6 @@ def test_calculates_various_stats_on_across_the_datasets():
 
 
 def test_can_load_base_non_normal_datasets():
-    ds_nn = DescribeSubjectsForDataVariant(wandb_run_file=run_file, overall_ds_name=overall_ds_name,
-                                           data_type=SyntheticDataType.non_normal_correlated,
-                                           data_dir=data_dir)
-
     assert_that(len(ds_nn.run_names), is_(30))  # 30 files
     assert_that(len(ds_nn.label_dfs), is_(30))  # 30 files
     assert_that(ds_nn.label_dfs[ds_nn.run_names[0]].shape[0], is_(100))  # loaded the data properly
@@ -225,3 +224,12 @@ def test_can_load_data_if_required():
     all_datasets = full_data_ds.get_list_of_xtrain_of_all_datasets()
     assert_that(len(all_datasets), is_(30))
     assert_that(np.array_equal(all_datasets[-1], last_data))
+
+
+def test_calculate_mae_for_different_segment_lengths():
+    lengths = [10, 15, 30]
+    maes_results = ds_nn.mean_mae_for_segment_lengths(lengths)
+
+    means = maes_results['mean']
+    assert_that(len(means), is_(len(lengths)))
+    assert_that(means[0], greater_than(means[1]))
