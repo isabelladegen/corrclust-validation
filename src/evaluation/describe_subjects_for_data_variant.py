@@ -11,10 +11,12 @@ import scipy.stats as stats
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.utils.configurations import SYNTHETIC_DATA_DIR, ROOT_RESULTS_DIR, dataset_description_dir, \
     MULTIPLE_DS_SUMMARY_FILE, GENERATED_DATASETS_FILE_PATH, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR, \
-    get_irregular_folder_name_from, base_dataset_result_folder_for_type, ResultsType, RunInformationCols
+    get_irregular_folder_name_from, base_dataset_result_folder_for_type, ResultsType, RunInformationCols, \
+    get_data_completeness_from
 from src.utils.labels_utils import calculate_n_segments_outside_tolerance_for
 from src.utils.load_synthetic_data import SyntheticDataType, load_labels, load_synthetic_data
 from src.utils.plots.matplotlib_helper_functions import Backends
+from src.visualisation.run_average_rank_visualisations import data_variant_description
 
 
 @dataclass
@@ -114,6 +116,7 @@ class DescribeSubjectsForDataVariant:
         self.__load_data = load_data
         self.__backend = backend
         self.__round_to = round_to
+        self.variant_name = data_variant_description[(get_data_completeness_from(self.__data_dir), self.__data_type)]
 
         # dictionary with key run name and value labels file for the run
         self.__run_information = pd.read_csv(wandb_run_file, index_col=RunInformationCols.ds_name)
@@ -233,8 +236,24 @@ class DescribeSubjectsForDataVariant:
         values_flat = list(chain.from_iterable(values))
         return pd.Series(values_flat).describe().round(3)
 
+    def overall_pattern_id_count_stats(self):
+        """
+        Return stats for pattern count overall, here we consider all pattern id without calculating the mean
+        per subject first. We will translate the pattern id to counts to have more equivalent result
+        :returns pandas describe series
+        """
+        # list of list
+        values = self.all_pattern_id_values()
+        counts = [subject.value_counts().values for subject in values]
+        values_flat = list(chain.from_iterable(counts))
+        return pd.Series(values_flat).describe().round(3)
+
     def all_segment_lengths_values(self):
         values = [label[SyntheticDataSegmentCols.length] for label in self.label_dfs.values()]
+        return values
+
+    def all_pattern_id_values(self):
+        values = [label[SyntheticDataSegmentCols.pattern_id] for label in self.label_dfs.values()]
         return values
 
     def summary(self):

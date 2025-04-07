@@ -50,6 +50,7 @@ def test_calculates_various_stats_on_across_the_datasets():
     assert_that(ds_raw.segment_length_stats()["min"], is_(12438.0))  # across ds
     assert_that(ds_raw.overall_segment_length_stats()["mean"], is_(12640.1))
     assert_that(ds_raw.overall_segment_length_stats()["min"], is_(900))  # considering all segment lengths
+    assert_that(ds_raw.overall_pattern_id_count_stats()["mean"], is_(4.348))
 
 
 def test_can_load_base_non_normal_datasets():
