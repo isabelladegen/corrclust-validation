@@ -9,7 +9,14 @@ from src.data_generation.model_correlation_patterns import ModelCorrelationPatte
 from src.utils.configurations import GeneralisedCols, SyntheticDataVariates
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.data_generation.generate_synthetic_correlated_data import GenerateData, calculate_spearman_correlation, \
-    check_correlations_are_within_original_strength
+    check_correlations_are_within_original_strength, calculate_pearson_correlation, calculate_kendalltau_correlation
+
+
+@dataclass
+class CorrType:
+    spearman = "spearman"
+    pearson = "pearson"
+    kendall = "kendall"
 
 
 def min_max_scaled_df(df: pd.DataFrame, scale_range: (), columns: []) -> pd.DataFrame:
@@ -29,7 +36,7 @@ def min_max_scaled_df(df: pd.DataFrame, scale_range: (), columns: []) -> pd.Data
     return df_
 
 
-def recalculate_labels_df_from_data(data_df, labels_df):
+def recalculate_labels_df_from_data(data_df: pd.DataFrame, labels_df: pd.DataFrame, corr_type: str = CorrType.spearman):
     """
     Returns a new labels df with updated achieved correlation, correlations within tolerance and
     MAE and relaxed MAE columns calculated from the data_df provided
@@ -48,7 +55,14 @@ def recalculate_labels_df_from_data(data_df, labels_df):
         assert segment.shape[0] == length, "Mistake with indexing dataframe"
 
         # calculated
-        achieved_cor = calculate_spearman_correlation(segment)
+        if corr_type == CorrType.spearman:
+            achieved_cor = calculate_spearman_correlation(segment)
+        elif corr_type == CorrType.pearson:
+            achieved_cor = calculate_pearson_correlation(segment)
+        elif corr_type == CorrType.kendall:
+            achieved_cor = calculate_kendalltau_correlation(segment)
+        else:
+            assert False, "Unknown correlation type"
         within_tol = check_correlations_are_within_original_strength(row[SyntheticDataSegmentCols.correlation_to_model],
                                                                      achieved_cor)
 
@@ -77,7 +91,8 @@ def mean_absolute_error_from_labels_df(labels_df: pd.DataFrame, round_to: int = 
     relaxed_patterns_lookup = model_correlation_patterns.relaxed_patterns()
 
     n = len(labels_df.loc[0, SyntheticDataSegmentCols.correlation_to_model])
-    canonical_patterns = np.array(labels_df[SyntheticDataSegmentCols.pattern_id].map(canonical_patterns_lookup).to_list())
+    canonical_patterns = np.array(
+        labels_df[SyntheticDataSegmentCols.pattern_id].map(canonical_patterns_lookup).to_list())
     relaxed_patterns = np.array(labels_df[SyntheticDataSegmentCols.pattern_id].map(relaxed_patterns_lookup).to_list())
     achieved_correlations = np.array(labels_df[SyntheticDataSegmentCols.actual_correlation].to_list())
     error_canonical = np.round(np.sum(abs(np.array(canonical_patterns) - np.array(achieved_correlations)), axis=1) / n,

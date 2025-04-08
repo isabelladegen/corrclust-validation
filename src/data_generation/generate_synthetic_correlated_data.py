@@ -1,7 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 from numpy.linalg import cholesky
-from scipy.stats import spearmanr, pearsonr, norm, _discrete_distns, _continuous_distns
+from scipy.stats import spearmanr, pearsonr, norm, _discrete_distns, _continuous_distns, kendalltau
 from sequana.viz import corrplot
 from statsmodels.stats.moment_helpers import corr2cov
 
@@ -281,7 +281,13 @@ def generate_correlation_matrix(correlations: np.array):
     return m
 
 
-def calculate_personr(data):
+def calculate_pearson_correlation(data, round_to: int = 3):
+    """ Calculate the correlation for the data. Assumes that columns are variates and rows are observations.
+    Warning: due to the special properties of correlation matrices, it is safer to truncate the correlations than
+    round. E.g. a correlation of 0.99897654 rounded to 2 becomes 1.0. This perfect correlation can cause the
+    resulting matrix not to be psd.
+    :return: list of correlations ordered by np.triu_indices of the upper half of the correlation matrix
+    """
     n = data.shape[1]
     indices = np.triu_indices(n, 1)
     correlations = []
@@ -290,7 +296,27 @@ def calculate_personr(data):
         y = data[:, indices[1][i]]
         result = pearsonr(x, y)
         correlations.append(result.correlation)
-    return correlations
+    factor = 10 ** round_to  # shift decimals past point for truncation and back again
+    return list(np.trunc(np.array(correlations) * factor) / factor)
+
+
+def calculate_kendalltau_correlation(data, round_to: int = 3):
+    """ Calculate the correlation for the data. Assumes that columns are variates and rows are observations.
+    Warning: due to the special properties of correlation matrices, it is safer to truncate the correlations than
+    round. E.g. a correlation of 0.99897654 rounded to 2 becomes 1.0. This perfect correlation can cause the
+    resulting matrix not to be psd.
+    :return: list of correlations ordered by np.triu_indices of the upper half of the correlation matrix
+    """
+    n = data.shape[1]
+    indices = np.triu_indices(n, 1)
+    correlations = []
+    for i in range(n):
+        x = data[:, indices[0][i]]
+        y = data[:, indices[1][i]]
+        result = kendalltau(x, y)
+        correlations.append(result.correlation)
+    factor = 10 ** round_to  # shift decimals past point for truncation and back again
+    return list(np.trunc(np.array(correlations) * factor) / factor)
 
 
 def move_to_distributions(normal_data, distributions, args, kwargs):

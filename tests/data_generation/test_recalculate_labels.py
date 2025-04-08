@@ -4,9 +4,10 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
+from hamcrest import *
 
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols, \
-    recalculate_labels_df_from_data
+    recalculate_labels_df_from_data, CorrType
 from src.data_generation.model_correlation_patterns import ModelCorrelationPatterns
 from src.evaluation.distance_metric_evaluation import read_csv_of_raw_values_for_all_criteria, EvaluationCriteria
 from src.utils.configurations import dir_for_data_type, bad_partition_dir_for_data_type, SYNTHETIC_DATA_DIR, \
@@ -18,6 +19,38 @@ from tests.test_utils.configurations_for_testing import TEST_DATA_DIR, TEST_IRRE
     TEST_IRREGULAR_P30_DATA_DIR
 
 test_data_dir = TEST_DATA_DIR
+
+
+def test_recalculate_labels_for_given_correlation_measure():
+    misty_for = "misty-forest-56"
+    data_dir = TEST_DATA_DIR
+
+    data_type = SyntheticDataType.rs_1min
+    data_df, labels_df = load_synthetic_data(misty_for, data_type=data_type, data_dir=data_dir)
+
+    sp_labels_df = recalculate_labels_df_from_data(data_df, labels_df, corr_type=CorrType.spearman)
+    pe_labels_df = recalculate_labels_df_from_data(data_df, labels_df, corr_type=CorrType.pearson)
+    ke_labels_df = recalculate_labels_df_from_data(data_df, labels_df, corr_type=CorrType.kendall)
+
+    row = 12  # pattern [1,1,0]
+    spearman_row = sp_labels_df.iloc[row]
+    pearson_row = pe_labels_df.iloc[row]
+    kendall_row = ke_labels_df.iloc[row]
+
+    # check achieved correlation varies
+    assert_that(spearman_row[SyntheticDataSegmentCols.actual_correlation], is_([0.799, 0.7, 0.278]))
+    assert_that(pearson_row[SyntheticDataSegmentCols.actual_correlation], is_([0.847, 0.586, 0.185]))
+    assert_that(kendall_row[SyntheticDataSegmentCols.actual_correlation], is_([0.657, 0.542, 0.238]))
+
+    # check relaxed mae varies
+    assert_that(spearman_row[SyntheticDataSegmentCols.relaxed_mae], is_(0.122))
+    assert_that(pearson_row[SyntheticDataSegmentCols.relaxed_mae], is_(0.145))
+    assert_that(kendall_row[SyntheticDataSegmentCols.relaxed_mae], is_(0.15))
+
+    # check mae varies
+    assert_that(spearman_row[SyntheticDataSegmentCols.mae], is_(0.26))
+    assert_that(pearson_row[SyntheticDataSegmentCols.mae], is_(0.251))
+    assert_that(kendall_row[SyntheticDataSegmentCols.mae], is_(0.346))
 
 
 @pytest.mark.skip(reason="this is a once off calculation to bring old labels files into new format")
