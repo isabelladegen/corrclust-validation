@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 
-from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
+from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols, CorrType
 from src.evaluation.describe_subjects_for_data_variant import DescribeSubjectsForDataVariant
 from src.utils.configurations import ROOT_RESULTS_DIR, GENERATED_DATASETS_FILE_PATH, DataCompleteness, \
     SYNTHETIC_DATA_DIR, get_data_dir, get_clustering_quality_multiple_data_variants_result_folder, ResultsType, \
@@ -14,7 +14,8 @@ from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import fontsize, reset_matplotlib, Backends
 
 
-def plot_mae_with_statistics(mae_results: {}, lengths: [int], threshold:float=0.1, backend: str = Backends.none.value):
+def plot_mae_with_statistics(mae_results: {}, lengths: [int], threshold: float = 0.1,
+                             backend: str = Backends.none.value):
     """
     Plot mean MAE with median and IQR for different segment lengths.
     :param mae_results :Dictionary with keys 'mean', '50%', '25%', '75%', each containing a list of values
@@ -77,12 +78,12 @@ def mae_to_df(mae_results, segment_lengths):
 
 
 if __name__ == "__main__":
-    # calculate correlations and descriptive statistics to show that the two datasets are independent but
-    # equivalent
+    # visualise min segment length for different correlations
     root_result_dir = ROOT_RESULTS_DIR
     ds = GENERATED_DATASETS_FILE_PATH
     data_dir = SYNTHETIC_DATA_DIR
     overall_ds_name = "n30"
+    correlations = [CorrType.spearman, CorrType.pearson, CorrType.kendall]
 
     normal = SyntheticDataType.non_normal_correlated
 
@@ -90,25 +91,26 @@ if __name__ == "__main__":
     complete = DataCompleteness.complete
     nn_100 = DescribeSubjectsForDataVariant(wandb_run_file=ds, overall_ds_name=overall_ds_name,
                                             data_type=normal, data_dir=get_data_dir(data_dir, complete),
-                                            load_data=True)
+                                            load_data=True, additional_corr=[CorrType.pearson, CorrType.kendall])
 
     # lengths to plot
     lengths = [10, 15, 20, 30, 60, 80, 100, 200, 400, 600, 800]
-    mae_results = nn_100.mean_mae_for_segment_lengths(lengths)
+    for cor in correlations:
+        mae_results = nn_100.mean_mae_for_segment_lengths(lengths)
 
-    # plot results
-    fig = plot_mae_with_statistics(mae_results, lengths, Backends.visible_tests.value)
+        # plot results
+        fig = plot_mae_with_statistics(mae_results, lengths, Backends.visible_tests.value)
 
-    folder_name = get_clustering_quality_multiple_data_variants_result_folder(
-        results_type=ResultsType.dataset_description,
-        overall_dataset_name=overall_ds_name,
-        results_dir=data_dir,
-        distance_measure="")
+        folder_name = get_clustering_quality_multiple_data_variants_result_folder(
+            results_type=ResultsType.dataset_description,
+            overall_dataset_name=overall_ds_name,
+            results_dir=data_dir,
+            distance_measure="")
 
-    # safe results
-    df = mae_to_df(mae_results, lengths)
-    df.to_csv(path.join(folder_name, "minimal_segment_lengths_mae_stats.csv"))
+        # safe results
+        df = mae_to_df(mae_results, lengths)
+        df.to_csv(str(path.join(folder_name, cor + "_minimal_segment_lengths_mae_stats.csv")))
 
-    # safe image
-    file_name = get_image_results_path(folder_name, 'minimal_segment_lengths.png')
-    fig.savefig(file_name, dpi=300, bbox_inches='tight')
+        # safe image
+        file_name = get_image_results_path(folder_name, cor + '_minimal_segment_lengths.png')
+        fig.savefig(file_name, dpi=300, bbox_inches='tight')

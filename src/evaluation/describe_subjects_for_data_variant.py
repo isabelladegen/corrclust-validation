@@ -426,16 +426,21 @@ class DescribeSubjectsForDataVariant:
         name, mae = max(name_mae, key=lambda x: x[1])
         return name, round(mae, self.__round_to)
 
-    def mean_mae_for_segment_lengths(self, lengths):
+    def mean_mae_for_segment_lengths(self, lengths, cor_type=CorrType.spearman):
         result = {}
         result['mean'] = []
         result['50%'] = []
         result['25%'] = []
         result['75%'] = []
+        if cor_type == CorrType.spearman:
+            labels_dfs = self.data_dfs
+        else:
+            labels_dfs = self.other_corr_labels[cor_type]
+
         for length in lengths:
             # all means of all patterns for all subjects
             means = []
-            for name, labels_df in self.label_dfs.items():
+            for name, labels_df in labels_dfs.items():
                 # 1. change labels start, end idx and length
                 shorter_labels = shorten_segments_to(length, labels_df)
 
