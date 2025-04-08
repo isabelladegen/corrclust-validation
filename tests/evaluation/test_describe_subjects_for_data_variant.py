@@ -5,7 +5,7 @@ import pandas as pd
 from hamcrest import *
 import scipy.stats as stats
 
-from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
+from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols, CorrType
 from src.evaluation.describe_subjects_for_data_variant import DescribeSubjectsForDataVariant, SummaryStatistics, \
     combine_all_ds_variations_multiple_description_summary_dfs, DistParams
 from src.utils.configurations import SYNTHETIC_DATA_DIR, GENERATED_DATASETS_FILE_PATH, IRREGULAR_P90_DATA_DIR, \
@@ -241,3 +241,28 @@ def test_calculate_mae_for_different_segment_lengths():
     means = maes_results['mean']
     assert_that(len(means), is_(len(lengths)))
     assert_that(means[0], greater_than(means[1]))
+
+
+def test_calculate_overall_mae_and_stats_for_different_correlations():
+    # load downsampled data
+    correlations = [CorrType.pearson, CorrType.kendall]
+    ds_ds = DescribeSubjectsForDataVariant(wandb_run_file=run_file, overall_ds_name=overall_ds_name,
+                                           data_type=SyntheticDataType.rs_1min,
+                                           data_dir=data_dir, load_data=True, additional_corr=correlations)
+
+    spearman_stats = ds_ds.overall_mae_stats(SyntheticDataSegmentCols.relaxed_mae)
+    spearman_seg_tol = ds_ds.n_segments_outside_tolerance_stats()
+    pearsons_stats = ds_ds.overall_mae_stats(SyntheticDataSegmentCols.relaxed_mae, corr_type=correlations[0])
+    pearsons_seg_tol = ds_ds.n_segments_outside_tolerance_stats(corr_type=correlations[0])
+    kendall_stats = ds_ds.overall_mae_stats(SyntheticDataSegmentCols.relaxed_mae, corr_type=correlations[1])
+    kendall_seg_tol = ds_ds.n_segments_outside_tolerance_stats(corr_type=correlations[1])
+
+    assert_that(spearman_stats["count"], is_(3000))  # stats overall not averaged per subject
+    assert_that(spearman_stats["mean"], is_(0.131))
+    assert_that(pearsons_stats["mean"], is_(0.132))  # downsampling turns data back to normal
+    assert_that(kendall_stats["mean"], is_(0.206))
+
+    assert_that(spearman_seg_tol["count"], is_(30))  # stats overall but this is a number per subject
+    assert_that(spearman_seg_tol["mean"], is_(67.6))
+    assert_that(pearsons_seg_tol["mean"], is_(66))
+    assert_that(kendall_seg_tol["mean"], is_(79.7))

@@ -9,7 +9,7 @@ import pandas as pd
 import scipy.stats as stats
 
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols, \
-    recalculate_labels_df_from_data
+    recalculate_labels_df_from_data, CorrType
 from src.utils.configurations import SYNTHETIC_DATA_DIR, dataset_description_dir, \
     MULTIPLE_DS_SUMMARY_FILE, get_irregular_folder_name_from, base_dataset_result_folder_for_type, ResultsType, \
     RunInformationCols, get_data_completeness_from
@@ -108,13 +108,16 @@ class DescribeSubjectsForDataVariant:
 
     def __init__(self, wandb_run_file: str, overall_ds_name: str,
                  data_type: str = SyntheticDataType.non_normal_correlated, data_dir: str = SYNTHETIC_DATA_DIR,
-                 load_data: bool = False, backend: str = Backends.none.value, round_to: int = 3):
+                 load_data: bool = False, additional_corr: [str] = [], backend: str = Backends.none.value,
+                 round_to: int = 3):
         """
         :param wandb_run_file: full path to the wandb run file
         :param overall_ds_name: a string for the ds - this is mainly used to safe results in
         :param data_type: type of data to load all datasets for, see SyntheticDataType for options
         :param data_dir: directory where the data is stored
         :param load_data: whether to just load the labels files (False - default) or the labels and data (True)
+        :param additional_corr: list of which correlations to additionally calculate, Spearman is calculated by
+        default, requires load_data to be TRUE
         :param backend: backend for matplotlib
         :param round_to: what to round the results to
         """
@@ -123,6 +126,7 @@ class DescribeSubjectsForDataVariant:
         self.__data_type = data_type
         self.__data_dir = data_dir
         self.__load_data = load_data
+        self.__correlations = additional_corr
         self.__backend = backend
         self.__round_to = round_to
         self.variant_name = data_variant_description[(get_data_completeness_from(self.__data_dir), self.__data_type)]
@@ -141,6 +145,17 @@ class DescribeSubjectsForDataVariant:
         else:  # load just labels
             self.label_dfs = {name: load_labels(name, self.__data_type, self.__data_dir) for name in self.run_names}
 
+        # dictionary of dictionary, first level keys CorrType.pearson and or CorrType.kendall
+        self.other_corr_labels = {}
+        # calculate labels for additional correlations
+        for correlation in self.__correlations:
+            results = {}
+            for name, labels_df in self.label_dfs.items():
+                labels_for_corr = recalculate_labels_df_from_data(self.data_dfs[name], labels_df,
+                                                                  corr_type=correlation)
+                results[name] = labels_for_corr
+            self.other_corr_labels[correlation] = results
+
     def mae_stats(self, column: str):
         """ Return stats for mae
         This is to see variations across the different datasets, therefore we use the mean of each dataset
@@ -150,20 +165,24 @@ class DescribeSubjectsForDataVariant:
         mean_values = [label[column].mean() for label in self.label_dfs.values()]
         return pd.Series(mean_values).describe().round(3)
 
-    def overall_mae_stats(self, column: str):
+    def overall_mae_stats(self, column: str, corr_type=CorrType.spearman):
         """
         Return stats for mae overall, here we consider all segment's mae without calculating the mean
         first. This will give a better impression on how mae varies on a segment level.
         :params column to calculate mae from SyntheticDataSegmentCols.mae or SyntheticDataSegmentCols.relaxed_mae
+        :corr_type: default Spearman, other can be specified if it was calculated when creating the class
         :returns pandas describe series
         """
         # list of list
-        values = self.all_mae_values(column)
+        values = self.all_mae_values(column, corr_type=corr_type)
         values_flat = list(chain.from_iterable(values))
         return pd.Series(values_flat).describe().round(3)
 
-    def all_mae_values(self, column: str):
-        values = [label[column] for label in self.label_dfs.values()]
+    def all_mae_values(self, column: str, corr_type=CorrType.spearman):
+        if corr_type == CorrType.spearman:
+            values = [label[column] for label in self.label_dfs.values()]
+        else:
+            values = [label[column] for label in self.other_corr_labels[corr_type].values()]
         return values
 
     def all_time_gaps_in_seconds(self):
@@ -188,13 +207,18 @@ class DescribeSubjectsForDataVariant:
         stats = pd.Series(values).describe().round(3)
         return stats
 
-    def n_segments_outside_tolerance_stats(self):
+    def n_segments_outside_tolerance_stats(self, corr_type=CorrType.spearman):
         """
         Return stats for n segment outside tolerance
         This is naturally a per dataset number
+        :corr_type: default Spearman, other can be specified if it was calculated when creating the class
         :returns pandas describe series
         """
-        values = [calculate_n_segments_outside_tolerance_for(label) for label in self.label_dfs.values()]
+        if corr_type == CorrType.spearman:
+            values = [calculate_n_segments_outside_tolerance_for(label) for label in self.label_dfs.values()]
+        else:
+            values = [calculate_n_segments_outside_tolerance_for(label) for label in
+                      self.other_corr_labels[corr_type].values()]
         return pd.Series(values).describe().round(3)
 
     def observations_stats(self):
