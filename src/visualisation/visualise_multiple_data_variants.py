@@ -26,6 +26,8 @@ def custom_number_text_formatter(x, _):
         return f'{x:.1f}'.rstrip('0').rstrip('.')
     elif abs_x >= 0.1:  # Decimal numbers
         return f'{x:.1f}'
+    elif abs_x >= 0.01:  # Decimal numbers
+        return f'{x:.2f}'
     elif abs_x > 0:  # Very small numbers
         return f'{x:.0e}'  # Scientific notation for tiny numbers no d
     elif abs_x == 0:

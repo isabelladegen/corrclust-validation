@@ -3,7 +3,7 @@ from os import path
 
 import numpy as np
 import pandas as pd
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt, ticker
 
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols, CorrType
 from src.evaluation.describe_subjects_for_data_variant import DescribeSubjectsForDataVariant
@@ -43,6 +43,8 @@ def plot_mae_with_statistics(mae_results: {}, lengths: [int], threshold: float =
 
     # Set labels and title
     ax.set_xlabel('Segment Length', fontsize=fontsize)
+    ax.set_ylim(0.0, 0.25)
+    ax.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.2f'))
     ax.set_ylabel('MAE', fontsize=fontsize)
 
     # Set x-axis to log scale since segment lengths span a wide range

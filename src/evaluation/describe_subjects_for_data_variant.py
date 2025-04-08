@@ -445,7 +445,7 @@ class DescribeSubjectsForDataVariant:
                 shorter_labels = shorten_segments_to(length, labels_df)
 
                 # 2. recalculate rest of labels file from data
-                updated_labels = recalculate_labels_df_from_data(self.data_dfs[name], shorter_labels)
+                updated_labels = recalculate_labels_df_from_data(self.data_dfs[name], shorter_labels, corr_type=cor_type)
                 means.extend(updated_labels[SyntheticDataSegmentCols.relaxed_mae])
             # 3. Calculate mean for this length
             result['mean'].append(round(np.mean(means), self.__round_to))

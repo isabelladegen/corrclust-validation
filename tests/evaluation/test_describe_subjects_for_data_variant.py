@@ -235,12 +235,16 @@ def test_can_load_data_if_required():
 
 
 def test_calculate_mae_for_different_segment_lengths():
+    ds_nn_cor = DescribeSubjectsForDataVariant(wandb_run_file=run_file, overall_ds_name=overall_ds_name,
+                                           data_type=SyntheticDataType.non_normal_correlated,
+                                           data_dir=data_dir, load_data=True, additional_corr=[CorrType.pearson])
     lengths = [10, 15, 30]
-    maes_results = ds_nn.mean_mae_for_segment_lengths(lengths)
+    maes_results_spear = ds_nn_cor.mean_mae_for_segment_lengths(lengths, cor_type=CorrType.spearman)
+    maes_results_pears = ds_nn_cor.mean_mae_for_segment_lengths(lengths, cor_type=CorrType.pearson)
 
-    means = maes_results['mean']
-    assert_that(len(means), is_(len(lengths)))
-    assert_that(means[0], greater_than(means[1]))
+    means_spear = maes_results_spear['mean']
+    assert_that(len(means_spear), is_(len(lengths)))
+    assert_that(means_spear[0], greater_than(means_spear[1]))
 
 
 def test_calculate_overall_mae_and_stats_for_different_correlations():
