@@ -96,7 +96,7 @@ if __name__ == "__main__":
     # lengths to plot
     lengths = [10, 15, 20, 30, 60, 80, 100, 200, 400, 600, 800]
     for cor in correlations:
-        mae_results = nn_100.mean_mae_for_segment_lengths(lengths)
+        mae_results = nn_100.mean_mae_for_segment_lengths(lengths, cor_type=cor)
 
         # plot results
         fig = plot_mae_with_statistics(mae_results, lengths, Backends.visible_tests.value)

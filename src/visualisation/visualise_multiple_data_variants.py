@@ -7,7 +7,7 @@ import seaborn as sns
 from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import AutoMinorLocator
 
-from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
+from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols, CorrType
 from src.evaluation.describe_subjects_for_data_variant import DescribeSubjectsForDataVariant
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import get_irregular_folder_name_from, base_dataset_result_folder_for_type, ResultsType, \
@@ -536,11 +536,12 @@ class VisualiseMultipleDataVariants:
     """Use this class for visualising data properties from multiple subjects for multiple data variants"""
 
     def __init__(self, run_file: str, overall_ds_name: str, dataset_types: [str], data_dirs: [str],
-                 backend: str = Backends.none.value):
+                 additional_cor: [str] = [], backend: str = Backends.none.value):
         self.run_file = run_file
         self.overall_ds_name = overall_ds_name
         self.dataset_types = dataset_types
         self.data_dirs = data_dirs
+        self.additional_cor = additional_cor
         self.backend = backend
         self.row_names = []
         self.all_data = {}
@@ -551,7 +552,8 @@ class VisualiseMultipleDataVariants:
             for ds_type in dataset_types:
                 column_name = SyntheticDataType.get_display_name_for_data_type(ds_type)
                 ds = DescribeSubjectsForDataVariant(wandb_run_file=run_file, overall_ds_name=overall_ds_name,
-                                                    data_type=ds_type, data_dir=folder)
+                                                    data_type=ds_type, data_dir=folder,
+                                                    additional_corr=self.additional_cor, load_data=True)
                 column_results[column_name] = ds
             self.all_data[row_name] = column_results
         self.col_names = [SyntheticDataType.get_display_name_for_data_type(ds_type) for ds_type in dataset_types]
@@ -586,26 +588,31 @@ class VisualiseMultipleDataVariants:
             fig.savefig(str(path.join(folder, OVERALL_SEGMENT_LENGTH_IMAGE)), dpi=300, bbox_inches='tight')
         return fig
 
-    def violin_plots_of_overall_mae(self, root_result_dir: str, save_fig=False):
+    def violin_plots_of_overall_mae(self, root_result_dir: str, cor_types: [str] = [CorrType.spearman], save_fig=False):
         """
             Creates a plot of overall segment lengths, rows will be standard, irregular p 0.3, irregular p 0.9 and columns
             will be "RAW/NC/NN" and "RS"
             :param root_result_dir: root result dir to save the figure this will be put in the dataset-description
+            :param cor_types: list of cor types to calculate for, default just spearman
             :param save_fig: whether to save the figure
             :return: fig
         """
-        # create data dict for mae, for this all ds are different so we plot all
-        data_dict = {}
-        for row, row_data in self.all_data.items():
-            row_dict = {}
-            for col, col_data in row_data.items():
-                row_dict[col] = col_data.all_mae_values(SyntheticDataSegmentCols.relaxed_mae)
-            data_dict[row] = row_dict
+        figs = {}
+        for cor in cor_types:
+            # create data dict for mae, for this all ds are different so we plot all
+            data_dict = {}
+            for row, row_data in self.all_data.items():
+                row_dict = {}
+                for col, col_data in row_data.items():
+                    row_dict[col] = col_data.all_mae_values(SyntheticDataSegmentCols.relaxed_mae, corr_type=cor)
+                data_dict[row] = row_dict
 
-        fig = create_violin_grid(data_dict=data_dict, backend=self.backend, figsize=(15, 10))
-        plt.show()
+            fig = create_violin_grid(data_dict=data_dict, backend=self.backend, figsize=(15, 10))
+            plt.show()
 
-        if save_fig:
-            folder = base_dataset_result_folder_for_type(root_result_dir, ResultsType.dataset_description)
-            fig.savefig(str(path.join(folder, OVERALL_MAE_IMAGE)), dpi=300, bbox_inches='tight')
-        return fig
+            if save_fig:
+                folder = base_dataset_result_folder_for_type(root_result_dir, ResultsType.dataset_description)
+                fig.savefig(str(path.join(folder, cor + "_" + OVERALL_MAE_IMAGE)), dpi=300, bbox_inches='tight')
+            figs[cor] = fig
+
+        return figs
