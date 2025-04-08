@@ -125,6 +125,14 @@ def test_saves_summary_df_of_statistics_in_provide_results_root_using_ds_descrip
 def test_combines_all_datasets_into_one_table():
     # given we read from the real result folder we don't want to save the result!
     df = combine_all_ds_variations_multiple_description_summary_dfs(result_root_dir=ROOT_RESULTS_DIR,
+                                                                    overall_ds_name="n30",
+                                                                    dataset_types=[SyntheticDataType.raw,
+                                                                                   SyntheticDataType.normal_correlated,
+                                                                                   SyntheticDataType.non_normal_correlated,
+                                                                                   SyntheticDataType.rs_1min],
+                                                                    data_dirs=[SYNTHETIC_DATA_DIR,
+                                                                               IRREGULAR_P30_DATA_DIR,
+                                                                               IRREGULAR_P90_DATA_DIR],
                                                                     save_combined_results=False)
 
     # a few of the datasets

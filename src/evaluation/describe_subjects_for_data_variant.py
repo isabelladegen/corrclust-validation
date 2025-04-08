@@ -10,10 +10,9 @@ import scipy.stats as stats
 
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols, \
     recalculate_labels_df_from_data
-from src.utils.configurations import SYNTHETIC_DATA_DIR, ROOT_RESULTS_DIR, dataset_description_dir, \
-    MULTIPLE_DS_SUMMARY_FILE, GENERATED_DATASETS_FILE_PATH, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR, \
-    get_irregular_folder_name_from, base_dataset_result_folder_for_type, ResultsType, RunInformationCols, \
-    get_data_completeness_from
+from src.utils.configurations import SYNTHETIC_DATA_DIR, dataset_description_dir, \
+    MULTIPLE_DS_SUMMARY_FILE, get_irregular_folder_name_from, base_dataset_result_folder_for_type, ResultsType, \
+    RunInformationCols, get_data_completeness_from
 from src.utils.labels_utils import calculate_n_segments_outside_tolerance_for
 from src.utils.load_synthetic_data import SyntheticDataType, load_labels, load_synthetic_data
 from src.utils.plots.matplotlib_helper_functions import Backends
@@ -49,14 +48,9 @@ class SummaryStatistics:
 
 
 def combine_all_ds_variations_multiple_description_summary_dfs(result_root_dir: str,
-                                                               overall_ds_name: str = "n30",
-                                                               dataset_types: [str] = [SyntheticDataType.raw,
-                                                                                       SyntheticDataType.normal_correlated,
-                                                                                       SyntheticDataType.non_normal_correlated,
-                                                                                       SyntheticDataType.rs_1min],
-                                                               data_dirs: str = [SYNTHETIC_DATA_DIR,
-                                                                                 IRREGULAR_P30_DATA_DIR,
-                                                                                 IRREGULAR_P90_DATA_DIR],
+                                                               overall_ds_name: str,
+                                                               dataset_types: [str],
+                                                               data_dirs: str,
                                                                save_combined_results: bool = True):
     """Combines all the dataset description summaries for the given types and runs into one table
     :param result_root_dir: root dir for the results - will write to the dataset-description folder in this dir,
@@ -441,34 +435,3 @@ def extract_distribution(log_string: str):
         return getattr(stats, dist_name)
     else:
         assert False, "Could not match distribution in log string: " + log_string
-
-
-if __name__ == '__main__':
-    # create summary for a dataset variation
-    run_file = GENERATED_DATASETS_FILE_PATH
-    overall_ds_name = "n30"
-    root_results_dir = ROOT_RESULTS_DIR
-
-    dataset_types = [SyntheticDataType.raw, SyntheticDataType.normal_correlated,
-                     SyntheticDataType.non_normal_correlated, SyntheticDataType.rs_1min]
-
-    # do regular sampled ones
-    for ds_type in dataset_types:
-        ds = DescribeSubjectsForDataVariant(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=ds_type,
-                                            data_dir=SYNTHETIC_DATA_DIR)
-        ds.save_summary(root_results_dir)
-
-    # do irregular p30 sampled ones
-    for ds_type in dataset_types:
-        ds = DescribeSubjectsForDataVariant(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=ds_type,
-                                            data_dir=IRREGULAR_P30_DATA_DIR, load_data=True)
-        ds.save_summary(root_results_dir)
-
-    # do irregular p90 sampled ones
-    for ds_type in dataset_types:
-        ds = DescribeSubjectsForDataVariant(wandb_run_file=run_file, overall_ds_name=overall_ds_name, data_type=ds_type,
-                                            data_dir=IRREGULAR_P90_DATA_DIR, load_data=True)
-        ds.save_summary(root_results_dir)
-
-    # write combined results (this also reads all files and then writes a result)
-    combine_all_ds_variations_multiple_description_summary_dfs(result_root_dir=root_results_dir)
