@@ -48,15 +48,15 @@ def plot_mae_with_statistics(mae_results: {}, lengths: [int], threshold:float=0.
     ax.set_xscale('log')
     ax.grid(True, which="both", ls="-", alpha=0.2)
 
+    # Add horizontal threshold line at y=0.05
+    ax.axhline(y=0.1, color='red', linestyle='-', linewidth=1.5, label='Threshold')
+
     # Add a legend
     ax.legend(fontsize=fontsize)
 
     # Improve x-axis tick labels
     ax.set_xticks(lengths)
     ax.set_xticklabels(lengths)
-
-    # Add horizontal threshold line at y=0.05
-    ax.axhline(y=0.1, color='red', linestyle='-', linewidth=1.5, label='Threshold')
 
     plt.tight_layout()
     plt.show()
