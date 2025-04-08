@@ -433,7 +433,7 @@ class DescribeSubjectsForDataVariant:
         result['25%'] = []
         result['75%'] = []
         if cor_type == CorrType.spearman:
-            labels_dfs = self.data_dfs
+            labels_dfs = self.label_dfs
         else:
             labels_dfs = self.other_corr_labels[cor_type]
 
