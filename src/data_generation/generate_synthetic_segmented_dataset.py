@@ -116,6 +116,7 @@ class SyntheticDataSegmentCols:  # todo rename to labels cols
     mae = "MAE"  # between canonical pattern and A_x
     relaxed_mae = "relaxed MAE"  # between relaxed canonical pattern and A_x
     actual_within_tolerance = "correlation achieved with tolerance"
+    n_outside_tolerance = "n seg outside tolerance"
 
 
 def random_segment_lengths(short_segment_durations, long_segment_durations, n_segments, seed):

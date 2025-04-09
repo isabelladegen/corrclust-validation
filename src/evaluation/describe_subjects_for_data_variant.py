@@ -13,7 +13,8 @@ from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDa
 from src.utils.configurations import SYNTHETIC_DATA_DIR, dataset_description_dir, \
     MULTIPLE_DS_SUMMARY_FILE, get_irregular_folder_name_from, base_dataset_result_folder_for_type, ResultsType, \
     RunInformationCols, get_data_completeness_from
-from src.utils.labels_utils import calculate_n_segments_outside_tolerance_for
+from src.utils.labels_utils import calculate_n_segments_outside_tolerance_for, \
+    calculate_n_segments_outside_tolerance_per_pattern_for
 from src.utils.load_synthetic_data import SyntheticDataType, load_labels, load_synthetic_data
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.visualisation.run_average_rank_visualisations import data_variant_description
@@ -178,11 +179,38 @@ class DescribeSubjectsForDataVariant:
         values_flat = list(chain.from_iterable(values))
         return pd.Series(values_flat).describe().round(3)
 
+    def overall_per_pattern_mae_stats(self, column: str, corr_type=CorrType.spearman):
+        """
+        Return stats for mae overall per pattern, here we consider all segment's mae without calculating the mean
+        first. This will give a better impression on how mae varies on a segment level.
+        :params column to calculate mae from SyntheticDataSegmentCols.mae or SyntheticDataSegmentCols.relaxed_mae
+        :corr_type: default Spearman, other can be specified if it was calculated when creating the class
+        :returns pandas describe df with rows for different patterns and columns for stats,
+        access results like stats_df.loc[pattern_id, statistics]
+        """
+        # list of list
+        pattern_id_mae_dfs = self.per_pattern_mae_values(column, corr_type=corr_type)
+        combined_df = pd.concat(pattern_id_mae_dfs, ignore_index=True)
+        stats_df = combined_df.groupby(SyntheticDataSegmentCols.pattern_id)[column].describe().round(3)
+
+        # Sort by the '50%' column (median) in descending order
+        stats_df = stats_df.sort_values(by='50%', ascending=False)
+        return stats_df
+
     def all_mae_values(self, column: str, corr_type=CorrType.spearman):
         if corr_type == CorrType.spearman:
             values = [label[column] for label in self.label_dfs.values()]
         else:
             values = [label[column] for label in self.other_corr_labels[corr_type].values()]
+        return values
+
+    def per_pattern_mae_values(self, column: str, corr_type=CorrType.spearman):
+        """Returns df for each subject with pattern id and column"""
+        if corr_type == CorrType.spearman:
+            values = [label[[SyntheticDataSegmentCols.pattern_id, column]] for label in self.label_dfs.values()]
+        else:
+            values = [label[[SyntheticDataSegmentCols.pattern_id, column]] for label in
+                      self.other_corr_labels[corr_type].values()]
         return values
 
     def all_time_gaps_in_seconds(self):
@@ -220,6 +248,28 @@ class DescribeSubjectsForDataVariant:
             values = [calculate_n_segments_outside_tolerance_for(label) for label in
                       self.other_corr_labels[corr_type].values()]
         return pd.Series(values).describe().round(3)
+
+    def per_pattern_n_segments_outside_tolerance_stats(self, corr_type=CorrType.spearman):
+        """
+        Return stats for n segment outside tolerance per pattern
+        This is naturally a per dataset number
+        :corr_type: default Spearman, other can be specified if it was calculated when creating the class
+        :returns pandas describe series
+        """
+        if corr_type == CorrType.spearman:
+            labels_dfs = self.label_dfs.values()
+        else:
+            labels_dfs = self.other_corr_labels[corr_type].values()
+
+        per_pattern_within_tol_dfs = [calculate_n_segments_outside_tolerance_per_pattern_for(label) for label in labels_dfs]
+        combined_df = pd.concat(per_pattern_within_tol_dfs, ignore_index=True)
+
+        stats_df = combined_df.groupby(SyntheticDataSegmentCols.pattern_id)[
+            SyntheticDataSegmentCols.n_outside_tolerance].describe().round(3)
+
+        # Sort by the '50%' column in descending order
+        stats_df = stats_df.sort_values(by='50%', ascending=False)
+        return stats_df
 
     def observations_stats(self):
         """

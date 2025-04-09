@@ -243,6 +243,28 @@ def test_get_overall_correlation_stat_for_pattern_id():
     assert_that(result.loc['max'].tolist(), is_([-0.669, -0.018, 0.745]))
 
 
+def test_per_pattern_overall_mae_stats():
+    stats_df = ds_nn.overall_per_pattern_mae_stats(SyntheticDataSegmentCols.relaxed_mae)
+
+    assert_that(stats_df.loc[0, 'mean'], is_(0.01))
+    assert_that(stats_df.loc[25, 'mean'], is_(0.004))
+
+    # check stats df is sorted by median mae
+    assert_that(stats_df.index[0], is_(7))  # worst pattern
+    assert_that(stats_df.index[22], is_(25))  # best pattern
+
+
+def test_per_pattern_n_segment_outside_of_tolerance():
+    stats_df = ds_nn.per_pattern_n_segments_outside_tolerance_stats()
+
+    assert_that(stats_df.loc[0, 'mean'], is_(0.0))
+    assert_that(stats_df.loc[25, 'mean'], is_(0.0))
+
+    # check stats df is sorted by median mae
+    assert_that(stats_df.index[0], is_(0))  # worst pattern
+    assert_that(stats_df.index[22], is_(25))  # best pattern
+
+
 def test_calculate_mae_for_different_segment_lengths():
     ds_nn_cor = DescribeSubjectsForDataVariant(wandb_run_file=run_file, overall_ds_name=overall_ds_name,
                                                data_type=SyntheticDataType.non_normal_correlated,

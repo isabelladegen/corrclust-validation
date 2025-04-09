@@ -22,6 +22,25 @@ def calculate_n_segments_outside_tolerance_for(labels_df: pd.DataFrame):
     return counts[False] if False in counts else 0
 
 
+def calculate_n_segments_outside_tolerance_per_pattern_for(label_df: pd.DataFrame):
+    # Group by pattern_id
+    grouped = label_df.groupby([SyntheticDataSegmentCols.pattern_id])
+
+    pattern_counts = {}
+
+    # For each pattern_id, calculate segments outside tolerance
+    for pattern_id, df_for_pattern_id in grouped:
+        # Turn into true, false list
+        segments_within_tolerance = df_for_pattern_id[SyntheticDataSegmentCols.actual_within_tolerance].apply(
+            lambda x: all(x))
+        count_outside = (~segments_within_tolerance).sum()  # count False
+        pattern_counts[pattern_id[0]] = count_outside  # pattern_id is a tuple
+
+    result_df = pd.DataFrame(list(pattern_counts.items()), columns=[SyntheticDataSegmentCols.pattern_id,
+                                                                    SyntheticDataSegmentCols.n_outside_tolerance])
+    return result_df
+
+
 def calculate_n_observations_for(labels_df: pd.DataFrame):
     """Calculates the numbers of observations in the data based on the given labels df
     :param labels_df: a labels dataframe
