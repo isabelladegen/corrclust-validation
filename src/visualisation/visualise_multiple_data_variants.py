@@ -2,13 +2,18 @@ import re
 from os import path
 
 import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt
 import seaborn as sns
 from matplotlib.gridspec import GridSpec
+from matplotlib.patches import FancyArrowPatch
 from matplotlib.ticker import AutoMinorLocator
+import matplotlib as mpl
 
+from src.data_generation.generate_synthetic_correlated_data import generate_correlation_matrix
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols, CorrType
 from src.evaluation.describe_subjects_for_data_variant import DescribeSubjectsForDataVariant
+from src.evaluation.describe_synthetic_dataset import plot_corr_ellipses
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import get_irregular_folder_name_from, base_dataset_result_folder_for_type, ResultsType, \
     OVERALL_SEGMENT_LENGTH_IMAGE, OVERALL_MAE_IMAGE
@@ -277,6 +282,78 @@ def create_violin_grid(data_dict: {}, figsize: tuple = (12, 12), backend: str = 
 
             # Add statistics
             add_stats(data, ax, 0)
+
+        axes.append(row_axes)
+
+    # Adjust layout
+    plt.tight_layout()
+    return fig
+
+
+def create_correlation_grid(data_dict: {}, figsize: tuple = (12, 12), backend: str = Backends.none.value) -> plt.Figure:
+    """
+    Create a grid of correlation matrix visualisations using dictionary keys as labels.
+
+    :param data_dict : {str, {str, np.ndarray}} Nested dictionary containing correlation data for each data variant
+        Format: {'row_name': {'column_name': data_array}} - rows are complete, partial, sparse
+    :param figsize : tuple, optional Figure size in inches (width, height)
+    :returns: matplotlib.figure.Figure
+    """
+
+    # Extract row and column names from dictionary structure
+    row_names = list(data_dict.keys())
+    # Get unique column names from all nested dictionaries
+    column_names = list(list(data_dict.values())[0].keys())
+
+    # Set the style for publication-quality figures
+    reset_matplotlib(backend)
+
+    # Create figure with custom size
+    fig = plt.figure(figsize=figsize)
+    gs = GridSpec(len(row_names), len(column_names), figure=fig)
+    fig.subplots_adjust(hspace=0.5, wspace=0.3, left=0.15)
+
+    # Set up colors
+    cmap = "bwr"
+    normed_colour = mpl.colors.Normalize(-1, 1)
+
+    # Plot each subplot
+    axes = []
+    for i, row in enumerate(row_names):
+        row_axes = []
+        for j, col in enumerate(column_names):
+            ax = fig.add_subplot(gs[i, j])
+            ax.set_aspect('equal')
+            row_axes.append(ax)
+
+            # turn grid off
+            ax.grid(False, which='major')
+            ax.grid(False, which='minor')
+            ax.tick_params(length=0)
+            # Light square around each subplot
+            for spine in ax.spines.values():
+                spine.set_linewidth(0.5)  # Make thinner
+                spine.set_color('#cccccc')  # Light gray color
+
+            try:
+                correlations = data_dict[row][col]
+            except KeyError:
+                print(f"Warning: No correlations found for condition: row='{row}', column='{col}'")
+                continue
+
+            # create correlation plot
+            plot_corr_ellipses(correlations, plot_diagonal=False, show_top_labels=False, ax=ax,
+                               cmap=cmap, norm=normed_colour)
+            ax.margins(0.1)
+            ax.yaxis.set_tick_params(labelleft=False)
+            ax.yaxis.set_tick_params(labelright=False)
+
+            # Customize appearance
+            if i == 0:  # Add column titles only to the top row
+                ax.set_title(col, fontsize=fontsize, fontweight='bold')
+
+            if j == 0:  # Add row titles only for the first column
+                ax.set_ylabel(row, fontsize=fontsize, fontweight='bold')
 
         axes.append(row_axes)
 
@@ -620,3 +697,36 @@ class VisualiseMultipleDataVariants:
             figs[cor] = fig
 
         return figs
+
+    def correlation_pattern_for_pattern(self, root_result_dir: str, pattern_id: int = 19, stats: str = "50%",
+                                        save_fig=False):
+        """
+            Creates a IOB, COB, and IG Correlations, rows are completed, partial, sparse and columns
+            are be raw, correlates, non-normal and downsampled
+            :param root_result_dir: root result dir to save the figure this will be put in the dataset-description
+            :param pattern_id: which pattern to show the overall correlation for
+            :param stats: which stats to plot pattern for, default median (50%), see other pandas describe stats
+            :param save_fig: whether to save the figure
+            :return: fig
+        """
+        # create data dict for mae, for this all ds are different so we plot all
+        data_dict = {}
+        for row, row_data in self.all_data.items():
+            row_dict = {}
+            for col, col_data in row_data.items():
+                actual_cor = col_data.achieved_correlation_stats_for_pattern(pattern_id).loc[stats]
+                # gosh, don't ask but the method wants a correlation matrix as df
+                row_dict[col] = pd.DataFrame(generate_correlation_matrix(actual_cor.to_numpy()))
+            data_dict[row] = row_dict
+
+        fig = create_correlation_grid(data_dict=data_dict, backend=self.backend, figsize=(15, 10))
+        plt.show()
+
+        if save_fig:
+            folder = base_dataset_result_folder_for_type(root_result_dir, ResultsType.dataset_description)
+            fig.savefig(
+                str(path.join(folder, stats + "_pattern_id_" + str(
+                    pattern_id) + "_correlation_matrix_across_data_variants.png")),
+                dpi=300, bbox_inches='tight')
+
+        return fig

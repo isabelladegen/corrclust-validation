@@ -445,7 +445,8 @@ class DescribeSubjectsForDataVariant:
                 shorter_labels = shorten_segments_to(length, labels_df)
 
                 # 2. recalculate rest of labels file from data
-                updated_labels = recalculate_labels_df_from_data(self.data_dfs[name], shorter_labels, corr_type=cor_type)
+                updated_labels = recalculate_labels_df_from_data(self.data_dfs[name], shorter_labels,
+                                                                 corr_type=cor_type)
                 means.extend(updated_labels[SyntheticDataSegmentCols.relaxed_mae])
             # 3. Calculate mean for this length
             result['mean'].append(round(np.mean(means), self.__round_to))
@@ -453,6 +454,19 @@ class DescribeSubjectsForDataVariant:
             result['25%'].append(round(np.percentile(means, 25), self.__round_to))
             result['75%'].append(round(np.percentile(means, 75), self.__round_to))
         return result
+
+    def achieved_correlation_stats_for_pattern(self, pattern_id: int):
+        """Calculates describe stats for the given pattern_id from the achieved correlations"""
+        all_achieved_cors = []
+        # read all correlations
+        for labels_df in self.label_dfs.values():
+            achieved_corr = labels_df[labels_df[SyntheticDataSegmentCols.pattern_id] == pattern_id][
+                SyntheticDataSegmentCols.actual_correlation].to_list()
+            all_achieved_cors.extend(achieved_corr)
+
+        cors_df = pd.DataFrame(all_achieved_cors, columns=['c1', 'c2', 'c3'])
+        desc = cors_df.describe().round(3)
+        return desc
 
 
 def extract_distribution(log_string: str):

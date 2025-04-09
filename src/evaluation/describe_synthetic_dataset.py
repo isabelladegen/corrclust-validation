@@ -472,7 +472,7 @@ def plot_corr_ellipses(corr_df: pd.DataFrame, ax, plot_diagonal=False, show_top_
     a = 45 * np.sign(cor[upper_indices])
 
     ec = EllipseCollection(widths=w, heights=h, angles=a, units='x', offsets=xy,
-                           transOffset=ax.transData, array=cor[upper_indices], edgecolor='black', **kwargs)
+                           transOffset=ax.transData, array=cor[upper_indices], edgecolor='darkgrey', **kwargs)
     ax.add_collection(ec)
 
     # Modify the tick params based on show_top_labels first row only
@@ -498,7 +498,7 @@ def plot_corr_ellipses(corr_df: pd.DataFrame, ax, plot_diagonal=False, show_top_
     for cidx, text in enumerate(rounded_cor):
         y_idx = inverted_row_idx[cidx]  # for n=3 this is 1, 1, 0
         x_idx = column_idx[cidx] - 1  # for n=3 this is 0, 1, 1
-        ax.text(ticks[x_idx] - 2 * gap, ticks[y_idx], text, fontsize=fontsize, color='silver', zorder=10)
+        ax.text(ticks[x_idx] - 2 * gap, ticks[y_idx], text, fontsize=fontsize, color='black', zorder=10)
 
     # each tick is 1 wide
     half_w = 0.5

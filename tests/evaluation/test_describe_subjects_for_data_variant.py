@@ -234,10 +234,19 @@ def test_can_load_data_if_required():
     assert_that(np.array_equal(all_datasets[-1], last_data))
 
 
+def test_get_overall_correlation_stat_for_pattern_id():
+    pattern_id = 19
+    result = ds_nn.achieved_correlation_stats_for_pattern(pattern_id)
+
+    assert_that(result.loc['50%'].tolist(), is_([-0.717, -0.087, 0.718]))
+    assert_that(result.loc['mean'].tolist(), is_([-0.716, -0.087, 0.716]))
+    assert_that(result.loc['max'].tolist(), is_([-0.669, -0.018, 0.745]))
+
+
 def test_calculate_mae_for_different_segment_lengths():
     ds_nn_cor = DescribeSubjectsForDataVariant(wandb_run_file=run_file, overall_ds_name=overall_ds_name,
-                                           data_type=SyntheticDataType.non_normal_correlated,
-                                           data_dir=data_dir, load_data=True, additional_corr=[CorrType.pearson])
+                                               data_type=SyntheticDataType.non_normal_correlated,
+                                               data_dir=data_dir, load_data=True, additional_corr=[CorrType.pearson])
     lengths = [10, 15, 30]
     maes_results_spear = ds_nn_cor.mean_mae_for_segment_lengths(lengths, cor_type=CorrType.spearman)
     maes_results_pears = ds_nn_cor.mean_mae_for_segment_lengths(lengths, cor_type=CorrType.pearson)
