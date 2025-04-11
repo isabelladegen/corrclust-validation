@@ -5,6 +5,7 @@ import numpy as np
 from hamcrest import *
 
 from src.use_case.ticc.TICC_solver import TICC
+from src.use_case.ticc_result import TICCResult
 from src.utils.configurations import ROOT_DIR
 from src.utils.plots.matplotlib_helper_functions import Backends
 
@@ -30,6 +31,29 @@ class TICCSettings:  # attention changing these defaults will make the compariso
     keep_track_of_assignments = False
     cluster_reassignment = 20
     backend = Backends.none.value
+
+
+def get_ticc_example_result(x_train: np.ndarray = load_ticc_example_data_as_x_train(),
+                            ticc_settings: TICCSettings = TICCSettings()) -> TICCResult:
+    """
+    Creates a TICC result from syntetic test data for testing
+    :param x_train: optional numpy array with rows being observations and columns being the different time series,
+    if not provided than the default example data is used
+    :param ticc_settings: optional TICCSettings class for the various parameters,
+    if not provided default settings are used
+    :return: TICCResult from training
+    """
+    ticc = TICC(window_size=ticc_settings.window_size, number_of_clusters=ticc_settings.number_of_clusters,
+                lambda_parameter=ticc_settings.lambda_var, beta=ticc_settings.switch_penalty,
+                max_iters=ticc_settings.max_iter,
+                threshold=ticc_settings.threshold,
+                allow_zero_cluster_inbetween=ticc_settings.allow_zero_cluster_inbetween,
+                do_training_split=ticc_settings.do_training_split,
+                keep_track_of_assignments=ticc_settings.keep_track_of_assignments,
+                backend=ticc_settings.backend)
+    return ticc.fit(data=x_train,
+                    use_gmm_initialisation=ticc_settings.use_gmm_initialisation,
+                    reassign_points_to_zero_clusters=ticc_settings.reassign_points_to_zero_clusters)
 
 
 settings = TICCSettings()

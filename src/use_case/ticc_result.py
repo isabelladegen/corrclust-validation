@@ -1,10 +1,13 @@
 from statistics import mean
 
 import numpy as np
+import pandas as pd
 import seaborn as sns
 
 from matplotlib import pyplot as plt
 
+from src.data_generation.generate_synthetic_correlated_data import calculate_spearman_correlation
+from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.use_case.ticc.TICC_helper import compute_bic
 from src.use_case.temporal_network_analysis import TemporalNetworkAnalysis, \
     from_list_of_times_mrf_to_node_node_time_3d_array
@@ -24,12 +27,13 @@ class TICCResult:
     Class to analyse the results from the TICC algorithm
     """
 
-    def __init__(self, cluster_assignment: [], dictionary_of_mrf_for_clusters: {}, empirical_covariances: np.ndarray,
+    def __init__(self, data: np.array, cluster_assignment: [], dictionary_of_mrf_for_clusters: {},
+                 empirical_covariances: np.ndarray,
                  number_of_clusters: int, number_of_time_series: int, window_size: int, has_converged: bool,
                  assignments_over_time=None, time_series_names: [str] = None,
                  backend: str = Backends.none.value):
         """
-
+        :param data: the actuall data
         :param assignments_over_time:
         :param number_of_clusters: k provided to TICC
         :param cluster_assignment: list of assigned cluster number for each observation
@@ -42,6 +46,7 @@ class TICCResult:
         :param assignments_over_time: list of length iterations of ndarrays of shape (observations,)
         :param time_series_names: [str] optional if provided these names will be used for the plots
         """
+        self.data = data
         self.has_converged = has_converged
         self.number_of_time_series = number_of_time_series
         self.cluster_assignment = cluster_assignment
@@ -122,11 +127,11 @@ class TICCResult:
             self.__segment_lengths = self.__calculate_segment_lengths()
         return self.__segment_lengths
 
-    def mean_segment_length(self) -> float:
+    def mean_segment_length(self, round_to: int = 3) -> float:
         """
         returns mean segment length
         """
-        return round(mean(self.segment_lengths()), 2)
+        return round(mean(self.segment_lengths()), round_to)
 
     def min_segment_length(self) -> int:
         """
@@ -524,6 +529,48 @@ class TICCResult:
             maxs.append(self.mrf[cluster_id].max())
         # return overall min and max
         return min(mins), max(maxs)
+
+    def to_labels_df(self, round_to: int = 3):
+        """
+        Translates results into labels df so it fits the rest of the evaluation code we have
+        :return:
+        """
+        segment_ids = []
+        start_idxs = []
+        end_idxs = []
+        lengths = []
+        cluster_ids = []
+        empirical_correlations = []
+
+        start_idx = 0
+        for seg_id, segment in enumerate(self.segments()):
+            assert len(set(segment)) == 1, "Found wrong segment with different cluster ids"
+            segment_ids.append(seg_id)
+
+            length = len(segment)
+            end_idx = start_idx + length - 1  # used convention so far to select end_idx
+            start_idxs.append(start_idx)
+            end_idxs.append(end_idx)
+            lengths.append(length)
+            cluster_ids.append(segment[0])
+
+            # calculate empirical correlation from data
+            segment_data = self.data[start_idx:end_idx + 1, :]  # need to include end_idx in selection
+            corrs = calculate_spearman_correlation(segment_data, round_to=round_to)
+            empirical_correlations.append(corrs)
+
+            # update for next segment
+            start_idx = end_idx + 1
+
+        result = {
+            SyntheticDataSegmentCols.segment_id: segment_ids,
+            SyntheticDataSegmentCols.start_idx: start_idxs,
+            SyntheticDataSegmentCols.end_idx: end_idxs,
+            SyntheticDataSegmentCols.length: lengths,
+            SyntheticDataSegmentCols.pattern_id: cluster_ids,
+            SyntheticDataSegmentCols.actual_correlation: empirical_correlations
+        }
+        return pd.DataFrame(result)
 
 
 def access_lower_block_diagonals(a: np.array, number_of_blocks: int, sub_diagonal: int = 0):

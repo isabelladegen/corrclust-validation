@@ -208,7 +208,7 @@ class TICC:
             # end of training
 
         # train cluster inverse is np.linalg.inv(computed_covariance), it's not used in training!!!
-        return TICCResult(clustered_points, train_cluster_inverse, empirical_covariances, self.number_of_clusters,
+        return TICCResult(data, clustered_points, train_cluster_inverse, empirical_covariances, self.number_of_clusters,
                           time_series_col_size, self.window_size, has_converged, self.cluster_assignments_over_time,
                           backend=self.__backend)
 
