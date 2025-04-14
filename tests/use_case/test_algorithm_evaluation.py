@@ -101,10 +101,25 @@ def test_map_resulting_clusters_to_ground_truth():
     assert_that(map1.shape[0], is_(23))
     row1 = map1.iloc[0]
     assert_that(row1[EvalMappingCols.result_cluster_id], is_(1))
-    assert_that(row1[EvalMappingCols.result_overall_cluster_cor], contains_exactly(*[-0.006, 0.003, 0.007]))
+    assert_that(row1[EvalMappingCols.distance], is_(0.013))
+    assert_that(row1[EvalMappingCols.result_mean_cluster_cor], contains_exactly(*[-0.001, -0.005, 0.011]))
     assert_that(row1[EvalMappingCols.closest_gt_ids], contains_exactly(0))
-    assert_that(row1[EvalMappingCols.closest_gt_overall_cors][0], contains_exactly(*[-0.005, 0.005, 0.005]))
-    assert_that(row1[EvalMappingCols.distance], is_(0.005))
+    assert_that(row1[EvalMappingCols.closest_gt_mean_cors][0], contains_exactly(*[-0.008, -0.009, 0.013]))
+    assert_that(row1[EvalMappingCols.mae_result_and_relaxed_pattern][0], is_(0.017))
+    assert_that(row1[EvalMappingCols.mae_gt_and_relaxed_pattern][0], is_(0.03))
+    assert_that(row1[EvalMappingCols.result_mean_cluster_cor_within_tolerance_of_gt][0], is_(True))
+    assert_that(row1[EvalMappingCols.gt_within_tolerance_of_relaxed_pattern][0], is_(True))
 
     map2 = eval2.map_clusters()
     assert_that(map2.shape[0], is_(8))
+
+
+def test_calculates_pattern_discovery_rate():
+    assert_that(eval1.pattern_not_discovered(), contains_exactly(3, 6, 18, 20))
+    assert_that(eval1.pattern_discovery_percentage(), is_(82.609))
+
+    assert_that(eval2.patterns_discovered(), contains_exactly(2, 6, 10, 12, 13, 15, 18, 19))
+    assert_that(eval2.pattern_discovery_percentage(), is_(34.783))
+
+    assert_that(eval3.pattern_not_discovered(), contains_exactly(3, 6, 9, 12))
+    assert_that(eval3.pattern_discovery_percentage(), is_(82.609))

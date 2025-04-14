@@ -95,11 +95,15 @@ def mean_absolute_error_from_labels_df(labels_df: pd.DataFrame, round_to: int = 
         labels_df[SyntheticDataSegmentCols.pattern_id].map(canonical_patterns_lookup).to_list())
     relaxed_patterns = np.array(labels_df[SyntheticDataSegmentCols.pattern_id].map(relaxed_patterns_lookup).to_list())
     achieved_correlations = np.array(labels_df[SyntheticDataSegmentCols.actual_correlation].to_list())
-    error_canonical = np.round(np.sum(abs(np.array(canonical_patterns) - np.array(achieved_correlations)), axis=1) / n,
-                               round_to)
-    error_relaxed = np.round(np.sum(abs(np.array(relaxed_patterns) - np.array(achieved_correlations)), axis=1) / n,
-                             round_to)
+    error_canonical = calculate_mae(achieved_correlations, canonical_patterns, round_to)
+    error_relaxed = calculate_mae(achieved_correlations, relaxed_patterns, round_to)
     return error_canonical, error_relaxed
+
+
+def calculate_mae(corrs1: [float], corrs2: [float], round_to):
+    assert len(corrs1) == len(corrs2)
+    n = len(corrs1)
+    return np.round(np.sum(abs(np.array(corrs2) - np.array(corrs1)), axis=1) / n, round_to)
 
 
 @dataclass
