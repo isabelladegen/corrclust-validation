@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 from hamcrest import *
 
-from src.use_case.algorithm_evaluation import AlgorithmEvaluation
+from src.use_case.algorithm_evaluation import AlgorithmEvaluation, EvalMappingCols
 from src.use_case.ticc.TICC_solver import TICC
 from src.utils.configurations import SyntheticDataVariates, ROOT_DIR
 from src.utils.load_synthetic_data import SyntheticDataType, load_synthetic_data, load_labels_file_for
@@ -92,3 +92,19 @@ def test_calculates_segment_length_ratio():
     assert_that(eval1.segmentation_length_ratio(stats='mean'), is_(1.124))  # algorithm makes longer segments
     assert_that(eval2.segmentation_length_ratio(), is_(1.033))  # algorithm similar median segment length
     assert_that(eval3.segmentation_length_ratio(), is_(1.015))  # algorithm similar median segment length
+
+
+def test_map_resulting_clusters_to_ground_truth():
+    map1 = eval1.map_clusters()
+
+    # test all values for row 1 for map1
+    assert_that(map1.shape[0], is_(23))
+    row1 = map1.iloc[0]
+    assert_that(row1[EvalMappingCols.result_cluster_id], is_(1))
+    assert_that(row1[EvalMappingCols.result_overall_cluster_cor], contains_exactly(*[-0.006, 0.003, 0.007]))
+    assert_that(row1[EvalMappingCols.closest_gt_ids], contains_exactly(0))
+    assert_that(row1[EvalMappingCols.closest_gt_overall_cors][0], contains_exactly(*[-0.005, 0.005, 0.005]))
+    assert_that(row1[EvalMappingCols.distance], is_(0.005))
+
+    map2 = eval2.map_clusters()
+    assert_that(map2.shape[0], is_(8))
