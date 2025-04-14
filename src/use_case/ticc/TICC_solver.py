@@ -308,11 +308,20 @@ class TICC:
             X2 = S_est
             # the results of the statement below are never used so why is it calculated? Leaving it in as perhaps
             # important for quality of S_est
-            u, _ = np.linalg.eig(S_est)
-            cov_out = np.linalg.inv(X2)
+            # u, _ = np.linalg.eig(S_est)
+
+            # added this to help with stability
+            epsilon = 1e-6
+            X2_reg = X2 + epsilon * np.eye(X2.shape[0])
+
+            # Handle potential NaNs
+            if np.isnan(X2_reg).any():
+                X2_reg = np.nan_to_num(X2_reg, nan=epsilon)
+
+            cov_out = np.linalg.inv(X2_reg)
 
             computed_covariance[self.number_of_clusters, cluster] = cov_out
-            train_cluster_inverse[cluster] = X2
+            train_cluster_inverse[cluster] = X2_reg
 
         return computed_covariance, train_cluster_inverse
 

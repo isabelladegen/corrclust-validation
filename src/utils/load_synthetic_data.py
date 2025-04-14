@@ -148,12 +148,14 @@ def load_labels_file_for(labels_file_name: Path):
 
     labels_df = pd.read_csv(labels_file_name, index_col=0)
     # change types from string to arrays
-    labels_df[SyntheticDataSegmentCols.correlation_to_model] = labels_df[
-        SyntheticDataSegmentCols.correlation_to_model].apply(lambda x: ast.literal_eval(x))
+    if SyntheticDataSegmentCols.correlation_to_model in labels_df.columns:
+        labels_df[SyntheticDataSegmentCols.correlation_to_model] = labels_df[
+            SyntheticDataSegmentCols.correlation_to_model].apply(lambda x: ast.literal_eval(x))
     labels_df[SyntheticDataSegmentCols.actual_correlation] = labels_df[
         SyntheticDataSegmentCols.actual_correlation].apply(lambda x: ast.literal_eval(x))
-    labels_df[SyntheticDataSegmentCols.actual_within_tolerance] = labels_df[
-        SyntheticDataSegmentCols.actual_within_tolerance].apply(lambda x: ast.literal_eval(x))
+    if SyntheticDataSegmentCols.actual_within_tolerance in labels_df.columns:
+        labels_df[SyntheticDataSegmentCols.actual_within_tolerance] = labels_df[
+            SyntheticDataSegmentCols.actual_within_tolerance].apply(lambda x: ast.literal_eval(x))
     return labels_df
 
 

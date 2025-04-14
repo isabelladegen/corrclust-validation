@@ -235,11 +235,14 @@ def calculate_spearman_correlation(data: np.array, round_to: int = 3):
     :return: list of correlations ordered by np.triu_indices of the upper half of the correlation matrix
     """
     n = data.shape[1]
+    if data.shape[0] <= 1:
+        return np.nan  # this is a thing in TICC
     result = spearmanr(data)
     if n == 2:
         return_result = [result.correlation]
     else:
         return_result = result.correlation[np.triu_indices(n, 1)]
+
     factor = 10 ** round_to  # shift decimals past point for truncation and back again
     return list(np.trunc(np.array(return_result) * factor) / factor)
 
