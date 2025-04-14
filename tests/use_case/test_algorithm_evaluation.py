@@ -129,3 +129,23 @@ def test_calculates_pattern_specificity():
     assert_that(eval1.pattern_specificity_percentage(), is_(69.565))
     assert_that(eval2.pattern_specificity_percentage(), is_(100.0))
     assert_that(eval3.pattern_specificity_percentage(), is_(65.217))
+
+
+def test_calculates_silhouette_score():
+    # all of these result show that the clustering results are poor
+    assert_that(eval1.silhouette_score(), is_(0.598))
+    assert_that(eval2.silhouette_score(), is_(0.373))
+    assert_that(eval3.silhouette_score(), is_(0.544))
+
+
+def test_calculates_dbi():
+    # all of these results indicate poor clustering results (dbi should be < 0.05)
+    assert_that(eval1.dbi(), is_(1.749))
+    assert_that(eval2.dbi(), is_(0.98))
+    assert_that(eval3.dbi(), is_(0.728))
+
+
+def test_calculates_jaccard_index():
+    assert_that(eval1.jaccard_index(), is_(0.829))
+    assert_that(eval2.jaccard_index(), is_(0.352))
+    assert_that(eval3.jaccard_index(), is_(0.835))

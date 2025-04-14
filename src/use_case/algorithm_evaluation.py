@@ -7,8 +7,12 @@ import pandas as pd
 from src.data_generation.generate_synthetic_correlated_data import calculate_spearman_correlation
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols, calculate_mae
 from src.data_generation.model_correlation_patterns import ModelCorrelationPatterns
+from src.utils.clustering_quality_measures import silhouette_avg_from_distances, calculate_dbi, clustering_jaccard_coeff
 from src.utils.configurations import SyntheticDataVariates
 from src.utils.distance_measures import distance_calculation_method_for, DistanceMeasures
+from src.utils.labels_utils import calculate_distance_matrix_for, calculate_cluster_centroids, \
+    calculate_distances_between_cluster_centroids, calculate_distances_between_each_segment_and_its_cluster_centroid, \
+    calculate_y_pred_and_updated_gt_y_pred_from, calculate_y_pred_from
 
 
 def calculate_mean_cluster_correlations(labels_df: pd.DataFrame, round_to: int):
@@ -163,14 +167,17 @@ class AlgorithmEvaluation:
         single_gt_match_rows = map_df[map_df[EvalMappingCols.closest_gt_ids].apply(lambda x: len(x) == 1)]
 
         # turn the lists into value
-        single_gt_match_rows[EvalMappingCols.closest_gt_ids] = single_gt_match_rows[EvalMappingCols.closest_gt_ids].apply(lambda x: x[0])
-        single_gt_match_rows[EvalMappingCols.result_mean_cluster_cor_within_tolerance_of_gt] = single_gt_match_rows[EvalMappingCols.result_mean_cluster_cor_within_tolerance_of_gt].apply(lambda x: x[0])
+        single_gt_match_rows[EvalMappingCols.closest_gt_ids] = single_gt_match_rows[
+            EvalMappingCols.closest_gt_ids].apply(lambda x: x[0])
+        single_gt_match_rows[EvalMappingCols.result_mean_cluster_cor_within_tolerance_of_gt] = single_gt_match_rows[
+            EvalMappingCols.result_mean_cluster_cor_within_tolerance_of_gt].apply(lambda x: x[0])
 
         # keep gt_ids that were only matched once
         single_gt_match_rows.drop_duplicates(subset=EvalMappingCols.closest_gt_ids, keep=False, inplace=True)
 
         # filter for within tolerance
-        within_tol = single_gt_match_rows[single_gt_match_rows[EvalMappingCols.result_mean_cluster_cor_within_tolerance_of_gt]]
+        within_tol = single_gt_match_rows[
+            single_gt_match_rows[EvalMappingCols.result_mean_cluster_cor_within_tolerance_of_gt]]
 
         all_result_ids = self._result_labels_df[SyntheticDataSegmentCols.pattern_id].unique().tolist()
 
@@ -277,3 +284,50 @@ class AlgorithmEvaluation:
             EvalMappingCols.gt_within_tolerance_of_relaxed_pattern: gt_within_pattern_ground_truths,
         }
         return pd.DataFrame(results)
+
+    def silhouette_score(self, distance_measure=DistanceMeasures.l5_cor_dist):
+        """
+        Calculates silhouette score for your result. Note that this measure does not require
+        ground truth information and used the correlations of the segments to judge
+        the structure in the data. Refer to our benchmark and validation papers for more details
+        """
+        y_pred = self._result_labels_df[SyntheticDataSegmentCols.pattern_id].to_numpy()
+        distance_matrix = calculate_distance_matrix_for(self._result_labels_df, distance_measure)
+        sil_avg = silhouette_avg_from_distances(distance_matrix, y_pred, round_to=self._round_to)
+        return sil_avg
+
+    def dbi(self, distance_measure=DistanceMeasures.l5_cor_dist):
+        """
+        Calculates the davies bouldin index for your result. Note that this measure does not require
+        ground truth information and used the correlations of the segments to judge
+        the structure in the data. Refer to our benchmark and validation papers for more details
+        """
+        data_np = self._data[self._data_columns].to_numpy()
+        cluster_centroids = calculate_cluster_centroids(self._result_labels_df, data_np)
+        dist_cluster_centroids = calculate_distances_between_cluster_centroids(cluster_centroids, distance_measure)
+        dist_seg_cluster_centroid = calculate_distances_between_each_segment_and_its_cluster_centroid(
+            self._result_labels_df, cluster_centroids, distance_measure)
+
+        dbi = calculate_dbi(dist_seg_cluster_centroid, dist_cluster_centroids, round_to=self._round_to)
+        return dbi
+
+    def jaccard_index(self):
+        """
+        Calculates the Jaccard Index formulated for segmentation and clustering (see validation paper)
+        for your result. Note that this measure requires ground truth information. We use the closest
+        mapped cluster_id for y_pred.
+        Refer to our benchmark and validation papers for more details
+        """
+        full_gt_y_pred = calculate_y_pred_from(self._gt_labels)
+        # update results id with closest matching gt cluster id
+        updated_results_id = self._result_labels_df.copy()
+        matching_lookup = {row[EvalMappingCols.result_cluster_id]: row[EvalMappingCols.closest_gt_ids][0] for _, row in
+                           self.map_clusters().iterrows()}
+        old_results_ids = updated_results_id[SyntheticDataSegmentCols.pattern_id]
+        # best matched to ground truth
+        new_results_ids = [matching_lookup[result_id] for result_id in old_results_ids]
+        updated_results_id[SyntheticDataSegmentCols.pattern_id] = new_results_ids
+
+        y_pred, y_pared_gt = calculate_y_pred_and_updated_gt_y_pred_from(updated_results_id, full_gt_y_pred)
+        jacc = clustering_jaccard_coeff(y_pred, y_pared_gt, round_to=self._round_to)
+        return jacc
