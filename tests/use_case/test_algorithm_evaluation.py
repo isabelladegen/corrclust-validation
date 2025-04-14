@@ -123,3 +123,9 @@ def test_calculates_pattern_discovery_rate():
 
     assert_that(eval3.pattern_not_discovered(), contains_exactly(3, 6, 9, 12))
     assert_that(eval3.pattern_discovery_percentage(), is_(82.609))
+
+
+def test_calculates_pattern_specificity():
+    assert_that(eval1.pattern_specificity_percentage(), is_(69.565))
+    assert_that(eval2.pattern_specificity_percentage(), is_(100.0))
+    assert_that(eval3.pattern_specificity_percentage(), is_(65.217))

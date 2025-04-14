@@ -1,3 +1,4 @@
+import itertools
 from dataclasses import dataclass
 
 import numpy as np
@@ -148,6 +149,32 @@ class AlgorithmEvaluation:
         all_gt_ids = self._gt_labels[SyntheticDataSegmentCols.pattern_id].unique().tolist()
 
         percentage = (len(self.patterns_discovered()) / len(all_gt_ids)) * 100
+        return round(percentage, self._round_to)
+
+    def pattern_specificity_percentage(self):
+        """
+        Percentage of resulting patterns that match exactly to one ground truth, and that one with in tolerance.
+        If a resulting pattern matches the same ground truth once within and once outside of tolerance, 
+        it is not counted. If two resulting patterns match the same ground truth, they are not counted.
+        :return: percentage
+        """
+        map_df = self.map_clusters()
+        # get results that map to only one ground truth
+        single_gt_match_rows = map_df[map_df[EvalMappingCols.closest_gt_ids].apply(lambda x: len(x) == 1)]
+
+        # turn the lists into value
+        single_gt_match_rows[EvalMappingCols.closest_gt_ids] = single_gt_match_rows[EvalMappingCols.closest_gt_ids].apply(lambda x: x[0])
+        single_gt_match_rows[EvalMappingCols.result_mean_cluster_cor_within_tolerance_of_gt] = single_gt_match_rows[EvalMappingCols.result_mean_cluster_cor_within_tolerance_of_gt].apply(lambda x: x[0])
+
+        # keep gt_ids that were only matched once
+        single_gt_match_rows.drop_duplicates(subset=EvalMappingCols.closest_gt_ids, keep=False, inplace=True)
+
+        # filter for within tolerance
+        within_tol = single_gt_match_rows[single_gt_match_rows[EvalMappingCols.result_mean_cluster_cor_within_tolerance_of_gt]]
+
+        all_result_ids = self._result_labels_df[SyntheticDataSegmentCols.pattern_id].unique().tolist()
+
+        percentage = (len(within_tol) / len(all_result_ids)) * 100
         return round(percentage, self._round_to)
 
     def patterns_discovered(self):
