@@ -23,7 +23,7 @@ class TICCDefaultSettings(TICCSettings):
     number_of_clusters: int = 23  # from ground truth
     switch_penalty: float = 400
     lambda_var: float = 11e-2
-    max_iter: int = 100
+    max_iter: int = 10 # this is usually 100 but takes a long time
     threshold: float = 2e-5
     allow_zero_cluster_inbetween: bool = False
     use_gmm_initialisation: bool = True
