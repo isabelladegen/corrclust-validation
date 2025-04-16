@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field, asdict
+from pathlib import Path
 
 import pandas as pd
 import wandb
@@ -6,8 +7,9 @@ import wandb
 from src.use_case.algorithm_evaluation import AlgorithmEvaluation
 from src.use_case.ticc.TICC_solver import TICC
 from src.utils.configurations import WandbConfiguration, SyntheticDataVariates, SYNTHETIC_DATA_DIR, \
-    GENERATED_DATASETS_FILE_PATH, DataCompleteness, get_data_dir
-from src.utils.load_synthetic_data import SyntheticDataType, load_synthetic_data
+    GENERATED_DATASETS_FILE_PATH, DataCompleteness, get_data_dir, dir_for_data_type, get_algorithm_use_case_result_dir, \
+    ROOT_RESULTS_DIR
+from src.utils.load_synthetic_data import SyntheticDataType, load_synthetic_data, SyntheticFileTypes
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.visualisation.run_average_rank_visualisations import data_variant_description
 from tests.use_case.ticc.test_ticc_runs_on_original_test_data import TICCSettings
@@ -53,16 +55,25 @@ class TICCWandbUseCaseConfig(TICCDefaultSettings):
     # indicates if training or predicting
     is_training_run: bool = True
 
+    # SAVE RESULTS LOCATION
+    # results are saved in the same structure as generated data to distinguish between variants
+    root_results_dir: str = ''
+
     # allows for sweeping if done in the future
     def as_dict(self):
         return asdict(self)
 
 
-def run_ticc_on_a_data_variant(config: TICCWandbUseCaseConfig, run_names: [str], training_subject_name: str):
+def run_ticc_on_a_data_variant(config: TICCWandbUseCaseConfig, run_names: [str], training_subject_name: str,
+                               save_results: bool = False):
     """
     Wandb TICC use case run. Trains on one individual specified in the config, predicts on the rest of the individuals
     there's a new run for each subject in each data variant
     :param config: TICCWandbUseCaseConfig that configures which data variant and subjects TICC is trained and run on
+    :param run_names: list of subjects (run names from generation run) to run TICC on
+    :param training_subject_name: name of subject for which TICC is trained
+    :param save_results: if TRUE the resulting labels df and cluster mapping df are saved to disk as well as to wandb
+    ensure you set results dir in config appropriately
     :return: evaluates dict with key subject and value AlgorithmEvaluation, wandb summaries with key subject and value
      wandb dict with the keys and values logged to wandb
     """
@@ -148,6 +159,21 @@ def run_ticc_on_a_data_variant(config: TICCWandbUseCaseConfig, run_names: [str],
         map_clusters_table = wandb.Table(dataframe=map_df, allow_mixed_types=True)
         wandb.log({"Map Clusters": map_clusters_table})
 
+        # save results to disk
+        if save_results:
+            results_data_dir = get_data_dir(root_data_dir=config.root_results_dir,
+                                            extension_type=config.completeness_level)
+            # create if it doesn't exist
+            Path(results_data_dir).mkdir(parents=True, exist_ok=True)
+            # save resulting labels_df
+            # name the same as the synthetic file so it can be loaded the same way
+            labels_file_name = Path(results_data_dir, subject + SyntheticFileTypes.labels)
+            result_labels_df.to_csv(labels_file_name)
+
+            # save resulting cluster map_df
+            map_file_name = Path(results_data_dir, subject + "-TICC-cluster-map.csv")
+            map_df.to_csv(map_file_name)
+
         # log numerical results
         wandb.log({
             "Jaccard Index": evaluate.jaccard_index(),
@@ -180,6 +206,8 @@ if __name__ == "__main__":
 
     config = TICCWandbUseCaseConfig()
     config.root_data_dir = SYNTHETIC_DATA_DIR
+    config.root_results_dir = get_algorithm_use_case_result_dir(root_results_dir=ROOT_RESULTS_DIR,
+                                                                algorithm_id='ticc-untuned')
 
     # run on all 30 subjects for each data variant
     run_names = pd.read_csv(GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
@@ -189,4 +217,5 @@ if __name__ == "__main__":
         for level in completeness_levels:
             config.data_type = data_type
             config.completeness_level = level
-            run_ticc_on_a_data_variant(config, run_names=run_names, training_subject_name=train_on_subject)
+            run_ticc_on_a_data_variant(config, run_names=run_names, training_subject_name=train_on_subject,
+                                       save_results=True)

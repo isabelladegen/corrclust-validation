@@ -83,6 +83,11 @@ class ResultsType:
     distance_measure_evaluation: str = 'distance-measures-evaluation'  # statistical differences of distance measures
     dataset_description: str = 'dataset-description'
 
+def get_algorithm_use_case_result_dir(root_results_dir: str, algorithm_id: str) -> str:
+    folder = path.join(root_results_dir, 'use_case', algorithm_id)
+    # created folder if it doesn't exit
+    Path(folder).mkdir(parents=True, exist_ok=True)
+    return folder
 
 def get_data_dir(root_data_dir: str = SYNTHETIC_DATA_DIR, extension_type: str = DataCompleteness.complete) -> str:
     return path.join(root_data_dir, extension_type)
