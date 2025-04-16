@@ -90,7 +90,6 @@ def mean_absolute_error_from_labels_df(labels_df: pd.DataFrame, round_to: int = 
     canonical_patterns_lookup = model_correlation_patterns.canonical_patterns()
     relaxed_patterns_lookup = model_correlation_patterns.relaxed_patterns()
 
-    n = len(labels_df.loc[0, SyntheticDataSegmentCols.correlation_to_model])
     canonical_patterns = np.array(
         labels_df[SyntheticDataSegmentCols.pattern_id].map(canonical_patterns_lookup).to_list())
     relaxed_patterns = np.array(labels_df[SyntheticDataSegmentCols.pattern_id].map(relaxed_patterns_lookup).to_list())
@@ -100,10 +99,26 @@ def mean_absolute_error_from_labels_df(labels_df: pd.DataFrame, round_to: int = 
     return error_canonical, error_relaxed
 
 
-def calculate_mae(corrs1: [float], corrs2: [float], round_to):
-    assert len(corrs1) == len(corrs2)
-    n = len(corrs1)
-    return np.round(np.sum(abs(np.array(corrs2) - np.array(corrs1)), axis=1) / n, round_to)
+def calculate_mae(achieved_cor: np.array, expected_cor: np.array, round_to:int):
+    """
+    Method use to calculate MAE between achieved correlation and expected (e.g. canonical pattern or relaxed pattern)
+    :param achieved_cor: 1d lists or nd.array, or 2d nd.array for vector calculation
+    :param expected_cor: 1d lists or nd.array, or 2d nd.array for vector calculation
+    :param round_to: number of decimals to round results to
+    :return: nd.array of MAEs
+    """
+    achieved_cor = np.array(achieved_cor)
+    expected_cor = np.array(expected_cor)
+
+    assert achieved_cor.shape == expected_cor.shape, "Shape of achieved_cor must match shape of expected_cor"
+
+    if achieved_cor.ndim == 1:
+        n = achieved_cor.shape[0]
+        return np.round(np.sum(abs(expected_cor - achieved_cor)) / n, round_to)
+    else:
+        # 2d case for vector calculation
+        n = achieved_cor.shape[1]
+        return np.round(np.sum(abs(expected_cor - achieved_cor), axis=1) / n, round_to)
 
 
 @dataclass

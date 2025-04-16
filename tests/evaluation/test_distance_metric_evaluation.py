@@ -3,9 +3,8 @@ import pandas.testing as tm
 import pytest
 from hamcrest import *
 
-from src.evaluation.distance_metric_assessment import DistanceMeasureCols
 from src.evaluation.distance_metric_evaluation import DistanceMetricEvaluation, EvaluationCriteria, \
-    read_csv_of_raw_values_for_all_criteria
+    read_csv_of_raw_values_for_all_criteria, DistanceMeasureCols
 from src.utils.configurations import Aggregators
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType

@@ -117,7 +117,7 @@ def one_synthetic_creation_run(config: SyntheticDataConfig, seed: int = 6666):
         exit_code = 0
 
         run_name = wandb.run.name
-        if run_name == "":
+        if run_name is None:
             run_name = 'test-run'
 
         # Generate data

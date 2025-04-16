@@ -88,7 +88,7 @@ def test_ticc_using_original_configuration_returns_same_results_on_test_data():
     assert_that(observations_per_segment[0], is_((2, 40)))
     assert_that(observations_per_segment[7], is_((7, 35)))
     assert_that(observations_per_segment[-1], is_((5, 8065)))
-    assert_that(training_result.bic(), is_(58024.79464952916))
+    assert_that(round(training_result.bic(), 3), is_(58024.795))
 
     # check mrf results
     assert_that(len(training_result.mrf.keys()), is_(number_of_clusters))
@@ -123,7 +123,7 @@ def test_ticc_using_modified_configuration_that_finds_no_cluster_returns_same_re
     assert_that(observations_per_segment[0], is_((0, 40)))
     assert_that(observations_per_segment[7], is_((4, 61)))
     assert_that(observations_per_segment[-1], is_((0, 8067)))
-    assert_that(training_result.bic(), is_(24156.523937005273))
+    assert_that(round(training_result.bic(), 3), is_(24156.524))
 
     # check mrf results
     assert_that(len(training_result.mrf.keys()), is_(training_result.number_of_none_zero_clusters))

@@ -52,6 +52,7 @@ class TICC:
         np.random.seed(102)
 
         self.cluster_assignments_over_time = []
+        self.has_converged = False
         self.__backend = backend
 
     def fit(self, data, reassign_points_to_zero_clusters: bool = True,
@@ -208,6 +209,7 @@ class TICC:
             # end of training
 
         # train cluster inverse is np.linalg.inv(computed_covariance), it's not used in training!!!
+        self.has_converged = has_converged
         return TICCResult(data, clustered_points, train_cluster_inverse, empirical_covariances, self.number_of_clusters,
                           time_series_col_size, self.window_size, has_converged, self.cluster_assignments_over_time,
                           backend=self.__backend)
@@ -420,7 +422,9 @@ class TICC:
         clustered_points = update_clusters(lle_all_points_clusters, switch_penalty=self.switch_penalty,
                                            allow_zero_cluster_in_between_none_zero=self.allow_zero_cluster_inbetween)
 
-        return clustered_points
+        return TICCResult(test_data, clustered_points, None, None,
+                          self.number_of_clusters, number_of_time_series, self.window_size, self.has_converged, [],
+                          backend=self.__backend)
 
 
 def analyse_segments(cluster_assignment, number_of_clusters):

@@ -190,3 +190,4 @@ wandb/
 
 /tests/results/
 /results/
+/environment_exact.yml

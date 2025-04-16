@@ -4,8 +4,8 @@ from os import path
 import numpy as np
 import pandas as pd
 
-from src.evaluation.distance_metric_assessment import DistanceMeasureCols
-from src.evaluation.distance_metric_evaluation import EvaluationCriteria, read_csv_of_raw_values_for_all_criteria
+from src.evaluation.distance_metric_evaluation import EvaluationCriteria, read_csv_of_raw_values_for_all_criteria, \
+    DistanceMeasureCols
 from src.evaluation.distance_metric_ranking import read_csv_of_overall_rank_per_dataset, \
     read_csv_of_average_criteria_across_datasets, read_csv_of_ranks_for_all_criteria
 from src.utils.configurations import RunInformationCols, distance_measure_evaluation_results_dir_for, \

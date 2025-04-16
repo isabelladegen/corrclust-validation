@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from os import path
 from pathlib import Path
 
@@ -8,12 +7,11 @@ from hamcrest import *
 
 from src.use_case.algorithm_evaluation import AlgorithmEvaluation, EvalMappingCols
 from src.use_case.ticc.TICC_solver import TICC
+from src.use_case.wandb_run_ticc import TICCDefaultSettings
 from src.utils.configurations import SyntheticDataVariates, ROOT_DIR
 from src.utils.load_synthetic_data import SyntheticDataType, load_synthetic_data, load_labels_file_for
-from src.utils.plots.matplotlib_helper_functions import Backends
 from tests.test_utils.configurations_for_testing import TEST_GENERATED_DATASETS_FILE_PATH, \
     TEST_IRREGULAR_P90_DATA_DIR
-from tests.use_case.ticc.test_ticc_runs_on_original_test_data import TICCSettings
 
 data_dir = TEST_IRREGULAR_P90_DATA_DIR
 run_name = pd.read_csv(TEST_GENERATED_DATASETS_FILE_PATH)['Name'].tolist()[0]
@@ -30,24 +28,6 @@ result_labels_df_3 = load_labels_file_for(Path(result_3))
 eval1 = AlgorithmEvaluation(result_labels_df_1, gt_labels, data, run_name, data_dir, data_type)
 eval2 = AlgorithmEvaluation(result_labels_df_2, gt_labels, data, run_name, data_dir, data_type)
 eval3 = AlgorithmEvaluation(result_labels_df_3, gt_labels, data, run_name, data_dir, data_type)
-
-
-@dataclass
-class TICCDefaultSettings(TICCSettings):
-    window_size = 5
-    number_of_clusters = 23  # from ground truth
-    switch_penalty = 400
-    lambda_var = 11e-2
-    max_iter = 100
-    threshold = 2e-5
-    allow_zero_cluster_inbetween = False
-    use_gmm_initialisation = True
-    reassign_points_to_zero_clusters = True
-    biased = True
-    do_training_split = False
-    keep_track_of_assignments = False
-    cluster_reassignment = 30  # min segment length
-    backend = Backends.none.value
 
 
 def create_a_ticc_result(name: str):
@@ -105,8 +85,8 @@ def test_map_resulting_clusters_to_ground_truth():
     assert_that(row1[EvalMappingCols.result_mean_cluster_cor], contains_exactly(*[-0.001, -0.005, 0.011]))
     assert_that(row1[EvalMappingCols.closest_gt_ids], contains_exactly(0))
     assert_that(row1[EvalMappingCols.closest_gt_mean_cors][0], contains_exactly(*[-0.008, -0.009, 0.013]))
-    assert_that(row1[EvalMappingCols.mae_result_and_relaxed_pattern][0], is_(0.017))
-    assert_that(row1[EvalMappingCols.mae_gt_and_relaxed_pattern][0], is_(0.03))
+    assert_that(row1[EvalMappingCols.mae_result_and_relaxed_pattern][0], is_(0.006))
+    assert_that(row1[EvalMappingCols.mae_gt_and_relaxed_pattern][0], is_(0.01))
     assert_that(row1[EvalMappingCols.result_mean_cluster_cor_within_tolerance_of_gt][0], is_(True))
     assert_that(row1[EvalMappingCols.gt_within_tolerance_of_relaxed_pattern][0], is_(True))
 

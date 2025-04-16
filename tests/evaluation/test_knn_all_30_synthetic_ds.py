@@ -1,7 +1,7 @@
 from hamcrest import *
 
-from src.evaluation.distance_metric_assessment import DistanceMeasures
 from src.evaluation.knn_all_synthetic_datasets import KnnAllSyntheticDatasets, AssessSynthCols
+from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 from tests.test_utils.configurations_for_testing import TEST_GENERATED_DATASETS_FILE_PATH_1, TEST_ROOT_RESULTS_DIR, \
     TEST_DATA_DIR, TEST_GENERATED_DATASETS_FILE_PATH, TEST_IRREGULAR_P30_DATA_DIR, TEST_IRREGULAR_P90_DATA_DIR

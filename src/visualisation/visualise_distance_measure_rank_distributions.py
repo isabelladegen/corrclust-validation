@@ -3,8 +3,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-from src.evaluation.distance_metric_assessment import DistanceMeasureCols
-from src.evaluation.distance_metric_evaluation import inverse_criteria
+from src.evaluation.distance_metric_evaluation import inverse_criteria, DistanceMeasureCols
 from src.utils.distance_measures import short_distance_measure_names
 from src.utils.plots.matplotlib_helper_functions import reset_matplotlib, Backends, fontsize
 

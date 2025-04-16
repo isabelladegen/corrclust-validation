@@ -8,8 +8,6 @@ import pandas as pd
 
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.data_generation.model_correlation_patterns import ModelCorrelationPatterns
-from src.evaluation.distance_metric_assessment import DistanceMeasureCols, \
-    calculate_ci_of_mean_differences_between_two_values_for_distance_measures
 from src.evaluation.knn_for_synthetic_wrapper import KNNForSyntheticWrapper
 from src.utils.configurations import Aggregators, distance_measure_evaluation_results_dir_for, \
     DISTANCE_MEASURE_EVALUATION_CRITERIA_RESULTS_FILE
@@ -17,6 +15,35 @@ from src.utils.distance_measures import distance_calculation_method_for, Distanc
 from src.utils.labels_utils import find_all_level_sets
 from src.utils.load_synthetic_data import load_labels
 from src.utils.plots.matplotlib_helper_functions import Backends
+from src.utils.stats import ConfidenceIntervalCols, compare_ci_for_differences, calculate_hi_lo_difference_ci, \
+    gaussian_critical_z_value_for
+
+
+@dataclass
+class DistanceMeasureCols:
+    criterion: str = "Criterion"
+    rank: str = "Rank"
+    segment_id: str = SyntheticDataSegmentCols.segment_id
+    canonical_pattern_id: str = "P_x"
+    compared_to_pattern_id: str = "P_y"
+    a_x = "Segment Correlation A_x"
+    relaxed_p_x = "Relaxed canonical pattern"
+    type: str = "distance measure"
+    pair1: str = "Pattern pair 1"
+    pair2: str = "Pattern pair 2"
+    alpha: str = "alpha"
+    level_set: str = "level set"
+    pairs: str = "segment pairs"
+    pattern_pairs: str = "pattern pairs"
+    compared: str = "compared level sets"
+    effect_size: str = "Cohen's d"
+    stat_diff: str = "Stat diff"
+    mean_diff: str = "Mean diff"
+    avg_rate: str = "avg rate of increase"
+    monotonic: str = "monotonic"
+    cv: str = "Coefficient of Variation (CV)"
+    rc: str = "Relative Contrast (RC)"
+    rate_of_increase: str = "Rate of increase"
 
 
 @dataclass
@@ -434,3 +461,73 @@ def read_csv_of_raw_values_for_all_criteria(run_name: str, data_type: str, data_
     full_path = path.join(result_dir, file_name)
     columns = pd.read_csv(full_path, nrows=0, index_col=0).columns
     return pd.read_csv(full_path, index_col=0, converters={col: ast.literal_eval for col in columns})
+
+
+def calculate_ci_of_mean_differences_between_two_values_for_distance_measures(value_combinations, stats: pd.DataFrame,
+                                                                              column_for_values: str,
+                                                                              alpha: float = 0.05,
+                                                                              bonferroni: bool = True,
+                                                                              two_tailed: bool = True):
+    """ Calculates the ci of mean differences between the combinations of values given. Assumes there is a distance
+    measure column and will keep this information
+    :param value_combinations: list of tuples of values that need to be compared [(g1, g2)]
+    :param stats: dataframe with the stats, must have columns: level-set_selector, Aggregators.count, Aggregators.mean
+    Aggregators.std
+    :param column_for_values: name of the column in the stats dataframe where we find the values to compare
+    :returns alpha used (depending on Bonferonic, length of combinations and tails) and pd.DataFrame with columns:
+            DistanceMeasureCols.compared -> tuple of the values compared
+            DistanceMeasureCols.type -> distance measure name
+            DistanceMeasureCols.stat_diff -> interpretation: overlap, lower, higher (comparing mean of value1 to value2)
+            DistanceMeasureCols.mean_diff -> mean diff
+            ConfidenceIntervalCols.ci_96lo -> lo ci (not necessary 95% as this depends on alpha)
+            ConfidenceIntervalCols.ci_96hi -> high ci (not necessary 95% as this depends on alpha)
+            ConfidenceIntervalCols.width -> diff of hi-low ci
+            ConfidenceIntervalCols.standard_error -> standard_error for ci
+    """
+    compared_level_sets = []
+    dist_measures = []
+    mean_diffs = []
+    lo_diffs = []
+    hi_diffs = []
+    stat_diffs = []
+    ci_widths = []
+    standard_errors = []
+    a = alpha
+    if bonferroni:
+        a = alpha / len(value_combinations)
+    z_alpha = gaussian_critical_z_value_for(a, two_tailed=two_tailed)
+    for level_set1, level_set2 in value_combinations:
+        g1 = stats[stats[column_for_values] == level_set1]
+        g2 = stats[stats[column_for_values] == level_set2]
+        n1 = g1[Aggregators.count].reset_index(drop=True)
+        n2 = g2[Aggregators.count].reset_index(drop=True)
+        m1 = g1[Aggregators.mean].reset_index(drop=True)
+        m2 = g2[Aggregators.mean].reset_index(drop=True)
+        s1 = g1[Aggregators.std].reset_index(drop=True)
+        s2 = g2[Aggregators.std].reset_index(drop=True)
+        diff_ms = m1 - m2
+        lo_ci, hi_ci, standard_error = calculate_hi_lo_difference_ci(n1, n2, s1, s2, m1, m2, z_alpha)
+        ci_width = hi_ci - lo_ci
+        stat_diff = []
+        for idx in range(len(lo_ci)):
+            stat_diff.append(compare_ci_for_differences(lo_ci[idx], hi_ci[idx]))
+
+        compared_level_sets.extend([(level_set1, level_set2)] * len(lo_ci))
+        dist_measures.extend(g1[DistanceMeasureCols.type])
+        mean_diffs.extend(diff_ms)
+        lo_diffs.extend(lo_ci)
+        hi_diffs.extend(hi_ci)
+        stat_diffs.extend(stat_diff)
+        ci_widths.extend(ci_width)
+        standard_errors.extend(standard_error)
+    ci_mean_diff_df = pd.DataFrame(
+        {DistanceMeasureCols.compared: compared_level_sets,
+         DistanceMeasureCols.type: dist_measures,
+         DistanceMeasureCols.stat_diff: stat_diffs,
+         DistanceMeasureCols.mean_diff: mean_diffs,
+         ConfidenceIntervalCols.ci_96lo: lo_diffs,
+         ConfidenceIntervalCols.ci_96hi: hi_diffs,
+         ConfidenceIntervalCols.width: ci_widths,
+         ConfidenceIntervalCols.standard_error: standard_errors,
+         })
+    return a, ci_mean_diff_df

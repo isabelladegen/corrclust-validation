@@ -1,0 +1,29 @@
+name: corr-24
+channels:
+  - conda-forge
+  - maxibor
+  - defaults
+dependencies:
+  - python=3.9
+  - jupyter=1.0.0
+  - datasets=2.19.1
+  - numpy=1.26.4
+  - matplotlib=3.8.1
+  - seaborn=0.13.2
+  - pandas=2.2.2
+  - numba>=0.55
+  - scikit-learn=1.4.2
+  - scipy=1.11.3
+  - pytest=8.2.0
+  - pyhamcrest=2.0.4
+  - plotly=5.22.0
+  - python-graphviz=0.20.3
+  - llvmlite=0.42.0
+  - llvmdev=18.1.5
+  - tslearn=0.6.3
+  - wandb
+  - joblib=1.4.2
+  - teneto=0.5.3
+  - pip
+  - pip:  # not available on conda
+    - sequana

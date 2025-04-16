@@ -11,9 +11,9 @@ from src.utils.distance_measures import short_distance_measure_names
 
 @dataclass
 class DataCompleteness:
-    complete: str = ''
-    irregular_p30: str = 'irregular_p30'
-    irregular_p90: str = 'irregular_p90'
+    complete: str = ''  # 100% of data
+    irregular_p30: str = 'irregular_p30'  # 70% of data
+    irregular_p90: str = 'irregular_p90'  # 10% of data
 
 
 ROOT_DIR = path.realpath(path.join(path.dirname(__file__), '../..'))
@@ -509,3 +509,4 @@ class WandbConfiguration:
     wandb_confirmatory_project_name: str = config['wandb_confirmatory_project_name']
     wandb_confirmatory_partitions_project_name: str = config['wandb_confirmatory_partitions_project_name']
     wandb_confirmatory_irregular_project_name: str = config['wandb_confirmatory_irregular_project_name']
+    wandb_use_case_project_name: str = config['wandb_use_case_project_name']

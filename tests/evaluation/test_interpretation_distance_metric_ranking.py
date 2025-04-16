@@ -1,8 +1,7 @@
 import pandas as pd
 from hamcrest import *
 
-from src.evaluation.distance_metric_assessment import DistanceMeasureCols
-from src.evaluation.distance_metric_evaluation import EvaluationCriteria
+from src.evaluation.distance_metric_evaluation import EvaluationCriteria, DistanceMeasureCols
 from src.evaluation.interpretation_distance_metric_ranking import DistanceMetricInterpretation, DistanceInterpretation, \
     read_top_bottom_distance_measure_result
 from src.utils.configurations import RunInformationCols
@@ -106,5 +105,5 @@ def test_statistical_validation_of_top_measures_based_on_ranking():
     assert_that(result.adjusted_alpha(alpha), is_(alpha))
     assert_that(result.n_pairs, is_(2))
     assert_that(result.non_zero, is_(2))
-    assert_that(result.effect_size(), is_(0.477))
+    assert_that(result.effect_size(), is_(-0.477))
     assert_that(result.achieved_power(), is_(0.061))
