@@ -8,29 +8,30 @@ from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDa
 from src.use_case.algorithm_evaluation import AlgorithmEvaluation
 from src.use_case.ticc.TICC_solver import TICC
 from src.utils.configurations import WandbConfiguration, SyntheticDataVariates, SYNTHETIC_DATA_DIR, \
-    GENERATED_DATASETS_FILE_PATH, DataCompleteness, get_data_dir, dir_for_data_type, get_algorithm_use_case_result_dir, \
+    GENERATED_DATASETS_FILE_PATH, DataCompleteness, get_data_dir, get_algorithm_use_case_result_dir, \
     ROOT_RESULTS_DIR
 from src.utils.load_synthetic_data import SyntheticDataType, load_synthetic_data, SyntheticFileTypes
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.visualisation.run_average_rank_visualisations import data_variant_description
+from tests.test_utils.configurations_for_testing import TEST_ROOT_RESULTS_DIR
 from tests.use_case.ticc.test_ticc_runs_on_original_test_data import TICCSettings
 
 
 @dataclass
 class TICCDefaultSettings(TICCSettings):
-    window_size = 5
-    number_of_clusters = 23  # from ground truth
-    switch_penalty = 400
-    lambda_var = 11e-2
-    max_iter = 100
-    threshold = 2e-5
-    allow_zero_cluster_inbetween = False
-    use_gmm_initialisation = True
-    reassign_points_to_zero_clusters = True
-    biased = True
-    do_training_split = False
-    keep_track_of_assignments = False
-    cluster_reassignment = 30  # min segment length
+    window_size: int = 5
+    number_of_clusters: int = 23  # from ground truth
+    switch_penalty: float = 400
+    lambda_var: float = 11e-2
+    max_iter: int = 100
+    threshold: float = 2e-5
+    allow_zero_cluster_inbetween: bool = False
+    use_gmm_initialisation: bool = True
+    reassign_points_to_zero_clusters: bool = True
+    biased: bool = True
+    do_training_split: bool = False
+    keep_track_of_assignments: bool = False
+    cluster_reassignment: int = 30  # min segment length
     backend = Backends.none.value
 
 
