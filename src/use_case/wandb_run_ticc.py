@@ -13,7 +13,6 @@ from src.utils.configurations import WandbConfiguration, SyntheticDataVariates, 
 from src.utils.load_synthetic_data import SyntheticDataType, load_synthetic_data, SyntheticFileTypes
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.visualisation.run_average_rank_visualisations import data_variant_description
-from tests.test_utils.configurations_for_testing import TEST_ROOT_RESULTS_DIR
 from tests.use_case.ticc.test_ticc_runs_on_original_test_data import TICCSettings
 
 
