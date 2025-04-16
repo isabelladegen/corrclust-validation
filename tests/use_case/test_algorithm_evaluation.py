@@ -129,3 +129,13 @@ def test_calculates_jaccard_index():
     assert_that(eval1.jaccard_index(), is_(0.829))
     assert_that(eval2.jaccard_index(), is_(0.352))
     assert_that(eval3.jaccard_index(), is_(0.835))
+
+def test_calculates_mae_stats_resulting_patterns_relaxed_patterns_and_the_same_for_gt():
+    assert_that(eval1.mae_stats_mapped_resulting_patterns_relaxed()['mean'], is_(0.045))
+    # for the patterns that did get matched gt has much lower mean MAE than TICC had
+    assert_that(eval1.mae_stats_mapped_gt_patterns_relaxed()['mean'], is_(0.02))
+    assert_that(eval2.mae_stats_mapped_resulting_patterns_relaxed()['mean'], is_(0.21))
+    assert_that(eval2.mae_stats_mapped_gt_patterns_relaxed()['mean'], is_(0.02))
+    assert_that(eval3.mae_stats_mapped_resulting_patterns_relaxed()['mean'], is_(0.054))
+    assert_that(eval3.mae_stats_mapped_gt_patterns_relaxed()['mean'], is_(0.023))
+

@@ -330,3 +330,27 @@ class AlgorithmEvaluation:
         y_pred, y_pared_gt = calculate_y_pred_and_updated_gt_y_pred_from(updated_results_id, full_gt_y_pred)
         jacc = clustering_jaccard_coeff(y_pred, y_pared_gt, round_to=self._round_to)
         return jacc
+
+    def mae_stats_mapped_resulting_patterns_relaxed(self):
+        """
+        Calculates the MAE stats between the first matching resulting ground truth relaxed pattern
+        and the achieved pattern by the algorithm
+        :return: pandas.Series describe result
+        """
+        df = self.map_clusters()
+        # select first mae result for each mapped cluster
+        mae_series = df[EvalMappingCols.mae_result_and_relaxed_pattern].apply(lambda x: x[0])
+        return mae_series.describe().round(self._round_to)
+
+
+    def mae_stats_mapped_gt_patterns_relaxed(self):
+        """
+        Calculates the MAE stats between the first mapped ground truth achieved correlation and relaxed pattern
+        Compare this with 'mae_stats_mapped_resulting_patterns_relaxed()' to get an idea of how many more
+        errors the algorithm introduces on top of pattern mistakes in the data
+        :return: pandas.Series describe result
+        """
+        df = self.map_clusters()
+        # select first mae result for each mapped cluster
+        mae_series = df[EvalMappingCols.mae_gt_and_relaxed_pattern].apply(lambda x: x[0])
+        return mae_series.describe().round(self._round_to)

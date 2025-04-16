@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pandas as pd
 import wandb
+from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 
 from src.use_case.algorithm_evaluation import AlgorithmEvaluation
 from src.use_case.ticc.TICC_solver import TICC
@@ -184,6 +185,10 @@ def run_ticc_on_a_data_variant(config: TICCWandbUseCaseConfig, run_names: [str],
             "Segmentation Ratio": evaluate.segmentation_ratio(),
             "Segment Length Ratio": evaluate.segmentation_length_ratio(),
             "Undiscovered Patterns": evaluate.pattern_not_discovered(),
+            "mean MAE TICC result - relaxed pattern": evaluate.mae_stats_mapped_resulting_patterns_relaxed()['mean'],
+            "mean MAE ground truth - relaxed pattern": evaluate.mae_stats_mapped_gt_patterns_relaxed()['mean'],
+            "n Clusters TICC": len(result_labels_df[SyntheticDataSegmentCols.pattern_id].unique()),
+            "n Clusters ground truth": len(gt_labels_df[SyntheticDataSegmentCols.pattern_id].unique()),
         })
 
         # build return results
