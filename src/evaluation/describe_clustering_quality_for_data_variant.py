@@ -215,3 +215,27 @@ class DescribeClusteringQualityForDataVariant:
         summary_df = pd.DataFrame(row)
 
         return summary_df
+
+    def summary_benchmark_df(self):
+        """
+        Calculates the statistics given in stats for quality measures across all subjects and returns a pandas DataFrame
+        """
+        stats = ['mean', 'std', 'median',  lambda x: x.quantile(0.25),  lambda x: x.quantile(0.75), 'min', 'max']
+        combined_df = pd.concat(self.quality_measures_results.values(), keys=self.quality_measures_results.keys())
+
+        # group by same mistakes introduced
+        grouped_stats = combined_df.groupby(
+            [DescribeBadPartCols.n_obs_shifted, DescribeBadPartCols.n_wrong_clusters]).agg({
+            ClusteringQualityMeasures.jaccard_index: stats,
+            ClusteringQualityMeasures.silhouette_score: stats,
+            ClusteringQualityMeasures.dbi: stats,
+            DescribeBadPartCols.errors: stats  # relaxed mae
+        })
+
+        # make n_obs_shifted and n_wrong_clusters regular columns
+        grouped_stats = grouped_stats.reset_index().round(decimals=self.__round_to)
+
+        # order by highest jaccard index first
+        grouped_stats = grouped_stats.sort_values(by=(ClusteringQualityMeasures.jaccard_index, 'mean'), ascending=False)
+
+        return grouped_stats

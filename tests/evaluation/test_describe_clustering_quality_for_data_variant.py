@@ -1,5 +1,6 @@
 from hamcrest import *
 
+from src.evaluation.describe_bad_partitions import DescribeBadPartCols
 from src.evaluation.describe_clustering_quality_for_data_variant import DescribeClusteringQualityForDataVariant, \
     IntSummaryCols
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
@@ -66,3 +67,23 @@ def test_returns_measures_values_for_ground_truth_and_lowest_jaccard_index():
     assert_that(df[(ClusteringQualityMeasures.vrc, IntSummaryCols.worst)][0], is_('1.00 (0.22)'))
     assert_that(df[(ClusteringQualityMeasures.silhouette_score, IntSummaryCols.worst)][0], is_('-0.45 (0.04)'))
     assert_that(df[(ClusteringQualityMeasures.dbi, IntSummaryCols.worst)][0], is_('9.39 (2.02)'))
+
+def test_returns_benchmark_summary_df_across_subjects():
+    df = describe.summary_benchmark_df()
+
+    # best partition across 30 subjects
+    assert_that(df.loc[0, (ClusteringQualityMeasures.jaccard_index, 'mean')], is_(1))
+    assert_that(df.loc[0, (ClusteringQualityMeasures.silhouette_score, 'mean')], is_(0.969))
+    assert_that(df.loc[0, (ClusteringQualityMeasures.dbi, 'mean')], is_(0.047))
+    assert_that(df.loc[0, (DescribeBadPartCols.errors, 'mean')], is_(0.024))
+    assert_that(df.loc[0, DescribeBadPartCols.n_obs_shifted][0], is_(0))
+    assert_that(df.loc[0, DescribeBadPartCols.n_wrong_clusters][0], is_(0))
+
+    # worst partition across 30 subjects
+    assert_that(df.loc[df.index[-1], (ClusteringQualityMeasures.jaccard_index, 'mean')], is_(0))
+    assert_that(df.loc[df.index[-1], (ClusteringQualityMeasures.silhouette_score, 'mean')], is_(-0.446))
+    assert_that(df.loc[df.index[-1], (ClusteringQualityMeasures.dbi, 'mean')], is_(9.112))
+    assert_that(df.loc[df.index[-1], (DescribeBadPartCols.errors, 'mean')], is_(0.77))
+    assert_that(df.loc[df.index[-1], DescribeBadPartCols.n_obs_shifted][0], is_(0))
+    assert_that(df.loc[df.index[-1], DescribeBadPartCols.n_wrong_clusters][0], is_(100))
+

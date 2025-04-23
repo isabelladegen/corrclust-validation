@@ -22,6 +22,7 @@ class IAResultsCSV:
     ci_of_differences_between_measures: str = "ci_differences_between_internal_measure_correlation.csv"
     paired_t_test: str = "paired_t_test_between_internal_measure_correlation.csv"
     mean_correlation_data_variant: str = "mean_correlation_data_variants.csv"
+    benchmark_summary: str = "benchmark_summary.csv"
     paired_t_test_data_variant: str = "paired_t_test_data_variants.csv"
     gt_worst_measure_data_variants: str = "gt_worst_measure_data_variants.csv"
     paired_t_test_reduced_datasets: str = "paired_t_test_reduced_datasets.csv"
