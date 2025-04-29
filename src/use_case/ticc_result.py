@@ -33,7 +33,7 @@ class TICCResult:
                  assignments_over_time=None, time_series_names: [str] = None,
                  backend: str = Backends.none.value):
         """
-        :param data: the actuall data
+        :param data: the actual data
         :param assignments_over_time:
         :param number_of_clusters: k provided to TICC
         :param cluster_assignment: list of assigned cluster number for each observation
@@ -530,7 +530,7 @@ class TICCResult:
         # return overall min and max
         return min(mins), max(maxs)
 
-    def to_labels_df(self, round_to: int = 3):
+    def to_labels_df(self, subject_id:str, round_to: int = 3):
         """
         Translates results into labels df so it fits the rest of the evaluation code we have
         :return:
@@ -570,7 +570,9 @@ class TICCResult:
             SyntheticDataSegmentCols.pattern_id: cluster_ids,
             SyntheticDataSegmentCols.actual_correlation: empirical_correlations
         }
-        return pd.DataFrame(result)
+        df = pd.DataFrame(result)
+        df.insert(0, SyntheticDataSegmentCols.subject_id, subject_id)
+        return df
 
 
 def access_lower_block_diagonals(a: np.array, number_of_blocks: int, sub_diagonal: int = 0):

@@ -52,7 +52,7 @@ class DescribeSyntheticDataset:
         """
         :param run_name: the name of the wandb run that generated the dataset
         :param data_type: which data variation to load, by default most AID like SyntheticDataType.non_normal_correlated
-        read e.g bad labels file than you can provide the full name without the '_labels.csv' for that file
+        read e.g bad labels file than you can provide the full name without the '_labels.parquet' for that file
         :param data_cols: which columns in the data df are the values excluding time
         :param value_range: if not None data will be min max scaled to the range provided before description
         :param data_dir: the root directory from which to read data, by default SYNTHETIC_DATA_DIR

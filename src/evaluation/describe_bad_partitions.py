@@ -317,6 +317,9 @@ class DescribeBadPartitions:
         if ClusteringQualityMeasures.pmb in self.__internal_measures:
             self.summary_df[ClusteringQualityMeasures.pmb] = pmbs
 
+        # sort summary df
+        self.summary_df.sort_values(by=ClusteringQualityMeasures.jaccard_index, ascending=False, inplace=True)
+
     def n_segment_within_tolerance_stats(self, round_to: int = 3):
         """ Calculate and return stats df across the partitions for the dataset"""
         labels_dfs = list(self.partitions.values())

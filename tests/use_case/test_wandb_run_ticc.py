@@ -73,5 +73,5 @@ def test_wandb_logs_parameters_and_evaluates_ticc_run():
                           extension_type=config.completeness_level)
     path_first_subject_result = Path(folder, run_names[0] + SyntheticFileTypes.labels)
     first_subject_labels_df = load_labels_file_for(path_first_subject_result)
-    assert_that(first_subject_labels_df.shape, is_((27, 6)))
+    assert_that(first_subject_labels_df.shape, is_((27, 7)))
     assert_that(len(first_subject_labels_df[SyntheticDataSegmentCols.pattern_id].unique()), is_(8)) # didn't find 11 clusters

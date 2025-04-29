@@ -16,8 +16,8 @@ def test_can_load_raw_data_and_labels():
     data, labels = load_synthetic_data(run_name, data_type=data_type, data_dir=test_data_dir)
 
     # check data structure
-    assert_that(data.shape, is_((1226400, 4)))  # all data loaded
-    assert_that(data.columns, contains_exactly(GeneralisedCols.datetime, GeneralisedCols.iob, GeneralisedCols.cob,
+    assert_that(data.shape, is_((1226400, 5)))  # all data loaded
+    assert_that(data.columns, contains_exactly(SyntheticDataSegmentCols.subject_id, GeneralisedCols.datetime, GeneralisedCols.iob, GeneralisedCols.cob,
                                                GeneralisedCols.bg))  # correct columns
     assert_that(is_datetime64_any_dtype(data[GeneralisedCols.datetime].dtype))  # timestamp is date time
 
@@ -27,7 +27,7 @@ def test_can_load_raw_data_and_labels():
     assert_that(data.loc[0, GeneralisedCols.bg], is_(0.1256351542775318))
 
     # check labels data
-    assert_that(labels.shape, is_((100, 10)))  # loaded the 100 segments
+    assert_that(labels.shape, is_((100, 11)))  # loaded the 100 segments
 
     # check first row
     assert_that(labels.loc[0, SyntheticDataSegmentCols.segment_id], is_(0))
@@ -46,8 +46,8 @@ def test_can_load_correlated_normal_data_and_labels():
     data, labels = load_synthetic_data(run_name, data_dir=test_data_dir)
 
     # check data structure
-    assert_that(data.shape, is_((1226400, 4)))  # all data loaded
-    assert_that(data.columns, contains_exactly(GeneralisedCols.datetime, GeneralisedCols.iob, GeneralisedCols.cob,
+    assert_that(data.shape, is_((1226400, 5)))  # all data loaded
+    assert_that(data.columns, contains_exactly(SyntheticDataSegmentCols.subject_id, GeneralisedCols.datetime, GeneralisedCols.iob, GeneralisedCols.cob,
                                                GeneralisedCols.bg))  # correct columns
     assert_that(is_datetime64_any_dtype(data[GeneralisedCols.datetime].dtype))  # timestamp is date time
 
@@ -76,8 +76,8 @@ def test_can_load_correlated_non_normal_data_and_labels():
     data, labels = load_synthetic_data(run_name, data_type=data_type, data_dir=test_data_dir)
 
     # check data structure
-    assert_that(data.shape, is_((1226400, 4)))  # all data loaded
-    assert_that(data.columns, contains_exactly(GeneralisedCols.datetime, GeneralisedCols.iob, GeneralisedCols.cob,
+    assert_that(data.shape, is_((1226400, 5)))  # all data loaded
+    assert_that(data.columns, contains_exactly(SyntheticDataSegmentCols.subject_id,GeneralisedCols.datetime, GeneralisedCols.iob, GeneralisedCols.cob,
                                                GeneralisedCols.bg))  # correct columns
     assert_that(is_datetime64_any_dtype(data[GeneralisedCols.datetime].dtype))  # timestamp is date time
 
@@ -106,8 +106,8 @@ def test_can_load_resampled_data_and_labels():
     data, labels = load_synthetic_data(run_name, data_type=data_type, data_dir=test_data_dir)
 
     # check data structure
-    assert_that(data.shape, is_((20440, 4)))  # all data loaded
-    assert_that(data.columns, contains_exactly(GeneralisedCols.datetime, GeneralisedCols.iob, GeneralisedCols.cob,
+    assert_that(data.shape, is_((20440, 5)))  # all data loaded
+    assert_that(data.columns, contains_exactly(SyntheticDataSegmentCols.subject_id, GeneralisedCols.datetime, GeneralisedCols.iob, GeneralisedCols.cob,
                                                GeneralisedCols.bg))  # correct columns
     assert_that(is_datetime64_any_dtype(data[GeneralisedCols.datetime].dtype))  # timestamp is date time
 
@@ -136,9 +136,9 @@ def test_can_load_irregular_30_data_and_labels():
     data, labels = load_synthetic_data(run_name, data_type=data_type, data_dir=TEST_IRREGULAR_P30_DATA_DIR)
 
     # check data structure
-    assert_that(data.shape, is_((858480, 5)))  # all data loaded
+    assert_that(data.shape, is_((858480, 6)))  # all data loaded
     assert_that(data.columns,
-                contains_exactly(SyntheticDataSegmentCols.old_regular_id, GeneralisedCols.datetime, GeneralisedCols.iob, GeneralisedCols.cob,
+                contains_exactly(SyntheticDataSegmentCols.subject_id,SyntheticDataSegmentCols.old_regular_id, GeneralisedCols.datetime, GeneralisedCols.iob, GeneralisedCols.cob,
                                  GeneralisedCols.bg))  # correct columns
     assert_that(is_datetime64_any_dtype(data[GeneralisedCols.datetime].dtype))  # timestamp is date time
 
@@ -167,9 +167,9 @@ def test_can_load_nn_irregular_90_data_and_labels():
     data, labels = load_synthetic_data(run_name, data_type=data_type, data_dir=TEST_IRREGULAR_P90_DATA_DIR)
 
     # check data structure
-    assert_that(data.shape, is_((122640, 5)))  # all data loaded
+    assert_that(data.shape, is_((122640, 6)))  # all data loaded
     assert_that(data.columns,
-                contains_exactly(SyntheticDataSegmentCols.old_regular_id, GeneralisedCols.datetime, GeneralisedCols.iob, GeneralisedCols.cob,
+                contains_exactly(SyntheticDataSegmentCols.old_regular_id, SyntheticDataSegmentCols.subject_id,  GeneralisedCols.datetime, GeneralisedCols.iob, GeneralisedCols.cob,
                                  GeneralisedCols.bg))  # correct columns
     assert_that(is_datetime64_any_dtype(data[GeneralisedCols.datetime].dtype))  # timestamp is date time
 

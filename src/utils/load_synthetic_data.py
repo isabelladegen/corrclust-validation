@@ -3,6 +3,7 @@ import glob
 from dataclasses import dataclass
 
 import pandas as pd
+from pyarrow import ArrowInvalid
 
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.utils.configurations import SYNTHETIC_DATA_DIR, GeneralisedCols, dir_for_data_type, \
@@ -84,8 +85,8 @@ class SyntheticDataType:
 
 @dataclass
 class SyntheticFileTypes:
-    data: str = "-data.csv"
-    labels: str = "-labels.csv"
+    data: str = "-data.parquet"
+    labels: str = "-labels.parquet"
 
 
 def load_labels(run_id: str, data_type: str = SyntheticDataType.normal_correlated, data_dir: str = SYNTHETIC_DATA_DIR):
@@ -134,10 +135,28 @@ def load_synthetic_data(run_id: str, data_type: str = SyntheticDataType.normal_c
     labels_df = load_labels(run_id, data_type, data_dir)
 
     # load data file
-    data_df = pd.read_csv(data_file_name, index_col=0)
+    try:
+        data_df = pd.read_parquet(data_file_name, engine="pyarrow")
+    except ArrowInvalid:
+        print("Arrow invalid for file: " + str(data_file_name))
+        raise
+
     data_df[GeneralisedCols.datetime] = pd.to_datetime(data_df[GeneralisedCols.datetime])
 
     return data_df, labels_df
+
+
+def safely_load_lists(value):
+    """
+    This is required due to csv files storing lists as string and parquet naturally handling
+    nested types, therefore we check the type first before translating to a list
+    """
+    if isinstance(value, list):
+        return value
+    elif isinstance(value, str):
+        return ast.literal_eval(value)
+    else:
+        return value
 
 
 def load_labels_file_for(labels_file_name: Path):
@@ -146,16 +165,21 @@ def load_labels_file_for(labels_file_name: Path):
 
     assert labels_file_name.exists(), "No labels data files with name " + str(labels_file_name)
 
-    labels_df = pd.read_csv(labels_file_name, index_col=0)
+    try:
+        labels_df = pd.read_parquet(labels_file_name, engine="pyarrow")
+    except ArrowInvalid:
+        print("Arrow invalid for file: " + str(labels_file_name))
+        raise
+
     # change types from string to arrays
     if SyntheticDataSegmentCols.correlation_to_model in labels_df.columns:
         labels_df[SyntheticDataSegmentCols.correlation_to_model] = labels_df[
-            SyntheticDataSegmentCols.correlation_to_model].apply(lambda x: ast.literal_eval(x))
+            SyntheticDataSegmentCols.correlation_to_model].apply(safely_load_lists)
     labels_df[SyntheticDataSegmentCols.actual_correlation] = labels_df[
-        SyntheticDataSegmentCols.actual_correlation].apply(lambda x: ast.literal_eval(x))
+        SyntheticDataSegmentCols.actual_correlation].apply(safely_load_lists)
     if SyntheticDataSegmentCols.actual_within_tolerance in labels_df.columns:
         labels_df[SyntheticDataSegmentCols.actual_within_tolerance] = labels_df[
-            SyntheticDataSegmentCols.actual_within_tolerance].apply(lambda x: ast.literal_eval(x))
+            SyntheticDataSegmentCols.actual_within_tolerance].apply(safely_load_lists)
     return labels_df
 
 
@@ -178,7 +202,7 @@ def load_synthetic_data_and_labels_for_bad_partitions(run_id: str,
     bad_partitions_dir = bad_partition_dir_for_data_type(data_type, data_dir)
     bad_partitions_path = Path(bad_partitions_dir)
     assert bad_partitions_path.exists(), "No bad partitions folder with name " + str(bad_partitions_path)
-    paths = glob.glob(str(bad_partitions_path) + "/" + run_id + "*-labels.csv")
+    paths = glob.glob(str(bad_partitions_path) + "/" + run_id + "*-labels.parquet")
 
     # for test runs only load 3 datasets to speed up testing
     if load_only is not None:

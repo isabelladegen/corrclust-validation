@@ -107,6 +107,7 @@ class CreateIrregularDataset:
         irr_data_df = irr_data_df.reset_index(drop=False, names=SyntheticDataSegmentCols.old_regular_id)
 
         # create irregular labels file start and end idx and pattern and correlation to model
+        subject_ids = []
         segment_ids = []  # keep original segment id for new irregular label
         start_indices = []
         end_indices = []
@@ -131,11 +132,13 @@ class CreateIrregularDataset:
                 length = data.shape[0]
 
                 # copy original segment id and pattern data for this segment
+                subject_id = row[SyntheticDataSegmentCols.subject_id]
                 segment_id = row[SyntheticDataSegmentCols.segment_id]
                 pattern_id = row[SyntheticDataSegmentCols.pattern_id]
                 correlation_to_model = row[SyntheticDataSegmentCols.correlation_to_model]
 
                 # add to list for new irregular labels df
+                subject_ids.append(subject_id)
                 segment_ids.append(segment_id)
                 start_indices.append(start_index)
                 end_indices.append(end_index)
@@ -146,6 +149,7 @@ class CreateIrregularDataset:
                 irr_data_df = irr_data_df.drop(data.index).reset_index(drop=True)
 
         irr_labels_df = pd.DataFrame({
+            SyntheticDataSegmentCols.subject_id: subject_ids,
             SyntheticDataSegmentCols.segment_id: segment_ids,
             SyntheticDataSegmentCols.start_idx: start_indices,
             SyntheticDataSegmentCols.end_idx: end_indices,
@@ -194,9 +198,12 @@ class CreateIrregularDataset:
             index_mapping = index_mapping.reset_index()
 
             # actual resample observations
-            resampled = data_to_resample.resample(rule, on=GeneralisedCols.datetime).mean()
+            subject_id = data_to_resample[SyntheticDataSegmentCols.subject_id][0]
+            cols_to_resample = [GeneralisedCols.datetime, 'original_index'] + self.__data_cols
+            resampled = data_to_resample[cols_to_resample].resample(rule, on=GeneralisedCols.datetime).mean()
             # to make it consistent with the other df that the datetime is not automatically the index we reset the index
             resampled.reset_index(inplace=True)
+            resampled.insert(0, SyntheticDataSegmentCols.subject_id, subject_id)
 
             # drop all samples where there are 0 original_indices
             zero_orig_indices = [idx for idx, n in enumerate(index_mapping['original_index'].apply(lambda x: len(x))) if n < 1]
@@ -230,4 +237,5 @@ class CreateIrregularDataset:
 
             # recalculate the rest of the labels df
             new_labels_df = recalculate_labels_df_from_data(resampled, new_labels_df)
+            new_labels_df.insert(0, SyntheticDataSegmentCols.subject_id, subject_id)
             return resampled, new_labels_df

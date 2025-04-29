@@ -132,7 +132,7 @@ def run_ticc_on_a_data_variant(config: TICCWandbUseCaseConfig, run_names: [str],
             print("PREDICT TICC ON SUBJECT: " + subject)
             result = ticc.predict_clusters(data_np)
 
-        result_labels_df = result.to_labels_df()
+        result_labels_df = result.to_labels_df(subject)
 
         # log results df
         results_labels_table = wandb.Table(dataframe=result_labels_df, allow_mixed_types=True)
@@ -169,7 +169,7 @@ def run_ticc_on_a_data_variant(config: TICCWandbUseCaseConfig, run_names: [str],
             # save resulting labels_df
             # name the same as the synthetic file so it can be loaded the same way
             labels_file_name = Path(results_data_dir, subject + SyntheticFileTypes.labels)
-            result_labels_df.to_csv(labels_file_name)
+            result_labels_df.to_parquet(labels_file_name, index=False, engine="pyarrow")
 
             # save resulting cluster map_df
             map_file_name = Path(results_data_dir, subject + "-TICC-cluster-map.csv")

@@ -1,15 +1,8 @@
 # don't check in the data - download from Zenodo
 data/
-test_data/
+old_test_data/
 
 # test data also too big for github
-tests/test_data/synthetic_data/irregular_p30/misty-forest-56-data.csv
-tests/test_data/synthetic_data/non_normal/misty-forest-56-data.csv
-tests/test_data/synthetic_data/non_normal/splendid-sunset-12-data.csv
-tests/test_data/synthetic_data/normal/misty-forest-56-data.csv
-tests/test_data/synthetic_data/normal/splendid-sunset-12-data.csv
-tests/test_data/synthetic_data/raw/misty-forest-56-data.csv
-tests/test_data/synthetic_data/raw/splendid-sunset-12-data.csv
 tests/evaluation/results/*
 
 # don't check in private configruations
@@ -191,3 +184,8 @@ wandb/
 /tests/results/
 /results/
 /tmp-24-env-exact.yml
+/tests/test_data/synthetic_data/raw/test-run-data.parquet
+/tests/test_data/synthetic_data/raw/test-run-labels.parquet
+/tests/test_data/synthetic_data/resampled_1min/test-run-data.parquet
+/tests/test_data/synthetic_data/resampled_1min/test-run-labels.parquet
+/tests/test_utils/corrstruct_testing.py

@@ -29,6 +29,7 @@ dependencies:
   - gpy # dependency of GPclust
   - fitter # find best distribution also for discrete data
   - distfit # find best distribution for data
+  - pyarrow # for parquet support
   - pip
   - pip:
     - git+https://github.com/SheffieldML/GPclust.git # Gaussian clustering of TS

@@ -65,41 +65,41 @@ def test_describe_bad_partition_returns_list_of_ground_truth_cluster_for_each_ob
 def test_calculates_jaccard_index_for_each_gt_and_partition():
     assert_that(describe.summary_df.iloc[0][ClusteringQualityMeasures.jaccard_index], is_(1))
     assert_that(describe.summary_df.iloc[1][ClusteringQualityMeasures.jaccard_index], is_(0.982))
-    assert_that(describe.summary_df.iloc[2][ClusteringQualityMeasures.jaccard_index], is_(0.377))
-    assert_that(describe.summary_df.iloc[3][ClusteringQualityMeasures.jaccard_index], is_(0.896))
+    assert_that(describe.summary_df.iloc[2][ClusteringQualityMeasures.jaccard_index], is_(0.896))
+    assert_that(describe.summary_df.iloc[3][ClusteringQualityMeasures.jaccard_index], is_(0.377))
     assert_that(describe.summary_df.iloc[4][ClusteringQualityMeasures.jaccard_index], is_(0.293))
 
     # mean MAE for comparison
     assert_that(describe.summary_df.iloc[0][DescribeBadPartCols.errors], is_(0.024))
     assert_that(describe.summary_df.iloc[1][DescribeBadPartCols.errors], is_(0.052))
-    assert_that(describe.summary_df.iloc[2][DescribeBadPartCols.errors], is_(0.472))
-    assert_that(describe.summary_df.iloc[3][DescribeBadPartCols.errors], is_(0.086))
+    assert_that(describe.summary_df.iloc[2][DescribeBadPartCols.errors], is_(0.086))
+    assert_that(describe.summary_df.iloc[3][DescribeBadPartCols.errors], is_(0.472))
     assert_that(describe.summary_df.iloc[4][DescribeBadPartCols.errors], is_(0.534))
 
 
 def test_calculates_internal_measures_for_the_given_distance_measure():
     assert_that(describe.summary_df.iloc[0][ClusteringQualityMeasures.silhouette_score], is_(0.97))
     assert_that(describe.summary_df.iloc[1][ClusteringQualityMeasures.silhouette_score], is_(0.83))
-    assert_that(describe.summary_df.iloc[2][ClusteringQualityMeasures.silhouette_score], is_(-0.337))
-    assert_that(describe.summary_df.iloc[3][ClusteringQualityMeasures.silhouette_score], is_(0.673))
+    assert_that(describe.summary_df.iloc[2][ClusteringQualityMeasures.silhouette_score], is_(0.673))
+    assert_that(describe.summary_df.iloc[3][ClusteringQualityMeasures.silhouette_score], is_(-0.337))
     assert_that(describe.summary_df.iloc[4][ClusteringQualityMeasures.silhouette_score], is_(-0.383))
 
     assert_that(describe.summary_df.iloc[0][ClusteringQualityMeasures.pmb], is_(12.769))
     assert_that(describe.summary_df.iloc[1][ClusteringQualityMeasures.pmb], is_(0.527))
-    assert_that(describe.summary_df.iloc[2][ClusteringQualityMeasures.pmb], is_(0.002))
-    assert_that(describe.summary_df.iloc[3][ClusteringQualityMeasures.pmb], is_(0.06))
+    assert_that(describe.summary_df.iloc[2][ClusteringQualityMeasures.pmb], is_(0.06))
+    assert_that(describe.summary_df.iloc[3][ClusteringQualityMeasures.pmb], is_(0.002))
     assert_that(describe.summary_df.iloc[4][ClusteringQualityMeasures.pmb], is_(0.001))
 
     assert_that(describe.summary_df.iloc[0][ClusteringQualityMeasures.vrc], is_(11315.355))
     assert_that(describe.summary_df.iloc[1][ClusteringQualityMeasures.vrc], is_(389.338))
-    assert_that(describe.summary_df.iloc[2][ClusteringQualityMeasures.vrc], is_(1.834))
-    assert_that(describe.summary_df.iloc[3][ClusteringQualityMeasures.vrc], is_(23.681))
+    assert_that(describe.summary_df.iloc[2][ClusteringQualityMeasures.vrc], is_(23.681))
+    assert_that(describe.summary_df.iloc[3][ClusteringQualityMeasures.vrc], is_(1.834))
     assert_that(describe.summary_df.iloc[4][ClusteringQualityMeasures.vrc], is_(1.404))
 
     assert_that(describe.summary_df.iloc[0][ClusteringQualityMeasures.dbi], is_(0.044))
     assert_that(describe.summary_df.iloc[1][ClusteringQualityMeasures.dbi], is_(0.196))
-    assert_that(describe.summary_df.iloc[2][ClusteringQualityMeasures.dbi], is_(6.12))
-    assert_that(describe.summary_df.iloc[3][ClusteringQualityMeasures.dbi], is_(1.389))
+    assert_that(describe.summary_df.iloc[2][ClusteringQualityMeasures.dbi], is_(1.389))
+    assert_that(describe.summary_df.iloc[3][ClusteringQualityMeasures.dbi], is_(6.12))
     assert_that(describe.summary_df.iloc[4][ClusteringQualityMeasures.dbi], is_(7.19))
 
 

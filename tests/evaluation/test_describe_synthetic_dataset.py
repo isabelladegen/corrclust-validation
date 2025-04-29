@@ -406,7 +406,7 @@ def test_can_load_irregular_dataset():
 
 def test_can_load_a_single_bad_partition():
     data_type = SyntheticDataType.non_normal_correlated
-    bad_partition_name = "misty-forest-56-wrong-clusters-15-labels.csv"
+    bad_partition_name = "misty-forest-56-wrong-clusters-15-labels.parquet"
     ds_bad = DescribeSyntheticDataset(run_name=a_ds_name, data_type=data_type, data_dir=test_data_dir,
                                       backend=backend, bad_partition_name=bad_partition_name)
 

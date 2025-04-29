@@ -24,6 +24,7 @@ dependencies:
   - wandb
   - joblib=1.4.2
   - teneto=0.5.3
+  - pyarrow=19.0.1 # for parquet support
   - pip
   - pip:  # not available on conda
     - sequana

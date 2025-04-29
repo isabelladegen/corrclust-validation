@@ -134,7 +134,7 @@ def test_creates_same_irregular_version_for_ds_variation():
     assert_that(rs_irr_labels.iloc[0][SyntheticDataSegmentCols.start_idx], is_(0))
     assert_that(rs_irr_labels.iloc[-1][SyntheticDataSegmentCols.end_idx], is_(rs_irr_data.shape[0] - 1))
     assert_that(rs_irr_labels.columns,
-                contains_exactly(SyntheticDataSegmentCols.segment_id, SyntheticDataSegmentCols.start_idx,
+                contains_exactly(SyntheticDataSegmentCols.subject_id, SyntheticDataSegmentCols.segment_id, SyntheticDataSegmentCols.start_idx,
                                  SyntheticDataSegmentCols.end_idx, SyntheticDataSegmentCols.length,
                                  SyntheticDataSegmentCols.pattern_id, SyntheticDataSegmentCols.correlation_to_model,
                                  SyntheticDataSegmentCols.actual_correlation,

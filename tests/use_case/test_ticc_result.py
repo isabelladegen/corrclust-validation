@@ -86,7 +86,7 @@ def test_mean_max_min_segment_length():
 
 def test_returns_results_as_labels_df():
     result = StandardResultTest().result()
-    df = result.to_labels_df()
+    df = result.to_labels_df(subject_id="ticc example")
 
     assert_that(result.number_of_observations, is_(19607))
     assert_that(df.shape[0], is_(result.number_of_segments()))

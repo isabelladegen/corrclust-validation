@@ -15,7 +15,7 @@ from src.utils.configurations import WandbConfiguration, SyntheticDataVariates, 
     dir_for_data_type
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.data_generation.model_correlation_patterns import ModelCorrelationPatterns
-from src.data_generation.generate_synthetic_segmented_dataset import SyntheticSegmentedData
+from src.data_generation.generate_synthetic_segmented_dataset import SyntheticSegmentedData, SyntheticDataSegmentCols
 from tests.test_utils.configurations_for_testing import TEST_DATA_DIR
 
 
@@ -74,13 +74,13 @@ class SyntheticDataLogKeys:
     dataset_seed: str = "dataset seed"
 
 
-def save_data_labels_to_file(data_dir, data_type, raw_data_df, raw_labels_df, run_name):
+def save_data_labels_to_file(data_dir, data_type, data_df, labels_df, run_name):
     file_dir = dir_for_data_type(data_type, data_dir)
     Path(file_dir).mkdir(parents=True, exist_ok=True)
     data_file_name = Path(file_dir, run_name + SyntheticFileTypes.data)
     labels_file_name = Path(file_dir, run_name + SyntheticFileTypes.labels)
-    raw_data_df.to_csv(data_file_name)
-    raw_labels_df.to_csv(labels_file_name)
+    data_df.to_parquet(data_file_name, index=False, engine="pyarrow")
+    labels_df.to_parquet(labels_file_name, index=False, engine="pyarrow")
 
 
 def one_synthetic_creation_run(config: SyntheticDataConfig, seed: int = 6666):
@@ -142,6 +142,15 @@ def one_synthetic_creation_run(config: SyntheticDataConfig, seed: int = 6666):
         # reset index required to match other dfs as datetime was set as index for the resampling
         rs_data_df = generator.resampled_data
         rs_labels_df = generator.resampled_labels_df
+
+        raw_data_df.insert(0, SyntheticDataSegmentCols.subject_id, run_name)
+        raw_labels_df.insert(0, SyntheticDataSegmentCols.subject_id, run_name)
+        nc_data_df.insert(0, SyntheticDataSegmentCols.subject_id, run_name)
+        nc_labels_df.insert(0, SyntheticDataSegmentCols.subject_id, run_name)
+        nn_data_df.insert(0, SyntheticDataSegmentCols.subject_id, run_name)
+        nn_labels_df.insert(0, SyntheticDataSegmentCols.subject_id, run_name)
+        rs_data_df.insert(0, SyntheticDataSegmentCols.subject_id, run_name)
+        rs_labels_df.insert(0, SyntheticDataSegmentCols.subject_id, run_name)
 
         # data tables are too big to be logged on wandb, saving them directly to data_dir
         print("...saving generated data to local file storage")

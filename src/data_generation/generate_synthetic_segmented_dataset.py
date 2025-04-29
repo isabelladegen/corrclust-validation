@@ -123,6 +123,7 @@ def calculate_mae(achieved_cor: np.array, expected_cor: np.array, round_to:int):
 
 @dataclass
 class SyntheticDataSegmentCols:  # todo rename to labels cols
+    subject_id = "subject_id"
     old_regular_id = "old id"  # todo this really is a column of data not labels
     segment_id = "id"
     start_idx = "start idx"
