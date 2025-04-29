@@ -147,8 +147,11 @@ def create_bad_partitions(config: CreateBadPartitionsConfig, ds_name: str, idx: 
         # save csv
         print("... saving csvs ...")
         for p in range(n_partitions):
-            file_name = path.join(bad_partitions_path + "/", ds_name + "-wrong-clusters-" + str(p) + "-labels.csv")
-            wrong_clusters[p].to_csv(file_name)
+            cluster_desc = "wrong-clusters-" + str(p)
+            df = wrong_clusters[p]
+            df.insert(1, SyntheticDataSegmentCols.cluster_desc, cluster_desc)
+            file_name = path.join(bad_partitions_path + "/", ds_name + "-" + cluster_desc + "-labels.csv")
+            df.to_parquet(file_name, index=False, engine="pyarrow")
 
         print("2. CREATE PARTITIONS WITH SHIFTED OBSERVATIONS")
         # ensure one partition will shift by the max of 800 observations
@@ -163,8 +166,11 @@ def create_bad_partitions(config: CreateBadPartitionsConfig, ds_name: str, idx: 
         # save csv
         print("... saving csvs ...")
         for p in range(n_partitions):
-            file_name = path.join(bad_partitions_path + "/", ds_name + "-shifted-end-idx-" + str(p) + "-labels.csv")
-            shifted_end_idx[p].to_csv(file_name)
+            cluster_desc = "shifted-end-idx-" + str(p)
+            df = shifted_end_idx[p]
+            df.insert(1, SyntheticDataSegmentCols.cluster_desc, cluster_desc)
+            file_name = path.join(bad_partitions_path + "/", ds_name + "-" + cluster_desc + "-labels.csv")
+            df.to_parquet(file_name, index=False, engine="pyarrow")
 
         print("3. CREATE PARTITIONS WITH SHIFTED OBSERVATIONS AND WRONG CLUSTER ASSIGNMENTS")
         random.seed(6306 + idx)
@@ -183,9 +189,12 @@ def create_bad_partitions(config: CreateBadPartitionsConfig, ds_name: str, idx: 
         # save csv
         print("... saving csvs ...")
         for p in range(n_partitions):
+            cluster_desc = "shifted-and-wrong-cluster-" + str(p)
+            df = shift_and_wrong_clusters[p]
+            df.insert(1, SyntheticDataSegmentCols.cluster_desc, cluster_desc)
             file_name = path.join(bad_partitions_path + "/",
-                                  ds_name + "-shifted-and-wrong-cluster-" + str(p) + "-labels.csv")
-            shift_and_wrong_clusters[p].to_csv(file_name)
+                                  ds_name + "-" + cluster_desc + "-labels.csv")
+            df.to_parquet(file_name, index=False, engine="pyarrow")
 
         wandb.log({
             "Patterns changed n segments": n_segments,
