@@ -25,38 +25,20 @@ class HFStructures:
         "sparse": "irregular_p90",
     }
 
-    data_variants = {
-        "standard": "",
-        "bad_clustering": "bad_partitions",
+    reduced_splits = {
         "reduced_12_clusters": "clusters_dropped_12",
         "reduced_6_clusters": "clusters_dropped_17",
         "reduced_50_segments": "segments_dropped_50",
         "reduced_25_segments": "segments_dropped_75",
     }
-    # todo change to parquet for new db
+
     file_types = {
-        "data": "*-data.csv",
-        "labels": "*-labels.csv",
-    }
-
-    # Path patterns
-    path_patterns = {
-        ("raw", "complete"): "exploratory/raw/*-{file_type}.csv",
-        ("correlated", "complete"): "exploratory/normal/*-{file_type}.csv",
-        ("correlated", "partial"): "exploratory/irregular_p30/normal/*-{file_type}.csv",
-        ("nonnormal", "partial"): "exploratory/irregular_p30/non_normal/*-{file_type}.csv",
-        ("correlated", "sparse"): "exploratory/irregular_p90/normal/*-{file_type}.csv"
-    }
-
-    # Special path patterns
-    special_path_patterns = {
-        (
-            "correlated", "sparse",
-            "badclusterings_labels"): "exploratory/irregular_p90/normal/bad_partitions/*-labels.csv"
+        "data": "*-data.parquet",
+        "labels": "*-labels.parquet",
     }
 
     data_features = [
-        # {"name": "subject_id", "dtype": "string"}, # todo put back in for new db
+        {"name": "subject_id", "dtype": "string"},
         {"name": "datetime", "dtype": "string", "type": "timestamp"},
         {"name": "iob", "dtype": "float32"},
         {"name": "cob", "dtype": "float32"},
@@ -64,7 +46,7 @@ class HFStructures:
     ]
 
     label_features = [
-        # {"name": SyntheticDataSegmentCols.subject_id, "dtype": "string"}, # todo put back in for new db
+        {"name": SyntheticDataSegmentCols.subject_id, "dtype": "string"},
         {"name": SyntheticDataSegmentCols.segment_id, "dtype": "int32"},
         {"name": SyntheticDataSegmentCols.start_idx, "dtype": "int32"},
         {"name": SyntheticDataSegmentCols.end_idx, "dtype": "int32"},
@@ -77,9 +59,8 @@ class HFStructures:
         {"name": SyntheticDataSegmentCols.relaxed_mae, "dtype": "float32"}
     ]
 
-    bad_partitions_features = [{"name": SyntheticDataSegmentCols.cluster_desc, "dtype": "string"}] + copy.deepcopy(
-        label_features)
-    # bad_partitions_features = label_features
+    bad_partitions_features = copy.deepcopy(label_features)
+    bad_partitions_features.insert(1, {"name": SyntheticDataSegmentCols.cluster_desc, "dtype": "string"})
 
 
 def generate_hf_configs():
@@ -99,39 +80,74 @@ def build_list_of_configs():
         for gen_key, gen_value in HFStructures.generation_stages.items():
             for comp_key, comp_value in HFStructures.completeness_levels.items():
                 for file_key, file_value in HFStructures.file_types.items():
+                    # e.g. exploratory/irregular_p30/raw/*-data.csv"
+                    config_name = "_".join([gen_key, comp_key, file_key])
                     path_value = os.path.join(split, comp_value, gen_value, file_value)
-                    # need to make sure we add quotes for * path values
-                    # if "*" in path_value:
-                    #     path_value = f'"{path_value}"'  # Make sure it's quoted
-                    a_config = {
-                        "config_name": "_".join([gen_key, comp_key, file_key]),  # e.g. raw_complete_data
-                        "data_files": [
-                            {
-                                "split": split,
-                                # e.g. exploratory/irregular_p30/raw/*-data.csv"
-                                "path": path_value
-                            }
-                        ],
-                        "features": HFStructures.data_features if file_key == "data" else HFStructures.label_features,
-                    }
+                    features = HFStructures.data_features if file_key == "data" else HFStructures.label_features
+                    a_config = create_a_config(name=config_name,
+                                               split=split,
+                                               path=path_value,
+                                               features=features)
                     configs.append(a_config)
 
                 # add bad-partitions
-                a_config = {
-                    "config_name": "_".join([gen_key, comp_key, "labels"]),  # e.g. raw_complete_data
-                    "data_files": [
-                        {
-                            "split": split,
-                            # e.g. exploratory/irregular_p30/raw/bad_partitions/*-labels.csv"
-                            "path": os.path.join(split, comp_value, gen_value, "bad_partitions",
-                                                 HFStructures.file_types["labels"])
-                        }
-                    ],
-                    "features": HFStructures.bad_partitions_features,
-                }
+                # path e.g. exploratory/irregular_p30/raw/bad_partitions/*-labels.csv"
+                bad_part_path = os.path.join(split, comp_value, gen_value, "bad_partitions",
+                                             HFStructures.file_types["labels"])
+                bad_part_config = "_".join([gen_key, comp_key, "badclustering_labels"])
+                a_config = create_a_config(name=bad_part_config,
+                                           split=split,
+                                           path=bad_part_path,
+                                           features=HFStructures.bad_partitions_features)
                 configs.append(a_config)
 
+    # load reduced data as separate splits
+    for split in ["exploratory", "confirmatory"]:
+        for reduced_key, reduced_value in HFStructures.reduced_splits.items():
+            # reduced data exists only for correlated and nonnormal data variants
+            split_name = "_".join([reduced_key, split])
+            for gen_key in ["correlated", "nonnormal"]:
+                gen_value = HFStructures.generation_stages[gen_key]
+                for comp_key, comp_value in HFStructures.completeness_levels.items():
+                    for file_key, file_value in HFStructures.file_types.items():
+                        # e.g. exploratory/reduced-data/clusters_dropped_12/irregular_p30/normal/*-data.csv"
+                        config_name = "_".join([gen_key, comp_key, file_key])
+                        path_value = os.path.join(split, "reduced-data", reduced_value, comp_value, gen_value,
+                                                  file_value)
+                        features = HFStructures.data_features if file_key == "data" else HFStructures.label_features
+                        a_config = create_a_config(name=config_name,
+                                                   split=split_name,
+                                                   path=path_value,
+                                                   features=features)
+                        configs.append(a_config)
+
+                    # add bad-partitions
+                    # path e.g. exploratory/reduced-data/clusters_dropped_12/irregular_p30/raw/bad_partitions/*-labels.csv"
+                    bad_part_path = os.path.join(split, "reduced-data", reduced_value, comp_value, gen_value,
+                                                 "bad_partitions",
+                                                 HFStructures.file_types["labels"])
+                    bad_part_config = "_".join([gen_key, comp_key, "badclustering_labels"])
+                    a_config = create_a_config(name=bad_part_config,
+                                               split=split_name,
+                                               path=bad_part_path,
+                                               features=HFStructures.bad_partitions_features)
+                    configs.append(a_config)
+
     return configs
+
+
+def create_a_config(name, split, path, features):
+    a_config = {
+        "config_name": name,  # e.g. raw_complete_data
+        "data_files": [
+            {
+                "split": split,
+                "path": path
+            }
+        ],
+        "features": features
+    }
+    return a_config
 
 
 class PathQuotingDumper(yaml.SafeDumper):
