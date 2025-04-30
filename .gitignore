@@ -189,3 +189,5 @@ wandb/
 /tests/test_data/synthetic_data/resampled_1min/test-run-data.parquet
 /tests/test_data/synthetic_data/resampled_1min/test-run-labels.parquet
 /tests/test_utils/corrstruct_testing.py
+/parquet_data/
+/tests/test_utils/hugging_face_README.md

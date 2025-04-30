@@ -1,5 +1,5 @@
 # TODO strip down to bare minimum and upgrade python
-name: corr-24
+name: corr-24-newest
 channels:
   - conda-forge
   - maxibor
@@ -30,6 +30,9 @@ dependencies:
   - fitter # find best distribution also for discrete data
   - distfit # find best distribution for data
   - pyarrow # for parquet support
+  - huggingface_hub # for uploading to hugging face
+  - datasets # for downloading data from hugging face
+  - pyyaml # for building dataset config
   - pip
   - pip:
     - git+https://github.com/SheffieldML/GPclust.git # Gaussian clustering of TS

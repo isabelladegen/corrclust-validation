@@ -25,6 +25,9 @@ dependencies:
   - joblib=1.4.2
   - teneto=0.5.3
   - pyarrow=19.0.1 # for parquet support
+  - huggingface_hub=0.30.2 # for uploading data to hugging face
+  - datasets=2.19.1 # for downloading data from hugging face
+  - pyyaml=6.0.2 # for writing the config for the dataset
   - pip
   - pip:  # not available on conda
     - sequana
