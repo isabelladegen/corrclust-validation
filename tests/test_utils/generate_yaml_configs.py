@@ -26,7 +26,7 @@ class HFStructures:
     }
 
     reduced_splits = {
-        "reduced_12_clusters": "clusters_dropped_12",
+        "reduced_11_clusters": "clusters_dropped_12",
         "reduced_6_clusters": "clusters_dropped_17",
         "reduced_50_segments": "segments_dropped_50",
         "reduced_25_segments": "segments_dropped_75",
