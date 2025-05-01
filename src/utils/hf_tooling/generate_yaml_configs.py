@@ -40,9 +40,9 @@ class HFStructures:
     data_features = [
         {"name": "subject_id", "dtype": "string"},
         {"name": "datetime", "dtype": "string", "type": "timestamp"},
-        {"name": "iob", "dtype": "float32"},
-        {"name": "cob", "dtype": "float32"},
-        {"name": "ig", "dtype": "float32"}
+        {"name": "iob", "dtype": "float64"},
+        {"name": "cob", "dtype": "float64"},
+        {"name": "ig", "dtype": "float64"}
     ]
 
     label_features = [

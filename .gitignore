@@ -188,6 +188,9 @@ wandb/
 /tests/test_data/synthetic_data/raw/test-run-labels.parquet
 /tests/test_data/synthetic_data/resampled_1min/test-run-data.parquet
 /tests/test_data/synthetic_data/resampled_1min/test-run-labels.parquet
-/tests/test_utils/corrstruct_testing.py
+/src/utils/hf_tooling/corrstruct_testing.py
 /parquet_data/
-/tests/test_utils/hugging_face_README.md
+/src/utils/hf_tooling/hugging_face_README.md
+/from_HF/
+/src/utils/hf_tooling/huggingface_config.yaml
+/src/utils/hf_tooling/corrstruct_testing.py
