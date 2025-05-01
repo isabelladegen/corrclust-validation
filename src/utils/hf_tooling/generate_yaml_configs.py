@@ -45,6 +45,9 @@ class HFStructures:
         {"name": "ig", "dtype": "float64"}
     ]
 
+    sparsified_data_features = copy.deepcopy(data_features)
+    sparsified_data_features.insert(1, {"name": SyntheticDataSegmentCols.old_regular_id, "dtype": "int64"})
+
     label_features = [
         {"name": SyntheticDataSegmentCols.subject_id, "dtype": "string"},
         {"name": SyntheticDataSegmentCols.segment_id, "dtype": "int32"},
@@ -61,6 +64,17 @@ class HFStructures:
 
     bad_partitions_features = copy.deepcopy(label_features)
     bad_partitions_features.insert(1, {"name": SyntheticDataSegmentCols.cluster_desc, "dtype": "string"})
+
+    @classmethod
+    def get_features_for(cls, file_key, comp_key):
+        """Returns the features based on the file type and completeness levels"""
+        if file_key == "data":
+            if comp_key == "complete":
+                return cls.data_features
+            else:
+                return cls.sparsified_data_features
+        else:
+            return cls.label_features
 
 
 def generate_hf_configs():
@@ -83,7 +97,8 @@ def build_list_of_configs():
                     # e.g. exploratory/irregular_p30/raw/*-data.csv"
                     config_name = "_".join([gen_key, comp_key, file_key])
                     path_value = os.path.join(split, comp_value, gen_value, file_value)
-                    features = HFStructures.data_features if file_key == "data" else HFStructures.label_features
+                    HFStructures.get_features_for(file_key, comp_key)
+                    features = HFStructures.get_features_for(file_key, comp_key)
                     a_config = create_a_config(name=config_name,
                                                split=split,
                                                path=path_value,
@@ -114,7 +129,7 @@ def build_list_of_configs():
                         config_name = "_".join([gen_key, comp_key, file_key])
                         path_value = os.path.join(split, "reduced-data", reduced_value, comp_value, gen_value,
                                                   file_value)
-                        features = HFStructures.data_features if file_key == "data" else HFStructures.label_features
+                        features = HFStructures.get_features_for(file_key, comp_key)
                         a_config = create_a_config(name=config_name,
                                                    split=split_name,
                                                    path=path_value,
