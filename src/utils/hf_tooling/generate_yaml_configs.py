@@ -130,7 +130,7 @@ def build_list_of_configs():
                     # exploratory/irregular_p30/raw/bad_partitions/*-labels.csv"
                     # confirmatory/reduced-data/clusters_dropped_12/normal/*-labels.csv
                     path_value = os.path.join(split_value, comp_value, gen_value, file_value)
-                    data_files.append(create_a_data_file(split_value, path_value))
+                    data_files.append(create_a_data_file(split_key, path_value))
                 # create config
                 a_config = create_a_config(name=config_name,
                                            data_files=data_files,
