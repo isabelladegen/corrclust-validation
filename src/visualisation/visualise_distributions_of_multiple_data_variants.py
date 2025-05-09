@@ -4,6 +4,7 @@ import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt
 from matplotlib.gridspec import GridSpec
+from matplotlib.ticker import MaxNLocator
 from scipy import stats
 
 from src.evaluation.describe_subjects_for_data_variant import DescribeSubjectsForDataVariant, DistParams
@@ -45,31 +46,20 @@ def get_y_value_bounds(dist_info: {}, data: np.ndarray, dist_method):
     if is_continuous:
         # For continuous distributions, calculate PDF bounds
         x = np.linspace(*get_x_values_distribution_bounds(dist_info, data), 1000)
-        theoretical_min = dist_method.pdf(
-            x,
-            *dist_info[DistParams.min_args],
-            **dist_info[DistParams.min_kwargs]
-        )
-        theoretical_max = dist_method.pdf(
-            x,
-            *dist_info[DistParams.max_args],
-            **dist_info[DistParams.max_kwargs]
-        )
+        median_args = dist_info[DistParams.median_args]
+        median_kwargs = dist_info[DistParams.median_kwargs]
+        pdf_vals = dist_method.pdf(x, *median_args, **median_kwargs)
+        theoretical_max = pdf_vals.max() * 1.1
     else:
         # For discrete distributions
-        discrete_values = np.unique(np.floor(data).astype(int))
-        # Calculate PMF at different parameter sets
-        theoretical_min = dist_method.pmf(
-            discrete_values,
-            *dist_info[DistParams.min_args],
-            **dist_info[DistParams.min_kwargs]
-        )
-        theoretical_max = dist_method.pmf(
-            discrete_values,
-            *dist_info[DistParams.max_args],
-            **dist_info[DistParams.max_kwargs]
-        )
-    return 0, max(theoretical_min.max(), theoretical_max.max())  # pmf, pdf start at 0
+        x = np.arange(0, int(data.max()) + 1)
+        median_args = dist_info[DistParams.median_args]
+        median_kwargs = dist_info[DistParams.median_kwargs]
+        pmf_vals = dist_method.pmf(x, *median_args, **median_kwargs)
+        theoretical_max = pmf_vals.max() * 1.2
+    hist_vals, _ = np.histogram(data, bins=100, density=True)
+    empirical_max = hist_vals.max() * 1.2  # Add 20% padding
+    return 0, max(empirical_max,theoretical_max)  # pmf, pdf start at 0
 
 
 def get_qq_plots_bounds(dist_info: {}, data: np.ndarray, dist_method):
@@ -103,8 +93,8 @@ def get_qq_plots_bounds(dist_info: {}, data: np.ndarray, dist_method):
             max(theoretical_quantiles.max(), empirical_quantiles.max()))
 
 
-def plot_standard_distributions(datasets: {}, dist_params: {}, reference_key: str = "Non-normal", fontsize=20,
-                                figsize: () = (20, 15), backend: str = Backends.none.value):
+def plot_standard_distributions(datasets: {}, dist_params: {}, reference_keys: str = ["Non-normal", "Downsampled"], show_legend:bool=False, fontsize=20,
+                                figsize: () = (24, 14), backend: str = Backends.none.value):
     """
     Create a grid of distribution plots with QQ plot insets.
 
@@ -114,8 +104,8 @@ def plot_standard_distributions(datasets: {}, dist_params: {}, reference_key: st
                  First level: time series name ('iob', 'cob', 'ig')
                  Second level: distribution parameters
     :param reference_key: key for data in datasets from which the dist_params are. Will be used to plot theoretical
-    distribution and the bands in each square to visualise how far from the reference distribution the other
-    variates are
+    distribution for non-normal variant, other variants are shown for standard normal distribution
+    :param show_legend: whether to show legend box
     :param fontsize: int, font size for labels and titles
     :param figsize: tuple, figure size (width, height)
     """
@@ -143,50 +133,54 @@ def plot_standard_distributions(datasets: {}, dist_params: {}, reference_key: st
     # Calculate various axes limits - allows comparing columns
     # Keep x and y axes  and qq plot size and axes consistent for each ts variate (rows)
     # Default limits
-    xlims = {ts_name: {'min': float('inf'), 'max': float('-inf')}
+    # Calculate various axes limits
+    # We'll handle each variation type differently
+    xlims = {ts_name: {variation: {'min': 0, 'max': 0} for variation in variations}
              for ts_name in ts_names}
-    ylims = {ts_name: {'min': float('inf'), 'max': float('-inf')}
+    ylims = {ts_name: {variation: {'min': 0, 'max': 0} for variation in variations}
              for ts_name in ts_names}
-    qq_lims = {ts_name: {'min': float('inf'), 'max': float('-inf')}
+    qq_lims = {ts_name: {variation: {'min': 0, 'max': 0} for variation in variations}
                for ts_name in ts_names}
 
     # First pass to determine limits
     for ts_idx, ts_name in enumerate(ts_names):
-        reference_values_for_ts = all_data[reference_key][:, ts_idx]
-        # Determine if distribution is continuous or discrete, throw error if neither
-        dist_method = dist_params[ts_name][DistParams.method]
-
-        # Calculate y-lims - this is only done on reference distribution values so some empirical values
-        # might lay outside the y axis
-        y_bounds = get_y_value_bounds(dist_params[ts_name], reference_values_for_ts, dist_method)
-        ylims[ts_name]['min'] = y_bounds[0]
-        ylims[ts_name]['max'] = y_bounds[1]
-
         for variation in variations:
-            # Calculate x lims
             all_values_for_ts = all_data[variation][:, ts_idx]
-            x_bounds = get_x_values_distribution_bounds(dist_params[ts_name], all_values_for_ts)
-            xlims[ts_name]['min'] = min(xlims[ts_name]['min'], x_bounds[0])
-            xlims[ts_name]['max'] = max(xlims[ts_name]['max'], x_bounds[1])
 
-            # Calculate qq lims
-            qq_bounds = get_qq_plots_bounds(dist_params[ts_name], all_values_for_ts, dist_method)
-            qq_lims[ts_name]['min'] = min(qq_lims[ts_name]['min'], qq_bounds[0])
-            qq_lims[ts_name]['max'] = max(qq_lims[ts_name]['max'], qq_bounds[1])
+            if variation in reference_keys:
+                # For Non-normal and for the complete downsampled, use the specific distribution parameters
+                dist_method = dist_params[ts_name][DistParams.method]
+                dist_info = dist_params[ts_name]
+
+                # Calculate bounds based on the specific distribution
+                x_bounds = get_x_values_distribution_bounds(dist_info, all_values_for_ts)
+                y_bounds = get_y_value_bounds(dist_info, all_values_for_ts, dist_method)
+                qq_bounds = get_qq_plots_bounds(dist_info, all_values_for_ts, dist_method)
+            else:
+                # For Raw, Correlated, and partial/sparse Downsampled, use standard normal with adjustments
+                # Calculate empirical max density for y-axis
+                hist_vals, _ = np.histogram(all_values_for_ts, bins=50, density=True)
+                max_density = max(hist_vals.max(), 0.4)
+                x_bounds = (-3, 3)  # Covers 99.7% of standard normal
+                y_bounds = (0, max_density * 1.1)  # Add 10% padding above max density
+                qq_bounds = (-3, 3)  # Standard normal quantiles
+
+            xlims[ts_name][variation]['min'] = x_bounds[0]
+            xlims[ts_name][variation]['max'] = x_bounds[1]
+            ylims[ts_name][variation]['min'] = y_bounds[0]
+            ylims[ts_name][variation]['max'] = y_bounds[1]
+            qq_lims[ts_name][variation]['min'] = qq_bounds[0]
+            qq_lims[ts_name][variation]['max'] = qq_bounds[1]
 
     # Create plots
     for ts_idx, ts_name in enumerate(ts_names):
         for var_idx, variation in enumerate(variations):
-            # Create subplot with shared y-axis for the row
-            if var_idx == 0:
-                ax = fig.add_subplot(gs[ts_idx, var_idx])
-                row_ax = ax  # Store the first axis for the row
-            else:
-                ax = fig.add_subplot(gs[ts_idx, var_idx], sharey=row_ax)
+            ax = fig.add_subplot(gs[ts_idx, var_idx])
 
             # Set x and y axes limits consistently
-            ax.set_ylim(ylims[ts_name]['min'], ylims[ts_name]['max'])
-            ax.set_xlim(xlims[ts_name]['min'], xlims[ts_name]['max'])
+            ax.set_ylim(ylims[ts_name][variation]['min'], ylims[ts_name][variation]['max'])
+            ax.set_xlim(xlims[ts_name][variation]['min'], xlims[ts_name][variation]['max'])
+            ax.yaxis.set_major_locator(MaxNLocator(nbins=5))
 
             # Get all values for this time series from current variation
             all_values_for_ts = all_data[variation][:, ts_idx]
@@ -194,38 +188,43 @@ def plot_standard_distributions(datasets: {}, dist_params: {}, reference_key: st
             # Plot density histogram of empirical values
             sns.histplot(all_values_for_ts, stat='density', alpha=0.5, ax=ax, label='Empirical')
 
+            if variation in reference_keys:
+                # Use the non-normal distribution parameters
+                dist_method = dist_params[ts_name][DistParams.method]
+                median_args = dist_params[ts_name][DistParams.median_args]
+                median_kwargs = dist_params[ts_name][DistParams.median_kwargs]
+            else:
+                # Use standard normal distribution (μ=0, σ=1)
+                dist_method = stats.norm
+                median_args = (0, 1)
+                median_kwargs = {}
+
             # Plot theoretical distribution for median parameters
-            dist_method = dist_params[ts_name][DistParams.method]
             is_continuous = dist_method.name in stats._continuous_distns._distn_names
             if not is_continuous:  # should be discrete otherwise throw error
                 error_msg = "Unsupported distribution with name: " + str(dist_method)
                 assert dist_method.name in stats._discrete_distns._distn_names, error_msg
 
-            median_args = dist_params[ts_name][DistParams.median_args]
-            median_kwargs = dist_params[ts_name][DistParams.median_kwargs]
-
             if is_continuous:
                 # For continuous distributions
-                x = np.linspace(xlims[ts_name]['min'], xlims[ts_name]['max'], 1000)
+                x = np.linspace(xlims[ts_name][variation]['min'], xlims[ts_name][variation]['max'], 1000)
                 pdf_median = dist_method.pdf(x, *median_args, **median_kwargs)
                 ax.plot(x, pdf_median, 'r-', lw=2, label='PDF/PMF Median Target Distribution')
             else:
                 # For discrete distributions
-                x = np.arange(int(np.floor(xlims[ts_name]['min'])), int(np.ceil(xlims[ts_name]['max'])) + 1)
+                x = np.arange(int(np.floor(xlims[ts_name][variation]['min'])), int(np.ceil(xlims[ts_name][variation]['max'])) + 1)
                 pmf_median = dist_method.pmf(x, *median_args, **median_kwargs)
                 ax.bar(x, pmf_median, alpha=0.5, color='r', label='PDF/PMF Median Target Distribution')
 
-            # Create inset for QQ plot
+            # Create inset for QQ plot with limits
             axins = ax.inset_axes([0.55, 0.51, 0.4, 0.4])  # x, y, width, height
+            axins.set_xlim(qq_lims[ts_name][variation]['min'], qq_lims[ts_name][variation]['max'])
+            axins.set_ylim(qq_lims[ts_name][variation]['min'], qq_lims[ts_name][variation]['max'])
 
             # Add diagonal line using the common limits for this row - theoretical distribution
-            axins.plot([qq_lims[ts_name]['min'], qq_lims[ts_name]['max']],
-                       [qq_lims[ts_name]['min'], qq_lims[ts_name]['max']],
+            axins.plot([qq_lims[ts_name][variation]['min'], qq_lims[ts_name][variation]['max']],
+                       [qq_lims[ts_name][variation]['min'], qq_lims[ts_name][variation]['max']],
                        'r--', alpha=0.8)
-
-            # Set same axis limits based on bounds
-            axins.set_xlim(qq_lims[ts_name]['min'], qq_lims[ts_name]['max'])
-            axins.set_ylim(qq_lims[ts_name]['min'], qq_lims[ts_name]['max'])
 
             # Set title
             axins.set_title('Q-Q Plot', fontsize=fontsize - 8)
@@ -241,7 +240,11 @@ def plot_standard_distributions(datasets: {}, dist_params: {}, reference_key: st
             empirical_quantiles = np.percentile(all_values_for_ts, probs * 100)
 
             # Calculate main diagonal (median parameters) as before
-            theoretical_quantiles = dist_method.ppf(probs, *median_args, **median_kwargs)
+            if variation in reference_keys:
+                theoretical_quantiles = dist_method.ppf(probs, *median_args, **median_kwargs)
+            else:
+                # Use standard normal distribution for theoretical quantiles
+                theoretical_quantiles = stats.norm.ppf(probs, 0, 1)
 
             # Plot QQ points
             axins.scatter(theoretical_quantiles, empirical_quantiles, alpha=0.5, s=10)
@@ -254,17 +257,17 @@ def plot_standard_distributions(datasets: {}, dist_params: {}, reference_key: st
             if var_idx == 0:
                 ax.set_ylabel(ts_name.upper(), fontsize=fontsize, fontweight='bold')
             else:
-                plt.setp(ax.get_yticklabels(), visible=False)
                 ax.set_ylabel('')
 
             ax.tick_params(labelsize=fontsize - 4)
             axins.tick_params(labelsize=fontsize - 8)
 
             # Add legend to the last subplot in the first row
-            if ts_idx == n_timeseries - 1 and var_idx == n_variations - 1:
-                # Place legend outside the plot on the right side
-                ax.legend(fontsize=fontsize - 4, title_fontsize=fontsize - 4, bbox_to_anchor=(1.05, 0),
-                          loc='lower left')
+            if show_legend:
+                if ts_idx == n_timeseries - 1 and var_idx == n_variations - 1:
+                    # Place legend outside the plot on the right side
+                    ax.legend(fontsize=fontsize - 4, title_fontsize=fontsize - 4, bbox_to_anchor=(1.05, 0),
+                              loc='lower left')
 
     plt.tight_layout()
     return fig
@@ -307,7 +310,7 @@ class VisualiseDistributionsOfMultipleDatasets:
         else:
             dist_params = list(self.dataset_variates.values())[0].get_median_min_max_distribution_parameters()
 
-        fig = plot_standard_distributions(datasets=datasets, dist_params=dist_params, figsize=(20, 12),
+        fig = plot_standard_distributions(datasets=datasets, dist_params=dist_params, figsize=(24, 16),
                                           backend=self.backend)
         plt.show()
         if save_fig:

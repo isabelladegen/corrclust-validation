@@ -7,8 +7,8 @@ from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.visualisation.visualise_distributions_of_multiple_data_variants import VisualiseDistributionsOfMultipleDatasets
 
-# backend = Backends.visible_tests.value
-backend = Backends.none.value
+backend = Backends.visible_tests.value
+# backend = Backends.none.value
 
 
 @pytest.mark.skip(reason="takes a long time and does the same as the other tests")
