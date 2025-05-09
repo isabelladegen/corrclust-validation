@@ -5,7 +5,7 @@ import numpy as np
 from hamcrest import *
 
 from src.utils.load_synthetic_data import SyntheticDataSets, SyntheticDataType
-from src.utils.configurations import GeneralisedCols, IRREGULAR_P30_DATA_DIR
+from src.utils.configurations import GeneralisedCols, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.evaluation.describe_synthetic_dataset import DescribeSyntheticDataset, DescribeSyntheticCols
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
@@ -321,9 +321,10 @@ def test_plot_actual_correlations_for_each_pattern():
 
 
 # def test_stuff():
-#     dst = DescribeSyntheticDataset(run_name='trim-fire-24', data_type=SyntheticDataType.non_normal_correlated,
-#                                    data_dir=IRREGULAR_P30_DATA_DIR, backend=Backends.visible_tests.value)
-#     dst.plot_correlation_matrix_for_each_pattern()
+#     dst = DescribeSyntheticDataset(run_name='breezy-leaf-30', data_type=SyntheticDataType.non_normal_correlated,
+#                                    data_dir=IRREGULAR_P90_DATA_DIR, backend=Backends.visible_tests.value)
+#     fig = dst.plot_correlation_matrix_for_each_pattern()
+#     fig.savefig("breezy-leave-30-complete-empirical-correlations.png", dpi=300, bbox_inches='tight')
 
 
 def test_plot_description_of_subgroups():
