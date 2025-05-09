@@ -105,7 +105,7 @@ def create_irregular_datasets(config: CreateIrregularDSConfig, ds_name: str, see
         rs_datatype = SyntheticDataType.resample(config.rs_rule)
         print("...resampling rule: " + config.rs_rule)
         rs_irr_data, rs_irr_labels = irds.irregular_version_for_data_type(rs_datatype,
-                                                                          raw_irregular_data, raw_irregular_labels)
+                                                                          nn_irr_data, nn_irr_labels)
 
         print("9. SAVE RS IRREGULAR DATA AND LABELS")
         save_data_labels_to_file(config.root_result_data_dir, rs_datatype, rs_irr_data, rs_irr_labels, ds_name)
