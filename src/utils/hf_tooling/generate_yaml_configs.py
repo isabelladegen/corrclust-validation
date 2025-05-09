@@ -66,8 +66,8 @@ class HFStructures:
         {"name": "ig", "dtype": "float64"}
     ]
 
-    sparsified_downsampled_data_features = copy.deepcopy(data_features)
-    sparsified_downsampled_data_features.insert(2, {"name": "original_index", "dtype": "int64"})
+    downsampled_data_features = copy.deepcopy(data_features)
+    downsampled_data_features.insert(2, {"name": "original_index", "dtype": "float64"})
 
     sparsified_data_features = copy.deepcopy(data_features)
     sparsified_data_features.insert(1, {"name": SyntheticDataSegmentCols.old_regular_id, "dtype": "int64"})
@@ -93,10 +93,10 @@ class HFStructures:
     def get_features_for(cls, file_key, comp_key, gen_key):
         """Returns the features based on the file type and completeness levels"""
         if file_key == "data":
-            if comp_key == "complete":
+            if gen_key == "downsampled":
+                return cls.downsampled_data_features
+            elif comp_key == "complete":
                 return cls.data_features
-            elif gen_key == "downsampled":
-                return cls.sparsified_downsampled_data_features
             else:
                 return cls.sparsified_data_features
         elif file_key == "labels":

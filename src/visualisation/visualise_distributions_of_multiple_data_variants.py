@@ -59,7 +59,7 @@ def get_y_value_bounds(dist_info: {}, data: np.ndarray, dist_method):
         theoretical_max = pmf_vals.max() * 1.2
     hist_vals, _ = np.histogram(data, bins=100, density=True)
     empirical_max = hist_vals.max() * 1.2  # Add 20% padding
-    return 0, max(empirical_max,theoretical_max)  # pmf, pdf start at 0
+    return 0, max(empirical_max, theoretical_max)  # pmf, pdf start at 0
 
 
 def get_qq_plots_bounds(dist_info: {}, data: np.ndarray, dist_method):
@@ -93,7 +93,8 @@ def get_qq_plots_bounds(dist_info: {}, data: np.ndarray, dist_method):
             max(theoretical_quantiles.max(), empirical_quantiles.max()))
 
 
-def plot_standard_distributions(datasets: {}, dist_params: {}, reference_keys: str = ["Non-normal", "Downsampled"], show_legend:bool=False, fontsize=20,
+def plot_standard_distributions(datasets: {}, dist_params: {}, reference_keys: str = ["Non-normal", "Downsampled"],
+                                show_legend: bool = False, fontsize=20,
                                 figsize: () = (24, 14), backend: str = Backends.none.value):
     """
     Create a grid of distribution plots with QQ plot insets.
@@ -212,7 +213,8 @@ def plot_standard_distributions(datasets: {}, dist_params: {}, reference_keys: s
                 ax.plot(x, pdf_median, 'r-', lw=2, label='PDF/PMF Median Target Distribution')
             else:
                 # For discrete distributions
-                x = np.arange(int(np.floor(xlims[ts_name][variation]['min'])), int(np.ceil(xlims[ts_name][variation]['max'])) + 1)
+                x = np.arange(int(np.floor(xlims[ts_name][variation]['min'])),
+                              int(np.ceil(xlims[ts_name][variation]['max'])) + 1)
                 pmf_median = dist_method.pmf(x, *median_args, **median_kwargs)
                 ax.bar(x, pmf_median, alpha=0.5, color='r', label='PDF/PMF Median Target Distribution')
 
@@ -293,13 +295,15 @@ class VisualiseDistributionsOfMultipleDatasets:
         # dataset variate names
         self.col_names = [SyntheticDataType.get_display_name_for_data_type(ds_type) for ds_type in dataset_types]
 
-    def plot_as_standard_distribution(self, root_result_dir: str, save_fig: bool = False):
+    def plot_as_standard_distribution(self, root_result_dir: str, use_nn_params_for: [] = ["Non-normal", "Downsampled"],
+                                      save_fig: bool = False):
         """
             Creates a plot of the dataset variation as columns (Raw, Correlated, Non-normal, Downsampled) and the time series as rows (IOB, COB,
             IG). Each square show the theoretical PDF/PMF distribution of the median parameters for the distribution
             we shifted to in NN, the empirical observations in density space and a QQ-plot inset. We can see
             what the ds variations do to the specified distribution for NN.
             :param root_result_dir: root result dir to save the figure this will be put in the dataset-description
+            :param use_nn_params_for: generation stages for which to plot the non-normal distributions
             :param save_fig: whether to save the figure
             :return: fig
         """
@@ -310,10 +314,12 @@ class VisualiseDistributionsOfMultipleDatasets:
         else:
             dist_params = list(self.dataset_variates.values())[0].get_median_min_max_distribution_parameters()
 
-        fig = plot_standard_distributions(datasets=datasets, dist_params=dist_params, figsize=(24, 16),
+        fig = plot_standard_distributions(datasets=datasets, dist_params=dist_params, reference_keys=use_nn_params_for,
+                                          figsize=(24, 16),
                                           backend=self.backend)
         plt.show()
         if save_fig:
             folder = base_dataset_result_folder_for_type(root_result_dir, ResultsType.dataset_description)
-            fig.savefig(path.join(folder, get_image_name_based_on_data_dir(OVERALL_DISTRIBUTION_IMAGE, self.data_dir)), dpi=300, bbox_inches='tight')
+            fig.savefig(path.join(folder, get_image_name_based_on_data_dir(OVERALL_DISTRIBUTION_IMAGE, self.data_dir)),
+                        dpi=300, bbox_inches='tight')
         return fig
