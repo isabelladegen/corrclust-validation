@@ -688,7 +688,7 @@ class VisualiseMultipleDataVariants:
                     row_dict[col] = col_data.all_mae_values(SyntheticDataSegmentCols.relaxed_mae, corr_type=cor)
                 data_dict[row] = row_dict
 
-            fig = create_violin_grid(data_dict=data_dict, backend=self.backend, figsize=(15, 10))
+            fig = create_violin_grid(data_dict=data_dict, backend=self.backend, figsize=(24, 10))
             plt.show()
 
             if save_fig:

@@ -66,6 +66,9 @@ class HFStructures:
         {"name": "ig", "dtype": "float64"}
     ]
 
+    sparsified_downsampled_data_features = copy.deepcopy(data_features)
+    sparsified_downsampled_data_features.insert(2, {"name": "original_index", "dtype": "int64"})
+
     sparsified_data_features = copy.deepcopy(data_features)
     sparsified_data_features.insert(1, {"name": SyntheticDataSegmentCols.old_regular_id, "dtype": "int64"})
 
@@ -87,11 +90,13 @@ class HFStructures:
     bad_partitions_features.insert(1, {"name": SyntheticDataSegmentCols.cluster_desc, "dtype": "string"})
 
     @classmethod
-    def get_features_for(cls, file_key, comp_key):
+    def get_features_for(cls, file_key, comp_key, gen_key):
         """Returns the features based on the file type and completeness levels"""
         if file_key == "data":
             if comp_key == "complete":
                 return cls.data_features
+            elif gen_key == "downsampled":
+                return cls.sparsified_downsampled_data_features
             else:
                 return cls.sparsified_data_features
         elif file_key == "labels":
@@ -119,7 +124,7 @@ def build_list_of_configs():
         for comp_key, comp_value in HFStructures.completeness_levels.items():
             for file_key, file_value in HFStructures.file_types.items():
                 config_name = "_".join([gen_key, comp_key, file_key])
-                features = HFStructures.get_features_for(file_key, comp_key)
+                features = HFStructures.get_features_for(file_key, comp_key, gen_key)
                 # create all splits and datafiles for a config
                 data_files = []
                 for split_key, split_value in HFStructures.splits.items():
