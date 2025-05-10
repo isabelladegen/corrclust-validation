@@ -43,7 +43,7 @@ def custom_number_text_formatter(x, _):
         return f'{x:.1f}'  # Regular format for other numbers
 
 
-def add_stats(data: np.ndarray, ax: plt.Axes, y_pos: float) -> None:
+def add_stats(data: np.ndarray, ax: plt.Axes, y_pos: float, fix_x_axis:bool=False) -> None:
     """Add min, max and mean annotations to the plot."""
     mean = np.mean(data)
     min_val = np.min(data)
@@ -59,7 +59,10 @@ def add_stats(data: np.ndarray, ax: plt.Axes, y_pos: float) -> None:
     ax.text(min_val, y_pos - 0.3, f'min={custom_number_text_formatter(min_val, "-")}',
             verticalalignment='center', horizontalalignment='left',
             fontsize=fontsize)
-    ax.text(max_val, y_pos - 0.15, f'max={custom_number_text_formatter(max_val, "-")}',
+    max_pos = max_val
+    if fix_x_axis:
+        max_pos = min(max_val, 0.5)
+    ax.text(max_pos, y_pos - 0.15, f'max={custom_number_text_formatter(max_val, "-")}',
             verticalalignment='center', horizontalalignment='left',
             fontsize=fontsize)
 
@@ -188,7 +191,8 @@ def create_violin_grid_log_scale_x_axis(data_dict: {}, figsize: tuple = (18, 15)
     return fig
 
 
-def create_violin_grid(data_dict: {}, figsize: tuple = (12, 12), backend: str = Backends.none.value) -> plt.Figure:
+def create_violin_grid(data_dict: {}, figsize: tuple = (12, 12), fix_x_axis: bool = False, x_lim: float = 0.9,
+                       backend: str = Backends.none.value) -> plt.Figure:
     """
     Create a grid of horizontal violin plots with statistics using dictionary keys as labels.
     Source: developed with the help of claude and a lot of input from me
@@ -211,7 +215,7 @@ def create_violin_grid(data_dict: {}, figsize: tuple = (12, 12), backend: str = 
     # Create figure with custom size
     fig = plt.figure(figsize=figsize)
     gs = GridSpec(len(row_names), len(column_names), figure=fig)
-    fig.subplots_adjust(hspace=0.5, wspace=0.3, left=0.15)
+    fig.subplots_adjust(hspace=0.5, wspace=0.6, left=0.15)
 
     # Set up colors
     colors = sns.color_palette("husl", n_colors=len(column_names))
@@ -254,7 +258,10 @@ def create_violin_grid(data_dict: {}, figsize: tuple = (12, 12), backend: str = 
                 ax.set_title(col, fontsize=fontsize, fontweight='bold')
 
             # Set x-axis limits to be the same for all plots
-            ax.set_xlim(global_min, global_max)
+            if fix_x_axis:
+                ax.set_xlim(0, x_lim)
+            else:
+                ax.set_xlim(global_min, global_max)
 
             # Format x-axis labels to be more readable
             ax.xaxis.set_major_formatter(plt.FuncFormatter(custom_number_text_formatter))
@@ -281,7 +288,7 @@ def create_violin_grid(data_dict: {}, figsize: tuple = (12, 12), backend: str = 
             sns.despine(ax=ax, left=True)
 
             # Add statistics
-            add_stats(data, ax, 0)
+            add_stats(data, ax, 0, fix_x_axis)
 
         axes.append(row_axes)
 
@@ -688,7 +695,8 @@ class VisualiseMultipleDataVariants:
                     row_dict[col] = col_data.all_mae_values(SyntheticDataSegmentCols.relaxed_mae, corr_type=cor)
                 data_dict[row] = row_dict
 
-            fig = create_violin_grid(data_dict=data_dict, backend=self.backend, figsize=(24, 10))
+            fig = create_violin_grid(data_dict=data_dict, backend=self.backend, fix_x_axis=True, x_lim=0.9,
+                                     figsize=(24, 10))
             plt.show()
 
             if save_fig:

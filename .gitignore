@@ -194,3 +194,4 @@ wandb/
 /from_HF/
 /src/utils/hf_tooling/huggingface_config.yaml
 /src/utils/hf_tooling/corrstruct_testing.py
+/confirmatory_results/

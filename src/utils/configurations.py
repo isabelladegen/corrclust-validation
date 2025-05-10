@@ -29,6 +29,7 @@ CONF_IRREGULAR_P90_DATA_DIR = path.join(CONFIRMATORY_SYNTHETIC_DATA_DIR, DataCom
 IRREGULAR_P30_DATA_DIR = path.join(SYNTHETIC_DATA_DIR, DataCompleteness.irregular_p30)
 IRREGULAR_P90_DATA_DIR = path.join(SYNTHETIC_DATA_DIR, DataCompleteness.irregular_p90)
 ROOT_RESULTS_DIR = path.join(ROOT_DIR, 'results')
+CONF_ROOT_RESULTS_DIR = path.join(ROOT_DIR, 'confirmatory_results')
 ROOT_REDUCED_RESULTS_DIR = path.join(ROOT_RESULTS_DIR, "reduced-data")
 DISTANCE_MEASURE_ASSESSMENT_RESULTS_FOLDER_NAME = 'distance-measures-assessment'
 IMAGES_FOLDER_NAME = 'images'
