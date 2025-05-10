@@ -200,7 +200,7 @@ class CreateIrregularDataset:
             # actual resample observations
             subject_id = data_to_resample[SyntheticDataSegmentCols.subject_id][0]
             cols_to_resample = [GeneralisedCols.datetime, 'original_index'] + self.__data_cols
-            resampled = data_to_resample[cols_to_resample].resample(rule, on=GeneralisedCols.datetime).mean()
+            resampled = data_to_resample[cols_to_resample].resample(rule, on=GeneralisedCols.datetime).mean().round(3)
             # to make it consistent with the other df that the datetime is not automatically the index we reset the index
             resampled.reset_index(inplace=True)
             resampled.insert(0, SyntheticDataSegmentCols.subject_id, subject_id)

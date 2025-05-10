@@ -26,7 +26,7 @@ def resample_data(nn_data, nn_labels, rule: str = "1min", data_cols: [] = Synthe
     # actual resample observations
     subject_id = data_to_resample[SyntheticDataSegmentCols.subject_id][0]
     cols_to_resample = [GeneralisedCols.datetime, 'original_index'] + data_cols
-    resampled = data_to_resample[cols_to_resample].resample(rule, on=GeneralisedCols.datetime).mean()
+    resampled = data_to_resample[cols_to_resample].resample(rule, on=GeneralisedCols.datetime).mean().round(3)
     # to make it consistent with the other df that the datetime is not automatically the index we reset the index
     resampled.reset_index(inplace=True)
     resampled.insert(0, SyntheticDataSegmentCols.subject_id, subject_id)
@@ -84,5 +84,8 @@ if __name__ == '__main__':
             rs_data, rs_labels = resample_data(nn_data_df, nn_labels_df)
             # safe rs_data and label
             save_data_labels_to_file(data_dir, SyntheticDataType.rs_1min, rs_data, rs_labels, run_name)
+            # # # load to check
+            # reloaded_rs_data, reloaded_rs_labels_df = load_synthetic_data(run_id=run_name, data_type=SyntheticDataType.rs_1min, data_dir=data_dir)
+
 
 

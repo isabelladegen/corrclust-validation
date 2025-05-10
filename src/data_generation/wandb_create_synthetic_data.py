@@ -79,6 +79,11 @@ def save_data_labels_to_file(data_dir, data_type, data_df, labels_df, run_name):
     Path(file_dir).mkdir(parents=True, exist_ok=True)
     data_file_name = Path(file_dir, run_name + SyntheticFileTypes.data)
     labels_file_name = Path(file_dir, run_name + SyntheticFileTypes.labels)
+    # convert arrays to strings for human readability
+    for col in [SyntheticDataSegmentCols.correlation_to_model, SyntheticDataSegmentCols.actual_correlation, SyntheticDataSegmentCols.actual_within_tolerance]:
+        labels_df[col] = labels_df[col].apply(lambda x: str(x) if isinstance(x, list) else x)
+    # convert datetime to string
+    data_df["datetime"] = data_df["datetime"].apply(lambda x: str(x))
     data_df.to_parquet(data_file_name, index=False, engine="pyarrow")
     labels_df.to_parquet(labels_file_name, index=False, engine="pyarrow")
 
