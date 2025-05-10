@@ -24,8 +24,6 @@ def plot_correlation_patters_for_datasets(root_result_dir, dataset_types, data_d
 
 
 if __name__ == "__main__":
-    # heatmap ov average ranking for each dataset in the N30
-    # y = data variant, x = distance measure, lower ranks are better
     backend = Backends.none.value
     save_fig = True
     root_result_dir = ROOT_RESULTS_DIR
