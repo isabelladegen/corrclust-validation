@@ -11,7 +11,9 @@ if __name__ == "__main__":
                      SyntheticDataType.normal_correlated,
                      SyntheticDataType.non_normal_correlated,
                      SyntheticDataType.rs_1min]
+    # dataset_types = [SyntheticDataType.rs_1min] # recreate for resampled
     data_completeness = [DataCompleteness.complete, DataCompleteness.irregular_p30, DataCompleteness.irregular_p90]
+    # data_completeness = [DataCompleteness.irregular_p30, DataCompleteness.irregular_p90]
     config = CreateBadPartitionsConfig()
     config.wandb_project_name = WandbConfiguration.wandb_confirmatory_partitions_project_name
     config.seed = 2122

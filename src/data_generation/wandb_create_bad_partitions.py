@@ -234,16 +234,16 @@ def save_bad_partitions_labels_file(df, file_name):
 
 
 if __name__ == "__main__":
-    # dataset_types = [SyntheticDataType.raw,
-    #                  SyntheticDataType.normal_correlated,
-    #                  SyntheticDataType.non_normal_correlated,
-    #                  SyntheticDataType.rs_1min]
-    dataset_types = [SyntheticDataType.rs_1min] # just resampled
-    # data_dirs = [SYNTHETIC_DATA_DIR,
-    #              IRREGULAR_P30_DATA_DIR,
-    #              IRREGULAR_P90_DATA_DIR]
-    data_dirs = [IRREGULAR_P30_DATA_DIR, # only partial and sparse
+    dataset_types = [SyntheticDataType.raw,
+                     SyntheticDataType.normal_correlated,
+                     SyntheticDataType.non_normal_correlated,
+                     SyntheticDataType.rs_1min]
+    # dataset_types = [SyntheticDataType.rs_1min] # just resampled
+    data_dirs = [SYNTHETIC_DATA_DIR,
+                 IRREGULAR_P30_DATA_DIR,
                  IRREGULAR_P90_DATA_DIR]
+    # data_dirs = [IRREGULAR_P30_DATA_DIR, # only partial and sparse
+    #              IRREGULAR_P90_DATA_DIR]
     config = CreateBadPartitionsConfig()
     config.wandb_mode = "offline"  # don't log the rs bad partition regeneration
     config.wandb_project_name = WandbConfiguration.wandb_partitions_project_name

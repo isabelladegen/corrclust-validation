@@ -93,10 +93,10 @@ class HFStructures:
     def get_features_for(cls, file_key, comp_key, gen_key):
         """Returns the features based on the file type and completeness levels"""
         if file_key == "data":
-            if gen_key == "downsampled":
-                return cls.downsampled_data_features
-            elif comp_key == "complete":
+            if comp_key == "complete":
                 return cls.data_features
+            elif gen_key == "downsampled": # for partial and sparse downsampled dta
+                return cls.downsampled_data_features
             else:
                 return cls.sparsified_data_features
         elif file_key == "labels":
