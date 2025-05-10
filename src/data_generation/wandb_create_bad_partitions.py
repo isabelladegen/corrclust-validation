@@ -14,10 +14,8 @@ from src.evaluation.describe_bad_partitions import DescribeBadPartitions, Descri
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import WandbConfiguration, SYNTHETIC_DATA_DIR, SyntheticDataVariates, \
     GENERATED_DATASETS_FILE_PATH, bad_partition_dir_for_data_type, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR
-from src.utils.load_synthetic_data import SyntheticDataType
+from src.utils.load_synthetic_data import SyntheticDataType, SyntheticFileTypes
 from src.utils.plots.matplotlib_helper_functions import Backends
-from tests.test_utils.configurations_for_testing import TEST_DATA_DIR, TEST_GENERATED_DATASETS_FILE_PATH, \
-    TEST_GENERATED_DATASETS_FILE_PATH_1
 
 
 @dataclass
@@ -150,8 +148,8 @@ def create_bad_partitions(config: CreateBadPartitionsConfig, ds_name: str, idx: 
             cluster_desc = "wrong-clusters-" + str(p)
             df = wrong_clusters[p]
             df.insert(1, SyntheticDataSegmentCols.cluster_desc, cluster_desc)
-            file_name = path.join(bad_partitions_path + "/", ds_name + "-" + cluster_desc + "-labels.csv")
-            df.to_parquet(file_name, index=False, engine="pyarrow")
+            file_name = path.join(bad_partitions_path + "/", ds_name + "-" + cluster_desc + SyntheticFileTypes.labels)
+            save_bad_partitions_labels_file(df, file_name)
 
         print("2. CREATE PARTITIONS WITH SHIFTED OBSERVATIONS")
         # ensure one partition will shift by the max of 800 observations
@@ -169,8 +167,8 @@ def create_bad_partitions(config: CreateBadPartitionsConfig, ds_name: str, idx: 
             cluster_desc = "shifted-end-idx-" + str(p)
             df = shifted_end_idx[p]
             df.insert(1, SyntheticDataSegmentCols.cluster_desc, cluster_desc)
-            file_name = path.join(bad_partitions_path + "/", ds_name + "-" + cluster_desc + "-labels.csv")
-            df.to_parquet(file_name, index=False, engine="pyarrow")
+            file_name = path.join(bad_partitions_path + "/", ds_name + "-" + cluster_desc + SyntheticFileTypes.labels)
+            save_bad_partitions_labels_file(df, file_name)
 
         print("3. CREATE PARTITIONS WITH SHIFTED OBSERVATIONS AND WRONG CLUSTER ASSIGNMENTS")
         random.seed(6306 + idx)
@@ -193,8 +191,8 @@ def create_bad_partitions(config: CreateBadPartitionsConfig, ds_name: str, idx: 
             df = shift_and_wrong_clusters[p]
             df.insert(1, SyntheticDataSegmentCols.cluster_desc, cluster_desc)
             file_name = path.join(bad_partitions_path + "/",
-                                  ds_name + "-" + cluster_desc + "-labels.csv")
-            df.to_parquet(file_name, index=False, engine="pyarrow")
+                                  ds_name + "-" + cluster_desc + SyntheticFileTypes.labels)
+            save_bad_partitions_labels_file(df, file_name)
 
         wandb.log({
             "Patterns changed n segments": n_segments,
@@ -228,15 +226,26 @@ def create_bad_partitions(config: CreateBadPartitionsConfig, ds_name: str, idx: 
     return summary, wandb_summary_dic
 
 
+def save_bad_partitions_labels_file(df, file_name):
+    for col in [SyntheticDataSegmentCols.correlation_to_model, SyntheticDataSegmentCols.actual_correlation,
+                SyntheticDataSegmentCols.actual_within_tolerance]:
+        df[col] = df[col].apply(lambda x: str(x) if isinstance(x, list) else x)
+    df.to_parquet(file_name, index=False, engine="pyarrow")
+
+
 if __name__ == "__main__":
-    dataset_types = [SyntheticDataType.raw,
-                     SyntheticDataType.normal_correlated,
-                     SyntheticDataType.non_normal_correlated,
-                     SyntheticDataType.rs_1min]
-    data_dirs = [SYNTHETIC_DATA_DIR,
-                 IRREGULAR_P30_DATA_DIR,
+    # dataset_types = [SyntheticDataType.raw,
+    #                  SyntheticDataType.normal_correlated,
+    #                  SyntheticDataType.non_normal_correlated,
+    #                  SyntheticDataType.rs_1min]
+    dataset_types = [SyntheticDataType.rs_1min] # just resampled
+    # data_dirs = [SYNTHETIC_DATA_DIR,
+    #              IRREGULAR_P30_DATA_DIR,
+    #              IRREGULAR_P90_DATA_DIR]
+    data_dirs = [IRREGULAR_P30_DATA_DIR, # only partial and sparse
                  IRREGULAR_P90_DATA_DIR]
     config = CreateBadPartitionsConfig()
+    config.wandb_mode = "offline"  # don't log the rs bad partition regeneration
     config.wandb_project_name = WandbConfiguration.wandb_partitions_project_name
     config.seed = 666
     config.csv_of_runs = GENERATED_DATASETS_FILE_PATH

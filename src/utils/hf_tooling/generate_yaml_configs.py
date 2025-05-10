@@ -131,9 +131,9 @@ def build_list_of_configs():
                     # check if split has this generation stage
                     if gen_key not in HFStructures.generation_stages_for_splits[split_key]:
                         continue
-                    # e.g. exploratory/irregular_p30/raw/*-data.csv"
-                    # exploratory/irregular_p30/raw/bad_partitions/*-labels.csv"
-                    # confirmatory/reduced-data/clusters_dropped_12/normal/*-labels.csv
+                    # e.g. exploratory/irregular_p30/raw/*-data.parquet"
+                    # exploratory/irregular_p30/raw/bad_partitions/*-labels.parquet"
+                    # confirmatory/reduced-data/clusters_dropped_12/normal/*-labels.parquet
                     path_value = os.path.join(split_value, comp_value, gen_value, file_value)
                     data_files.append(create_a_data_file(split_key, path_value))
                 # create config
