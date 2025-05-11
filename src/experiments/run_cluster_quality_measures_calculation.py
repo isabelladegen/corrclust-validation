@@ -74,6 +74,8 @@ if __name__ == "__main__":
     run_names = pd.read_csv(GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
     distance_measures = [DistanceMeasures.l1_cor_dist,
                          DistanceMeasures.l1_with_ref,
+                         DistanceMeasures.l2_cor_dist,
+                         DistanceMeasures.l3_cor_dist,
                          DistanceMeasures.l5_cor_dist,
                          DistanceMeasures.l5_with_ref,
                          DistanceMeasures.linf_cor_dist]

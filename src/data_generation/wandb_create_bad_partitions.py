@@ -245,7 +245,7 @@ if __name__ == "__main__":
     # data_dirs = [IRREGULAR_P30_DATA_DIR, # only partial and sparse
     #              IRREGULAR_P90_DATA_DIR]
     config = CreateBadPartitionsConfig()
-    config.wandb_mode = "offline"  # don't log the rs bad partition regeneration
+    # config.wandb_mode = "offline"  # don't log the rs bad partition regeneration
     config.wandb_project_name = WandbConfiguration.wandb_partitions_project_name
     config.seed = 666
     config.csv_of_runs = GENERATED_DATASETS_FILE_PATH

@@ -72,7 +72,7 @@ if __name__ == '__main__':
     # run_file = GENERATED_DATASETS_FILE_PATH
     run_file = CONFIRMATORY_DATASETS_FILE_PATH
     run_ids = run_names = pd.read_csv(run_file)['Name'].tolist()
-    data_type = SyntheticDataType.normal_correlated
+    data_type = SyntheticDataType.non_normal_correlated
     overall_ds_name = "n30"
     # data_dirs = [IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR]
     data_dirs = [CONF_IRREGULAR_P30_DATA_DIR, CONF_IRREGULAR_P90_DATA_DIR]
