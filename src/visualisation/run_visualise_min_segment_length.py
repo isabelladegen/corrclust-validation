@@ -27,7 +27,7 @@ def plot_combined_mae_stats(all_mae_results, lengths, labels, correlations, thre
     reset_matplotlib(backend)
 
     # Create figure with subplots
-    fig, axes = plt.subplots(1, 3, figsize=(16, 5), sharey=True)
+    fig, axes = plt.subplots(1, 3, figsize=(20, 5), sharey=True)
 
     # Plot each correlation type in its subplot
     for i, cor in enumerate(correlations):
