@@ -79,9 +79,8 @@ Each variation contains 30 datasets with unique wandb run identifiers for full r
 
 1. Clone this repository
 2. Create conda environment
-3. Download datasets from Zenodo [DOI link]
-4. Extract maintaining the folder structure shown above
-5. See notebooks for usage examples of the tools
+3. Download data from HF - soon automatically integrated
+... comming soon
 
 ## Environment Setup
 
@@ -91,10 +90,10 @@ The code uses a conda environment specified in conda.yml. To set up:
 conda env create -f conda.yml
 conda activate corrclust-validation
 ```
-## Quick Start: Hugging Face data
+## Hugging Face Data Quick Start
 You don't need to use our code and can directly download the data from Hugging Face as demonstrated in this notebook.
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](colab.research.google.com/github/isabelladegen/corrclust-validation/blob/main/src/utils/hf_tooling/CSTS_HuggingFace_UsageExample.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/isabelladegen/corrclust-validation/blob/main/src/utils/hf_tooling/CSTS_HuggingFace_UsageExample.ipynb)
 
 ## Using With Your Own Data
 
