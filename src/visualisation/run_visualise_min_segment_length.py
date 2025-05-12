@@ -1,68 +1,89 @@
-from itertools import chain
 from os import path
 
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt, ticker
 
-from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols, CorrType
+from src.data_generation.generate_synthetic_segmented_dataset import CorrType
 from src.evaluation.describe_subjects_for_data_variant import DescribeSubjectsForDataVariant
 from src.utils.configurations import ROOT_RESULTS_DIR, GENERATED_DATASETS_FILE_PATH, DataCompleteness, \
     SYNTHETIC_DATA_DIR, get_data_dir, get_clustering_quality_multiple_data_variants_result_folder, ResultsType, \
-    get_image_results_path
+    get_image_results_path, base_dataset_result_folder_for_type
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import fontsize, reset_matplotlib, Backends
 
 
-def plot_mae_with_statistics(mae_results: {}, lengths: [int], threshold: float = 0.1,
-                             backend: str = Backends.none.value):
+def plot_combined_mae_stats(all_mae_results, lengths, labels, correlations, threshold=0.1, backend=Backends.none.value):
     """
-    Plot mean MAE with median and IQR for different segment lengths.
-    :param mae_results :Dictionary with keys 'mean', '50%', '25%', '75%', each containing a list of values
-        corresponding to the segment lengths.
-    :param lengths : list of segment lengths
-    :param threshold : value for red threshold line
-    :param backend : see Backends
+    Plot mean MAE with median and IQR for different segment lengths for all correlation types in one figure.
+
+    :param all_mae_results: Dictionary with correlation types as keys, each containing mae_results
+    :param lengths: list of segment lengths
+    :param labels: list of labels to show for ticks
+    :param correlations: list of correlation types
+    :param threshold: value for red threshold line
+    :param backend: see Backends
     """
     reset_matplotlib(backend)
 
-    # Create figure and axis
-    fig, ax = plt.subplots(figsize=(10, 6))
+    # Create figure with subplots
+    fig, axes = plt.subplots(1, 3, figsize=(16, 5), sharey=True)
 
-    # Plot mean MAE
-    ax.plot(lengths, mae_results['mean'], 'o-', color='blue', label='Mean MAE')
+    # Plot each correlation type in its subplot
+    for i, cor in enumerate(correlations):
+        ax = axes[i]
+        mae_results = all_mae_results[cor]
 
-    # Plot median MAE
-    ax.plot(lengths, mae_results['50%'], 's--', color='green', label='Median MAE')
+        # Set subplot title
+        ax.set_title(cor.capitalize(), fontsize=fontsize, fontweight='bold')
 
-    # Create an array for x-axis values
-    x = np.array(lengths)
+        # Plot mean MAE
+        ax.plot(lengths, mae_results['mean'], 'o-', color='blue', label='Mean MAE')
 
-    # Plot IQR as a shaded region
-    ax.fill_between(x, mae_results['25%'], mae_results['75%'], color='gray', alpha=0.3, label='IQR (25%-75%)')
+        # Plot median MAE
+        ax.plot(lengths, mae_results['50%'], 's--', color='green', label='Median MAE')
 
-    # Set labels and title
-    ax.set_xlabel('Segment Length', fontsize=fontsize)
-    ax.set_ylim(0.0, 0.25)
-    ax.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.2f'))
-    ax.set_ylabel('MAE', fontsize=fontsize)
+        # Create an array for x-axis values
+        x = np.array(lengths)
 
-    # Set x-axis to log scale since segment lengths span a wide range
-    ax.set_xscale('log')
-    ax.grid(True, which="both", ls="-", alpha=0.2)
+        # Plot IQR as a shaded region
+        ax.fill_between(x, mae_results['25%'], mae_results['75%'], color='gray', alpha=0.3, label='IQR (25%-75%)')
 
-    # Add horizontal threshold line at y=0.05
-    ax.axhline(y=0.1, color='red', linestyle='-', linewidth=1.5, label='Threshold')
+        # Set labels and title
+        ax.set_xlabel('Observations', fontsize=fontsize)
+        ax.set_ylim(0.0, 0.25)  # ensure consistent y axis
 
-    # Add a legend
-    ax.legend(fontsize=fontsize)
+        # Only add y-axis label to the first subplot
+        if i == 0:
+            ax.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.2f'))
+            ax.set_ylabel('MAE', fontsize=fontsize)
+        else:
+            # Keep y-axis ticks but remove labels for other subplots
+            ax.tick_params(axis='y', which='both', labelleft=False)
 
-    # Improve x-axis tick labels
-    ax.set_xticks(lengths)
-    ax.set_xticklabels(lengths)
+        # Set x-axis to log scale since segment lengths span a wide range
+        ax.set_xscale('log')
+        ax.grid(True, which="both", ls="-", alpha=0.2)
+
+        # Add horizontal threshold line at y=threshold
+        ax.axhline(y=threshold, color='red', linestyle='-', linewidth=1.5, label='Threshold')
+
+        # Add a legend only to the first subplot to save space
+        if i == 0:
+            ax.legend(fontsize=fontsize)
+
+        # avoid showing all labels
+        ax.set_xticks(lengths) # all lengths have a tick
+        tick_labels = []
+        for tick in lengths:
+            if tick in labels:
+                tick_labels.append(str(tick))
+            else:
+                tick_labels.append('')  # Empty string for no label
+        ax.set_xticklabels(tick_labels)
 
     plt.tight_layout()
-    plt.show()
+
     return fig
 
 
@@ -89,6 +110,9 @@ if __name__ == "__main__":
 
     normal = SyntheticDataType.non_normal_correlated
 
+    folder = base_dataset_result_folder_for_type(root_result_dir, ResultsType.dataset_description)
+    file_name = str(path.join(folder, "spearman_kendall_pearson_minimal_segment_lengths.png"))
+
     # load data
     complete = DataCompleteness.complete
     nn_100 = DescribeSubjectsForDataVariant(wandb_run_file=ds, overall_ds_name=overall_ds_name,
@@ -97,22 +121,28 @@ if __name__ == "__main__":
 
     # lengths to plot
     lengths = [10, 15, 20, 30, 60, 80, 100, 200, 400, 600, 800]
+    labels = [10, 20, 30, 60, 100, 200, 400, 800] # fewer to not overlap
+
+    all_mae_results = {}
+    # Calculate MAE results for each correlation type
     for cor in correlations:
-        mae_results = nn_100.mean_mae_for_segment_lengths(lengths, cor_type=cor)
+        all_mae_results[cor] = nn_100.mean_mae_for_segment_lengths(lengths, cor_type=cor)
 
-        # plot results
-        fig = plot_mae_with_statistics(mae_results, lengths, Backends.visible_tests.value)
+    # Create combined figure
+    fig = plot_combined_mae_stats(all_mae_results, lengths, labels, correlations, threshold=0.1,
+                                  backend=Backends.visible_tests.value)
 
-        folder_name = get_clustering_quality_multiple_data_variants_result_folder(
-            results_type=ResultsType.dataset_description,
-            overall_dataset_name=overall_ds_name,
-            results_dir=data_dir,
-            distance_measure="")
+    folder = base_dataset_result_folder_for_type(root_result_dir, ResultsType.dataset_description)
+    file_name = str(path.join(folder, "spearman_kendall_pearson_minimal_segment_lengths.png"))
+    fig.savefig(file_name, dpi=300, bbox_inches='tight')
 
-        # safe results
-        df = mae_to_df(mae_results, lengths)
+    # Save the combined figure
+    folder_name = get_clustering_quality_multiple_data_variants_result_folder(
+        results_type=ResultsType.dataset_description,
+        overall_dataset_name=overall_ds_name,
+        results_dir=data_dir,
+        distance_measure="")
+
+    for cor in correlations:
+        df = mae_to_df(all_mae_results[cor], lengths)
         df.to_csv(str(path.join(folder_name, cor + "_minimal_segment_lengths_mae_stats.csv")))
-
-        # safe image
-        file_name = get_image_results_path(folder_name, cor + '_minimal_segment_lengths.png')
-        fig.savefig(file_name, dpi=300, bbox_inches='tight')

@@ -43,7 +43,7 @@ def custom_number_text_formatter(x, _):
         return f'{x:.1f}'  # Regular format for other numbers
 
 
-def add_stats(data: np.ndarray, ax: plt.Axes, y_pos: float, fix_x_axis:bool=False) -> None:
+def add_stats(data: np.ndarray, ax: plt.Axes, y_pos: float, fix_x_axis: bool = False) -> None:
     """Add min, max and mean annotations to the plot."""
     mean = np.mean(data)
     min_val = np.min(data)
@@ -295,6 +295,136 @@ def create_violin_grid(data_dict: {}, figsize: tuple = (12, 12), fix_x_axis: boo
     # Adjust layout
     plt.tight_layout()
     return fig
+
+
+def create_vertical_violin_grid(data_dict: {}, figsize: tuple = (12, 12), fix_y_axis: bool = False, y_lim: float = 0.9,
+                                backend: str = Backends.none.value) -> plt.Figure:
+    """
+    Create a grid of vertical violin plots with statistics using dictionary keys as labels.
+    Source: developed with the help of claude and a lot of input from me
+
+    :param data_dict : {str, {str, np.ndarray}} Nested dictionary containing data for each plot square
+        Format: {'row_name': {'column_name': data_array}}
+    :param figsize : tuple, optional Figure size in inches (width, height)
+    :returns: matplotlib.figure.Figure
+    Save like plt.savefig(save_path, dpi=dpi, bbox_inches='tight')
+    """
+
+    # Extract row and column names from dictionary structure
+    row_names = list(data_dict.keys())
+    # Get unique column names from all nested dictionaries
+    column_names = list(list(data_dict.values())[0].keys())
+
+    # Set the style for publication-quality figures
+    reset_matplotlib(backend)
+
+    # Create figure with custom size
+    fig = plt.figure(figsize=figsize)
+    gs = GridSpec(len(row_names), len(column_names), figure=fig)
+    fig.subplots_adjust(hspace=0.5, wspace=0.6, bottom=0.15)
+
+    # Set up colors
+    colors = sns.color_palette("husl", n_colors=len(column_names))
+
+    # Find global min and max for shared y-axis
+    global_min = float('inf')
+    global_max = float('-inf')
+    for row_data in data_dict.values():
+        for col_data in row_data.values():
+            global_min = min(global_min, np.min(col_data))
+            global_max = max(global_max, np.max(col_data))
+
+    # Add padding to global limits
+    global_min = global_min - 0.2
+    global_max = global_max + 0.2
+
+    # Plot each subplot
+    axes = []
+    for i, row in enumerate(row_names):
+        row_axes = []
+        for j, col in enumerate(column_names):
+            ax = fig.add_subplot(gs[i, j])
+            row_axes.append(ax)
+
+            try:
+                data = data_dict[row][col]
+            except KeyError:
+                print(f"Warning: No data found for condition: row='{row}', column='{col}'")
+                continue
+
+            sns.violinplot(data=data, orient='v', color=colors[j], alpha=0.6, ax=ax, cut=0)
+            sns.boxplot(data=data, orient='v', width=0.2, color='white',
+                        showfliers=False, ax=ax)
+
+            # Customize appearance
+            if i == 0:
+                ax.set_title(col, fontsize=fontsize, fontweight='bold')
+
+            # Set y-axis limits
+            if fix_y_axis:
+                ax.set_ylim(0, y_lim)
+            else:
+                ax.set_ylim(global_min, global_max)
+
+            # Format y-axis labels
+            ax.yaxis.set_major_formatter(plt.FuncFormatter(custom_number_text_formatter))
+
+            # Remove x-ticks and labels
+            ax.set_xticks([])
+
+            # Only show y-axis elements for leftmost column
+            if j == 0:
+                plt.setp(ax.get_yticklabels(), fontsize=fontsize)
+                ax.set_ylabel(row, fontsize=fontsize, fontweight='bold')
+            else:
+                ax.set_ylabel('')
+                ax.set_yticklabels([])  # Hide y-tick labels
+                ax.tick_params(axis='y', which='both', length=0)
+
+            # Add horizontal grid lines instead of vertical
+            ax.grid(True, axis='y', linestyle='-', alpha=0.5, which='major', color='gray')
+            ax.grid(True, axis='y', linestyle='--', alpha=0.3, which='minor', color='gray')
+            ax.yaxis.set_minor_locator(AutoMinorLocator())
+
+            # Customize spines - remove bottom instead of left
+            sns.despine(ax=ax, bottom=True)
+
+            add_stats_vertical(data, ax)
+
+        axes.append(row_axes)
+
+    # Adjust layout
+    plt.tight_layout()
+    return fig
+
+
+def add_stats_vertical(data: np.ndarray, ax: plt.Axes) -> None:
+    """Add min, max and mean annotations to the plot with fixed positions."""
+    mean = np.mean(data)
+    min_val = np.min(data)
+    max_val = np.max(data)
+
+    # Get the current x-axis limits
+    x_min, x_max = ax.get_xlim()
+
+    # Calculate a position just to the right of the plot
+    right_x = x_max * 0.8
+
+    # Place annotations at fixed y-coordinates
+    # Min at bottom
+    ax.text(right_x, 0.05, f'min={custom_number_text_formatter(min_val, "-")}',
+            verticalalignment='bottom', horizontalalignment='left',
+            fontsize=fontsize)
+
+    # Max at top
+    ax.text(right_x, 0.8, f'max={custom_number_text_formatter(max_val, "-")}',
+            verticalalignment='top', horizontalalignment='left',
+            fontsize=fontsize)
+
+    # Mean in middle
+    ax.text(right_x, 0.4, f'μ={custom_number_text_formatter(mean, "-")}',
+            verticalalignment='center', horizontalalignment='left',
+            fontsize=fontsize, fontweight='bold')
 
 
 def create_correlation_grid(data_dict: {}, figsize: tuple = (12, 12), backend: str = Backends.none.value) -> plt.Figure:
@@ -695,8 +825,8 @@ class VisualiseMultipleDataVariants:
                     row_dict[col] = col_data.all_mae_values(SyntheticDataSegmentCols.relaxed_mae, corr_type=cor)
                 data_dict[row] = row_dict
 
-            fig = create_violin_grid(data_dict=data_dict, backend=self.backend, fix_x_axis=True, x_lim=0.9,
-                                     figsize=(24, 10))
+            fig = create_vertical_violin_grid(data_dict=data_dict, backend=self.backend, fix_y_axis=True, y_lim=0.9,
+                                              figsize=(22, 10))
             plt.show()
 
             if save_fig:
