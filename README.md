@@ -91,11 +91,9 @@ conda env create -f conda.yml
 conda activate corrclust-validation
 ```
 ## Hugging Face Data Quick Start
-You don't need to use our code and can directly download the data from Hugging Face as demonstrated in this notebook.
+If you just want to use the data, you can download it directly from Hugging Face as demonstrated in this notebook.
 
-<a href="[https://colab.research.google.com/github/YOUR-USERNAME/YOUR-REPO/blob/main/PATH/TO/YOUR-NOTEBOOK.ipynb](https://colab.research.google.com/github/isabelladegen/corrclust-validation/blob/main/src/utils/hf_tooling/CSTS_HuggingFace_UsageExample.ipynb)" target="_blank" rel="noopener noreferrer">
-  <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
-</a>
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/isabelladegen/corrclust-validation/blob/main/src/utils/hf_tooling/CSTS_HuggingFace_UsageExample.ipynb)
 
 ## Using With Your Own Data
 
