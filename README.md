@@ -91,6 +91,10 @@ The code uses a conda environment specified in conda.yml. To set up:
 conda env create -f conda.yml
 conda activate corrclust-validation
 ```
+## Quick Start: Hugging Face data
+You don't need to use our code and can directly download the data from Hugging Face as demonstrated in this notebook.
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](colab.research.google.com/github/isabelladegen/corrclust-validation/blob/main/src/utils/hf_tooling/CSTS_HuggingFace_UsageExample.ipynb)
 
 ## Using With Your Own Data
 
