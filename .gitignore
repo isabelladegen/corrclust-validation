@@ -195,3 +195,8 @@ wandb/
 /src/utils/hf_tooling/huggingface_config.yaml
 /src/utils/hf_tooling/corrstruct_testing.py
 /confirmatory_results/
+/src/utils/hf_tooling/confirmatory.py
+/src/utils/hf_tooling/exploratory.py
+/src/utils/hf_tooling/croissant-manual.json
+/src/utils/hf_tooling/csts-api.json
+/csts/

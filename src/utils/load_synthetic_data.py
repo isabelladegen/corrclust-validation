@@ -87,6 +87,7 @@ class SyntheticDataType:
 class SyntheticFileTypes:
     data: str = "-data.parquet"
     labels: str = "-labels.parquet"
+    bad_labels: str = "-bad-labels.parquet"
 
 
 def load_labels(run_id: str, data_type: str = SyntheticDataType.normal_correlated, data_dir: str = SYNTHETIC_DATA_DIR):
