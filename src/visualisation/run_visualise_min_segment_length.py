@@ -3,6 +3,7 @@ from os import path
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt, ticker
+from matplotlib.gridspec import GridSpec
 
 from src.data_generation.generate_synthetic_segmented_dataset import CorrType
 from src.evaluation.describe_subjects_for_data_variant import DescribeSubjectsForDataVariant
@@ -27,7 +28,17 @@ def plot_combined_mae_stats(all_mae_results, lengths, labels, correlations, thre
     reset_matplotlib(backend)
 
     # Create figure with subplots
-    fig, axes = plt.subplots(1, 3, figsize=(20, 5), sharey=True)
+    fig = plt.figure(figsize=(20, 5))
+    gs = GridSpec(1, 3, figure=fig, wspace=0.15)
+
+    # Create axes using the GridSpec
+    axes = [fig.add_subplot(gs[0, 0]),
+            fig.add_subplot(gs[0, 1]),
+            fig.add_subplot(gs[0, 2])]
+
+    # Share y-axis among all subplots
+    axes[1].sharey(axes[0])
+    axes[2].sharey(axes[0])
 
     # Plot each correlation type in its subplot
     for i, cor in enumerate(correlations):

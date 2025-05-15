@@ -401,28 +401,28 @@ def create_vertical_violin_grid(data_dict: {}, figsize: tuple = (12, 12), fix_y_
 def add_stats_vertical(data: np.ndarray, ax: plt.Axes) -> None:
     """Add min, max and mean annotations to the plot with fixed positions."""
     mean = np.mean(data)
-    min_val = np.min(data)
-    max_val = np.max(data)
+    # min_val = np.min(data)
+    # max_val = np.max(data)
 
     # Get the current x-axis limits
     x_min, x_max = ax.get_xlim()
 
     # Calculate a position just to the right of the plot
-    right_x = x_max * 0.8
+    right_x = x_max * 1
 
     # Place annotations at fixed y-coordinates
-    # Min at bottom
-    ax.text(right_x, 0.05, f'min={custom_number_text_formatter(min_val, "-")}',
-            verticalalignment='bottom', horizontalalignment='left',
-            fontsize=fontsize)
+    # # Min at bottom
+    # ax.text(right_x, 0.05, f'min={custom_number_text_formatter(min_val, "-")}',
+    #         verticalalignment='bottom', horizontalalignment='left',
+    #         fontsize=fontsize)
 
     # Max at top
-    ax.text(right_x, 0.8, f'max={custom_number_text_formatter(max_val, "-")}',
-            verticalalignment='top', horizontalalignment='left',
-            fontsize=fontsize)
+    # ax.text(right_x, 0.8, f'max={custom_number_text_formatter(max_val, "-")}',
+    #         verticalalignment='top', horizontalalignment='left',
+    #         fontsize=fontsize)
 
-    # Mean in middle
-    ax.text(right_x, 0.4, f'μ={custom_number_text_formatter(mean, "-")}',
+    # Mean in at actuall mean
+    ax.text(right_x, mean, f'μ={custom_number_text_formatter(mean, "-")}',
             verticalalignment='center', horizontalalignment='left',
             fontsize=fontsize, fontweight='bold')
 
