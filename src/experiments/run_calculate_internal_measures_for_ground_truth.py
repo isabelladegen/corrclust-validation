@@ -8,7 +8,7 @@ from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import SYNTHETIC_DATA_DIR, ROOT_RESULTS_DIR, GENERATED_DATASETS_FILE_PATH, \
     internal_measure_calculation_dir_for, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR
 from src.utils.distance_measures import DistanceMeasures
-from src.utils.load_synthetic_data import SyntheticDataType
+from src.utils.load_synthetic_data import SyntheticDataType, load_synthetic_data
 
 
 def read_ground_truth_clustering_quality_measures(overall_ds_name: str, data_type: str, root_results_dir: str,
@@ -29,13 +29,16 @@ def read_ground_truth_clustering_quality_measures(overall_ds_name: str, data_typ
     return df
 
 
-def run_internal_measure_calculation_for_ground_truth(overall_ds_name: str, run_names: [str], distance_measure: str,
+def run_internal_measure_calculation_for_ground_truth(overall_ds_name: str, run_names: [str], data_dict: [str],
+                                                      gt_labels_dict: [str], distance_measure: str,
                                                       data_type: str, data_dir: str, results_dir: str,
                                                       internal_measures: [str]):
     """
     Calculates the internal measure assessment for all ds in the csv files of the generated runs
     :param overall_ds_name: a name for the dataset we're using e.g. n30 or n2
     :param run_names: list of names for the runs to calculate the clustering quality measures for
+    :param data_dict: a dictionary with key run_id and value data for that run id
+    :param gt_labels_dict: a dictionary with key run_id and value gt labels for that run id
     :param distance_measure: name of distance measure to run assessment for
     :param data_type: which datatype to use see SyntheticDataType
     :param data_dir: where to read the data from
@@ -51,11 +54,24 @@ def run_internal_measure_calculation_for_ground_truth(overall_ds_name: str, run_
         distance_measure=distance_measure)
     gt = CalculateInternalMeasuresGroundTruth(run_names=run_names, internal_measures=internal_measures,
                                               distance_measure=distance_measure, data_type=data_type,
-                                              data_dir=data_dir)
+                                              data_dir=data_dir, datas=data_dict, labels=gt_labels_dict)
 
     df = gt.ground_truth_summary_df
     # store results
     df.to_csv(str(os.path.join(store_results_in, IAResultsCSV.internal_measures_for_ground_truth)))
+
+
+def load_all_ground_truth_data_for_all_subjects_and_data_type(run_ids: str, data_type: str, data_dir: str):
+    """ Load all data for each data variant only ones to save time """
+    data_dict = {}
+    gt_labels_dict = {}
+    for run_id in run_ids:
+        # load data and ground truth labels for given ds_name
+        data, gt_label = load_synthetic_data(run_id, data_type=data_type, data_dir=data_dir)
+        data_dict[run_id] = data
+        gt_labels_dict[run_id] = gt_label
+
+    return data_dict, gt_labels_dict
 
 
 if __name__ == "__main__":
@@ -82,18 +98,24 @@ if __name__ == "__main__":
                          ClusteringQualityMeasures.vrc, ClusteringQualityMeasures.dbi]
     data_types = [SyntheticDataType.raw, SyntheticDataType.normal_correlated,
                   SyntheticDataType.non_normal_correlated, SyntheticDataType.rs_1min]
+    # data_types = [ SyntheticDataType.rs_1min]
     data_dirs = [SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR]
+    # data_dirs = [IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR]
     results_dir = ROOT_RESULTS_DIR
 
     for data_dir in data_dirs:
         for data_type in data_types:
+            print(f"Load all data for data type {data_type} and data dir {data_dir}")
+            data_dict, gt_labels_dict = load_all_ground_truth_data_for_all_subjects_and_data_type(
+                run_ids=run_names, data_type=data_type, data_dir=data_dir)
             for distance_measure in distance_measures:
-                print("Calculate Ground truth Clustering Quality Measures for completeness:")
-                print(data_dir)
-                print("and data type: " + data_type)
-                print("and distance measure: " + distance_measure)
-                run_internal_measure_calculation_for_ground_truth(overall_dataset_name, run_names=run_names,
+                print(f"Calculate Ground truth Clustering Quality Measures for distance_measure {distance_measure}")
+                run_internal_measure_calculation_for_ground_truth(overall_dataset_name,
+                                                                  run_names=run_names,
+                                                                  data_dict=data_dict,
+                                                                  gt_labels_dict=gt_labels_dict,
                                                                   distance_measure=distance_measure,
                                                                   data_type=data_type,
-                                                                  data_dir=data_dir, results_dir=results_dir,
+                                                                  data_dir=data_dir,
+                                                                  results_dir=results_dir,
                                                                   internal_measures=internal_measures)

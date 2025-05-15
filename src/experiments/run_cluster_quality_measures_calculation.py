@@ -105,13 +105,20 @@ if __name__ == "__main__":
                          DistanceMeasures.l3_cor_dist,
                          DistanceMeasures.l5_cor_dist,
                          DistanceMeasures.l5_with_ref,
-                         DistanceMeasures.linf_cor_dist]
-    data_types = [SyntheticDataType.rs_1min]
+                         DistanceMeasures.linf_cor_dist,
+                         DistanceMeasures.dot_transform_linf,
+                         DistanceMeasures.log_frob_cor_dist,
+                         DistanceMeasures.foerstner_cor_dist
+                         ]
+    # distance_measures = [DistanceMeasures.dot_transform_linf,
+    #                      DistanceMeasures.log_frob_cor_dist,
+    #                      DistanceMeasures.foerstner_cor_dist]
+    # data_types = [SyntheticDataType.rs_1min]
 
     internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb,
                          ClusteringQualityMeasures.vrc, ClusteringQualityMeasures.dbi]
-    # data_types = [SyntheticDataType.raw, SyntheticDataType.normal_correlated,
-    #               SyntheticDataType.non_normal_correlated, SyntheticDataType.rs_1min]
+    data_types = [SyntheticDataType.raw, SyntheticDataType.normal_correlated,
+                  SyntheticDataType.non_normal_correlated, SyntheticDataType.rs_1min]
     data_dirs = [SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR]
     # Config for L2 only ran for downsampled, complete data
     # distance_measures = [DistanceMeasures.l2_cor_dist]

@@ -18,7 +18,7 @@ class CalculateInternalMeasuresGroundTruth:
     """
 
     def __init__(self, run_names: [str], internal_measures: [str], distance_measure: str, data_type: str, data_dir: str,
-                 data_cols: [str] = SyntheticDataVariates.columns(), round_to: int = 3):
+                 data_cols: [str] = SyntheticDataVariates.columns(), round_to: int = 3, datas:{} = None, labels = None):
         self.run_names = run_names
         self.distance_measure = distance_measure
         self.__internal_measures = internal_measures
@@ -26,16 +26,20 @@ class CalculateInternalMeasuresGroundTruth:
         self.__data_type = data_type
         self.__cols = data_cols
         self.__round_to = round_to
+        # If provided avoids reloading to make multiple distance measure calculation more efficient
         # key= run name value = data
-        self.datas = {}
+        self.datas = datas
         # key= run name value = label
-        self.labels = {}
+        self.labels = labels
 
-        # load all ground truth data for run names
-        for run_name in run_names:
-            data, labels = load_synthetic_data(run_name, self.__data_type, self.__data_dir)
-            self.datas[run_name] = data
-            self.labels[run_name] = labels
+        if datas is None or labels is None:
+            self.datas = {}
+            self.labels = {}
+            # load all ground truth data for run names
+            for run_name in run_names:
+                data, labels = load_synthetic_data(run_name, self.__data_type, self.__data_dir)
+                self.datas[run_name] = data
+                self.labels[run_name] = labels
 
         # calculate each internal measure for each dataset
         file_names = []
