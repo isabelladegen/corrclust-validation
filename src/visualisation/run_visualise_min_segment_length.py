@@ -28,7 +28,7 @@ def plot_combined_mae_stats(all_mae_results, lengths, labels, correlations, thre
     reset_matplotlib(backend)
 
     # Create figure with subplots
-    fig = plt.figure(figsize=(20, 5))
+    fig = plt.figure(figsize=(20, 4))
     gs = GridSpec(1, 3, figure=fig, wspace=0.15)
 
     # Create axes using the GridSpec
@@ -81,7 +81,7 @@ def plot_combined_mae_stats(all_mae_results, lengths, labels, correlations, thre
 
         # Add a legend only to the first subplot to save space
         if i == 0:
-            ax.legend(fontsize=fontsize)
+            ax.legend(fontsize=fontsize, loc='upper right', bbox_to_anchor=(1.02, 1.02))
 
         # avoid showing all labels
         ax.set_xticks(lengths) # all lengths have a tick

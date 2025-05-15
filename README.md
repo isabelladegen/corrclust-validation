@@ -1,111 +1,134 @@
-Shield: [![CC BY-NC 4.0][cc-by-nc-shield]][cc-by-nc]
-
-This work is licensed under a
-[Creative Commons Attribution-NonCommercial 4.0 International License][cc-by-nc].
-
-[![CC BY-NC 4.0][cc-by-nc-image]][cc-by-nc]
-
-[cc-by-nc]: https://creativecommons.org/licenses/by-nc/4.0/
-[cc-by-nc-image]: https://licensebuttons.net/l/by-nc/4.0/88x31.png
-[cc-by-nc-shield]: https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg
-
-# corrclust-validation
-
-Code for evaluating distance measures and internal validation indices for correlation-based clustering. Includes synthetic dataset generation and validation required for this evaluation.
+# CSTS - Correlation Structures in Time Series
+[![CC BY 4.0][cc-by-shield]][cc-by]
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/isabelladegen/corrclust-validation/blob/main/src/utils/hf_tooling/CSTS_HuggingFace_UsageExample.ipynb)
 
 ## Overview
 
+This repository contains the code for generating, validating, and evaluating the CSTS (Correlation Structures in Time Series) benchmark dataset. CSTS is a comprehensive synthetic benchmark for evaluating the discovery of correlation structures in multivariate time series data.
+
+Key features of CSTS:
+- Synthetic time series data with 23 distinct correlation structures
+- Systematic variation of data conditions (distribution shifts, sparsification, downsampling)
+- Ground truth segmentation and clustering labels
+- Controlled degraded clustering results for validation method evaluation
+- Extensible data generation framework
+
+**For quick access to the dataset without setting up this repository, use our [Hugging Face dataset](https://huggingface.co/datasets/idegen/csts) and [Google Colab notebook](https://colab.research.google.com/github/isabelladegen/corrclust-validation/blob/main/src/utils/hf_tooling/CSTS_HuggingFace_UsageExample.ipynb).**
+
+## Repository Contents
+
 This repository provides:
-1. Code for generating synthetic datasets with known correlation patterns and validation of the generation
-2. Code for evaluating distance measures and internal validation indices for correlation-based clustering
-3. Tools for assessing robustness to common data quality variations
+1. **Data Generation**: Code for generating synthetic datasets with known correlation structures
+2. **Data Validation**: Tools for validating the preservation of correlation structures
+3. **Evaluation Framework**: Methods for assessing clustering algorithms and validation indices
+4. **Case Study Implementation**: Code for reproducing the TICC algorithm evaluation
 
 ## Directory Structure
 
 ```
 corrclust-validation/
-├── data/                                       # Not in git - add yourself
-│   ├── synthetic-data/                         # Available on Zenodo
-│   │    ├── raw/                               # Uncorrelated raw data
-│   │    │   ├── wandb-run-name-1-data.csv      # ts data for ds 1
-│   │    │   ├── wandb-run-name-1-labels.csv    # ground truth labels for ds 1
-│   │    │   ├── wandb-run-name-2-data.csv      # ts data for ds 2
-│   │    │   ├── wandb-run-name-2-labels.csv    # ground truth labels for ds 2
-│   │    │   └── ...
-│   │    │   └── bad_partitions/                # 66 bad partitions for each of the 30 datasets
-│   │    │   │    └── wandb-run-name-1-wrong-cluster-1-labels.csv # just the labels file as that defines the segmentation and clustering
-│   │    │   │    └── wandb-run-name-1-wrong-cluster-2-labels.csv
-│   │    │   │    └── ...
-│   │    ├── normal/                            # 30 ground truth datasets
-│   │    ├── non_normal/                        # Distribution-shifted versions
-│   │    ├── irregular_p30/                     # Irregular 30% randomly dropped observations, non-normal  
-│   │    ├── irregular_p90/                     # Irregular 90% randomly dropped observations, non-normal
-│   │    ├── downsampled_1min/                  # 1-min intervals downsampled and aggregated, non-normal
-│   │    ├── min_max_scaled/                    # min-max scaled 0-10
-│   │    └── wandb-30ds-generation-summary.csv  # Datasets generated, names and summary
+├── csts/                                  # Data directory
+│   ├── exploratory/                       # Training/exploration subjects
+│   │   ├── irregular_p30/                 # Partial data variants (70% observations)
+│   │   ├── irregular_p90/                 # Sparse data variant (10% observations)
+│   │   ├── raw/                           # Complete raw data variant
+│   │   ├── normal/                        # Complete correlated data variant
+│   │   ├── non_normal/                    # Complete non-normal data variant
+│   │   └── downsampled_1min/              # Complete downsampled data variant
+│   └── confirmatory/                      # Validation data
+│       └── ...                            # Same structure as exploratory
 ├── src/                    
-│   ├── data_generation/                        # Synthetic data generation
-│   ├── evaluation/                             # Core evaluation methodology
-│   ├── visualisation/                          # Results visualisation
-│   └── utils/                                  # Helper functions
-├── notebooks/                                  # Usage examples & analysis
-├── tests/                                      # Unit tests
-├── conda.yml                                   # Conda environment specification
-└── README.md                                   # This file
+│   ├── data_generation/                   # Synthetic data generation
+│   ├── evaluation/                        # Evaluation Methods
+│   ├── experiments/                       # Run scripts for expriments
+│   ├── use_case/                          # TICC example case study
+│   ├── visualisation/                     # Results visualisation
+│   └── utils/                             # Helper functions
+├── tests/                                 # Unit and Integration Tests
+├── conda-exact.yml                        # Conda environment exact versions for CSTS
+├── private-yaml-template.yml              # Template file to create private.yaml for WANDB config
+└── README.md                              # This file
 ```
-
-## Dataset Generation & Tracking
-
-We use Weights & Biases (wandb) to track the normal and non-normal generation of the data. Each dataset gets a unique wandb run name (e.g. "delicate-forest-42") and complete parameter logging. You can:
-
-- View all generation runs: [wandb project link]
-- See exact parameters used for each dataset
-- Track data quality metrics
-- Compare dataset variations
-
-## Validation Datasets on Zenodo
-
-The generated datasets are available on Zenodo [DOI link] organized by data quality variation:
-- `normal/`: Original normally distributed data
-- `non_normal/`: Distribution-shifted data
-- `irregular_p30/`: 30% randomly dropped observations
-- `irregular_p90/`: 90% randomly dropped observations
-- `downsampled/`: Downsampled to 1-minute intervals
-- `min_max_scaled/`: Min/Max scaled 0-10
-
-Each variation contains 30 datasets with unique wandb run identifiers for full reproducibility.
 
 ## Getting Started
 
-1. Clone this repository
-2. Create conda environment
-3. Download data from HF - soon automatically integrated
-... comming soon
+### Accessing the Data
+The complete dataset is available on [Hugging Face](https://huggingface.co/datasets/idegen/csts). This is the easiest way to access the data if you just want to evaluate your algorithms.
 
-## Environment Setup
+```python
+from datasets import load_dataset
 
-The code uses a conda environment specified in conda.yml. To set up:
+# Load data for the exploratory split, complete correlated variant
+data = load_dataset("idegen/csts", name="correlated_complete_data", split="exploratory")
 
+# Load corresponding ground truth labels
+labels = load_dataset("idegen/csts", name="correlated_complete_labels", split="exploratory")
 ```
-conda env create -f conda.yml
-conda activate corrclust-validation
+
+### Use this Repository (For Evaluation/Development/Extension)
+
+#### 1. Clone the Code Repository
+```bash
+# Clone via SSH
+git clone git@github.com:isabelladegen/corrclust-validation.git
+cd corrclust-validation
 ```
-## Hugging Face Data Quick Start
-If you just want to use the data, you can download it directly from Hugging Face as demonstrated in this notebook.
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/isabelladegen/corrclust-validation/blob/main/src/utils/hf_tooling/CSTS_HuggingFace_UsageExample.ipynb)
+#### 2. Clone the Hugging Face Data
+```bash
+# Make sure Git LFS is installed
+git lfs install
 
-## Using With Your Own Data
+# Clone the dataset into the corrclust-validation directory
+git clone https://huggingface.co/datasets/idegen/csts
+```
 
-The evaluation methodology accepts any dataset that:
-1. Contains multivariate time series data in the same format
-2. A lables file for the segmentation and clustering in the same format
+#### 3. Create conda environment
+```bash
+conda env create -f conda-exact.yml
+conda activate corr-24
+```
+## Key Applications
 
-To use your own data you need to:
-1. Add your data as a new folder under data following the structure of the synthetic data
-2. Extend the loading code to be able to deal with your folder names (unless you use exactly the same folder name
+This codebase supports several research applications:
+
+1. **Evaluating Clustering Algorithms**: Test how well algorithms discover correlation structures across data variants
+2. **Assessing Validation Methods**: Evaluate internal and external validation indices for correlation-based clustering
+3. **Analyzing Preprocessing Effects**: Investigate how techniques like downsampling affect correlation structures
+4. **Extending the Benchmark**: Generate custom data variants with different properties
 
 ## Citation
 
-If you use this code or the validation datasets, please cite:
-[Paper citation]
+If you use this code, the CSTS dataset or our benchmark findings in your research, please cite our paper:
+
+```bibtex
+@misc{csts2025,
+  author       = {Degen, I and Abdallah, Z S and Reeve, H W J and Robson Brown, K},
+  title        = {CSTS: Evaluating Correlation Structures in Time Series},
+  year         = {2025},
+  publisher    = {Hugging Face},
+  howpublished = {Pre-publication dataset release},
+  url          = {https://huggingface.co/datasets/idegen/csts}
+}
+```
+
+If you use our validated validation method please cite our soon to be published paper
+
+```bibtex
+@misc{csts2025,
+  author       = {Degen, I and Abdallah, Z S and Robson Brown, K and Reeve, H W J},
+  title        = {Validating Clustering Validation: An Empirical Evaluation for Time Series Correlation Structure Discovery},
+  year         = {2025},
+  note         = {forthcoming},
+}
+```
+
+## License
+
+This work is licensed under a [Creative Commons Attribution 4.0 International License][cc-by].
+
+[![CC BY 4.0][cc-by-image]][cc-by]
+
+[cc-by]: https://creativecommons.org/licenses/by/4.0/
+[cc-by-image]: https://licensebuttons.net/l/by/4.0/88x31.png
+[cc-by-shield]: https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg
