@@ -59,7 +59,8 @@ class DescribeBadPartitions:
     def __init__(self, ds_name, distance_measure: str, data_type: str = SyntheticDataType.non_normal_correlated,
                  internal_measures: [] = default_internal_measures, external_measures: [] = default_external_measures,
                  data_cols: [str] = SyntheticDataVariates.columns(), data_dir: str = SYNTHETIC_DATA_DIR,
-                 round_to: int = 3):
+                 round_to: int = 3, data: pd.DataFrame = None, gt_label: pd.DataFrame = None,
+                 partitions: pd.DataFrame = None):
         self.ds_name = ds_name
         self.distance_measure = distance_measure
         self.__internal_measures = internal_measures
@@ -73,10 +74,11 @@ class DescribeBadPartitions:
         self.__overall_corr = None
         self.__cluster_correlations = None
 
-        # load data, ground truth labels and all other partition for given ds_name
-        data, gt_label, partitions = load_synthetic_data_and_labels_for_bad_partitions(self.ds_name,
-                                                                                       data_type=self.__data_type,
-                                                                                       data_dir=self.__data_dir)
+        # load data if it has not been loaded yet otherwise use loaded data
+        if data is None or gt_label is None or partitions is None:
+            data, gt_label, partitions = load_synthetic_data_and_labels_for_bad_partitions(ds_name,
+                                                                                           data_type=data_type,
+                                                                                           data_dir=data_dir)
 
         self.data = data  # time series data df
         self.gt_label = gt_label  # ground truth labels df

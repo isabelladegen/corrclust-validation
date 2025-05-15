@@ -8,7 +8,7 @@ from src.utils.configurations import SYNTHETIC_DATA_DIR, ROOT_RESULTS_DIR, GENER
     get_internal_measures_summary_file_name, internal_measure_calculation_dir_for, IRREGULAR_P30_DATA_DIR, \
     IRREGULAR_P90_DATA_DIR
 from src.utils.distance_measures import DistanceMeasures
-from src.utils.load_synthetic_data import SyntheticDataType
+from src.utils.load_synthetic_data import SyntheticDataType, load_synthetic_data_and_labels_for_bad_partitions
 
 
 def read_clustering_quality_measures(overall_ds_name: str, data_type: str, root_results_dir: str, data_dir: str,
@@ -38,12 +38,16 @@ def read_clustering_quality_measures(overall_ds_name: str, data_type: str, root_
     return results_for_run
 
 
-def run_internal_measure_calculation_for_dataset(overall_ds_name: str, run_names: [str], distance_measure: str,
+def run_internal_measure_calculation_for_dataset(overall_ds_name: str, data_dict: [str],
+                                                 gt_labels_dict: [str], partitions_dict: [str], distance_measure: str,
                                                  data_type: str, data_dir: str, results_dir: str,
                                                  internal_measures: [str]):
     """
     Calculates the internal measure assessment for all ds in the csv files of the generated runs
     :param overall_ds_name: a name for the dataset we're using e.g. n30 or n2
+    :param data_dict: a dictionary with key run_id and value data for that run id
+    :param gt_labels_dict: a dictionary with key run_id and value gt labels for that run id
+    :param partitions_dict: a dictionary with key run_id and value partitions dict for that run id
     :param run_names: list of names for the runs to calculate the clustering quality measures for
     :param distance_measure: name of distance measure to run assessment for
     :param data_type: which datatype to use see SyntheticDataType
@@ -52,26 +56,49 @@ def run_internal_measure_calculation_for_dataset(overall_ds_name: str, run_names
     and the data type
     :param internal_measures: list of internal measures to assess
     """
+    assert len(data_dict) == len(gt_labels_dict) == len(partitions_dict), "Inconsistent run ids for data, labels and partitions"
     store_results_in = internal_measure_calculation_dir_for(
         overall_dataset_name=overall_ds_name,
         data_type=data_type,
         results_dir=results_dir,
         data_dir=data_dir,
         distance_measure=distance_measure)
-    partitions = []
-    for ds_name in run_names:
-        print(ds_name)
-        # we don't vary the seed so all datasets will select the same clusters and segments
-        sum_df = DescribeBadPartitions(ds_name=ds_name, distance_measure=distance_measure, data_type=data_type,
-                                       internal_measures=internal_measures, data_dir=data_dir).summary_df.copy()
-        file_name = get_internal_measures_summary_file_name(ds_name)
+    for run_id in data_dict.keys():
+        print(run_id)
+        # give preloaded data to only load once per data variant for each distance measure
+        sum_df = DescribeBadPartitions(ds_name=run_id,
+                                       distance_measure=distance_measure,
+                                       data_type=data_type,
+                                       internal_measures=internal_measures,
+                                       data_dir=data_dir,
+                                       data=data_dict[run_id],
+                                       gt_label=gt_labels_dict[run_id],
+                                       partitions=partitions_dict[run_id]).summary_df.copy()
+        file_name = get_internal_measures_summary_file_name(run_id)
         sum_df.to_csv(str(os.path.join(store_results_in, file_name)))
-        partitions.append(sum_df)
+
+
+def load_all_clustering_data_for_subjects_and_data_type(run_ids: str, data_type: str, data_dir: str):
+    """ Load all data for each data variant only ones to save time """
+    data_dict = {}
+    gt_labels_dict = {}
+    partitions_dict = {}
+    for run_id in run_ids:
+        # load data, ground truth labels and all bad clusterings for given ds_name
+        data, gt_label, partitions = load_synthetic_data_and_labels_for_bad_partitions(run_id,
+                                                                                       data_type=data_type,
+                                                                                       data_dir=data_dir)
+        data_dict[run_id] = data
+        gt_labels_dict[run_id] = gt_label
+        partitions_dict[run_id] = partitions
+
+    return data_dict, gt_labels_dict, partitions_dict
 
 
 if __name__ == "__main__":
     overall_dataset_name = "n30"
     run_names = pd.read_csv(GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
+    # run on 15th May 25
     distance_measures = [DistanceMeasures.l1_cor_dist,
                          DistanceMeasures.l1_with_ref,
                          DistanceMeasures.l2_cor_dist,
@@ -79,11 +106,12 @@ if __name__ == "__main__":
                          DistanceMeasures.l5_cor_dist,
                          DistanceMeasures.l5_with_ref,
                          DistanceMeasures.linf_cor_dist]
+    data_types = [SyntheticDataType.rs_1min]
 
     internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb,
                          ClusteringQualityMeasures.vrc, ClusteringQualityMeasures.dbi]
-    data_types = [SyntheticDataType.raw, SyntheticDataType.normal_correlated,
-                  SyntheticDataType.non_normal_correlated, SyntheticDataType.rs_1min]
+    # data_types = [SyntheticDataType.raw, SyntheticDataType.normal_correlated,
+    #               SyntheticDataType.non_normal_correlated, SyntheticDataType.rs_1min]
     data_dirs = [SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR]
     # Config for L2 only ran for downsampled, complete data
     # distance_measures = [DistanceMeasures.l2_cor_dist]
@@ -97,11 +125,14 @@ if __name__ == "__main__":
 
     for data_dir in data_dirs:
         for data_type in data_types:
+            print(f"Load all data for data type {data_type} and data dir {data_dir}")
+            data_dict, gt_labels_dict, partitions_dict = load_all_clustering_data_for_subjects_and_data_type(
+                run_ids=run_names, data_type=data_type, data_dir=data_dir)
             for distance_measure in distance_measures:
-                print("Calculate Clustering Quality Measures for completeness:")
-                print(data_dir)
-                print("and data type: " + data_type)
-                run_internal_measure_calculation_for_dataset(overall_dataset_name, run_names=run_names,
+                print(f"Calculate Clustering Quality for distance measure {distance_measure}")
+                run_internal_measure_calculation_for_dataset(overall_dataset_name, data_dict=data_dict,
+                                                             gt_labels_dict=gt_labels_dict,
+                                                             partitions_dict=partitions_dict,
                                                              distance_measure=distance_measure, data_type=data_type,
                                                              data_dir=data_dir, results_dir=results_dir,
                                                              internal_measures=internal_measures)
