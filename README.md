@@ -112,10 +112,10 @@ If you use this code, the CSTS dataset or our benchmark findings in your researc
 }
 ```
 
-If you use our validated validation method please cite our soon to be published paper
+If you use our validated validation method or findings please cite our (soon to be published) paper:
 
 ```bibtex
-@misc{csts2025,
+@misc{degen2025,
   author       = {Degen, I and Abdallah, Z S and Robson Brown, K and Reeve, H W J},
   title        = {Validating Clustering Validation: An Empirical Evaluation for Time Series Correlation Structure Discovery},
   year         = {2025},
