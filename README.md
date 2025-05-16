@@ -27,7 +27,7 @@ This repository provides:
 
 ```
 corrclust-validation/
-├── csts/                                  # Data directory
+├── csts/                                  # Data directory (not in git, see clone HF data)
 │   ├── exploratory/                       # Training/exploration subjects
 │   │   ├── irregular_p30/                 # Partial data variants (70% observations)
 │   │   ├── irregular_p90/                 # Sparse data variant (10% observations)
