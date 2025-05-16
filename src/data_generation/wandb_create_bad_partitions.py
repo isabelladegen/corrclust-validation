@@ -125,6 +125,8 @@ def create_bad_partitions(config: CreateBadPartitionsConfig, ds_name: str, idx: 
         # setup bad partitions path
         bad_partitions_path = bad_partition_dir_for_data_type(config.data_type, config.data_dir)
 
+        resulting_partitions = []
+
         print("GENERATE BAD PARTITIONS FOR DS: " + ds_name)
         bp = CreateBadSyntheticPartitions(run_name=ds_name, data_type=config.data_type,
                                           data_cols=config.data_cols, data_dir=config.data_dir,
@@ -148,8 +150,7 @@ def create_bad_partitions(config: CreateBadPartitionsConfig, ds_name: str, idx: 
             cluster_desc = "wrong-clusters-" + str(p)
             df = wrong_clusters[p]
             df.insert(1, SyntheticDataSegmentCols.cluster_desc, cluster_desc)
-            file_name = path.join(bad_partitions_path + "/", ds_name + "-" + cluster_desc + SyntheticFileTypes.labels)
-            save_bad_partitions_labels_file(df, file_name)
+            resulting_partitions.append(df)
 
         print("2. CREATE PARTITIONS WITH SHIFTED OBSERVATIONS")
         # ensure one partition will shift by the max of 800 observations
@@ -167,8 +168,7 @@ def create_bad_partitions(config: CreateBadPartitionsConfig, ds_name: str, idx: 
             cluster_desc = "shifted-end-idx-" + str(p)
             df = shifted_end_idx[p]
             df.insert(1, SyntheticDataSegmentCols.cluster_desc, cluster_desc)
-            file_name = path.join(bad_partitions_path + "/", ds_name + "-" + cluster_desc + SyntheticFileTypes.labels)
-            save_bad_partitions_labels_file(df, file_name)
+            resulting_partitions.append(df)
 
         print("3. CREATE PARTITIONS WITH SHIFTED OBSERVATIONS AND WRONG CLUSTER ASSIGNMENTS")
         random.seed(6306 + idx)
@@ -190,9 +190,11 @@ def create_bad_partitions(config: CreateBadPartitionsConfig, ds_name: str, idx: 
             cluster_desc = "shifted-and-wrong-cluster-" + str(p)
             df = shift_and_wrong_clusters[p]
             df.insert(1, SyntheticDataSegmentCols.cluster_desc, cluster_desc)
-            file_name = path.join(bad_partitions_path + "/",
-                                  ds_name + "-" + cluster_desc + SyntheticFileTypes.labels)
-            save_bad_partitions_labels_file(df, file_name)
+            resulting_partitions.append(df)
+
+        consolidated_df = pd.concat(resulting_partitions, ignore_index=True)
+        file_name = path.join(bad_partitions_path, ds_name + SyntheticFileTypes.bad_labels)
+        save_bad_partitions_labels_file(consolidated_df, file_name)
 
         wandb.log({
             "Patterns changed n segments": n_segments,

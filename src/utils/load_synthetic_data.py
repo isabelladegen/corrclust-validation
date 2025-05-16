@@ -1,6 +1,7 @@
 import ast
 import glob
 from dataclasses import dataclass
+from os import path
 
 import pandas as pd
 from pyarrow import ArrowInvalid
@@ -203,12 +204,20 @@ def load_synthetic_data_and_labels_for_bad_partitions(run_id: str,
     bad_partitions_dir = bad_partition_dir_for_data_type(data_type, data_dir)
     bad_partitions_path = Path(bad_partitions_dir)
     assert bad_partitions_path.exists(), "No bad partitions folder with name " + str(bad_partitions_path)
-    paths = glob.glob(str(bad_partitions_path) + "/" + run_id + "*-labels.parquet")
+    file_path = path.join(bad_partitions_path, run_id + SyntheticFileTypes.bad_labels)
+    all_partitions_df = load_labels_file_for(Path(file_path))
+    # find all different quality clusterings
+    clustering_desc = all_partitions_df[SyntheticDataSegmentCols.cluster_desc].unique()
 
     # for test runs only load 3 datasets to speed up testing
     if load_only is not None:
-        paths = paths[0:load_only]
+        clustering_desc = clustering_desc[:load_only]
 
-    results = {Path(file).name: load_labels_file_for(Path(file)) for file in paths}
+    # Split the consolidated bad clustering into dictionary with key orig filename and value pandas df
+    results = {}
+    for desc in clustering_desc:
+        subset_df = all_partitions_df[all_partitions_df[SyntheticDataSegmentCols.cluster_desc] == desc]
+        orig_file_name = f"{run_id}-{desc}-{SyntheticFileTypes.labels}"
+        results[orig_file_name] = subset_df
 
     return gt_data, gt_labels, results

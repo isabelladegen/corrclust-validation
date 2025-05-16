@@ -52,7 +52,7 @@ class CreateBadSyntheticPartitions:
             new_label_df = self.labels.copy()
             for seg_id in reassign_segments:
                 gt_cluster_id = \
-                    self.labels.loc[self.labels[SyntheticDataSegmentCols.segment_id] == seg_id]['cluster_id'].values[0]
+                    self.labels.loc[self.labels[SyntheticDataSegmentCols.segment_id] == seg_id][SyntheticDataSegmentCols.pattern_id].values[0]
 
                 # remove ground truth cluster from the list of clusters
                 clusters = self.__cluster_ids.copy()

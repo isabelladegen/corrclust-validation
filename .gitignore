@@ -203,3 +203,4 @@ wandb/
 /src/utils/hf_tooling/csts-croissant.json
 /src/utils/hf_tooling/csts-croissant-14-may-2025.json
 /src/utils/hf_tooling/croissant14-5-25-13-50.json
+/tests/test_data/synthetic_data/normal/bad_partitions/amber-glade-10-*.parquet

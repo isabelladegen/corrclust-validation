@@ -3,7 +3,7 @@ from hamcrest import *
 from src.data_generation.wandb_create_bad_partitions import CreateBadPartitionsConfig, create_bad_partitions
 from src.evaluation.describe_bad_partitions import DescribeBadPartCols
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
-from src.utils.load_synthetic_data import SyntheticDataType
+from src.utils.load_synthetic_data import SyntheticDataType, load_synthetic_data_and_labels_for_bad_partitions
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.utils.wandb_utils import set_test_configurations
 
@@ -36,3 +36,7 @@ def test_wandb_create_bad_partitions():
     assert_that(wandb_summary["min Jaccard"], is_(0.0))
     assert_that(wandb_summary["mean n wrong clusters"], is_(35.3))
     assert_that(wandb_summary["std n obs shifted"], is_(333.706))
+
+    # test saves bad partition to file
+    bad_partitions = load_synthetic_data_and_labels_for_bad_partitions(ds_name, data_type=config.data_type, data_dir=config.data_dir)
+    assert_that(len(bad_partitions), is_(config.n_partitions))

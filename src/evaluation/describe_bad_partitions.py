@@ -212,7 +212,7 @@ class DescribeBadPartitions:
 
             # calculate how many patterns were changed and how many observations shifted for the partition
             n_wrong_clusters.append(sum(i != j for i, j in zip(self.gt_patterns, p_patterns)))
-            p_first_seg_end_idx = p_label.loc[0, SyntheticDataSegmentCols.end_idx]
+            p_first_seg_end_idx = p_label[p_label[SyntheticDataSegmentCols.segment_id] == 0][SyntheticDataSegmentCols.end_idx].values[0]
             n_obs_shifted.append(p_first_seg_end_idx - gt_first_seg_end_idx)
 
             # calculate external and internal measures
