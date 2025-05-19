@@ -97,6 +97,79 @@ This codebase supports several research applications:
 3. **Analyzing Preprocessing Effects**: Investigate how techniques like downsampling affect correlation structures
 4. **Extending the Benchmark**: Generate custom data variants with different properties
 
+## Algorithm Evaluation Guide
+
+This section provides a step-by-step guide for evaluating time series clustering algorithms using the CSTS benchmark, 
+following the recommended evaluation protocol from our paper. By following this structure, you can systematically 
+evaluate your time series clustering algorithm using our benchmark and compare your results directly with our findings.
+
+### 1. Selecting Data Variants
+
+Choose which data variants to evaluate your algorithm against. This is a combination of what we call in the code
+`data_type` and `completeness`. `DataCompleteness.irregular_p30` is the partial completeness level with 70% of observations, 
+`DataCompleteness.irregular_p0` is the sparse completeness levels with 10% of the observation. From case study:
+```python
+ # run on normal and non-normal data variant
+dataset_types = [SyntheticDataType.normal_correlated, SyntheticDataType.non_normal_correlated]
+# use exploratory data: run for all three completeness level
+completeness_levels = [DataCompleteness.complete, DataCompleteness.irregular_p30, DataCompleteness.irregular_p90]
+```
+
+Load all the exploratory subject names:
+```python
+run_names = pd.read_csv(GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
+```
+
+Load the data and labels dataframes for a subject and a data variant:
+```python
+data_df, gt_labels_df = load_synthetic_data(subject_name, data_type, data_dir)
+```
+
+Complete details how to get to data dir see [Ticc run](https://github.com/isabelladegen/corrclust-validation/blob/main/src/use_case/wandb_run_ticc.py)
+
+### 2. Generating Clustering Results
+
+Train and apply your clustering algorithm as you usually would. See example in [TICC run](https://github.com/isabelladegen/corrclust-validation/blob/main/src/use_case/wandb_run_ticc.py).
+
+Translate the results into a labels format this codebase understands which means there needs to be a row
+for each segment and each segment has the following columns, see `to_labels_df()` in [TICC result](https://github.com/isabelladegen/corrclust-validation/blob/main/src/use_case/ticc_result.py):
+```python
+SyntheticDataSegmentCols.segment_id
+SyntheticDataSegmentCols.start_idx
+SyntheticDataSegmentCols.end_idx
+SyntheticDataSegmentCols.length
+SyntheticDataSegmentCols.pattern_id
+SyntheticDataSegmentCols.actual_correlation
+```
+
+### 3. Calculating Evaluation Measures
+
+To map an algorithm's clusters to ground truth and calculate metrics you can use our class [algorithm_evaluation.py](https://github.com/isabelladegen/corrclust-validation/blob/main/src/use_case/algorithm_evaluation.py)
+```python
+evaluate = AlgorithmEvaluation(result_labels_df, gt_labels_df, data_df, subject_name, data_dir, data_type)
+evaluate.silhouette_score()
+evaluate.dbi()
+evaluate.jaccard_index()
+evaluate.pattern_discovery_percentage()
+evaluate.pattern_specificity_percentage()
+evaluate.segmentation_ratio()
+evaluate.segmentation_length_ratio()
+evaluate.pattern_not_discovered() # list of patterns in gt that the algorithm missed
+evaluate.mae_stats_mapped_resulting_patterns_relaxed() # pandas describe df, access values using e.g. ['mean']
+evaluate.mae_stats_mapped_gt_patterns_relaxed() # pandas describe df, access values using e.g. ['mean']
+```
+
+### 4. Results Interpretation
+
+Contextualise your results using our benchmark reference values provide in the paper.
+
+
+### 5. Statistical Validation
+
+Analyze statistical significance of your findings:
+
+
+
 ## Citation
 
 If you use this code, the CSTS dataset or our benchmark findings in your research, please cite our paper:
