@@ -94,14 +94,16 @@ class WilcoxResult:
         )
         return round(achieved_power, self.__round_to)
 
-    def sample_size_for_power(self, target_power: float = 0.8, alpha: float = 0.05, bonferroni_adjust: int = 1) -> int:
+    def sample_size_for_power(self, target_power: float = 0.8, alpha: float = 0.05, bonferroni_adjust: int = 1,
+                              alternative: str = 'two-sided') -> int:
         adjusted_alpha = self.adjusted_alpha(alpha=alpha, bonferroni_adjust=bonferroni_adjust)
         power_analysis = TTestPower()
+
         required_n = power_analysis.solve_power(
             effect_size=self.effect_size(),
             power=target_power,
             alpha=adjusted_alpha,
-            alternative='two-sided',
+            alternative=alternative,
             nobs=None
         )
 
@@ -402,7 +404,7 @@ def calculate_wilcox_signed_rank(values1, values2, non_zero, alternative="two-si
     # sign of difference
     sign = 1  # if we have no nonezero diffs
     if len(nonzero_diffs) > 0:
-        sign = 1 if np.median(nonzero_diffs) > 0 else -1 # the majority sign of the diff
+        sign = 1 if np.median(nonzero_diffs) > 0 else -1  # the majority sign of the diff
     result = stats.wilcoxon(x=nonzero_diffs, zero_method='wilcox', alternative=alternative, mode='exact')
     stats_res = WilcoxResult(statistic=result.statistic, p_value=result.pvalue, n_pairs=len(values1),
                              none_zero=len(nonzero_diffs), effect_direction=sign)
