@@ -109,6 +109,9 @@ Choose which data variants to evaluate your algorithm against. This is a combina
 `data_type` and `completeness`. `DataCompleteness.irregular_p30` is the partial completeness level with 70% of observations, 
 `DataCompleteness.irregular_p0` is the sparse completeness levels with 10% of the observation. From case study:
 ```python
+from src.utils.configurations import  DataCompleteness
+from src.utils.load_synthetic_data import SyntheticDataType
+
  # run on normal and non-normal data variant
 dataset_types = [SyntheticDataType.normal_correlated, SyntheticDataType.non_normal_correlated]
 # use exploratory data: run for all three completeness level
@@ -117,11 +120,15 @@ completeness_levels = [DataCompleteness.complete, DataCompleteness.irregular_p30
 
 Load all the exploratory subject names:
 ```python
+import pandas as pd
+from src.utils.configurations import GENERATED_DATASETS_FILE_PATH
+
 run_names = pd.read_csv(GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
 ```
 
 Load the data and labels dataframes for a subject and a data variant:
 ```python
+from src.utils.load_synthetic_data import load_synthetic_data
 data_df, gt_labels_df = load_synthetic_data(subject_name, data_type, data_dir)
 ```
 
@@ -134,6 +141,8 @@ Train and apply your clustering algorithm as you usually would. See example in [
 Translate the results into a labels format this codebase understands which means there needs to be a row
 for each segment and each segment has the following columns, see `to_labels_df()` in [TICC result](https://github.com/isabelladegen/corrclust-validation/blob/main/src/use_case/ticc_result.py):
 ```python
+from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
+
 SyntheticDataSegmentCols.segment_id
 SyntheticDataSegmentCols.start_idx
 SyntheticDataSegmentCols.end_idx
@@ -146,6 +155,8 @@ SyntheticDataSegmentCols.actual_correlation
 
 To map an algorithm's clusters to ground truth and calculate metrics you can use our class [algorithm_evaluation.py](https://github.com/isabelladegen/corrclust-validation/blob/main/src/use_case/algorithm_evaluation.py)
 ```python
+from src.use_case.algorithm_evaluation import AlgorithmEvaluation
+
 evaluate = AlgorithmEvaluation(result_labels_df, gt_labels_df, data_df, subject_name, data_dir, data_type)
 evaluate.silhouette_score()
 evaluate.dbi()
@@ -155,7 +166,9 @@ evaluate.pattern_specificity_percentage()
 evaluate.segmentation_ratio()
 evaluate.segmentation_length_ratio()
 evaluate.pattern_not_discovered() # list of patterns in gt that the algorithm missed
+# MAE between achieved patterns and their mapped ground truth relaxed pattern
 evaluate.mae_stats_mapped_resulting_patterns_relaxed() # pandas describe df, access values using e.g. ['mean']
+# MAE between the mapped ground truth patterns and their relaxed target pattern, for reference
 evaluate.mae_stats_mapped_gt_patterns_relaxed() # pandas describe df, access values using e.g. ['mean']
 ```
 
