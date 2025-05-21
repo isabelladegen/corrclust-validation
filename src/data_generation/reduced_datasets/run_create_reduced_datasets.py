@@ -11,10 +11,7 @@ from src.utils.load_synthetic_data import SyntheticDataType
 
 
 def create_reduced_datasets(root_data_dir: str, data_types: [str], completeness: [str], run_names: [str], seed: int,
-                            root_reduced_data_dir: str):
-    # drop 50% and 75% of clusters and segments
-    n_dropped_clusters = [12, 17]
-    n_dropped_segments = [50, 75]
+                            root_reduced_data_dir: str, n_dropped_clusters: [], n_dropped_segments: []):
     for comp in completeness:
         for data_type in data_types:
             data_dir = get_data_dir(root_data_dir, comp)  # to read data
@@ -77,4 +74,5 @@ if __name__ == "__main__":
 
     create_reduced_datasets(root_data_dir=SYNTHETIC_DATA_DIR, data_types=_data_types, completeness=_completeness,
                             run_names=_run_names, seed=_seed,
-                            root_reduced_data_dir=_root_reduced_data_dir)
+                            root_reduced_data_dir=_root_reduced_data_dir, n_dropped_clusters=[12, 17],
+                            n_dropped_segments=[50, 75])

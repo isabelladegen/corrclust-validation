@@ -95,7 +95,7 @@ This codebase supports several research applications:
 1. **Evaluating Clustering Algorithms**: Test how well algorithms discover correlation structures across data variants
 2. **Assessing Validation Methods**: Evaluate internal and external validation indices for correlation-based clustering
 3. **Analyzing Preprocessing Effects**: Investigate how techniques like downsampling affect correlation structures
-4. **Extending the Benchmark**: Generate custom data variants with different properties
+4. **Extending the Benchmark**: Generate custom data variants with different properties, see [Data Generation Guide](docs/data_generation.md)
 
 ## Algorithm Evaluation Guide
 

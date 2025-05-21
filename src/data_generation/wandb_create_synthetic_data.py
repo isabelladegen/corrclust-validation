@@ -252,7 +252,13 @@ def log_dataset_description(describe: DescribeSyntheticDataset, key_id: str):
 
 def create_datasets(data_dir: str, seed: int, wand_db_project_name: str, n: int = 2, tag: str = 'synthetic_creation'):
     """"
-    Create n datasets
+    Create n subjects
+    :param data_dir: where the files will be stored, for exploratory this was <...>/csts/exploratory, we configure this
+    value in the SYNTHETIC_DATA_DIR variable
+    :param seed: random seed to be able to generate the exact same data (was 666)
+    :param wand_db_project_name: name of the wandb project to use
+    :param n: number of subjects to create (was 30)
+    :param tag: string to add to wandb tags
     """
     config = SyntheticDataConfig()
     config.tags.append(tag)
