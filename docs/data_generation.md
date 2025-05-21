@@ -1,5 +1,3 @@
-from tests.evaluation.test_impact_of_reduction_on_internal_indices import root_reduced_data_dir
-
 # Data Generation Guide
 
 This section provides instructions for generating your own synthetic time series data with known correlation structures 
