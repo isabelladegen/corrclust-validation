@@ -60,7 +60,7 @@ class WilcoxResult:
 
     def effect_size(self, alternative: str = 'two-sided') -> float:
         """
-        Returns effect size r = z_scores/sqrt(N_non_zero_pairs). Assumes two sided test
+        Returns effect size r = z_scores/sqrt(N_non_zero_pairs).
         """
         if self.non_zero == 0:
             return 0  # we had no pairs to calculate the statistics from so we have no effect size

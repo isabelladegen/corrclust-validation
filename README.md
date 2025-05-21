@@ -161,27 +161,52 @@ evaluate.mae_stats_mapped_gt_patterns_relaxed() # pandas describe df, access val
 
 ### 4. Results Interpretation
 
-Contextualise your results using our benchmark reference values provide in the paper.
+Contextualise your results using our benchmark reference values provide in our paper: [CSTS: A Benchmark for the Discovery of Correlation Structures in Time Series Clustering](https://arxiv.org/html/2505.14596v1).
 
 
 ### 5. Statistical Validation
 
-Analyze statistical significance of your findings:
+Use Wilcoxon signed rank test to evaluate if the difference e.g. between performance measure for the complete and partial
+variants are statistically significant. Ensure you pair the values on variant type and subject.
+```python
+from src.utils.stats import calculate_wilcox_signed_rank
+values_complete_normal = [] # list or numpy array of results for a measure for the complete normal data variant
+values_complete_partial = [] # list or numpy array of results for a measure for the partial normal data variant
 
+alternative = "two-sided" # see scipy scipy.stats.wilcoxon for valid alternatives
+alpha = 0.05 # set unadjusted alpha level
+bonferroni_adjust = 3 # put to number of comparisons you make or do your own multiplicity adjustment
+
+# handy wrapper ensuring differences are only used if > than non_zero
+wilcox_result = calculate_wilcox_signed_rank(values_complete_normal, values_complete_partial, non_zero=1e-8, 
+                                           alternative=alternative)
+
+# wilcox_result is an instance of WilcoxResult class providing convenience functions
+p = wilcox_result.p_value 
+is_sig = wilcox_result.is_significant(alpha=alpha, bonferroni_adjust=bonferroni_adjust)
+es = wilcox_result.effect_size(alternative) # calculated as r = ± Z / √N, N are the none zero pairs
+# the power achieved for the given effect size and adjusted alpha
+power = wilcox_result.achieved_power(alpha=alpha, bonferroni_adjust=bonferroni_adjust, alternative=alternative)
+# how many samples you need for the achieved p value and effect size to reach a power of 80%
+n_for_80_power = wilcox_result.sample_size_for_power(target_power=0.8, alpha=alpha, bonferroni_adjust=bonferroni_adjust)
+
+```
 
 
 ## Citation
 
-If you use this code, the CSTS dataset or our benchmark findings in your research, please cite our paper:
+If you use this code, the CSTS dataset or our benchmark findings in your research, please cite our paper accordingly. 
+This is the arXiv preprint version that describes the benchmark, check back for updates:
 
 ```bibtex
-@misc{csts2025,
-  author       = {Degen, I and Abdallah, Z S and Reeve, H W J and Robson Brown, K},
-  title        = {CSTS: Evaluating Correlation Structures in Time Series},
-  year         = {2025},
-  publisher    = {Hugging Face},
-  howpublished = {Pre-publication dataset release},
-  url          = {https://huggingface.co/datasets/idegen/csts}
+@misc{degen2025csts,
+      title={CSTS: A Benchmark for the Discovery of Correlation Structures in Time Series Clustering}, 
+      author={Isabella Degen and Zahraa S Abdallah and Henry W J Reeve and Kate Robson Brown},
+      year={2025},
+      eprint={2505.14596},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2505.14596}, 
 }
 ```
 
