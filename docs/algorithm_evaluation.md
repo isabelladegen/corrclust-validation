@@ -81,8 +81,9 @@ Contextualise your results using our benchmark reference values provide in our p
 
 ## 5. Statistical Validation
 
-Use Wilcoxon signed rank test to evaluate if the difference e.g. between performance measure for the complete and partial
-variants are statistically significant. Ensure you pair the values on variant type and subject.
+Use Wilcoxon signed rank tests to evaluate if the difference between a performance measure for one data variant compared to another data variant is statistically significant. Here we show an example of comparing the complete and partial
+normal data variants with each other. Note that `calculate_wilcox_signed_rank` assumes the rows in each vector are paired by subject. You are comparing subject_x in the complete to subject_x in the partial data variant. For our case study statistical tests see [ticc_statistical_validation.py](https://github.com/isabelladegen/corrclust-validation/blob/main/src/use_case/ticc_statistical_validation.py).
+
 ```python
 from src.utils.stats import calculate_wilcox_signed_rank
 values_complete_normal = [] # list or numpy array of results for a measure for the complete normal data variant
