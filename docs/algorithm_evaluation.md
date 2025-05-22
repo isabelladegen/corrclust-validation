@@ -51,6 +51,7 @@ SyntheticDataSegmentCols.length
 SyntheticDataSegmentCols.pattern_id
 SyntheticDataSegmentCols.actual_correlation
 ```
+Note that our code will select both start_idx and end_idx, not as common in pandas where end_idx is not selected!
 
 ## 3. Calculating Evaluation Measures
 
