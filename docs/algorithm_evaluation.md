@@ -76,7 +76,7 @@ evaluate.mae_stats_mapped_gt_patterns_relaxed() # pandas describe df, access val
 
 ## 4. Results Interpretation
 
-Contextualise your results using our benchmark reference values provide in our paper: [CSTS: A Benchmark for the Discovery of Correlation Structures in Time Series Clustering](https://arxiv.org/html/2505.14596v1).
+Contextualise your results using our benchmark reference values provide in our paper: [CSTS: A Benchmark for the Discovery of Correlation Structures in Time Series Clustering](https://arxiv.org/html/2505.14596v1), Appendix D - Benchmark Reference Values.
 
 
 ## 5. Statistical Validation
