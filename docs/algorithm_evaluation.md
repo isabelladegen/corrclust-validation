@@ -55,7 +55,7 @@ Note that our code will select both start_idx and end_idx, not as common in pand
 
 ## 3. Calculating Evaluation Measures
 
-To map an algorithm's clusters to ground truth and calculate metrics you can use our class [algorithm_evaluation.py](https://github.com/isabelladegen/corrclust-validation/blob/main/src/use_case/algorithm_evaluation.py)
+To map an algorithm's clusters to ground truth and calculate performance measures you can use our class [algorithm_evaluation.py](https://github.com/isabelladegen/corrclust-validation/blob/main/src/use_case/algorithm_evaluation.py)
 ```python
 from src.use_case.algorithm_evaluation import AlgorithmEvaluation
 
