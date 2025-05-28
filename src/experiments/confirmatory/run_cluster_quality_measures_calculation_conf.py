@@ -19,8 +19,7 @@ if __name__ == "__main__":
                          DistanceMeasures.l3_cor_dist,
                          DistanceMeasures.l5_cor_dist,
                          DistanceMeasures.l5_with_ref,
-                         DistanceMeasures.linf_cor_dist,
-                         DistanceMeasures.foerstner_cor_dist
+                         DistanceMeasures.linf_cor_dist
                          ]
     # only swc and dbi
     internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.dbi]
@@ -33,6 +32,9 @@ if __name__ == "__main__":
 
     for data_dir in data_dirs:
         for data_type in data_types:
+            if data_type == SyntheticDataType.normal_correlated and data_dir == CONFIRMATORY_SYNTHETIC_DATA_DIR:
+                # already calculated, now skipping Foerstner
+                continue
             print(f"Load all data for data type {data_type} and data dir {data_dir}")
             data_dict, gt_labels_dict, partitions_dict = load_all_clustering_data_for_subjects_and_data_type(
                 run_ids=run_names, data_type=data_type, data_dir=data_dir)
