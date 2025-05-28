@@ -3,9 +3,7 @@ import pandas as pd
 from src.experiments.run_cluster_quality_measures_calculation import \
     load_all_clustering_data_for_subjects_and_data_type, run_internal_measure_calculation_for_dataset
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
-from src.utils.configurations import SYNTHETIC_DATA_DIR, ROOT_RESULTS_DIR, GENERATED_DATASETS_FILE_PATH, \
-    IRREGULAR_P30_DATA_DIR, \
-    IRREGULAR_P90_DATA_DIR, CONFIRMATORY_DATASETS_FILE_PATH, CONFIRMATORY_SYNTHETIC_DATA_DIR, \
+from src.utils.configurations import CONFIRMATORY_DATASETS_FILE_PATH, CONFIRMATORY_SYNTHETIC_DATA_DIR, \
     CONF_IRREGULAR_P30_DATA_DIR, CONF_IRREGULAR_P90_DATA_DIR, CONF_ROOT_RESULTS_DIR
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
