@@ -84,6 +84,11 @@ class WilcoxResult:
         """
         if self.non_zero == 0:
             return 0.0  # we had no data to calculate effects from
+        # translate wilcox alternatives to power alternatives
+        if alternative == 'less':
+            alternative = 'smaller'
+        if alternative == 'greater':
+            alternative = 'larger'
         adjusted_alpha = self.adjusted_alpha(alpha=alpha, bonferroni_adjust=bonferroni_adjust)
         power_analysis = TTestPower()
         achieved_power = power_analysis.power(
@@ -98,7 +103,11 @@ class WilcoxResult:
                               alternative: str = 'two-sided') -> int:
         adjusted_alpha = self.adjusted_alpha(alpha=alpha, bonferroni_adjust=bonferroni_adjust)
         power_analysis = TTestPower()
-
+        # translate wilcox altern to power alternatives
+        if alternative == 'less':
+            alternative = 'smaller'
+        if alternative == 'greater':
+            alternative = 'larger'
         required_n = power_analysis.solve_power(
             effect_size=self.effect_size(),
             power=target_power,
