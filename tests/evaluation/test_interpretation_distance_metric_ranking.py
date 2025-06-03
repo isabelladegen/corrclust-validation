@@ -82,7 +82,7 @@ def test_calculates_statistics_df_per_criterion():
 
 def test_returns_the_average_top_x_bottom_x_distance_measure_by_various_statistics():
     x = 2
-    df = inter.top_and_bottom_x_distance_measures_ranks(x=x, save_results=True)
+    df = inter.top_and_bottom_x_distance_measures_ranks(n_dist=x, save_results=True)
 
     assert_that(df.shape[1], is_(16))  # column for top and bottom avg and raw and all 6 criterion
     assert_that(df.loc['mean', DistanceInterpretation.raw_top_rank], is_('L1, L2'))

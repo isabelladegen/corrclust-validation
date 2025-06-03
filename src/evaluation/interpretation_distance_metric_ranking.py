@@ -129,10 +129,10 @@ class DistanceMetricInterpretation:
 
         return result
 
-    def top_and_bottom_x_distance_measures_ranks(self, x: int, save_results: bool = False):
+    def top_and_bottom_x_distance_measures_ranks(self, n_dist: int, save_results: bool = False):
         """Returns dataframe of top and bottom x distance measures calculated on raw criteria ranks. 30 ranks for each
         of the 6 criteria (180 ranks)
-        :param x: number of x distance measures to include
+        :param n_dist: number of x distance measures to include
         :param save_results: if true will save df to disk
         :return: pd.Dataframe with rows descriptive statistics and columns:
         - avg rank top x and bottom x measures (weighs each criterion equaly)
@@ -163,35 +163,35 @@ class DistanceMetricInterpretation:
         for stat in avg_raw_stats.index:
             if stat == 'count':  # skip count
                 continue
-            top_avg.append(", ".join(avg_stats.loc[stat].sort_values(ascending=True).head(x).index.tolist()))
-            bottom_avg.append(", ".join(avg_stats.loc[stat].sort_values(ascending=False).head(x).index.tolist()))
-            raw_top_avg.append(", ".join(avg_raw_stats.loc[stat].sort_values(ascending=True).head(x).index.tolist()))
+            top_avg.append(", ".join(avg_stats.loc[stat].sort_values(ascending=True).head(n_dist).index.tolist()))
+            bottom_avg.append(", ".join(avg_stats.loc[stat].sort_values(ascending=False).head(n_dist).index.tolist()))
+            raw_top_avg.append(", ".join(avg_raw_stats.loc[stat].sort_values(ascending=True).head(n_dist).index.tolist()))
             raw_bottom_avg.append(
-                ", ".join(avg_raw_stats.loc[stat].sort_values(ascending=False).head(x).index.tolist()))
+                ", ".join(avg_raw_stats.loc[stat].sort_values(ascending=False).head(n_dist).index.tolist()))
             top_inter_i.append(", ".join(criteria_stats[EvaluationCriteria.inter_i].loc[stat]
-                                         .sort_values(ascending=True).head(x).index.tolist()))
+                                         .sort_values(ascending=True).head(n_dist).index.tolist()))
             top_inter_ii.append(", ".join(criteria_stats[EvaluationCriteria.inter_ii].loc[stat]
-                                          .sort_values(ascending=True).head(x).index.tolist()))
+                                          .sort_values(ascending=True).head(n_dist).index.tolist()))
             top_inter_iii.append(", ".join(criteria_stats[EvaluationCriteria.inter_iii].loc[stat]
-                                           .sort_values(ascending=True).head(x).index.tolist()))
+                                           .sort_values(ascending=True).head(n_dist).index.tolist()))
             top_disc_i.append(", ".join(criteria_stats[EvaluationCriteria.disc_i].loc[stat]
-                                        .sort_values(ascending=True).head(x).index.tolist()))
+                                        .sort_values(ascending=True).head(n_dist).index.tolist()))
             top_disc_ii.append(", ".join(criteria_stats[EvaluationCriteria.disc_ii].loc[stat]
-                                         .sort_values(ascending=True).head(x).index.tolist()))
+                                         .sort_values(ascending=True).head(n_dist).index.tolist()))
             top_disc_iii.append(", ".join(criteria_stats[EvaluationCriteria.disc_iii].loc[stat]
-                                          .sort_values(ascending=True).head(x).index.tolist()))
+                                          .sort_values(ascending=True).head(n_dist).index.tolist()))
             bottom_inter_i.append(", ".join(criteria_stats[EvaluationCriteria.inter_i].loc[stat]
-                                            .sort_values(ascending=False).head(x).index.tolist()))
+                                            .sort_values(ascending=False).head(n_dist).index.tolist()))
             bottom_inter_ii.append(", ".join(criteria_stats[EvaluationCriteria.inter_ii].loc[stat]
-                                             .sort_values(ascending=False).head(x).index.tolist()))
+                                             .sort_values(ascending=False).head(n_dist).index.tolist()))
             bottom_inter_iii.append(", ".join(criteria_stats[EvaluationCriteria.inter_iii].loc[stat]
-                                              .sort_values(ascending=False).head(x).index.tolist()))
+                                              .sort_values(ascending=False).head(n_dist).index.tolist()))
             bottom_disc_i.append(", ".join(criteria_stats[EvaluationCriteria.disc_i].loc[stat]
-                                           .sort_values(ascending=False).head(x).index.tolist()))
+                                           .sort_values(ascending=False).head(n_dist).index.tolist()))
             bottom_disc_ii.append(", ".join(criteria_stats[EvaluationCriteria.disc_ii].loc[stat]
-                                            .sort_values(ascending=False).head(x).index.tolist()))
+                                            .sort_values(ascending=False).head(n_dist).index.tolist()))
             bottom_disc_iii.append(", ".join(criteria_stats[EvaluationCriteria.disc_iii].loc[stat]
-                                             .sort_values(ascending=False).head(x).index.tolist()))
+                                             .sort_values(ascending=False).head(n_dist).index.tolist()))
 
         result = pd.DataFrame(index=avg_raw_stats.index[1:].tolist(), data={  # skip count from index
             DistanceInterpretation.top_rank: top_avg,
@@ -220,12 +220,12 @@ class DistanceMetricInterpretation:
                                                                      data_type=self.data_type,
                                                                      base_results_dir=self.root_results_dir,
                                                                      data_dir=self.data_dir)
-            result.to_csv(str(path.join(result_dir, str(x) + '_' + DISTANCE_MEASURE_EVALUATION_TOP_BOTTOM_MEASURES)))
+            result.to_csv(str(path.join(result_dir, str(n_dist) + '_' + DISTANCE_MEASURE_EVALUATION_TOP_BOTTOM_MEASURES)))
 
         return result
 
     def statistical_validation_of_two_measures_based_on_average_ranking(self, measure1: str, measure2: str,
-                                                                        non_zero: float = 0.001):
+                                                                        non_zero: float = 0.001, alternative: str = "two-sided"):
         """
         Calculates the Wilcoxon signed rank test between measure 1 and 2. The difference in raw value has to be greater
         than non-zero to be considered. Zero difference pairs are removed
@@ -234,7 +234,7 @@ class DistanceMetricInterpretation:
         m1_ranks = self.average_rank_per_run[measure1]
         m2_ranks = self.average_rank_per_run[measure2]
 
-        return calculate_wilcox_signed_rank(m1_ranks, m2_ranks, non_zero)
+        return calculate_wilcox_signed_rank(values1=m1_ranks, values2=m2_ranks, non_zero=non_zero, alternative=alternative)
 
     def __median_raw_values(self):
         # Load all raw_criteria_data for this data variant

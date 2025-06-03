@@ -109,15 +109,19 @@ class WilcoxResult:
 
         return np.ceil(required_n)
 
-    def as_series(self, variant_name: str, target_power: float = 0.8, alpha: float = 0.05, bonferroni_adjust: int = 1):
+    def as_series(self, variant_name: str, target_power: float = 0.8, alpha: float = 0.05, bonferroni_adjust: int = 1,
+                  alternative: str = 'two-sided') -> pd.Series:
         return pd.Series({
             StatsCols.variant: variant_name,
             StatsCols.is_significant: self.is_significant(alpha, bonferroni_adjust),
             StatsCols.p_value: round(self.p_value, 4),
-            StatsCols.effect_size: self.effect_size(),
+            StatsCols.effect_size: self.effect_size(alternative=alternative),
             StatsCols.alpha: self.adjusted_alpha(alpha=alpha, bonferroni_adjust=bonferroni_adjust),
-            StatsCols.achieved_power: self.achieved_power(alpha, bonferroni_adjust),
-            StatsCols.n_for_power_80: self.sample_size_for_power(target_power, alpha, bonferroni_adjust),
+            StatsCols.achieved_power: self.achieved_power(alpha=alpha, bonferroni_adjust=bonferroni_adjust,
+                                                          alternative=alternative),
+            StatsCols.n_for_power_80: self.sample_size_for_power(target_power, alpha=alpha,
+                                                                 bonferroni_adjust=bonferroni_adjust,
+                                                                 alternative=alternative),
             StatsCols.none_zero_pairs: self.non_zero,
             StatsCols.statistic: self.statistic,
             StatsCols.n_pairs: self.n_pairs,

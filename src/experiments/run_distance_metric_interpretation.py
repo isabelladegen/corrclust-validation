@@ -49,7 +49,7 @@ def interpret_distance_metric_for(top_x: [], data_dirs: [], dataset_types: [], r
 
             # calculate top and bottom x distance mesures by average and criteria ranks
             for x in top_x:
-                interpretation.top_and_bottom_x_distance_measures_ranks(x=x, save_results=True)
+                interpretation.top_and_bottom_x_distance_measures_ranks(n_dist=x, save_results=True)
 
     # save statistical result
     stats_df = pd.DataFrame(stats_results)
