@@ -211,7 +211,7 @@ class DistanceMetricInterpretation:
             DistanceInterpretation.bottom_disc_ii: bottom_disc_ii,
             DistanceInterpretation.bottom_disc_iii: bottom_disc_iii
         })
-        # rename distance measures w    ith shorter names
+        # rename distance measures with shorter names
         for old, new in short_distance_measure_names.items():
             result = result.apply(lambda x: x.str.replace(old, new))
 

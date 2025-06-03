@@ -15,10 +15,10 @@ from src.visualisation.run_average_rank_visualisations import data_variant_descr
 from src.visualisation.visualise_distance_measure_rank_distributions import heatmap_of_ranks, heatmap_of_raw_values
 
 pattern_keys_ordered = ["complete, correlated", "partial, correlated", "sparse, correlated", "complete, non-normal",
-                        "partial, non-normal", "sparse, non-normal", "complete, downsampled"]
+                        "partial, non-normal", "sparse, non-normal", "complete, downsampled", "partial, downsampled",
+                        "sparse, downsampled"]
 
-all_variants_ordered = ["complete, raw", "partial, raw", "sparse, raw", ] + pattern_keys_ordered + [
-    "partial, downsampled", "sparse, downsampled"]
+all_variants_ordered = ["complete, raw", "partial, raw", "sparse, raw", ] + pattern_keys_ordered
 
 
 def get_key_for_value(dictionary, value):
@@ -134,7 +134,7 @@ def plot_ranking_heat_map(backend, ranks_series, keys_ordered, bar_label='Rank',
     highlight_rows = rank_matrix.index.tolist()
     highlight_cols = best_col.to_list()
     # plot heatmap
-    fig = heatmap_of_ranks(rank_matrix, highlight_rows=highlight_rows, highlight_cols=highlight_cols, figsize=(15, 6),
+    fig = heatmap_of_ranks(rank_matrix, highlight_rows=highlight_rows, highlight_cols=highlight_cols, figsize=(15, 8),
                            low_is_best=low_is_best, bar_label=bar_label, backend=backend)
     return fig, rank_matrix
 
