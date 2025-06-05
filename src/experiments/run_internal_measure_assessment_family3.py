@@ -11,7 +11,8 @@ from src.utils.load_synthetic_data import SyntheticDataType
 
 
 def run_internal_measure_assessment_datasets(overall_ds_name: str, run_names: [str], distance_measure: str,
-                                             data_type: str, data_dir: str, results_dir: str, internal_measures: [str]):
+                                             data_type: str, data_dir: str, results_dir: str, internal_measures: [str],
+                                             alpha: float, bf_adjust: int, alternative: str, non_zero: float):
     """ Runs the internal measure assessment on all ds in the csv files of the generated runs
     :param overall_ds_name: a name for the dataset we're using e.g. n30 or n2
     :param run_names: list of run_names to load (subjects)
@@ -21,6 +22,10 @@ def run_internal_measure_assessment_datasets(overall_ds_name: str, run_names: [s
     :param results_dir: directory where to store the results, it will use a subdirectory based on the distance measure,
     and the data type
     :param internal_measures: list of internal measures to assess
+    :param alpha: alpha parameter to control the significance level
+    :param bf_adjust: bonferroni adjustment parameter to control the significance level
+    :param alternative: which alternative to use to assess the measure
+    :param non_zero: non-zero value to control what differences are considered 0
     """
     # load all the internal measure calculation summaries
     partitions = read_clustering_quality_measures(overall_ds_name=overall_ds_name, data_type=data_type,
@@ -50,21 +55,24 @@ def run_internal_measure_assessment_datasets(overall_ds_name: str, run_names: [s
     ia.ci_of_differences_between_internal_measure_correlations().to_csv(
         get_full_filename_for_results_csv(store_results_in, IAResultsCSV.ci_of_differences_between_measures))
 
-    # paired samples t test on fisher transformed correlation coefficients
-    df = ia.paired_samples_t_test_on_fisher_transformed_correlation_coefficients(alpha=0.05, alternative='two-sided')
-    df.to_csv(get_full_filename_for_results_csv(store_results_in, IAResultsCSV.paired_t_test))
+    # Wilcox signed rank
+    df = ia.wilcoxon_signed_rank_tests_correlation_coefficients(alpha=alpha, alternative=alternative,
+                                                                bonferroni_adjust=bf_adjust, non_zero=non_zero)
+    df.to_csv(get_full_filename_for_results_csv(store_results_in, IAResultsCSV.wilcox_signed_rank))
+
+    # not doing this anymore to make all tests wilcoxon signed rank tests
+    # # paired samples t test on fisher transformed correlation coefficients
+    # df = ia.paired_samples_t_test_on_fisher_transformed_correlation_coefficients(alpha=0.05, alternative='two-sided')
+    # df.to_csv(get_full_filename_for_results_csv(store_results_in, IAResultsCSV.paired_t_test))
 
 
 if __name__ == "__main__":
     overall_ds_name = "n30"
     root_result_dir = ROOT_RESULTS_DIR
-    dataset_types = [SyntheticDataType.raw,
-                     SyntheticDataType.normal_correlated,
+    dataset_types = [SyntheticDataType.normal_correlated,
                      SyntheticDataType.non_normal_correlated,
                      SyntheticDataType.rs_1min]
-    # dataset_types = [SyntheticDataType.normal_correlated,
-    #                  SyntheticDataType.non_normal_correlated,
-    #                  SyntheticDataType.rs_1min]
+
     data_dirs = [SYNTHETIC_DATA_DIR,
                  IRREGULAR_P30_DATA_DIR,
                  IRREGULAR_P90_DATA_DIR]
@@ -74,16 +82,6 @@ if __name__ == "__main__":
                          DistanceMeasures.l5_cor_dist,
                          DistanceMeasures.l5_with_ref,
                          DistanceMeasures.linf_cor_dist]
-
-    # Config for L2 only ran for downsampled, complete data
-    # distance_measures = [DistanceMeasures.l2_cor_dist]
-    # dataset_types = [SyntheticDataType.rs_1min]
-    # data_dirs = [SYNTHETIC_DATA_DIR]
-
-    # Config for L3 only ran for downsampled, complete data
-    # distance_measures = [DistanceMeasures.l3_cor_dist]
-    # dataset_types = [SyntheticDataType.rs_1min]
-    # data_dirs = [SYNTHETIC_DATA_DIR]
 
     internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb,
                          ClusteringQualityMeasures.dbi, ClusteringQualityMeasures.vrc]
@@ -98,4 +96,8 @@ if __name__ == "__main__":
                 run_internal_measure_assessment_datasets(overall_ds_name="n30", run_names=run_names,
                                                          distance_measure=distance_measure, data_type=data_type,
                                                          data_dir=data_dir, results_dir=root_result_dir,
-                                                         internal_measures=internal_measures)
+                                                         internal_measures=internal_measures,
+                                                         alpha=0.05,
+                                                         bf_adjust=1,
+                                                         alternative='two-sided',
+                                                         non_zero=0.001)

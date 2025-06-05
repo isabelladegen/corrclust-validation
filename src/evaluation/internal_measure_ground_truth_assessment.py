@@ -7,7 +7,7 @@ from src.evaluation.describe_bad_partitions import DescribeBadPartCols
 from src.experiments.run_calculate_internal_measures_for_ground_truth import \
     read_ground_truth_clustering_quality_measures
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
-from src.utils.stats import calculate_wilcox_signed_rank
+from src.utils.stats import calculate_wilcox_signed_rank, StatsCols
 
 # value for ascending, if true lowest value will get rank 1, if falls highest value will get rank 1
 internal_measure_lower_values_best = {
@@ -138,6 +138,98 @@ class InternalMeasureGroundTruthAssessment:
             result = dict(sorted(result.items()))
             groupings[measure] = result
         return groupings
+
+    def wilcoxons_signed_rank_step_down(self, alpha: float = 0.05,
+                                        bonferroni_adjust: int = 1, alternative: str = 'two-sided',
+                                        non_zero: float = 0.0001):
+        """
+        Calculates for each internal measure the wilcoxon's signed rank test between different distance measures in a
+        step-down fashion until it finds a significant difference between two measures
+        :param alpha: significance level
+        :param bonferroni_adjust: divide alpha by this to adjust for multiplicity
+        :param alternative: which alternative to test
+        :param non_zero: what differences to consider zero
+        :return: df with rows for each internal measure and columns wilcoxon results
+        """
+        # dm are tested in order of rank (lowest is best)
+        #dictionary{key=internal measure name: values= df with rows=describe stats, columns= distance measures,
+        # cells=rank stats for that distance measure across all subjects
+        ranked_dm = self.stats_for_ranks_across_all_runs()
+
+        # raw values
+        raw_values = self.raw_scores_for_each_internal_measure()
+
+        # results to build dataframe
+        internal_measures = []
+        is_significances = []
+        p_values = []
+        effect_sizes = []
+        achieved_powers = []
+        nz_pairs = []
+        statistics = []
+        alphas_used = []
+        best_dms = []
+        compared_dms = []
+        non_sig_dms = []
+        not_tested_dms = []
+
+        # run tests for each internal index
+        for internal_index in self.internal_measures:
+            # df of columns are distance measures, values are the scores for the runs
+            values = raw_values[internal_index]
+
+            # order distance values
+            ranks = ranked_dm[internal_index]
+            ordered_dm = ranks.loc['mean'].sort_values().index.tolist()
+            dm_1 = ordered_dm[0]
+            measure1_raw = values[dm_1]
+
+            best_dms.append(dm_1)
+            dms_tested = []
+            wilc_result = None
+
+            # cycle through all dm until significant difference is found
+            for dm_2 in ordered_dm[1:]:
+                dms_tested.append(dm_2)
+                measure2_raw = values[dm_2]
+                wilc_result = calculate_wilcox_signed_rank(measure1_raw, measure2_raw, non_zero,
+                                                           alternative=alternative)
+                # stop if significant
+                if wilc_result.is_significant(alpha=alpha, bonferroni_adjust=bonferroni_adjust):
+                    break
+
+            # save result for last dm tested
+            compared_dms.append(dm_2)
+            not_tested_dms.append(set(ordered_dm[1:])-set(dms_tested))
+            internal_measures.append(internal_index)
+            p_values.append(wilc_result.pvalue)
+            statistics.append(wilc_result.statistic)
+            effect_sizes.append(wilc_result.effect_size(alternative=alternative))
+            achieved_powers.append(wilc_result.achieved_power(alpha=alpha, bonferroni_adjust=bonferroni_adjust,
+                                                              alternative=alternative))
+            alphas_used.append(alpha)
+            nz_pairs.append(wilc_result.non_zero)
+            is_significances.append(True)
+            non_sig_dms.append(dms_tested)
+
+        # create dataframe
+        results_dict = {
+            "Internal Measure" : internal_measures,
+            "Best ranked dm" : best_dms,
+            "compared to dm": compared_dms,
+            GroupAssessmentCols.is_significat: is_significances,
+            GroupAssessmentCols.p_value: p_values,
+            GroupAssessmentCols.effect_size: effect_sizes,
+            GroupAssessmentCols.achieved_power: achieved_powers,
+            GroupAssessmentCols.non_zero_pairs: nz_pairs,
+            "Non sig dm": non_sig_dms,
+            "Not tested dms": not_tested_dms,
+            GroupAssessmentCols.alpha: alphas_used,
+            GroupAssessmentCols.statistic: statistics,
+        }
+        df = pd.DataFrame(results_dict)
+
+        return df
 
     def wilcoxons_signed_rank_until_all_significant(self, stats_value: str = '50%', alpha: float = 0.05,
                                                     bonferroni_adjust: int = 1, alternative: str = 'two-sided',

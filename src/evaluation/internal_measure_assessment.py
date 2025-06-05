@@ -11,7 +11,7 @@ from src.evaluation.describe_bad_partitions import default_internal_measures, de
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import internal_measure_evaluation_dir_for
 from src.utils.stats import standardized_effect_size_of_mean_difference, calculate_hi_lo_difference_ci, \
-    ConfidenceIntervalCols, StatsCols, calculate_power, cohens_d, cohens_d_paired
+    ConfidenceIntervalCols, StatsCols, calculate_power, cohens_d, cohens_d_paired, calculate_wilcox_signed_rank
 
 
 @dataclass
@@ -21,6 +21,7 @@ class IAResultsCSV:
     descriptive_statistics_measure_summary: str = "descriptive_statistics_internal_measures_correlation.csv"
     ci_of_differences_between_measures: str = "ci_differences_between_internal_measure_correlation.csv"
     paired_t_test: str = "paired_t_test_between_internal_measure_correlation.csv"
+    wilcox_signed_rank: str = "wilcox_signed_rank_between_internal_measure_correlation.csv"
     mean_correlation_data_variant: str = "mean_correlation_data_variants.csv"
     benchmark_summary: str = "benchmark_summary.csv"
     paired_t_test_data_variant: str = "paired_t_test_data_variants.csv"
@@ -29,7 +30,7 @@ class IAResultsCSV:
     internal_measures_for_ground_truth: str = "internal_measures_for_ground_truth.csv"
     distance_measures_ranks_for_ground_truth: str = "distance_measures_ranks_for_ground_truth.csv"
     distance_measures_raw_values_for_ground_truth: str = "distance_measures_raw_values_for_ground_truth.csv"
-    distance_measures_stat_results_for_ground_truth: str = "distance_measures_stat_results_for_ground_truth.csv"
+    distance_measures_stat_results_for_ground_truth: str = "distance_measures_wilcox_results_for_ground_truth.csv"
     reasonable_distance_measures_median_ranges_for_ground_truth: str = "reasonable_distance_measures_ranges_for_ground_truth.csv"
     per_distance_measures_descriptive_stats_for_ground_truth: str = "per_distance_measures_median_ranges_for_ground_truth.csv"
 
@@ -180,6 +181,76 @@ class InternalMeasureAssessment:
         statistics as rows.
         """
         return self.correlation_summary[self.measures_corr_col_names].describe().round(2)
+
+    def wilcoxon_signed_rank_tests_correlation_coefficients(self, alpha=0.05,
+                                                            alternative: str = 'two-sided',
+                                                            bonferroni_adjust: int = 1,
+                                                            non_zero: float = 0.001
+                                                            ):
+        """
+        Calculates wilcoxon signed rank test between paired correlation coefficients.
+        :param alpha: what alpha to use for the power calculation
+        :param alternative: what alternative hypothesis to use for the power calculation
+        :param bonferroni_adjust: how much bonferroni adjustment to use (divide by this int)
+        :param non-zero: which differences in correlation are treated as non-zero.
+        :return: df where the rows are indexed by StatCols p-value, statistics, the columns are the different internal
+         measures combinations
+        """
+        error_msg = "Calculate at least two internal indices to be able to compare them"
+        assert len(self.__comparing_internal_measures) > 0, error_msg
+
+        # invert correlation coefficients for DBI
+        df = self.correlation_summary[self.measures_corr_col_names].copy()
+        dbi_cols = [col for col in df.columns if ClusteringQualityMeasures.dbi in col]
+        # turn copy warning off given that we work on a copy of the df
+        with pd.option_context('mode.chained_assignment', None):
+            # for DBI where lower values are better we need to invert the correlation coefficients for a fair comparison
+            df[dbi_cols] = df[dbi_cols].multiply(-1)
+
+        # measures that we need to compared
+        compare = self.__comparing_internal_measures
+
+        # results
+        names = []
+        p_values = []
+        statistics = []
+        effect_sizes = []
+        powers = []
+        alphas = []
+        nz_pairs = []
+        significants = []
+
+        # perform wilcox test
+        for idx, measure_pair in enumerate(compare):
+            m1_coefficients = df[measure_pair[0]]
+            m2_coefficients = df[measure_pair[1]]
+
+            # calculate statistic
+            wilc_result = calculate_wilcox_signed_rank(m1_coefficients, m2_coefficients, non_zero,
+                                                       alternative=alternative)
+
+            names.append(self.compare_internal_measures_cols[idx])
+            p_values.append(wilc_result.pvalue)
+            statistics.append(wilc_result.statistic)
+            effect_sizes.append(wilc_result.effect_size(alternative=alternative))
+            powers.append(wilc_result.achieved_power(alpha=alpha, bonferroni_adjust=bonferroni_adjust, alternative=alternative))
+            alphas.append(alpha)
+            nz_pairs.append(wilc_result.non_zero)
+            significants.append(wilc_result.is_significant(alpha=alpha, bonferroni_adjust=bonferroni_adjust))
+
+        result = pd.DataFrame({
+            InternalMeasureCols.name: names,
+            StatsCols.is_significant: significants,
+            StatsCols.p_value: p_values,
+            StatsCols.statistic: statistics,
+            StatsCols.effect_size: effect_sizes,
+            StatsCols.achieved_power: powers,
+            StatsCols.alpha: alphas,
+            StatsCols.none_zero_pairs: nz_pairs
+        })
+
+        result = result.set_index(keys=InternalMeasureCols.name).T.round(self.__round_to)
+        return result
 
     def paired_samples_t_test_on_fisher_transformed_correlation_coefficients(self, alpha=0.05,
                                                                              alternative: str = 'two-sided'):
