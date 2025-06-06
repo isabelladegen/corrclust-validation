@@ -1,4 +1,5 @@
 import os
+from multiprocessing import Pool
 
 import pandas as pd
 
@@ -38,10 +39,46 @@ def read_clustering_quality_measures(overall_ds_name: str, data_type: str, root_
     return results_for_run
 
 
+def process_single_run(args):
+    """
+    Worker function to process a single run_id to allow subjects to be processed in parallel
+    """
+    (run_id, data, gt_label, partitions, distance_measure,
+     data_type, data_dir, store_results_in, internal_measures) = args
+
+    try:
+        print(f"Processing {run_id} on process {os.getpid()}")
+
+        # Heavy computation happens here
+        sum_df = DescribeBadPartitions(
+            ds_name=run_id,
+            distance_measure=distance_measure,
+            data_type=data_type,
+            internal_measures=internal_measures,
+            data_dir=data_dir,
+            data=data,
+            gt_label=gt_label,
+            partitions=partitions
+        ).summary_df.copy()
+
+        # Save results
+        file_name = get_internal_measures_summary_file_name(run_id)
+        output_path = os.path.join(store_results_in, file_name)
+        sum_df.to_csv(str(output_path))
+
+        print(f"Completed {run_id}")
+        return f"Success: {run_id}"
+
+    except Exception as e:
+        error_msg = f"Error processing {run_id}: {str(e)}"
+        print(error_msg)
+        return error_msg
+
+
 def run_internal_measure_calculation_for_dataset(overall_ds_name: str, data_dict: [str],
                                                  gt_labels_dict: [str], partitions_dict: [str], distance_measure: str,
                                                  data_type: str, data_dir: str, results_dir: str,
-                                                 internal_measures: [str]):
+                                                 internal_measures: [str], n_cores: int):
     """
     Calculates the internal measure assessment for all ds in the csv files of the generated runs
     :param overall_ds_name: a name for the dataset we're using e.g. n30 or n2
@@ -55,27 +92,40 @@ def run_internal_measure_calculation_for_dataset(overall_ds_name: str, data_dict
     :param results_dir: directory where to store the results, it will use a subdirectory based on the distance measure,
     and the data type
     :param internal_measures: list of internal measures to assess
+    :param n_cores: number of cores to use
     """
-    assert len(data_dict) == len(gt_labels_dict) == len(partitions_dict), "Inconsistent run ids for data, labels and partitions"
+    assert len(data_dict) == len(gt_labels_dict) == len(
+        partitions_dict), "Inconsistent run ids for data, labels and partitions"
     store_results_in = internal_measure_calculation_dir_for(
         overall_dataset_name=overall_ds_name,
         data_type=data_type,
         results_dir=results_dir,
         data_dir=data_dir,
         distance_measure=distance_measure)
+
+    # Prepare arguments for each worker
+    worker_args = []
     for run_id in data_dict.keys():
-        print(run_id)
-        # give preloaded data to only load once per data variant for each distance measure
-        sum_df = DescribeBadPartitions(ds_name=run_id,
-                                       distance_measure=distance_measure,
-                                       data_type=data_type,
-                                       internal_measures=internal_measures,
-                                       data_dir=data_dir,
-                                       data=data_dict[run_id],
-                                       gt_label=gt_labels_dict[run_id],
-                                       partitions=partitions_dict[run_id]).summary_df.copy()
-        file_name = get_internal_measures_summary_file_name(run_id)
-        sum_df.to_csv(str(os.path.join(store_results_in, file_name)))
+        args = (run_id, data_dict[run_id], gt_labels_dict[run_id], partitions_dict[run_id], distance_measure, data_type,
+                data_dir, store_results_in, internal_measures)
+        worker_args.append(args)
+
+    # process multiple subjects in parallel
+    with Pool(processes=n_cores) as pool:
+        results = pool.map(process_single_run, worker_args)
+
+        # Report results
+    success_count = sum(1 for r in results if r.startswith("Success"))
+    error_count = len(results) - success_count
+
+    print(f"  Successful: {success_count}")
+    print(f"  Errors: {error_count}")
+
+    if error_count > 0:
+        print("Errors encountered:")
+        for result in results:
+            if not result.startswith("Success"):
+                print(f"  {result}")
 
 
 def load_all_clustering_data_for_subjects_and_data_type(run_ids: str, data_type: str, data_dir: str):
@@ -130,11 +180,21 @@ if __name__ == "__main__":
     # data_dirs = [SYNTHETIC_DATA_DIR]
     results_dir = ROOT_RESULTS_DIR
 
+    # d_by_type = {
+    #     (IRREGULAR_P90_DATA_DIR, SyntheticDataType.normal_correlated): [DistanceMeasures.l2_cor_dist,
+    #                                                                     DistanceMeasures.l3_cor_dist,
+    #                                                                     DistanceMeasures.linf_cor_dist],
+    # }
+
     for data_dir in data_dirs:
         for data_type in data_types:
+            variant = (data_dir, data_type)
+            # if variant not in d_by_type.keys():
+            #     continue
             print(f"Load all data for data type {data_type} and data dir {data_dir}")
             data_dict, gt_labels_dict, partitions_dict = load_all_clustering_data_for_subjects_and_data_type(
                 run_ids=run_names, data_type=data_type, data_dir=data_dir)
+            # dms = d_by_type[variant]
             for distance_measure in distance_measures:
                 print(f"Calculate Clustering Quality for distance measure {distance_measure}")
                 run_internal_measure_calculation_for_dataset(overall_dataset_name, data_dict=data_dict,
@@ -142,4 +202,5 @@ if __name__ == "__main__":
                                                              partitions_dict=partitions_dict,
                                                              distance_measure=distance_measure, data_type=data_type,
                                                              data_dir=data_dir, results_dir=results_dir,
-                                                             internal_measures=internal_measures)
+                                                             internal_measures=internal_measures,
+                                                             n_cores=6)

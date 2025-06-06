@@ -5,9 +5,10 @@ from src.evaluation.internal_measure_assessment import InternalMeasureAssessment
 from src.experiments.run_cluster_quality_measures_calculation import read_clustering_quality_measures
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR, \
-    GENERATED_DATASETS_FILE_PATH, ROOT_RESULTS_DIR, internal_measure_evaluation_dir_for
+    GENERATED_DATASETS_FILE_PATH, ROOT_RESULTS_DIR, internal_measure_evaluation_dir_for, get_data_completeness_from
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
+from src.visualisation.run_average_rank_visualisations import data_variant_description
 
 if __name__ == "__main__":
     overall_dataset_name = "n30"
@@ -33,12 +34,13 @@ if __name__ == "__main__":
                   SyntheticDataType.non_normal_correlated, SyntheticDataType.rs_1min]
     data_dirs = [SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR]
 
-    # list of distance measure for each internal measure that has correlation > 0.5 for all data variants
-    correlation_results = {i: [] for i in internal_measures}
+    data_variants = []
+    dms = []
+    corr_strengths = {"r " +im: []for im in internal_measures}
+    passes = {im: []for im in internal_measures}
 
     for distance_measure in distance_measures:
         # list of true or false whether all correlation are > 0.5 for internal measure for data variant
-        correlation_significant = correlation_results.copy()
         for data_dir in data_dirs:
             for data_type in data_types:
                 # load data
@@ -59,22 +61,37 @@ if __name__ == "__main__":
                 # correlation summary
                 summary = ia.correlation_summary
 
-                # evaluate if result is significant
-                sig_cor = (summary[ia.measures_corr_col_names] > min_corr_required).all().tolist()
-                for idx, col in enumerate(ia.measures_corr_col_names):
-                    measure_name = col.split(', ')[0].replace('r ', '')
-                    correlation_significant[measure_name].append(sig_cor[idx])
+                # mean values
+                mean_series = ia.descriptive_statistics_for_internal_measures_correlation().loc["mean"]
+
+                # results
+                data_variants.append(data_variant_description[(get_data_completeness_from(data_dir), data_type)])
+                dms.append(distance_measure)
+                for im_long in mean_series.index:
+                    means = mean_series[im_long]
+                    im = im_long.split(', ')[0].replace('r ', '')
+                    corr_strengths["r " + im].append(means)
+                    # deal with DBI being negative
+                    if im == ClusteringQualityMeasures.dbi:
+                        passes[im].append((means * -1) > min_corr_required)
+                    else:
+                        passes[im].append(means > min_corr_required)
 
                 # save result
                 summary.to_csv(
                     get_full_filename_for_results_csv(store_results_in, IAResultsCSV.correlation_summary))
 
-        # now check if all data variant were significant and save in overall result
-        for measure in internal_measures:
-            if all(correlation_significant[measure]):
-                # only add the distance measures that were significant across all data variants
-                correlation_results[measure].append(distance_measure)
+    # save significant result
+    df_data = {}
+    df_data['Data variant'] = data_variants
+    df_data['Distance Measure'] = dms
+    df_data.update(corr_strengths)
+    df_data.update(passes)
+    df = pd.DataFrame(df_data)
 
-
-    print("Filtered results:")
-    print(correlation_results)
+    store_overall_in = internal_measure_evaluation_dir_for(
+        overall_dataset_name=overall_dataset_name,
+        data_type="",
+        results_dir=root_result_dir, data_dir="",
+        distance_measure="")
+    df.to_csv(get_full_filename_for_results_csv(store_overall_in, IAResultsCSV.passes_min_correlation))

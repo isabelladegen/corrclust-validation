@@ -202,7 +202,7 @@ class InternalMeasureGroundTruthAssessment:
             compared_dms.append(dm_2)
             not_tested_dms.append(set(ordered_dm[1:])-set(dms_tested))
             internal_measures.append(internal_index)
-            p_values.append(wilc_result.pvalue)
+            p_values.append(wilc_result.p_value)
             statistics.append(wilc_result.statistic)
             effect_sizes.append(wilc_result.effect_size(alternative=alternative))
             achieved_powers.append(wilc_result.achieved_power(alpha=alpha, bonferroni_adjust=bonferroni_adjust,

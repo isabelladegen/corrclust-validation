@@ -114,7 +114,7 @@ def calculate_count_compare_statistics(dropped_dirs, completeness, dataset_types
         stats_for_measure = all_stats_results[measure]
         combined_stats_df = pd.concat(stats_for_measure, ignore_index=True)
         filename = "_".join([type, measure, distance_measure,
-                             IAResultsCSV.distance_measures_stat_results_for_ground_truth])
+                             IAResultsCSV.family_2_results])
         combined_stats_df.to_csv(str(os.path.join(store_results_in, filename)))
 
 

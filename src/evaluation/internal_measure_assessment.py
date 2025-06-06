@@ -16,12 +16,14 @@ from src.utils.stats import standardized_effect_size_of_mean_difference, calcula
 
 @dataclass
 class IAResultsCSV:
+    passes_min_correlation: str = "passes_min_correlation.csv"
     correlation_summary: str = "correlation_summary.csv"
     effect_size_difference_worst_best: str = "effect_size_difference_of_worst_to_best_partition.csv"
     descriptive_statistics_measure_summary: str = "descriptive_statistics_internal_measures_correlation.csv"
     ci_of_differences_between_measures: str = "ci_differences_between_internal_measure_correlation.csv"
     paired_t_test: str = "paired_t_test_between_internal_measure_correlation.csv"
-    wilcox_signed_rank: str = "wilcox_signed_rank_between_internal_measure_correlation.csv"
+    family_4: str = "family_4_wilcox_signed_rank_between_internal_measure_correlation.csv"
+    family_3: str = "family_3_wilcox_signed_rank_correlation_stepdown_dms.csv"
     mean_correlation_data_variant: str = "mean_correlation_data_variants.csv"
     benchmark_summary: str = "benchmark_summary.csv"
     paired_t_test_data_variant: str = "paired_t_test_data_variants.csv"
@@ -30,8 +32,7 @@ class IAResultsCSV:
     internal_measures_for_ground_truth: str = "internal_measures_for_ground_truth.csv"
     distance_measures_ranks_for_ground_truth: str = "distance_measures_ranks_for_ground_truth.csv"
     distance_measures_raw_values_for_ground_truth: str = "distance_measures_raw_values_for_ground_truth.csv"
-    distance_measures_stat_results_for_ground_truth: str = "distance_measures_wilcox_results_for_ground_truth.csv"
-    family_4_tests: str = "family_4_tests.csv"
+    family_2_results: str = "distance_measures_wilcox_results_family_2.csv"
     reasonable_distance_measures_median_ranges_for_ground_truth: str = "reasonable_distance_measures_ranges_for_ground_truth.csv"
     per_distance_measures_descriptive_stats_for_ground_truth: str = "per_distance_measures_median_ranges_for_ground_truth.csv"
 
@@ -231,23 +232,23 @@ class InternalMeasureAssessment:
                                                        alternative=alternative)
 
             names.append(self.compare_internal_measures_cols[idx])
-            p_values.append(wilc_result.pvalue)
-            statistics.append(wilc_result.statistic)
             effect_sizes.append(wilc_result.effect_size(alternative=alternative))
+            nz_pairs.append(wilc_result.non_zero)
+            p_values.append(wilc_result.p_value)
+            statistics.append(wilc_result.statistic)
             powers.append(wilc_result.achieved_power(alpha=alpha, bonferroni_adjust=bonferroni_adjust, alternative=alternative))
             alphas.append(alpha)
-            nz_pairs.append(wilc_result.non_zero)
             significants.append(wilc_result.is_significant(alpha=alpha, bonferroni_adjust=bonferroni_adjust))
 
         result = pd.DataFrame({
             InternalMeasureCols.name: names,
+            StatsCols.effect_size: effect_sizes,
+            StatsCols.none_zero_pairs: nz_pairs,
             StatsCols.is_significant: significants,
             StatsCols.p_value: p_values,
             StatsCols.statistic: statistics,
-            StatsCols.effect_size: effect_sizes,
             StatsCols.achieved_power: powers,
             StatsCols.alpha: alphas,
-            StatsCols.none_zero_pairs: nz_pairs
         })
 
         result = result.set_index(keys=InternalMeasureCols.name).T.round(self.__round_to)

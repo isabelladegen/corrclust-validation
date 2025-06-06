@@ -54,7 +54,7 @@ def rank_distance_measures_by_raw_values_run_wilcox_signed_rank_tests(data_dirs:
         distance_measure='')  # all distances measures included
 
     # save stats results
-    result.to_csv(str(os.path.join(store_results_in, IAResultsCSV.distance_measures_stat_results_for_ground_truth)))
+    result.to_csv(str(os.path.join(store_results_in, IAResultsCSV.family_2_results)))
 
 
 if __name__ == "__main__":
@@ -88,7 +88,7 @@ if __name__ == "__main__":
                                                                       root_results_dir=root_result_dir,
                                                                       distance_measures=distance_measures,
                                                                       internal_measures=internal_measures,
-                                                                      alpha=0.5,
+                                                                      alpha=0.05,
                                                                       alternative="two-sided",
                                                                       bf_adjust=1,
                                                                       non_zero=0.0001
