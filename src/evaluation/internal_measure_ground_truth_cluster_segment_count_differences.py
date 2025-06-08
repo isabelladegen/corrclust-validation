@@ -82,7 +82,7 @@ class InternalMeasureGroundTruthClusterSegmentCount:
 
     def wilcoxons_signed_rank_between_all_counts(self, stats_value: str = '50%', alpha: float = 0.05,
                                                  bonferroni_adjust: int = 1, alternative: str = 'two-sided',
-                                                 non_zero: float = 0.00000001):
+                                                 non_zero: float = 0.0001):
         """
         Calculates for each internal measure the wilcoxon's signed rank test of all count combinations
         """

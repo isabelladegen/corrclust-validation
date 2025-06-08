@@ -33,6 +33,7 @@ class IAResultsCSV:
     distance_measures_ranks_for_ground_truth: str = "distance_measures_ranks_for_ground_truth.csv"
     distance_measures_raw_values_for_ground_truth: str = "distance_measures_raw_values_for_ground_truth.csv"
     family_2_results: str = "distance_measures_wilcox_results_family_2.csv"
+    family_5_and_6_results: str = "wilcox_results_family_5_and_6.csv"
     reasonable_distance_measures_median_ranges_for_ground_truth: str = "reasonable_distance_measures_ranges_for_ground_truth.csv"
     per_distance_measures_descriptive_stats_for_ground_truth: str = "per_distance_measures_median_ranges_for_ground_truth.csv"
 

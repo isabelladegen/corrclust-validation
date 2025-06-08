@@ -18,7 +18,8 @@ from src.visualisation.run_average_rank_visualisations import data_variant_descr
 
 def calculate_count_compare_statistics(dropped_dirs, completeness, dataset_types, reduced_root_results_dir,
                                        original_root_result_dir, distance_measure,
-                                       internal_measures, overall_ds_name, stats_value, type):
+                                       internal_measures, overall_ds_name, stats_value, type,
+                                       alternative, bonferroni_adjust, non_zero, alpha):
     # create variant description that serve as keys
     variant_descriptions = []
     for comp in completeness:
@@ -65,7 +66,9 @@ def calculate_count_compare_statistics(dropped_dirs, completeness, dataset_types
                                                                original_root_result=original_root_result_dir)
             variant_desc = data_variant_description[(comp, data_type)]
             raw_values_for_variant = ga.stats_for_raw_values_across_all_runs()
-            stats_results = ga.wilcoxons_signed_rank_between_all_counts()
+            stats_results = ga.wilcoxons_signed_rank_between_all_counts(alpha=alpha,
+                                                                        bonferroni_adjust=bonferroni_adjust,
+                                                                        alternative=alternative, non_zero=non_zero)
 
             for internal_measure in internal_measures:
                 all_raw_values[internal_measure][variant_desc] = raw_values_for_variant[internal_measure].loc[
@@ -114,7 +117,7 @@ def calculate_count_compare_statistics(dropped_dirs, completeness, dataset_types
         stats_for_measure = all_stats_results[measure]
         combined_stats_df = pd.concat(stats_for_measure, ignore_index=True)
         filename = "_".join([type, measure, distance_measure,
-                             IAResultsCSV.family_2_results])
+                             IAResultsCSV.family_5_and_6_results])
         combined_stats_df.to_csv(str(os.path.join(store_results_in, filename)))
 
 
@@ -139,6 +142,10 @@ if __name__ == "__main__":
     backend = Backends.none.value
     save_fig = True
     stats_value = '50%'  # use median
+    bonferroni_adjust = 1
+    alpha = 0.05
+    alternative = 'two-sided'
+    non_zero = 0.0001
 
     internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb,
                          ClusteringQualityMeasures.vrc, ClusteringQualityMeasures.dbi]
@@ -157,7 +164,11 @@ if __name__ == "__main__":
                                        original_root_result_dir=ROOT_RESULTS_DIR,
                                        distance_measure=distance_measure,
                                        internal_measures=internal_measures,
-                                       stats_value=stats_value, type='clusters')
+                                       stats_value=stats_value, type='clusters',
+                                       alpha=alpha,
+                                       alternative=alternative,
+                                       bonferroni_adjust=bonferroni_adjust,
+                                       non_zero=non_zero)
 
     # Evaluate for segments
     print("DROPPED SEGMENTS")
@@ -173,4 +184,9 @@ if __name__ == "__main__":
                                        original_root_result_dir=ROOT_RESULTS_DIR,
                                        distance_measure=distance_measure,
                                        internal_measures=internal_measures,
-                                       stats_value=stats_value, type='segments')
+                                       stats_value=stats_value, type='segments',
+                                       alpha=alpha,
+                                       alternative=alternative,
+                                       bonferroni_adjust=bonferroni_adjust,
+                                       non_zero=non_zero
+                                       )
