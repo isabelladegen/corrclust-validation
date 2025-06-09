@@ -7,7 +7,9 @@ from src.evaluation.describe_bad_partitions import DescribeBadPartCols
 from src.experiments.run_calculate_internal_measures_for_ground_truth import \
     read_ground_truth_clustering_quality_measures
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
+from src.utils.configurations import get_data_completeness_from
 from src.utils.stats import calculate_wilcox_signed_rank, StatsCols
+from src.visualisation.run_average_rank_visualisations import data_variant_description
 
 # value for ascending, if true lowest value will get rank 1, if falls highest value will get rank 1
 internal_measure_lower_values_best = {
@@ -16,6 +18,19 @@ internal_measure_lower_values_best = {
     ClusteringQualityMeasures.vrc: False,  # higher is better
     ClusteringQualityMeasures.pmb: False,  # higher is better
 }
+
+
+def hypotheses_string(m1: str, m2: str, effect_size: float, alternative: str):
+    if alternative == 'less':
+        return "<".join([m1, m2])
+    elif alternative == 'greater':
+        return ">".join([m1, m2])
+    elif alternative == 'two-sided':
+        if effect_size < 0:
+            return "<".join([m1, m2])
+        else:
+            return ">".join([m1, m2])
+    return "?"
 
 
 @dataclass
@@ -152,7 +167,7 @@ class InternalMeasureGroundTruthAssessment:
         :return: df with rows for each internal measure and columns wilcoxon results
         """
         # dm are tested in order of rank (lowest is best)
-        #dictionary{key=internal measure name: values= df with rows=describe stats, columns= distance measures,
+        # dictionary{key=internal measure name: values= df with rows=describe stats, columns= distance measures,
         # cells=rank stats for that distance measure across all subjects
         ranked_dm = self.stats_for_ranks_across_all_runs()
 
@@ -200,7 +215,7 @@ class InternalMeasureGroundTruthAssessment:
 
             # save result for last dm tested
             compared_dms.append(dm_2)
-            not_tested_dms.append(set(ordered_dm[1:])-set(dms_tested))
+            not_tested_dms.append(set(ordered_dm[1:]) - set(dms_tested))
             internal_measures.append(internal_index)
             p_values.append(wilc_result.p_value)
             statistics.append(wilc_result.statistic)
@@ -214,8 +229,8 @@ class InternalMeasureGroundTruthAssessment:
 
         # create dataframe
         results_dict = {
-            "Internal Measure" : internal_measures,
-            "Best ranked dm" : best_dms,
+            "Internal Measure": internal_measures,
+            "Best ranked dm": best_dms,
             "compared to dm": compared_dms,
             GroupAssessmentCols.is_significat: is_significances,
             GroupAssessmentCols.p_value: p_values,
@@ -227,6 +242,77 @@ class InternalMeasureGroundTruthAssessment:
             GroupAssessmentCols.alpha: alphas_used,
             GroupAssessmentCols.statistic: statistics,
         }
+        df = pd.DataFrame(results_dict)
+
+        return df
+
+    def wicoxons_between(self, dm1: str, dm2: str, alpha: float = 0.05,
+                         target_power: float = 0.8, bonferroni_adjust: int = 1, alternative: str = 'two-sided',
+                         non_zero: float = 0.0001):
+        """
+        Calculates  the wilcoxon's signed rank between dm1 and dm2.
+        :param dm1: distance measure 1
+        :param dm2: distance measure 2
+        :param alpha: significance level
+        :param target_power: to calculate n required to achieve target power, e.g 0.8 for 80%
+        :param bonferroni_adjust: divide alpha by this to adjust for multiplicity
+        :param alternative: which alternative to test
+        :param non_zero: what differences to consider zero
+        :return: df of wilxocon's signed rank result
+        """
+        # raw values
+        raw_values = self.raw_scores_for_each_internal_measure()
+
+        # results to build dataframe
+        data_variants = []
+        internal_measures = []
+        hypotheses = []
+        is_significances = []
+        effect_sizes = []
+        p_values = []
+        nz_pairs = []
+        achieved_powers = []
+        statistics = []
+        alphas_used = []
+        n_target_powers = []
+        data_variant = data_variant_description[(get_data_completeness_from(self.data_dir), self.data_type)]
+
+        # run tests for each internal index
+        for internal_index in self.internal_measures:
+            # df of columns are distance measures, values are the scores for the runs
+            values = raw_values[internal_index]
+
+            wilc_result = calculate_wilcox_signed_rank(values[dm1], values[dm2], non_zero,
+                                                       alternative=alternative)
+            es = wilc_result.effect_size(alternative=alternative)
+            data_variants.append(data_variant)
+            internal_measures.append(internal_index)
+            hypotheses.append(hypotheses_string(dm1, dm2, effect_size=es, alternative=alternative))
+            p_values.append(wilc_result.p_value)
+            nz_pairs.append(wilc_result.non_zero)
+            statistics.append(wilc_result.statistic)
+            effect_sizes.append(es)
+            achieved_powers.append(wilc_result.achieved_power(alpha=alpha, bonferroni_adjust=bonferroni_adjust,
+                                                              alternative=alternative))
+            alphas_used.append(alpha)
+            n_target_powers.append(wilc_result.sample_size_for_power(target_power=target_power, alternative=alternative, alpha=alpha, bonferroni_adjust=bonferroni_adjust))
+            is_significances.append(True)
+
+        results_dict = {
+            "Data Variant": data_variants,
+            "Internal Measure": internal_measures,
+            "H": hypotheses,
+            GroupAssessmentCols.p_value: p_values,
+            GroupAssessmentCols.effect_size: effect_sizes,
+            GroupAssessmentCols.non_zero_pairs: nz_pairs,
+            GroupAssessmentCols.achieved_power: achieved_powers,
+            GroupAssessmentCols.is_significat: is_significances,
+            GroupAssessmentCols.alpha: alphas_used,
+            GroupAssessmentCols.statistic: statistics,
+            StatsCols.n_for_power_80: n_target_powers,
+        }
+
+        # create dataframe
         df = pd.DataFrame(results_dict)
 
         return df
