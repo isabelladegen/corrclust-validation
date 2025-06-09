@@ -42,7 +42,7 @@ def run_family2_wilcox_signed_rank_tests_for_hypotheses(prereg_hypotheses: [], r
         results.append(wilc_result_df)
 
     # Save result
-    stats_df = pd.concat(stats_results)
+    stats_df = pd.concat(results)
     store_results_in = internal_measure_evaluation_dir_for(
         overall_dataset_name=overall_ds_name,
         data_type='',  # all datatypes as rows
