@@ -296,7 +296,7 @@ class InternalMeasureGroundTruthAssessment:
                                                               alternative=alternative))
             alphas_used.append(alpha)
             n_target_powers.append(wilc_result.sample_size_for_power(target_power=target_power, alternative=alternative, alpha=alpha, bonferroni_adjust=bonferroni_adjust))
-            is_significances.append(True)
+            is_significances.append(wilc_result.is_significant(alpha=alpha, bonferroni_adjust=bonferroni_adjust))
 
         results_dict = {
             "Data Variant": data_variants,

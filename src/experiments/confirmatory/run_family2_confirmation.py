@@ -15,7 +15,6 @@ from src.utils.load_synthetic_data import SyntheticDataType
 
 def run_family2_wilcox_signed_rank_tests_for_hypotheses(prereg_hypotheses: [], root_results_dir: str,
                                                         overall_ds_name: str):
-    stats_results = []
     alpha = 0.05
     target_power = 0.8
     bonferroni_adjust = 1  # no adjustment due to hierarchical testing
