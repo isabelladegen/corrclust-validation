@@ -15,11 +15,13 @@ from src.utils.stats import calculate_wilcox_signed_rank, StatsCols
 from src.visualisation.run_average_rank_visualisations import data_variant_description
 
 
-def stats_for_ranks_across_all_runs(correlation_values_for_im: pd.DataFrame, internal_measure: str, round_to: int = 3):
-    """ Calculates ranks of dm columns for the given internal measure and returns stats for ranks"""
+def stats_for_correlation_ranks_across_all_runs(correlation_values_for_im: pd.DataFrame, internal_measure: str,
+                                                round_to: int = 3):
+    """ Calculates ranks of dm columns for the given internal measure and returns stats for ranks
+    Expects DBI to have been inverted to positive correlations
+    """
     # Rank across columns (axis=1) for each row
-    ranked_df = correlation_values_for_im.rank(axis=1, method='dense',
-                                               ascending=internal_measure_lower_values_best[internal_measure])
+    ranked_df = correlation_values_for_im.rank(axis=1, method='dense', ascending=False)
     return ranked_df.describe().round(round_to)
 
 
@@ -46,7 +48,7 @@ def wilcoxons_signed_rank_correlation_step_down(correlations_for_internal_measur
     # dm are tested in order of rank (lowest is best)
     # df with rows=describe stats, columns= distance measures,
     # cells=rank stats for that distance measure across all subjects
-    ranks = stats_for_ranks_across_all_runs(values, internal_measure)
+    ranks = stats_for_correlation_ranks_across_all_runs(values, internal_measure)
 
     ordered_dm = ranks.loc['mean'].sort_values().index.tolist()
     dm_1 = ordered_dm[0]
@@ -106,29 +108,8 @@ def run_wilcox_signed_rank_for(overall_ds_name: str, run_names: [str], distance_
     :param alpha: how much significant differences we should consider
     :return wilcox results as a list of series for each internal measure
     """
-    # dictionary with key = dm and values correlation f
-    correlations = {}
-    for dm in distance_measures:
-        # load all the internal measure calculation summaries
-        partitions = read_clustering_quality_measures(overall_ds_name=overall_ds_name, data_type=data_type,
-                                                      root_results_dir=results_dir, data_dir=data_dir,
-                                                      distance_measure=dm, run_names=run_names)
-        ia = InternalMeasureAssessment(distance_measure=dm, dataset_results=partitions,
-                                       internal_measures=internal_measures, )
-        # keep relevant r columns and names
-        correlation_summary = ia.correlation_summary[
-            [InternalMeasureCols.name] + list(ia.measures_corr_col_names)].copy()
-
-        # rename columns to measures
-        rename_to_measures = {next((s for s in ia.measures_corr_col_names if im in s), None): im for im in
-                              internal_measures}
-        correlation_summary = correlation_summary.rename(columns=rename_to_measures)
-        correlation_summary.set_index(InternalMeasureCols.name, inplace=True)
-        correlations[dm] = correlation_summary
-
-    # create one big dataframe, with index run_name and columns multiindex first level internal measure,
-    # second level internal dm
-    overall_df = pd.concat(correlations, axis=1).swaplevel(axis=1)
+    overall_df = calculate_correlation_summary_for(data_dir, data_type, distance_measures, internal_measures,
+                                                   overall_ds_name, results_dir, run_names)
 
     # calculate step down wilcox signed rank for each internal measure
     wilx_results = []
@@ -144,6 +125,30 @@ def run_wilcox_signed_rank_for(overall_ds_name: str, run_names: [str], distance_
     return wilx_results
 
 
+def calculate_correlation_summary_for(data_dir, data_type, distance_measures, internal_measures, overall_ds_name,
+                                      results_dir, run_names):
+    # dictionary with key = dm and values correlation f
+    correlations = {}
+    for dm in distance_measures:
+        # load all the internal measure calculation summaries
+        partitions = read_clustering_quality_measures(overall_ds_name=overall_ds_name, data_type=data_type,
+                                                      root_results_dir=results_dir, data_dir=data_dir,
+                                                      distance_measure=dm, run_names=run_names)
+        ia = InternalMeasureAssessment(distance_measure=dm, dataset_results=partitions,
+                                       internal_measures=internal_measures, )
+        # keep relevant r columns and names
+        correlation_summary = ia.correlations_for_statistical_tests()
+
+        # rename columns to measures
+        rename_to_measures = {next((s for s in ia.measures_corr_col_names if im in s), None): im for im in
+                              internal_measures}
+        correlation_summary = correlation_summary.rename(columns=rename_to_measures)
+        correlation_summary.set_index(InternalMeasureCols.name, inplace=True)
+        correlations[dm] = correlation_summary
+    # create one big dataframe, with index run_name and columns multiindex first level internal measure,
+    # second level internal dm
+    overall_df = pd.concat(correlations, axis=1).swaplevel(axis=1)
+    return overall_df
 
 
 if __name__ == "__main__":

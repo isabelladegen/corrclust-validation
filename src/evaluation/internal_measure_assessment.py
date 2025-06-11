@@ -24,6 +24,7 @@ class IAResultsCSV:
     paired_t_test: str = "paired_t_test_between_internal_measure_correlation.csv"
     family_4: str = "family_4_wilcox_signed_rank_between_internal_measure_correlation.csv"
     family_3: str = "family_3_wilcox_signed_rank_correlation_stepdown_dms.csv"
+    family_3_results: str = "family_3_wilcox_signed_rank_correlation_dms.csv"
     mean_correlation_data_variant: str = "mean_correlation_data_variants.csv"
     benchmark_summary: str = "benchmark_summary.csv"
     paired_t_test_data_variant: str = "paired_t_test_data_variants.csv"
@@ -148,6 +149,19 @@ class InternalMeasureAssessment:
 
         self.correlation_summary = corr_df
 
+    def correlations_for_statistical_tests(self):
+        """Return correlation coefficients with DBI being multiplied by -1 so they can be compared the same way as
+           Positive correlation coefficients
+           :return pd.DataFrame copy of correlation summary with correlation coefficients
+        """
+        df = self.correlation_summary[[InternalMeasureCols.name] + list(self.measures_corr_col_names)].copy()
+        dbi_cols = [col for col in df.columns if ClusteringQualityMeasures.dbi in col]
+        # turn copy warning off given that we work on a copy of the df
+        with pd.option_context('mode.chained_assignment', None):
+            # for DBI where lower values are better we need to invert the correlation coefficients for a fair comparison
+            df[dbi_cols] = df[dbi_cols].multiply(-1)
+        return df
+
     def effect_size_and_ci_of_difference_of_means_gt_and_worst_partition(self, internal_measure: str,
                                                                          worst_ranked_by: str, z=1.96):
         """Calculates Cohen's d effect size and CI (with z=1.96 this is the 95% CI) of the differences in mean of the
@@ -203,12 +217,7 @@ class InternalMeasureAssessment:
         assert len(self.__comparing_internal_measures) > 0, error_msg
 
         # invert correlation coefficients for DBI
-        df = self.correlation_summary[self.measures_corr_col_names].copy()
-        dbi_cols = [col for col in df.columns if ClusteringQualityMeasures.dbi in col]
-        # turn copy warning off given that we work on a copy of the df
-        with pd.option_context('mode.chained_assignment', None):
-            # for DBI where lower values are better we need to invert the correlation coefficients for a fair comparison
-            df[dbi_cols] = df[dbi_cols].multiply(-1)
+        df = self.correlations_for_statistical_tests()
 
         # measures that we need to compared
         compare = self.__comparing_internal_measures
@@ -237,7 +246,8 @@ class InternalMeasureAssessment:
             nz_pairs.append(wilc_result.non_zero)
             p_values.append(wilc_result.p_value)
             statistics.append(wilc_result.statistic)
-            powers.append(wilc_result.achieved_power(alpha=alpha, bonferroni_adjust=bonferroni_adjust, alternative=alternative))
+            powers.append(
+                wilc_result.achieved_power(alpha=alpha, bonferroni_adjust=bonferroni_adjust, alternative=alternative))
             alphas.append(alpha)
             significants.append(wilc_result.is_significant(alpha=alpha, bonferroni_adjust=bonferroni_adjust))
 
@@ -271,13 +281,7 @@ class InternalMeasureAssessment:
         assert len(self.__comparing_internal_measures) > 0, error_msg
 
         # calculate fisher z score of each of the correlation coefficient
-        # use the absolute of the values as we don't care about the direction of the correlation just the strength
-        df = self.correlation_summary[self.measures_corr_col_names]
-        dbi_cols = [col for col in df.columns if ClusteringQualityMeasures.dbi in col]
-        # turn copy warning off given that we use the values to create a new df
-        with pd.option_context('mode.chained_assignment', None):
-            # for DBI where lower values are better we need to invert the correlation coefficients for a fair comparison
-            df[dbi_cols] = df[dbi_cols].multiply(-1)
+        df = self.correlations_for_statistical_tests()[self.measures_corr_col_names]
         df = pd.DataFrame(np.arctanh(df.values), index=df.index, columns=df.columns)
 
         # measures that we need to compared

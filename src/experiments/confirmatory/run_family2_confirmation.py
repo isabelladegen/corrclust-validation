@@ -36,8 +36,8 @@ def run_family2_wilcox_signed_rank_tests_for_hypotheses(prereg_hypotheses: [], r
                                                   data_dir=data_dir,
                                                   data_type=data_type,
                                                   root_results_dir=root_results_dir)
-        wilc_result_df = ga.wicoxons_between(dm1=m1, dm2=m2, alpha=alpha, bonferroni_adjust=bonferroni_adjust,
-                                             alternative=alternative, non_zero=non_zero, target_power=target_power)
+        wilc_result_df = ga.wilcoxons_between(dm1=m1, dm2=m2, alpha=alpha, bonferroni_adjust=bonferroni_adjust,
+                                              alternative=alternative, non_zero=non_zero, target_power=target_power)
         results.append(wilc_result_df)
 
     # Save result
@@ -84,7 +84,7 @@ if __name__ == "__main__":
          DistanceMeasures.l5_cor_dist,),
         (downsampled, complete, ClusteringQualityMeasures.silhouette_score, DistanceMeasures.l5_cor_dist,
          DistanceMeasures.linf_cor_dist),
-        (normal, complete, ClusteringQualityMeasures.dbi, DistanceMeasures.l5_with_ref, DistanceMeasures.linf_cor_dist),
+        (normal, complete, ClusteringQualityMeasures.dbi, DistanceMeasures.l5_with_ref, DistanceMeasures.l3_cor_dist),
         (non_normal, complete, ClusteringQualityMeasures.silhouette_score, DistanceMeasures.linf_cor_dist,
          DistanceMeasures.l5_cor_dist,),
         (downsampled, partial, ClusteringQualityMeasures.silhouette_score, DistanceMeasures.l5_cor_dist,

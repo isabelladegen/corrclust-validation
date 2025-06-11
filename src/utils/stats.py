@@ -67,7 +67,7 @@ class WilcoxResult:
         if alternative == 'two-sided':
             z_score = norm.ppf(self.p_value / 2)  # divide by 2 for two-tailed test
         else:
-            z_score = norm.ppf(self.p_value)  # divide by 2 for two-tailed test
+            z_score = norm.ppf(self.p_value)  # one tailed tests so no division
         r = self.effect_direction * abs(z_score) / np.sqrt(self.non_zero)
         return round(r, self.__round_to)
 
@@ -92,7 +92,7 @@ class WilcoxResult:
         adjusted_alpha = self.adjusted_alpha(alpha=alpha, bonferroni_adjust=bonferroni_adjust)
         power_analysis = TTestPower()
         achieved_power = power_analysis.power(
-            effect_size=self.effect_size(),
+            effect_size=self.effect_size(alternative=alternative),
             nobs=self.non_zero,
             alpha=adjusted_alpha,
             alternative=alternative
@@ -109,7 +109,7 @@ class WilcoxResult:
         if alternative == 'greater':
             alternative = 'larger'
         required_n = power_analysis.solve_power(
-            effect_size=self.effect_size(),
+            effect_size=self.effect_size(alternative=alternative),
             power=target_power,
             alpha=adjusted_alpha,
             alternative=alternative,

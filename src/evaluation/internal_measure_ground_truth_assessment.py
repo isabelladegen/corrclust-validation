@@ -246,9 +246,9 @@ class InternalMeasureGroundTruthAssessment:
 
         return df
 
-    def wicoxons_between(self, dm1: str, dm2: str, alpha: float = 0.05,
-                         target_power: float = 0.8, bonferroni_adjust: int = 1, alternative: str = 'two-sided',
-                         non_zero: float = 0.0001):
+    def wilcoxons_between(self, dm1: str, dm2: str, alpha: float = 0.05,
+                          target_power: float = 0.8, bonferroni_adjust: int = 1, alternative: str = 'two-sided',
+                          non_zero: float = 0.0001):
         """
         Calculates  the wilcoxon's signed rank between dm1 and dm2.
         :param dm1: distance measure 1
