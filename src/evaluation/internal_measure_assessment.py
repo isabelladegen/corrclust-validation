@@ -202,7 +202,8 @@ class InternalMeasureAssessment:
     def wilcoxon_signed_rank_tests_correlation_coefficients(self, alpha=0.05,
                                                             alternative: str = 'two-sided',
                                                             bonferroni_adjust: int = 1,
-                                                            non_zero: float = 0.001
+                                                            non_zero: float = 0.001,
+                                                            target_power: float = 0.8
                                                             ):
         """
         Calculates wilcoxon signed rank test between paired correlation coefficients.
@@ -210,6 +211,7 @@ class InternalMeasureAssessment:
         :param alternative: what alternative hypothesis to use for the power calculation
         :param bonferroni_adjust: how much bonferroni adjustment to use (divide by this int)
         :param non-zero: which differences in correlation are treated as non-zero.
+        :param target_power: used to calculate sampled size needed for a given power, e.g 0.8=80%
         :return: df where the rows are indexed by StatCols p-value, statistics, the columns are the different internal
          measures combinations
         """
@@ -231,6 +233,7 @@ class InternalMeasureAssessment:
         alphas = []
         nz_pairs = []
         significants = []
+        power_80 = []
 
         # perform wilcox test
         for idx, measure_pair in enumerate(compare):
@@ -250,6 +253,9 @@ class InternalMeasureAssessment:
                 wilc_result.achieved_power(alpha=alpha, bonferroni_adjust=bonferroni_adjust, alternative=alternative))
             alphas.append(alpha)
             significants.append(wilc_result.is_significant(alpha=alpha, bonferroni_adjust=bonferroni_adjust))
+            power_80.append(wilc_result.sample_size_for_power(target_power=target_power, alpha=alpha,
+                                                              bonferroni_adjust=bonferroni_adjust,
+                                                              alternative=alternative))
 
         result = pd.DataFrame({
             InternalMeasureCols.name: names,
@@ -260,6 +266,7 @@ class InternalMeasureAssessment:
             StatsCols.statistic: statistics,
             StatsCols.achieved_power: powers,
             StatsCols.alpha: alphas,
+            StatsCols.n_for_power_80: power_80,
         })
 
         result = result.set_index(keys=InternalMeasureCols.name).T.round(self.__round_to)

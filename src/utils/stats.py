@@ -65,9 +65,9 @@ class WilcoxResult:
         if self.non_zero == 0:
             return 0  # we had no pairs to calculate the statistics from so we have no effect size
         if alternative == 'two-sided':
-            z_score = norm.ppf(self.p_value / 2)  # divide by 2 for two-tailed test
+            z_score = norm.ppf(1 - self.p_value / 2)  # divide by 2 for two-tailed test
         else:
-            z_score = norm.ppf(self.p_value)  # one tailed tests so no division
+            z_score = norm.ppf(1 - self.p_value)  # one tailed tests so no division
         r = self.effect_direction * abs(z_score) / np.sqrt(self.non_zero)
         return round(r, self.__round_to)
 
@@ -90,32 +90,43 @@ class WilcoxResult:
         if alternative == 'greater':
             alternative = 'larger'
         adjusted_alpha = self.adjusted_alpha(alpha=alpha, bonferroni_adjust=bonferroni_adjust)
-        power_analysis = TTestPower()
-        achieved_power = power_analysis.power(
-            effect_size=self.effect_size(alternative=alternative),
-            nobs=self.non_zero,
-            alpha=adjusted_alpha,
-            alternative=alternative
-        )
+        # Get critical value
+        if alternative == 'two-sided':
+            z_crit = norm.ppf(1 - adjusted_alpha / 2)
+        else:
+            z_crit = norm.ppf(1 - adjusted_alpha)
+
+        # Calculate power using your effect size
+        effect_size = self.effect_size(alternative=alternative)
+        achieved_power = norm.cdf(abs(effect_size) * np.sqrt(self.non_zero) - z_crit)
+
         return round(achieved_power, self.__round_to)
 
     def sample_size_for_power(self, target_power: float = 0.8, alpha: float = 0.05, bonferroni_adjust: int = 1,
                               alternative: str = 'two-sided') -> int:
         adjusted_alpha = self.adjusted_alpha(alpha=alpha, bonferroni_adjust=bonferroni_adjust)
-        power_analysis = TTestPower()
-        # translate wilcox altern to power alternatives
-        if alternative == 'less':
-            alternative = 'smaller'
-        if alternative == 'greater':
-            alternative = 'larger'
-        required_n = power_analysis.solve_power(
-            effect_size=self.effect_size(alternative=alternative),
-            power=target_power,
-            alpha=adjusted_alpha,
-            alternative=alternative,
-            nobs=None
-        )
+        # Get critical value based on test type
+        if alternative == 'two-sided':
+            z_crit = norm.ppf(1 - adjusted_alpha / 2)
+        else:
+            z_crit = norm.ppf(1 - adjusted_alpha)
 
+        # Get z-value for target power
+        z_power = norm.ppf(target_power)
+
+        # Get effect size
+        effect_size = abs(self.effect_size(alternative=alternative))
+
+        if effect_size == 0:
+            return float('inf')  # Cannot achieve power with zero effect
+
+        # Calculate required sample size
+        # Power = Φ(|effect_size| * √n - z_crit) = target_power
+        # So: |effect_size| * √n - z_crit = z_power
+        # √n = (z_power + z_crit) / |effect_size|
+        # n = ((z_power + z_crit) / |effect_size|)²
+
+        required_n = ((z_power + z_crit) / effect_size) ** 2
         return np.ceil(required_n)
 
     def as_series(self, variant_name: str, target_power: float = 0.8, alpha: float = 0.05, bonferroni_adjust: int = 1,

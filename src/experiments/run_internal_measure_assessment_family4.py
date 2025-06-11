@@ -2,22 +2,20 @@ import os
 
 import pandas as pd
 
-from src.evaluation.internal_measure_assessment import IAResultsCSV, InternalMeasureAssessment, InternalMeasureCols, \
-    get_full_filename_for_results_csv
+from src.evaluation.internal_measure_assessment import IAResultsCSV, InternalMeasureAssessment
 from src.experiments.run_cluster_quality_measures_calculation import read_clustering_quality_measures
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import GENERATED_DATASETS_FILE_PATH, internal_measure_evaluation_dir_for, \
     SYNTHETIC_DATA_DIR, ROOT_RESULTS_DIR, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR, get_data_completeness_from
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
-from src.utils.stats import calculate_wilcox_signed_rank, StatsCols
 from src.visualisation.run_average_rank_visualisations import data_variant_description
 
 
 def run_wilcox_signed_rank_for(overall_ds_name: str, run_names: [str], distance_measure: str,
                                data_type: str, data_dir: str, results_dir: str, internal_measure1: str,
                                internal_measure2: str, alternative: str, non_zero: float, alpha: float,
-                               bonferroni_adjust: int):
+                               bonferroni_adjust: int, target_power: float = 0.8):
     """ Runs the internal measure assessment on all ds in the csv files of the generated runs
     :param overall_ds_name: a name for the dataset we're using e.g. n30 or n2
     :param run_names: list of run_names to load (subjects)
@@ -30,6 +28,7 @@ def run_wilcox_signed_rank_for(overall_ds_name: str, run_names: [str], distance_
     :param internal_measure2: measure 2
     :param alternative: which alternative to use to assess the measure
     :param non_zero: non-zero value to control what differences are considered 0
+    :param target_power used to calculate sample size for given target power
     :return wilcox result df
     """
     # load all the internal measure calculation summaries
@@ -41,7 +40,8 @@ def run_wilcox_signed_rank_for(overall_ds_name: str, run_names: [str], distance_
 
     # Wilcox signed rank
     df = ia.wilcoxon_signed_rank_tests_correlation_coefficients(alpha=alpha, alternative=alternative,
-                                                                bonferroni_adjust=bonferroni_adjust, non_zero=non_zero)
+                                                                bonferroni_adjust=bonferroni_adjust, non_zero=non_zero,
+                                                                target_power=target_power)
     df = df.T  # rows are the two measures, columns are the stats
     variant_desc = data_variant_description[(get_data_completeness_from(data_dir), data_type)]
     df.insert(0, "Data Variant", variant_desc)
