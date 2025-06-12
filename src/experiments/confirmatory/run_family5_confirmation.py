@@ -17,7 +17,7 @@ from src.visualisation.run_average_rank_visualisations import data_variant_descr
 
 def run_reduced_wilcox_signed_rank_tests_for_hypotheses(prereg_hypotheses: [], reduced_root_results_dir: str,
                                                         full_root_results_dir: str,
-                                                        overall_ds_name: str):
+                                                        overall_ds_name: str, test_type: str):
     alpha = 0.05
     target_power = 0.8
     bonferroni_adjust = 1  # no adjustment due to hierarchical testing
@@ -47,15 +47,13 @@ def run_reduced_wilcox_signed_rank_tests_for_hypotheses(prereg_hypotheses: [], r
                                                                      bonferroni_adjust=bonferroni_adjust,
                                                                      alternative=alternative, non_zero=non_zero)[
             internal_measure]
-        if wilc_result_df.shape[0] == 0:
-            print("hu")
         wilc_result_df.insert(0, 'Data variant', variant_desc)
         wilc_result_df.insert(1, 'Internal Measure', internal_measure)
         wilc_result_df['Distance Measure'] = dm
         results.append(wilc_result_df)
 
     # Save result
-    stats_df = pd.concat(results)
+    stats_df = pd.concat(results).reset_index(drop=True)
     store_results_in = internal_measure_evaluation_dir_for(
         overall_dataset_name=overall_ds_name,
         data_type='',  # all datatypes as rows
@@ -63,7 +61,7 @@ def run_reduced_wilcox_signed_rank_tests_for_hypotheses(prereg_hypotheses: [], r
         data_dir='',  # all data data comp as rows
         distance_measure='')  # distances measures included in data
 
-    full_path = path.join(store_results_in, IAResultsCSV.family_5_and_6_results)
+    full_path = path.join(store_results_in, test_type + '_' + IAResultsCSV.family_5_and_6_results)
     stats_df.to_csv(str(full_path))
 
 
@@ -152,4 +150,5 @@ if __name__ == "__main__":
     run_reduced_wilcox_signed_rank_tests_for_hypotheses(prereg_hypotheses=hypotheses,
                                                         reduced_root_results_dir=reduced_root_results_dir,
                                                         full_root_results_dir=full_data_root_results_dir,
-                                                        overall_ds_name=overall_dataset_name)
+                                                        overall_ds_name=overall_dataset_name,
+                                                        test_type= 'cluster_count')
