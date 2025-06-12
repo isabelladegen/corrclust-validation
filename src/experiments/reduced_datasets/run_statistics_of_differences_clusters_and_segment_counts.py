@@ -147,8 +147,7 @@ if __name__ == "__main__":
     alternative = 'two-sided'
     non_zero = 0.0001
 
-    internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb,
-                         ClusteringQualityMeasures.vrc, ClusteringQualityMeasures.dbi]
+    internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.dbi]
 
     # Evaluate for clusters
     print("CLUSTERS")

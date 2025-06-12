@@ -109,10 +109,8 @@ class InternalMeasureGroundTruthClusterSegmentCount:
             for v1, v2 in count_name_combinations:
                 compares.append((v1, v2))
                 results_for_count_compares.append((v1, v2))
-                # swap values 1 and values 2 for DBI where lower values are best, so we can interpret the statistical
-                # outcomes sign consistently across internal measures
-                values1 = values[v2] if internal_measure_lower_values_best[internal_index] else values[v1]
-                values2 = values[v1] if internal_measure_lower_values_best[internal_index] else values[v2]
+                values1 = values[v1]
+                values2 = values[v2]
                 wilcox_result = calculate_wilcox_signed_rank(values1=values1, values2=values2, non_zero=non_zero,
                                                              alternative=alternative)
                 statistics.append(wilcox_result.statistic)

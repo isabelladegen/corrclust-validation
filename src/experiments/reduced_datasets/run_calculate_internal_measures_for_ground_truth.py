@@ -5,7 +5,7 @@ import pandas as pd
 from src.evaluation.calculate_internal_measures_ground_truth import CalculateInternalMeasuresGroundTruth
 from src.evaluation.internal_measure_assessment import IAResultsCSV
 from src.experiments.run_calculate_internal_measures_for_ground_truth import \
-    run_internal_measure_calculation_for_ground_truth
+    run_internal_measure_calculation_for_ground_truth, load_all_ground_truth_data_for_all_subjects_and_data_type
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import SYNTHETIC_DATA_DIR, ROOT_RESULTS_DIR, GENERATED_DATASETS_FILE_PATH, \
     internal_measure_calculation_dir_for, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR, \
@@ -27,8 +27,7 @@ if __name__ == "__main__":
     distance_measures = [DistanceMeasures.l1_cor_dist,  # lp norms
                          DistanceMeasures.l5_cor_dist,
                          DistanceMeasures.linf_cor_dist]
-    internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb,
-                         ClusteringQualityMeasures.vrc, ClusteringQualityMeasures.dbi]
+    internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.dbi]
     data_types = [SyntheticDataType.normal_correlated, SyntheticDataType.non_normal_correlated]
 
     data_completeness = [DataCompleteness.complete, DataCompleteness.irregular_p30, DataCompleteness.irregular_p90]
@@ -44,12 +43,16 @@ if __name__ == "__main__":
             data_dirs.append(data_dir)
         for data_dir in data_dirs:
             for data_type in data_types:
+                data_dict, gt_labels_dict = load_all_ground_truth_data_for_all_subjects_and_data_type(
+                    run_ids=run_names, data_type=data_type, data_dir=data_dir)
                 for distance_measure in distance_measures:
                     print("Calculate Ground truth Clustering Quality Measures for completeness:")
                     print(data_dir)
                     print("and data type: " + data_type)
                     print("and distance measure: " + distance_measure)
                     run_internal_measure_calculation_for_ground_truth(overall_dataset_name, run_names=run_names,
+                                                                      data_dict=data_dict,
+                                                                      gt_labels_dict=gt_labels_dict,
                                                                       distance_measure=distance_measure,
                                                                       data_type=data_type,
                                                                       data_dir=data_dir, results_dir=results_dir,
@@ -67,12 +70,16 @@ if __name__ == "__main__":
 
         for data_dir in data_dirs:
             for data_type in data_types:
+                data_dict, gt_labels_dict = load_all_ground_truth_data_for_all_subjects_and_data_type(
+                    run_ids=run_names, data_type=data_type, data_dir=data_dir)
                 for distance_measure in distance_measures:
                     print("Calculate Ground truth Clustering Quality Measures for completeness:")
                     print(data_dir)
                     print("and data type: " + data_type)
                     print("and distance measure: " + distance_measure)
                     run_internal_measure_calculation_for_ground_truth(overall_dataset_name, run_names=run_names,
+                                                                      data_dict=data_dict,
+                                                                      gt_labels_dict=gt_labels_dict,
                                                                       distance_measure=distance_measure,
                                                                       data_type=data_type,
                                                                       data_dir=data_dir, results_dir=results_dir,

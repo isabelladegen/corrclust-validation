@@ -207,19 +207,21 @@ def calculate_distance_matrix_for(labels_df: pd.DataFrame, distance_measure: str
     df = labels_df
     n_seg = df.shape[0]
 
-    # calculate all distances between all segment pairs
+    # calculate all distances between all segment pairs, index of segment id
     distances = np.zeros((n_seg, n_seg))
+    # actual segment ids for reduced might not be in order
     segment_ids = df[SyntheticDataSegmentCols.segment_id].tolist()
     segment_pairs = list(combinations(segment_ids, 2))
-    seg_correlations = np.array(df[SyntheticDataSegmentCols.actual_correlation].to_list())
     for pair in segment_pairs:
         seg1 = pair[0]
         seg2 = pair[1]
-        corr1 = seg_correlations[seg1]
-        corr2 = seg_correlations[seg2]
+        idx_seg1 = segment_ids.index(seg1)
+        idx_seg2 = segment_ids.index(seg2)
+        corr1 = df[df[SyntheticDataSegmentCols.segment_id]==seg1][SyntheticDataSegmentCols.actual_correlation].values[0]
+        corr2 = df[df[SyntheticDataSegmentCols.segment_id]==seg2][SyntheticDataSegmentCols.actual_correlation].values[0]
         dist = distance_calc(corr1, corr2)
-        distances[seg1][seg2] = dist
-        distances[seg2][seg1] = dist
+        distances[idx_seg1][idx_seg2] = dist
+        distances[idx_seg2][idx_seg1] = dist
     return distances
 
 
