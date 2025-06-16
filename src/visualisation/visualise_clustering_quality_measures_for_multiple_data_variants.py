@@ -392,7 +392,7 @@ class VisualiseClusteringQualityMeasuresForDataVariants:
                 results_dir=self.result_root_dir,
                 distance_measure=self.distance_measure)
             # add an image results folder
-            file_name = "_".join([data_type, completeness, MULTI_MEASURES_SCATTER_PLOT])
+            file_name = "_".join([data_type, completeness, self.distance_measure, MULTI_MEASURES_SCATTER_PLOT])
             file_name = get_image_results_path(folder, file_name)
             fig.savefig(file_name, dpi=300, bbox_inches='tight')
         return fig

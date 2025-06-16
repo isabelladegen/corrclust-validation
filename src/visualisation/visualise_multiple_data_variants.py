@@ -594,6 +594,12 @@ def create_scatter_grid(data_dict: {}, measure_cols: list, figsize: tuple = (12,
                 ax2.set_ylim(-1, 1)  # Set secondary axis limits
             ax.set_xlim(-2, 69)  # slight padding around 0-67
 
+            # colour ticks and spine to indicate jaccard
+            ax.tick_params(axis='y', colors=measure_colors[0])
+            ax.spines['left'].set_color(measure_colors[0])
+            ax2.tick_params(axis='y', colors=measure_colors[1])
+            ax2.spines['left'].set_color(measure_colors[1])
+
             # Format axis labels
             ax.yaxis.set_major_formatter(plt.FuncFormatter(custom_number_text_formatter))
             ax2.yaxis.set_major_formatter(plt.FuncFormatter(custom_number_text_formatter))
@@ -601,7 +607,7 @@ def create_scatter_grid(data_dict: {}, measure_cols: list, figsize: tuple = (12,
             ax2.grid(False)  # Turn off secondary grid to avoid double grid
 
             if j == 0:
-                ax.set_ylabel(completeness, fontsize=fontsize, fontweight='bold')
+                ax.set_ylabel(completeness.split()[0], fontsize=fontsize, fontweight='bold')
 
             # Only show x-axis elements for bottom row
             if i == len(row_names) - 1:
@@ -673,6 +679,12 @@ def create_scatter_row(data_dict: {}, reference_measure: str, measure_cols: [str
     for i, measure in enumerate(measure_cols):
         ax = fig.add_subplot(gs[0, i])
         ax2 = ax.twinx()  # Create secondary axis
+
+        # colour ticks and spine to indicate jaccard
+        ax.tick_params(axis='y', colors=measure_colors[0])
+        ax.spines['left'].set_color(measure_colors[0])
+        ax2.tick_params(axis='y', colors=measure_colors[1])
+        ax2.spines['left'].set_color(measure_colors[1])
 
         try:
             row_name = get_row_name_from(completeness)
