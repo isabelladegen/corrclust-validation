@@ -17,7 +17,8 @@ from src.visualisation.visualise_multiple_data_variants import get_row_name_from
     create_violin_grid_log_scale_x_axis, create_scatter_grid, create_scatter_row
 
 
-def plot_internal_index(df, ax, color, x_pos, internal_m: str, alpha: float = 0.05, best_value: float = np.nan):
+def plot_internal_index(df, ax, color, x_pos, internal_m: str, alpha: float = 0.05, best_value: float = np.nan,
+                        annotation_idx=[0, 4]):
     # Calculate mean and confidence intervals
     means = df.mean().values
     n = len(df)
@@ -34,7 +35,7 @@ def plot_internal_index(df, ax, color, x_pos, internal_m: str, alpha: float = 0.
         ax.axhline(y=best_value, color=color, linestyle='--', linewidth=2, alpha=0.8)
 
     # Add annotations for 0th and 4th distance measure
-    for pos_idx in [0, 4]:
+    for pos_idx in annotation_idx:
         mean_val = means[pos_idx]
 
         pos = mean_val + 0.05
@@ -48,7 +49,7 @@ def plot_internal_index(df, ax, color, x_pos, internal_m: str, alpha: float = 0.
 
 
 def create_ci_grid(data_dict: {}, internal_indices: [str], distance_measures: [str], figsize: (float, float) = (12, 12),
-                   backend: str = Backends.none.value) -> plt.Figure:
+                   backend: str = Backends.none.value, annotation_idx=[0, 4], for_distances=True, loc:str='lower right') -> plt.Figure:
     """
     Create a grid of ci plots using dictionary keys as labels.
 
@@ -107,7 +108,7 @@ def create_ci_grid(data_dict: {}, internal_indices: [str], distance_measures: [s
                 elif internal_index == ClusteringQualityMeasures.dbi:
                     best_value = 0.0
                 plot_internal_index(data[internal_index], ax, colours[idx], x_pos, internal_m=internal_index,
-                                    best_value=best_value)
+                                    best_value=best_value, annotation_idx=annotation_idx)
 
             # Set x-axis labels and ticks
             ax.set_xticks(x_pos)
@@ -124,8 +125,11 @@ def create_ci_grid(data_dict: {}, internal_indices: [str], distance_measures: [s
 
             # Only show x-axis elements for bottom row
             if i == len(row_names) - 1:
-                display_labels = [short_distance_measure_names[dist] for dist in distance_measures]
-                ax.set_xticklabels(display_labels, rotation=45, ha='right', fontsize=fontsize)
+                if for_distances:
+                    display_labels = [short_distance_measure_names[dist] for dist in distance_measures]
+                    ax.set_xticklabels(display_labels, rotation=45, ha='right', fontsize=fontsize)
+                else:
+                    ax.set_xticklabels(distance_measures, ha='right', fontsize=fontsize)
             else:
                 ax.set_xlabel('')
                 ax.set_xticklabels([])
@@ -143,7 +147,7 @@ def create_ci_grid(data_dict: {}, internal_indices: [str], distance_measures: [s
                                          linestyle='None'))
     last_ax = axes[-1][-1]
     last_ax.legend(handles=legend_handles,
-                   loc='lower right',
+                   loc=loc,
                    fontsize=fontsize - 4,
                    frameon=True,
                    edgecolor='black',
