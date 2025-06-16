@@ -17,7 +17,7 @@ from src.visualisation.visualise_multiple_data_variants import get_row_name_from
     create_violin_grid_log_scale_x_axis, create_scatter_grid, create_scatter_row
 
 
-def plot_internal_index(df, ax, color, x_pos, alpha: float = 0.05):
+def plot_internal_index(df, ax, color, x_pos, internal_m: str, alpha: float = 0.05, best_value: float = np.nan):
     # Calculate mean and confidence intervals
     means = df.mean().values
     n = len(df)
@@ -28,6 +28,23 @@ def plot_internal_index(df, ax, color, x_pos, alpha: float = 0.05):
                 capthick=2)
     # Fill the area between the confidence interval bounds
     ax.fill_between(x_pos, means - ci, means + ci, color=color, alpha=0.2)
+
+    # Best value line
+    if not np.isnan(best_value):
+        ax.axhline(y=best_value, color=color, linestyle='--', linewidth=2, alpha=0.8)
+
+    # Add annotations for 0th and 4th distance measure
+    for pos_idx in [0, 4]:
+        mean_val = means[pos_idx]
+
+        pos = mean_val + 0.05
+        fz = fontsize - 4
+        if internal_m == ClusteringQualityMeasures.dbi:
+            pos = mean_val - 0.27
+
+        ax.text(x_pos[pos_idx], pos, f'{mean_val:.2f}'.lstrip('0'),
+                ha='center', va='bottom', fontsize=fz,
+                color=color)
 
 
 def create_ci_grid(data_dict: {}, internal_indices: [str], distance_measures: [str], figsize: (float, float) = (12, 12),
@@ -72,6 +89,10 @@ def create_ci_grid(data_dict: {}, internal_indices: [str], distance_measures: [s
             ax = fig.add_subplot(gs[i, j])
             row_axes.append(ax)
 
+            # Focus chart ara on the range that is competitive, Förstner will go out
+            ax.set_ylim(-0.2, 1.2)
+            ax.set_yticks([0, 0.5, 1])
+
             try:
                 data = data_dict[completeness][generation_stage]
             except KeyError:
@@ -80,7 +101,13 @@ def create_ci_grid(data_dict: {}, internal_indices: [str], distance_measures: [s
 
             # plot the data for the two internal indices
             for idx, internal_index in enumerate(internal_indices):
-                plot_internal_index(data[internal_index], ax, colours[idx], x_pos)
+                best_value = np.nan
+                if internal_index == ClusteringQualityMeasures.silhouette_score:
+                    best_value = 1.0
+                elif internal_index == ClusteringQualityMeasures.dbi:
+                    best_value = 0.0
+                plot_internal_index(data[internal_index], ax, colours[idx], x_pos, internal_m=internal_index,
+                                    best_value=best_value)
 
             # Set x-axis labels and ticks
             ax.set_xticks(x_pos)
@@ -93,7 +120,7 @@ def create_ci_grid(data_dict: {}, internal_indices: [str], distance_measures: [s
                 ax.set_title(generation_stage, fontsize=fontsize, fontweight='bold')
 
             if j == 0:
-                ax.set_ylabel(completeness, fontsize=fontsize, fontweight='bold')
+                ax.set_ylabel(completeness.split()[0], fontsize=fontsize, fontweight='bold')
 
             # Only show x-axis elements for bottom row
             if i == len(row_names) - 1:
@@ -116,8 +143,8 @@ def create_ci_grid(data_dict: {}, internal_indices: [str], distance_measures: [s
                                          linestyle='None'))
     last_ax = axes[-1][-1]
     last_ax.legend(handles=legend_handles,
-                   loc='center left',
-                   fontsize=fontsize - 2,
+                   loc='lower right',
+                   fontsize=fontsize - 4,
                    frameon=True,
                    edgecolor='black',
                    facecolor='white')

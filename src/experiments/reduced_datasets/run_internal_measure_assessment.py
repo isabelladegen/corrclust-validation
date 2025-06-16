@@ -1,6 +1,6 @@
 import pandas as pd
 
-from src.experiments.run_internal_measure_assessment import run_internal_measure_assessment_datasets
+from src.experiments.run_internal_measure_assessment import run_internal_measure_assessment_datasets_per_distance_measuer
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import GENERATED_DATASETS_FILE_PATH, ROOT_REDUCED_SYNTHETIC_DATA_DIR, DataCompleteness, \
     ROOT_REDUCED_RESULTS_DIR, get_root_folder_for_reduced_cluster, \
@@ -40,10 +40,10 @@ if __name__ == "__main__":
                     print(
                         "CALCULATE FOR CLUSTER: Distance measure: " + distance_measure + " , Dataset type: " + data_type +
                         ", Compactness: " + data_dir)
-                    run_internal_measure_assessment_datasets(overall_ds_name="n30", run_names=run_names,
-                                                             distance_measure=distance_measure, data_type=data_type,
-                                                             data_dir=data_dir, results_dir=results_dir,
-                                                             internal_measures=internal_measures)
+                    run_internal_measure_assessment_datasets_per_distance_measuer(overall_ds_name="n30", run_names=run_names,
+                                                                                  distance_measure=distance_measure, data_type=data_type,
+                                                                                  data_dir=data_dir, results_dir=results_dir,
+                                                                                  internal_measures=internal_measures)
 
     # Evaluate for segments
     print("CALCULATE FOR DROPPED SEGMENTS")
@@ -56,7 +56,7 @@ if __name__ == "__main__":
                 for distance_measure in distance_measures:
                     print("CALCULATE FOR SEGMENT: Distance measure: " + distance_measure + " , Dataset type: "
                           + data_type + ", Compactness: " + data_dir)
-                    run_internal_measure_assessment_datasets(overall_ds_name="n30", run_names=run_names,
-                                                             distance_measure=distance_measure, data_type=data_type,
-                                                             data_dir=data_dir, results_dir=results_dir,
-                                                             internal_measures=internal_measures)
+                    run_internal_measure_assessment_datasets_per_distance_measuer(overall_ds_name="n30", run_names=run_names,
+                                                                                  distance_measure=distance_measure, data_type=data_type,
+                                                                                  data_dir=data_dir, results_dir=results_dir,
+                                                                                  internal_measures=internal_measures)

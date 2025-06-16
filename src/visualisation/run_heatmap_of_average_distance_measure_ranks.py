@@ -32,7 +32,11 @@ def heatmap_for_all_variants(data_dirs, dataset_types, run_names, root_results_d
                              backend, save_fig=True):
     # build data to plot
     ranks_dfs = {}
+    mean_ranks_dfs = {}
+    sd_ranks_dfs = {}
     raw_value_dfs = {}
+    means_per_crit = []
+    std_per_crit = []
     for data_dir in data_dirs:
         for data_type in dataset_types:
             interpretation = DistanceMetricInterpretation(run_names=run_names, overall_ds_name=overall_ds_name,
@@ -43,16 +47,35 @@ def heatmap_for_all_variants(data_dirs, dataset_types, run_names, root_results_d
             variant_desc = data_variant_description[(get_data_completeness_from(data_dir), data_type)]
             # for average rank heatmap
             ranks_dfs[variant_desc] = interpretation.stats_for_average_ranks_across_all_runs().loc["50%"]
+            mean_ranks_dfs[variant_desc] = interpretation.stats_for_average_ranks_across_all_runs().loc["mean"]
+            sd_ranks_dfs[variant_desc] = interpretation.stats_for_average_ranks_across_all_runs().loc["std"]
             # for raw value heatmap
             raw_value_dfs[variant_desc] = interpretation.median_raw_values
+            # for write up
+            for crit, per_crit in  interpretation.stats_per_criterion_raw_ranks().items():
+                df_mean = per_crit.loc["mean"].to_frame().T
+                df_std = per_crit.loc["std"].to_frame().T
+                df_mean.insert(0, 'Criterion', crit)
+                df_mean.insert(0, 'Data Variant', variant_desc)
+                df_std.insert(0, 'Criterion', crit)
+                df_std.insert(0, 'Data Variant', variant_desc)
+                means_per_crit.append(df_mean)
+                std_per_crit.append(df_std)
+
+
 
     # PLOT RANKING HEATMAP
     fig, rank_matrix = plot_ranking_heat_map(backend, ranks_dfs, pattern_keys_ordered)
-    top_two_dist = rank_matrix.columns[:2].tolist()
 
     folder = base_dataset_result_folder_for_type(root_results_dir, ResultsType.distance_measure_evaluation)
     # save rank matrix
     rank_matrix.to_csv(str(path.join(folder, "distance_measure_rank_matrix.csv")))
+    # save mean and sd rank
+    pd.concat(mean_ranks_dfs).unstack(level=0).T.to_csv(str(path.join(folder, "distance_measure_mean_ranks.csv")))
+    pd.concat(sd_ranks_dfs).unstack(level=0).T.to_csv(str(path.join(folder, "distance_measure_std_ranks.csv")))
+    # save per criterion rank
+    pd.concat(means_per_crit).reset_index(drop=True).to_csv(str(path.join(folder, "distance_measure_rank_mean_per_crit.csv")))
+    pd.concat(std_per_crit).reset_index(drop=True).to_csv(str(path.join(folder, "distance_measure_rank_std_per_crit.csv")))
 
     # save raw values
     rows = []
@@ -70,7 +93,7 @@ def heatmap_for_all_variants(data_dirs, dataset_types, run_names, root_results_d
     matrix_raw_values.to_csv(str(path.join(folder, "distance_measure_raw_values_matrix.csv")))
 
     # PLOT RAW VALUE HEATMAP
-    fig_raw = plot_raw_values_heat_map_for_top_two_measures(raw_value_dfs, top_two_dist, all_variants_ordered, backend)
+    fig_raw = plot_raw_values_heat_map_for_top_two_measures(raw_value_dfs, ['L1', 'L1 ref'], all_variants_ordered, backend)
 
     # save figures
     if save_fig:
@@ -124,8 +147,8 @@ def plot_ranking_heat_map(backend, ranks_series, keys_ordered, bar_label='Rank',
     # sort df according to keys_ordered
     rank_matrix = rank_matrix.reindex(keys_ordered)
     # sort columns by smallest for our baseline variant
-    partial_nn = data_variant_description[(DataCompleteness.irregular_p30, SyntheticDataType.non_normal_correlated)]
-    rank_matrix = rank_matrix.sort_values(by=partial_nn, axis=1, ascending=low_is_best)
+    baseline = data_variant_description[(DataCompleteness.complete, SyntheticDataType.normal_correlated)]
+    rank_matrix = rank_matrix.sort_values(by=baseline, axis=1, ascending=low_is_best)
     # for each row highlight best cell
     if low_is_best:
         best_col = rank_matrix.idxmin(axis=1)
