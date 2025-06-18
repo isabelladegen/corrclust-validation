@@ -9,7 +9,7 @@ from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 
 from src.utils.configurations import CONFIRMATORY_DATASETS_FILE_PATH, CONF_ROOT_RESULTS_DIR, \
     CONFIRMATORY_SYNTHETIC_DATA_DIR, internal_measure_evaluation_dir_for, CONF_ROOT_REDUCED_RESULTS_DIR, \
-    get_root_folder_for_reduced_cluster, ROOT_REDUCED_SYNTHETIC_DATA_DIR, get_data_dir, DataCompleteness
+    get_root_folder_for_reduced_cluster, get_data_dir, DataCompleteness, CONFIRMATORY_ROOT_REDUCED_SYNTHETIC_DATA_DIR
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.visualisation.run_average_rank_visualisations import data_variant_description
@@ -83,9 +83,9 @@ if __name__ == "__main__":
 
     # dirs for the reduced counts
     c23 = CONFIRMATORY_SYNTHETIC_DATA_DIR  # full dataset dropped 0 clusters
-    c11 = get_root_folder_for_reduced_cluster(ROOT_REDUCED_SYNTHETIC_DATA_DIR,
+    c11 = get_root_folder_for_reduced_cluster(CONFIRMATORY_ROOT_REDUCED_SYNTHETIC_DATA_DIR,
                                               12)  # reduced dir dropped 12 clusters, kept 6
-    c6 = get_root_folder_for_reduced_cluster(ROOT_REDUCED_SYNTHETIC_DATA_DIR,
+    c6 = get_root_folder_for_reduced_cluster(CONFIRMATORY_ROOT_REDUCED_SYNTHETIC_DATA_DIR,
                                              17)  # reduced dir dropped 17 clusters, kept 6
 
     # preregistered hypotheses, sequential list of tuples
@@ -151,4 +151,4 @@ if __name__ == "__main__":
                                                         reduced_root_results_dir=reduced_root_results_dir,
                                                         full_root_results_dir=full_data_root_results_dir,
                                                         overall_ds_name=overall_dataset_name,
-                                                        test_type= 'cluster_count')
+                                                        test_type='cluster_count')

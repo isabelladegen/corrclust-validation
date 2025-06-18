@@ -6,8 +6,8 @@ from src.experiments.confirmatory.run_family5_confirmation import run_reduced_wi
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 
 from src.utils.configurations import CONFIRMATORY_DATASETS_FILE_PATH, CONF_ROOT_RESULTS_DIR, \
-    CONFIRMATORY_SYNTHETIC_DATA_DIR, CONF_ROOT_REDUCED_RESULTS_DIR, ROOT_REDUCED_SYNTHETIC_DATA_DIR, DataCompleteness, \
-    get_root_folder_for_reduced_segments
+    CONFIRMATORY_SYNTHETIC_DATA_DIR, CONF_ROOT_REDUCED_RESULTS_DIR, DataCompleteness, \
+    get_root_folder_for_reduced_segments, CONFIRMATORY_ROOT_REDUCED_SYNTHETIC_DATA_DIR
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 
@@ -29,9 +29,9 @@ if __name__ == "__main__":
 
     # dirs for the reduced counts
     seg100 = CONFIRMATORY_SYNTHETIC_DATA_DIR  # full dataset dropped 0 clusters
-    seg50 = get_root_folder_for_reduced_segments(ROOT_REDUCED_SYNTHETIC_DATA_DIR,
+    seg50 = get_root_folder_for_reduced_segments(CONFIRMATORY_ROOT_REDUCED_SYNTHETIC_DATA_DIR,
                                                  50)  # reduced dir dropped 12 clusters, kept 6
-    seg25 = get_root_folder_for_reduced_segments(ROOT_REDUCED_SYNTHETIC_DATA_DIR,
+    seg25 = get_root_folder_for_reduced_segments(CONFIRMATORY_ROOT_REDUCED_SYNTHETIC_DATA_DIR,
                                                  75)  # reduced dir dropped 17 clusters, kept 6
 
     # preregistered hypotheses, sequential list of tuples
