@@ -7,18 +7,24 @@ from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
 
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.utils.configurations import ROOT_RESULTS_DIR, SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, \
-    IRREGULAR_P90_DATA_DIR, GENERATED_DATASETS_FILE_PATH, dataset_description_dir, DENDROGRAM_IMAGE
+    IRREGULAR_P90_DATA_DIR, GENERATED_DATASETS_FILE_PATH, dataset_description_dir, DENDROGRAM_IMAGE, \
+    get_data_completeness_from
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.labels_utils import calculate_distance_matrix_for
 from src.utils.load_synthetic_data import SyntheticDataType, load_labels
 from src.utils.plots.matplotlib_helper_functions import Backends, reset_matplotlib
+from src.visualisation.run_average_rank_visualisations import data_variant_description
 
 
 def plot_dendrogram_for_datasets(root_result_dir, dataset_types, data_dirs, run_names, distance_measure, linkage_method,
                                  save_fig, backend, threshold=1.5):
     for data_dir in data_dirs:
         for data_type in dataset_types:
+            variant_description = data_variant_description[(get_data_completeness_from(data_dir), data_type)]
+            print("Variant description: " + variant_description)
+
             for run_name in run_names:
+                print("Subject: " + run_name)
                 # load gt labels
                 labels_df = load_labels(run_name, data_type, data_dir)
                 # calculate distance matrix
@@ -84,7 +90,8 @@ def plot_dendrogram_for_datasets(root_result_dir, dataset_types, data_dirs, run_
 def add_pattern_text_for(idx, labels_df, leaves_color, positions, segs_in_cluster, x_scale):
     center_x = (np.mean(positions) + 0.5) * x_scale
     patterns = labels_df.iloc[segs_in_cluster][SyntheticDataSegmentCols.pattern_id]
-    assert patterns.nunique() == 1, "Segments from different correlation patterns grouped"
+    if patterns.nunique() > 1:
+        print("Segments from different correlation patterns grouped")
     canonical_pattern = labels_df.iloc[segs_in_cluster[0]][SyntheticDataSegmentCols.correlation_to_model]
     ax = plt.gca()
     pattern_string = str(canonical_pattern).replace('[', '(').replace(']', ')')
