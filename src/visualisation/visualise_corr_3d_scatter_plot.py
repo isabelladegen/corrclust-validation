@@ -1,12 +1,17 @@
+import os
+from os import path
+
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.colors import ListedColormap
 
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.data_generation.model_correlation_patterns import ModelCorrelationPatterns
-from src.utils.configurations import SYNTHETIC_DATA_DIR
+from src.utils.configurations import SYNTHETIC_DATA_DIR, IRREGULAR_P90_DATA_DIR, base_dataset_result_folder_for_type, \
+    ROOT_RESULTS_DIR, ResultsType, get_image_name_based_on_data_dir_and_data_type, AVERAGE_RANK_DISTRIBUTION
 from src.utils.load_synthetic_data import SyntheticDataType, load_labels
 from src.utils.plots.matplotlib_helper_functions import reset_matplotlib, Backends
+from tests.evaluation.test_impact_of_reduction_on_internal_indices import root_results_dir
 
 
 def draw_coordinate_planes(ax, fontsize):
@@ -106,10 +111,10 @@ def plot_data(data, ref_patterns, backend=Backends.none.value):
     draw_cube_wireframe(ax, fontsize)
 
     # Create distinct colors
-    distinct_colors = ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#ffff33',
+    distinct_colors = ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#008080',
                        '#a65628', '#f781bf', '#999999', '#1b9e77', '#d95f02', '#7570b3',
                        '#e7298a', '#66a61e', '#e6ab02', '#a6761d', '#666666', '#8dd3c7',
-                       '#ffffb3', '#bebada', '#fb8072', '#80b1d3', '#fdb462', '#b3de69',
+                       '#800000', '#bebada', '#fb8072', '#80b1d3', '#fdb462', '#b3de69',
                        '#fccde5', '#bc80bd']
 
     distinct_cmap = ListedColormap(distinct_colors)
@@ -120,7 +125,7 @@ def plot_data(data, ref_patterns, backend=Backends.none.value):
     corr_vectors = np.array(corr_vectors)
     x, y, z = corr_vectors[:, 0], corr_vectors[:, 1], corr_vectors[:, 2]
 
-    scatter = ax.scatter(x, y, z, c=corr_colour_id, cmap=distinct_cmap, s=10, marker='o', alpha=0.8, vmin=0, vmax=25)
+    ax.scatter(x, y, z, c=corr_colour_id, cmap=distinct_cmap, s=20, edgecolors='none', marker='o', alpha=1, vmin=0, vmax=25)
 
     # Plot relaxed canonical patterns
     extreme_points = np.array(list(ref_patterns.values()))
@@ -161,12 +166,6 @@ def plot_data(data, ref_patterns, backend=Backends.none.value):
             ax.scatter([x], [y], [z], c=[pattern_colour], s=10, marker='o', alpha=arr_alpha,
                        edgecolors='none')  # No edge to keep it clean
 
-        # has_negative = any(x < 0 for x in corr)
-        # z_offset = -0.1 if has_negative else +0.1
-        # va = 'top' if has_negative else 'bottom'
-        #
-        # ax.text(corr[0], corr[1], corr[2] + z_offset, str(corr).replace('[', '(').replace(']', ')'), fontsize=fontsize, color=pattern_colour, ha='center', va=va)
-
     # Set limits
     ax.set_xlim([-1, 1])
     ax.set_ylim([-1, 1])
@@ -200,17 +199,56 @@ def plot_data(data, ref_patterns, backend=Backends.none.value):
     ax.legend()
     plt.tight_layout()
     plt.show()
+    return fig
+
+
+def save_figure(fig, run_name, data_dir, data_type):
+    folder = base_dataset_result_folder_for_type(root_results_dir, ResultsType.dataset_description)
+    folder = path.join(folder, "images")
+    os.makedirs(folder, exist_ok=True)
+    image_name = get_image_name_based_on_data_dir_and_data_type('_'.join([run_name, '3d_pattern_plot.png']), data_dir,
+                                                                data_type)
+    fig.savefig(path.join(folder, image_name), dpi=300, bbox_inches='tight')
 
 
 if __name__ == "__main__":
+    backend = Backends.visible_tests.value
     patterns = ModelCorrelationPatterns()
     relaxed_patterns = patterns.relaxed_patterns()
+    root_results_dir = ROOT_RESULTS_DIR
 
     run_name = "trim-fire-24"
+
+    # plot normal complete
     data_type = SyntheticDataType.normal_correlated
     data_dir = SYNTHETIC_DATA_DIR
-
     labels_df = load_labels(run_name, data_type, data_dir)
     data = labels_df[[SyntheticDataSegmentCols.pattern_id, SyntheticDataSegmentCols.actual_correlation]].values.tolist()
+    fig = plot_data(data=data, ref_patterns=relaxed_patterns, backend=backend)
+    save_figure(fig, run_name, data_dir, data_type)
 
-    plot_data(data=data, ref_patterns=relaxed_patterns, backend=Backends.visible_tests.value)
+    # plot nn complete
+    data_type = SyntheticDataType.non_normal_correlated
+    data_dir = SYNTHETIC_DATA_DIR
+    labels_df = load_labels(run_name, data_type, data_dir)
+    data = labels_df[[SyntheticDataSegmentCols.pattern_id, SyntheticDataSegmentCols.actual_correlation]].values.tolist()
+    fig = plot_data(data=data, ref_patterns=relaxed_patterns, backend=backend)
+    save_figure(fig, run_name, data_dir, data_type)
+
+    # plot complete downsampled
+    data_type = SyntheticDataType.rs_1min
+    data_dir = SYNTHETIC_DATA_DIR
+    labels_df = load_labels(run_name, data_type, data_dir)
+    data = labels_df[[SyntheticDataSegmentCols.pattern_id, SyntheticDataSegmentCols.actual_correlation]].values.tolist()
+    fig = plot_data(data=data, ref_patterns=relaxed_patterns, backend=backend)
+    save_figure(fig, run_name, data_dir, data_type)
+
+    # plot normal sparse
+    data_type = SyntheticDataType.normal_correlated
+    data_dir = IRREGULAR_P90_DATA_DIR
+    labels_df = load_labels(run_name, data_type, data_dir)
+    data = labels_df[[SyntheticDataSegmentCols.pattern_id, SyntheticDataSegmentCols.actual_correlation]].values.tolist()
+    fig = plot_data(data=data, ref_patterns=relaxed_patterns, backend=backend)
+    save_figure(fig, run_name, data_dir, data_type)
+
+
