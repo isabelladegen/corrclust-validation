@@ -1,7 +1,12 @@
 import numpy as np
 from matplotlib import pyplot as plt
+from matplotlib.colors import ListedColormap
 
+from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.data_generation.model_correlation_patterns import ModelCorrelationPatterns
+from src.utils.configurations import SYNTHETIC_DATA_DIR
+from src.utils.load_synthetic_data import SyntheticDataType, load_labels
+from src.utils.plots.matplotlib_helper_functions import reset_matplotlib, Backends
 
 
 def draw_coordinate_planes(ax, fontsize):
@@ -18,17 +23,16 @@ def draw_coordinate_planes(ax, fontsize):
     ax.plot(yz_outline[:, 0], yz_outline[:, 1], yz_outline[:, 2], 'grey', linewidth=0.8, alpha=0.3)
 
     # Coordinate axes - same strength as frame
-    ax.plot([-1, 1], [0, 0], [0, 0], 'gray', linewidth=1, alpha=0.5)
-    ax.plot([0, 0], [-1, 1], [0, 0], 'gray', linewidth=1, alpha=0.5)
-    ax.plot([0, 0], [0, 0], [-1, 1], 'gray', linewidth=1, alpha=0.5)
+    ax.plot([-1, 1], [0, 0], [0, 0], 'gray', linewidth=2, alpha=0.5)
+    ax.plot([0, 0], [-1, 1], [0, 0], 'gray', linewidth=2, alpha=0.5)
+    ax.plot([0, 0], [0, 0], [-1, 1], 'gray', linewidth=2, alpha=0.5)
 
     # Add axis labels at the positive ends
-    ax.text(1.15, 0.05, 0.05, 'X', fontsize=fontsize, color='black')
-    ax.text(0.05, 1.15, 0.05, 'Y', fontsize=fontsize, color='black')
-    ax.text(0.05, 0.05, 1.15, 'Z', fontsize=fontsize, color='black')
+    ax.text(1.15, -0.05, -0.05, r'$v_1, v_2$', fontsize=fontsize + 4, color='black')
+    ax.text(0.1, 1.15, 0.05, r'$v_1, v_3$', fontsize=fontsize + 4, color='black')
+    ax.text(0.1, -0.05, 1.15, r'$v_2, v_3$', fontsize=fontsize + 4, color='black')
 
-
-        # XZ plane at y=0 with fill
+    # XZ plane at y=0 with fill
     xz_x, xz_z = np.meshgrid([-1, 1], [-1, 1])
     xz_y = np.zeros_like(xz_x)
     ax.plot_surface(xz_x, xz_y, xz_z, alpha=0.3, color='lightgray')
@@ -71,10 +75,10 @@ def draw_cube_wireframe(ax, fontsize):
     ]
 
     for x, y, z, label in corner_labels:
-        ax.text(x * 1.09, y * 1.09, z * 1.09, label, fontsize=fontsize, ha='center', va='center', color='black')
+        ax.text(x * 1.09, y * 1.09, z * 1.09, label, fontsize=fontsize, ha='center', va='center', color='grey')
 
 
-def plot_data(data, ref_patterns):
+def plot_data(data, ref_patterns, backend=Backends.none.value):
     """
     Plot correlation patterns in 3d qube grid data is dictionary of all the correlations wth pattern ids as keys
     and correlation coefficient vectors as value
@@ -82,6 +86,7 @@ def plot_data(data, ref_patterns):
     :param ref_patterns: dictionary with key pattern id and value relaxed pattern vector
     :return:
     """
+    reset_matplotlib(backend)
     fontsize = 15
     fig = plt.figure(figsize=(12, 9))
     ax = fig.add_subplot(111, projection='3d')
@@ -100,17 +105,67 @@ def plot_data(data, ref_patterns):
     # Draw cube wireframe
     draw_cube_wireframe(ax, fontsize)
 
-    # Plot data
-    vectors = data
-    x, y, z = vectors[:, 0], vectors[:, 1], vectors[:, 2]
+    # Create distinct colors
+    distinct_colors = ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#ffff33',
+                       '#a65628', '#f781bf', '#999999', '#1b9e77', '#d95f02', '#7570b3',
+                       '#e7298a', '#66a61e', '#e6ab02', '#a6761d', '#666666', '#8dd3c7',
+                       '#ffffb3', '#bebada', '#fb8072', '#80b1d3', '#fdb462', '#b3de69',
+                       '#fccde5', '#bc80bd']
 
-    colors = np.sqrt(x ** 2 + y ** 2 + z ** 2)  # Distance from origin
-    scatter = ax.scatter(x, y, z, c=colors, cmap='viridis', s=60, alpha=0.8)
+    distinct_cmap = ListedColormap(distinct_colors)
+
+    # Plot data
+    corr_vectors = [segment[1] for segment in data]
+    corr_colour_id = [segment[0] for segment in data]
+    corr_vectors = np.array(corr_vectors)
+    x, y, z = corr_vectors[:, 0], corr_vectors[:, 1], corr_vectors[:, 2]
+
+    scatter = ax.scatter(x, y, z, c=corr_colour_id, cmap=distinct_cmap, s=10, marker='o', alpha=0.8, vmin=0, vmax=25)
 
     # Plot relaxed canonical patterns
     extreme_points = np.array(list(ref_patterns.values()))
+    pattern_colour_id = list(ref_patterns.keys())
     ax.scatter(extreme_points[:, 0], extreme_points[:, 1], extreme_points[:, 2],
-               c='darkgray', s=100, alpha=0.5, marker='o', label='Relaxed Canonical Patterns')
+               c=pattern_colour_id, cmap=distinct_cmap, facecolor='none', s=60, alpha=0.3, marker='o', vmin=0, vmax=25)
+
+    # Add text annotations for each extreme point
+    for id, corr in ref_patterns.items():
+        pattern_colour = distinct_cmap(id / 25)  # Normalize to 0-1 range
+        x, y, z = corr[0], corr[1], corr[2]
+
+        # Paint mini coordinate system for points in panes
+        non_zero_count = sum(1 for coord in corr if abs(coord) > 0)
+        if non_zero_count == 2:
+            # Draw mini-axes for confusing patterns
+            arr_length = 0.15
+            arr_width = 2
+            arr_alpha = 1
+            arr_head = 0.3
+
+            if abs(x) > 0.1:  # X-direction arrow
+                arrow_dir = 1 if x > 0 else -1
+                ax.quiver(x, y, z, arrow_dir * arr_length, 0, 0,
+                          color=pattern_colour, arrow_length_ratio=arr_head, linewidth=arr_width, alpha=arr_alpha)
+
+            if abs(y) > 0.1:  # Y-direction arrow
+                arrow_dir = 1 if y > 0 else -1
+                ax.quiver(x, y, z, 0, arrow_dir * arr_length, 0,
+                          color=pattern_colour, arrow_length_ratio=arr_head, linewidth=arr_width, alpha=arr_alpha)
+
+            if abs(z) > 0.1:  # Z-direction arrow
+                arrow_dir = 1 if z > 0 else -1
+                ax.quiver(x, y, z, 0, 0, arrow_dir * arr_length,
+                          color=pattern_colour, arrow_length_ratio=arr_head, linewidth=arr_width, alpha=arr_alpha)
+
+            # Add dot at origin to hide line joins
+            ax.scatter([x], [y], [z], c=[pattern_colour], s=10, marker='o', alpha=arr_alpha,
+                       edgecolors='none')  # No edge to keep it clean
+
+        # has_negative = any(x < 0 for x in corr)
+        # z_offset = -0.1 if has_negative else +0.1
+        # va = 'top' if has_negative else 'bottom'
+        #
+        # ax.text(corr[0], corr[1], corr[2] + z_offset, str(corr).replace('[', '(').replace(']', ')'), fontsize=fontsize, color=pattern_colour, ha='center', va=va)
 
     # Set limits
     ax.set_xlim([-1, 1])
@@ -140,11 +195,10 @@ def plot_data(data, ref_patterns):
     ax.zaxis._axinfo['tick']['outward_factor'] = 0
 
     # ensure 1,1,1 corner of cube is front middle
-    ax.view_init(elev=30, azim=30)
+    ax.view_init(elev=35, azim=40)
 
-    # Add colorbar with limited height
-    cbar = plt.colorbar(scatter, ax=ax, label='Distance from Origin', shrink=0.6)
     ax.legend()
+    plt.tight_layout()
     plt.show()
 
 
@@ -152,8 +206,11 @@ if __name__ == "__main__":
     patterns = ModelCorrelationPatterns()
     relaxed_patterns = patterns.relaxed_patterns()
 
-    # Your vectors
-    vectors = [[1, 1, 0], [0.7, 0.7, 0.8], [-1, -1, -1], [0, 1, -1], [1, 0, 1], [-0.8, 0.2, 0.9]]
-    vectors = np.array(vectors)
+    run_name = "trim-fire-24"
+    data_type = SyntheticDataType.normal_correlated
+    data_dir = SYNTHETIC_DATA_DIR
 
-    plot_data(data=vectors, ref_patterns=relaxed_patterns)
+    labels_df = load_labels(run_name, data_type, data_dir)
+    data = labels_df[[SyntheticDataSegmentCols.pattern_id, SyntheticDataSegmentCols.actual_correlation]].values.tolist()
+
+    plot_data(data=data, ref_patterns=relaxed_patterns, backend=Backends.visible_tests.value)
