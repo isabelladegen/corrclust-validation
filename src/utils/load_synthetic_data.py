@@ -64,7 +64,7 @@ class SyntheticDataType:
         if data_type == SyntheticDataType.raw:
             return "Raw"
         if data_type == SyntheticDataType.normal_correlated:
-            return "Correlated"
+            return "Normal"
         if data_type == SyntheticDataType.non_normal_correlated:
             return "Non-normal"
         if SyntheticDataType.is_resample_type(data_type):

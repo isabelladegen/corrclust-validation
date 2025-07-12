@@ -99,7 +99,7 @@ def plot_standard_distributions(datasets: {}, dist_params: {}, reference_keys: s
     """
     Create a grid of distribution plots with QQ plot insets.
 
-    :param datasets: Dict where keys are variations ('Raw', 'Correlated', 'Non-normal', 'Downsampled') and values are lists of 2D numpy arrays
+    :param datasets: Dict where keys are variations ('Raw', 'Normal', 'Non-normal', 'Downsampled') and values are lists of 2D numpy arrays
              Each array has shape (n_observations, n_timeseries)
     :param dist_params: Dict of distribution parameters for each time series
                  First level: time series name ('iob', 'cob', 'ig')

@@ -14,7 +14,7 @@ from src.utils.plots.matplotlib_helper_functions import Backends
 from src.visualisation.run_average_rank_visualisations import data_variant_description
 from src.visualisation.visualise_distance_measure_rank_distributions import heatmap_of_ranks, heatmap_of_raw_values
 
-pattern_keys_ordered = ["complete, correlated", "partial, correlated", "sparse, correlated", "complete, non-normal",
+pattern_keys_ordered = ["complete, normal", "partial, normal", "sparse, normal", "complete, non-normal",
                         "partial, non-normal", "sparse, non-normal", "complete, downsampled", "partial, downsampled",
                         "sparse, downsampled"]
 

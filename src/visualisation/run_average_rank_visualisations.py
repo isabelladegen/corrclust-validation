@@ -16,15 +16,15 @@ from src.visualisation.visualise_distance_measure_rank_distributions import \
 
 data_variant_description = {
     (DataCompleteness.complete, SyntheticDataType.raw): "complete, raw",
-    (DataCompleteness.complete, SyntheticDataType.normal_correlated): "complete, correlated",
+    (DataCompleteness.complete, SyntheticDataType.normal_correlated): "complete, normal",
     (DataCompleteness.complete, SyntheticDataType.non_normal_correlated): "complete, non-normal",
     (DataCompleteness.complete, SyntheticDataType.rs_1min): "complete, downsampled",
     (DataCompleteness.irregular_p30, SyntheticDataType.raw): "partial, raw",
-    (DataCompleteness.irregular_p30, SyntheticDataType.normal_correlated): "partial, correlated",
+    (DataCompleteness.irregular_p30, SyntheticDataType.normal_correlated): "partial, normal",
     (DataCompleteness.irregular_p30, SyntheticDataType.non_normal_correlated): "partial, non-normal",
     (DataCompleteness.irregular_p30, SyntheticDataType.rs_1min): "partial, downsampled",
     (DataCompleteness.irregular_p90, SyntheticDataType.raw): "sparse, raw",
-    (DataCompleteness.irregular_p90, SyntheticDataType.normal_correlated): "sparse, correlated",
+    (DataCompleteness.irregular_p90, SyntheticDataType.normal_correlated): "sparse, normal",
     (DataCompleteness.irregular_p90, SyntheticDataType.non_normal_correlated): "sparse, non-normal",
     (DataCompleteness.irregular_p90, SyntheticDataType.rs_1min): "sparse, downsampled",
 }

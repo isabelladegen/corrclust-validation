@@ -9,15 +9,15 @@ from src.utils.plots.matplotlib_helper_functions import reset_matplotlib, Backen
 
 display_name_data_variant = {
     "complete, raw": "Raw, 100%",
-    "complete, correlated": "Correlated, 100%",
+    "complete, normal": "Normal, 100%",
     "complete, non-normal": "Non-normal, 100%",
     "complete, downsampled": "Downsampled, 100%",
     "partial, raw": "70%",
-    "partial, correlated": "70%",
+    "partial, normal": "70%",
     "partial, non-normal": "70%",
     "partial, downsampled": "70%",
     "sparse, raw": "10%",
-    "sparse, correlated": "10%",
+    "sparse, normal": "10%",
     "sparse, non-normal": "10%",
     "sparse, downsampled": "10%",
 }
