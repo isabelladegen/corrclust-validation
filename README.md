@@ -114,14 +114,18 @@ This is the arXiv preprint version that describes the benchmark, check back for 
 }
 ```
 
-If you use our validated validation method or findings please cite our (soon to be published) paper:
+If you use our validation method or findings please cite our, please cite our paper accordingly. 
+This is the arXiv preprint version that provides the validation thresholds, check back for updates:
 
 ```bibtex
-@misc{degen2025,
-  author       = {Degen, I and Abdallah, Z S and Robson Brown, K and Reeve, H W J},
-  title        = {Validating Clustering Validation: An Empirical Evaluation for Time Series Correlation Structure Discovery},
-  year         = {2025},
-  note         = {forthcoming},
+@misc{degen2025canonical,
+    title={Canonical Correlation Patterns for Validating Clustering of Multivariate Time Series},
+    author={Isabella Degen and Zahraa S Abdallah and Kate Robson Brown and Henry W J Reeve},
+    year={2025},
+    eprint={2507.16497},
+    archivePrefix={arXiv},
+    primaryClass={cs.LG},
+    url={https://arxiv.org/abs/2507.16497}
 }
 ```
 
