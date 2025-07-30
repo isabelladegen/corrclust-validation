@@ -83,12 +83,13 @@ def draw_cube_wireframe(ax, fontsize):
         ax.text(x * 1.09, y * 1.09, z * 1.09, label, fontsize=fontsize, ha='center', va='center', color='grey')
 
 
-def plot_data(data, ref_patterns, backend=Backends.none.value):
+def plot_data(data, ref_patterns, patterns_colours, backend=Backends.none.value):
     """
     Plot correlation patterns in 3d qube grid data is dictionary of all the correlations wth pattern ids as keys
     and correlation coefficient vectors as value
     :param data: list of tuples with value 0 pattern id and value 1 correlation vector
     :param ref_patterns: dictionary with key pattern id and value relaxed pattern vector
+    :param patterns_colours: dictionary with key pattern id and value colour
     :return:
     """
     reset_matplotlib(backend)
@@ -110,14 +111,7 @@ def plot_data(data, ref_patterns, backend=Backends.none.value):
     # Draw cube wireframe
     draw_cube_wireframe(ax, fontsize)
 
-    # Create distinct colors
-    distinct_colors = ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#008080',
-                       '#a65628', '#f781bf', '#999999', '#1b9e77', '#d95f02', '#7570b3',
-                       '#e7298a', '#66a61e', '#e6ab02', '#a6761d', '#666666', '#8dd3c7',
-                       '#800000', '#bebada', '#fb8072', '#80b1d3', '#fdb462', '#b3de69',
-                       '#fccde5', '#bc80bd']
-
-    distinct_cmap = ListedColormap(distinct_colors)
+    distinct_cmap = ListedColormap(patterns_colours)
 
     # Plot data
     corr_vectors = [segment[1] for segment in data]
@@ -125,13 +119,14 @@ def plot_data(data, ref_patterns, backend=Backends.none.value):
     corr_vectors = np.array(corr_vectors)
     x, y, z = corr_vectors[:, 0], corr_vectors[:, 1], corr_vectors[:, 2]
 
-    ax.scatter(x, y, z, c=corr_colour_id, cmap=distinct_cmap, s=20, edgecolors='none', marker='o', alpha=1, vmin=0, vmax=25)
+    ax.scatter(x, y, z, c=corr_colour_id, cmap=distinct_cmap, s=20, edgecolors='none', marker='o', alpha=1, vmin=0,
+               vmax=25)
 
     # Plot relaxed canonical patterns
     extreme_points = np.array(list(ref_patterns.values()))
     pattern_colour_id = list(ref_patterns.keys())
     ax.scatter(extreme_points[:, 0], extreme_points[:, 1], extreme_points[:, 2],
-               c=pattern_colour_id, cmap=distinct_cmap, facecolor='none', s=60, alpha=0.3, marker='o', vmin=0, vmax=25)
+               c=pattern_colour_id, cmap=distinct_cmap, facecolor='none', s=60, alpha=0.4, marker='o', vmin=0, vmax=25)
 
     # Add text annotations for each extreme point
     for id, corr in ref_patterns.items():
@@ -196,7 +191,6 @@ def plot_data(data, ref_patterns, backend=Backends.none.value):
     # ensure 1,1,1 corner of cube is front middle
     ax.view_init(elev=35, azim=40)
 
-    ax.legend()
     plt.tight_layout()
     plt.show()
     return fig
@@ -211,6 +205,34 @@ def save_figure(fig, run_name, data_dir, data_type):
     fig.savefig(path.join(folder, image_name), dpi=300, bbox_inches='tight')
 
 
+# by pattern id
+pattern_colours = ['#e41a1c', # 0
+                   '#377eb8', # 1
+                   '#4daf4a', # 2
+                   '#984ea3', # 3
+                   '#ff7f00', # 4
+                   '#008080', # 5
+                   '#a65628', # 6
+                   '#f781bf', # 7
+                   '#00ffff', # 8
+                   '#000080', # 9
+                   '#d95f02', # 10
+                   '#7570b3', # 11
+                   '#ff1493', # 12
+                   '#ffd700', # 13
+                   '#800000', # 14 -n
+                   '#adff2f', # 15
+                   '#666666', # 16 -n
+                   '#8dd3c7', # 17
+                   '#e6ab02' , # 18
+                   '#bebada', # 19
+                   '#fb8072', # 20
+                   '#80b1d3', # 21
+                   '#fdb462', # 22 -n
+                   '#b3de69', # 23
+                   '#fccde5', # 24
+                   '#bc80bd'] # 25
+
 if __name__ == "__main__":
     backend = Backends.visible_tests.value
     patterns = ModelCorrelationPatterns()
@@ -224,31 +246,29 @@ if __name__ == "__main__":
     data_dir = SYNTHETIC_DATA_DIR
     labels_df = load_labels(run_name, data_type, data_dir)
     data = labels_df[[SyntheticDataSegmentCols.pattern_id, SyntheticDataSegmentCols.actual_correlation]].values.tolist()
-    fig = plot_data(data=data, ref_patterns=relaxed_patterns, backend=backend)
-    save_figure(fig, run_name, data_dir, data_type)
+    fig_normal_complete = plot_data(data=data, ref_patterns=relaxed_patterns, patterns_colours=pattern_colours, backend=backend)
+    save_figure(fig_normal_complete, run_name, data_dir, data_type)
 
-    # plot nn complete
-    data_type = SyntheticDataType.non_normal_correlated
-    data_dir = SYNTHETIC_DATA_DIR
-    labels_df = load_labels(run_name, data_type, data_dir)
-    data = labels_df[[SyntheticDataSegmentCols.pattern_id, SyntheticDataSegmentCols.actual_correlation]].values.tolist()
-    fig = plot_data(data=data, ref_patterns=relaxed_patterns, backend=backend)
-    save_figure(fig, run_name, data_dir, data_type)
-
-    # plot complete downsampled
-    data_type = SyntheticDataType.rs_1min
-    data_dir = SYNTHETIC_DATA_DIR
-    labels_df = load_labels(run_name, data_type, data_dir)
-    data = labels_df[[SyntheticDataSegmentCols.pattern_id, SyntheticDataSegmentCols.actual_correlation]].values.tolist()
-    fig = plot_data(data=data, ref_patterns=relaxed_patterns, backend=backend)
-    save_figure(fig, run_name, data_dir, data_type)
-
-    # plot normal sparse
-    data_type = SyntheticDataType.normal_correlated
-    data_dir = IRREGULAR_P90_DATA_DIR
-    labels_df = load_labels(run_name, data_type, data_dir)
-    data = labels_df[[SyntheticDataSegmentCols.pattern_id, SyntheticDataSegmentCols.actual_correlation]].values.tolist()
-    fig = plot_data(data=data, ref_patterns=relaxed_patterns, backend=backend)
-    save_figure(fig, run_name, data_dir, data_type)
-
-
+    # # plot nn complete
+    # data_type = SyntheticDataType.non_normal_correlated
+    # data_dir = SYNTHETIC_DATA_DIR
+    # labels_df = load_labels(run_name, data_type, data_dir)
+    # data = labels_df[[SyntheticDataSegmentCols.pattern_id, SyntheticDataSegmentCols.actual_correlation]].values.tolist()
+    # fig = plot_data(data=data, ref_patterns=relaxed_patterns, patterns_colours=pattern_colours, backend=backend)
+    # save_figure(fig, run_name, data_dir, data_type)
+    #
+    # # plot complete downsampled
+    # data_type = SyntheticDataType.rs_1min
+    # data_dir = SYNTHETIC_DATA_DIR
+    # labels_df = load_labels(run_name, data_type, data_dir)
+    # data = labels_df[[SyntheticDataSegmentCols.pattern_id, SyntheticDataSegmentCols.actual_correlation]].values.tolist()
+    # fig = plot_data(data=data, ref_patterns=relaxed_patterns, patterns_colours=pattern_colours, backend=backend)
+    # save_figure(fig, run_name, data_dir, data_type)
+    #
+    # # plot normal sparse
+    # data_type = SyntheticDataType.normal_correlated
+    # data_dir = IRREGULAR_P90_DATA_DIR
+    # labels_df = load_labels(run_name, data_type, data_dir)
+    # data = labels_df[[SyntheticDataSegmentCols.pattern_id, SyntheticDataSegmentCols.actual_correlation]].values.tolist()
+    # fig = plot_data(data=data, ref_patterns=relaxed_patterns, patterns_colours=pattern_colours, backend=backend)
+    # save_figure(fig, run_name, data_dir, data_type)

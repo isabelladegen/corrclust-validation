@@ -200,3 +200,9 @@ wandb/
 /csts/
 /tests/test_data/synthetic_data/normal/bad_partitions/amber-glade-10-*.parquet
 /src/utils/hf_tooling/csts_croissant_21May.json
+/tests/thesis-tests/
+/src/visualisation/correlation-polytop-6angles.png
+/src/visualisation/csts_clustering_achieved_3D.png
+/src/visualisation/2d-polytop-cross-sections-patterns.png
+/src/visualisation/polytop-3d-with-patterns.png
+/src/visualisation/polytope-3D-6angles-with-patterns-arrows.png
