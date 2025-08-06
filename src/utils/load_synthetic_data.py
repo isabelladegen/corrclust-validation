@@ -1,5 +1,4 @@
 import ast
-import glob
 from dataclasses import dataclass
 from os import path
 
@@ -8,9 +7,10 @@ from pyarrow import ArrowInvalid
 
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.utils.configurations import SYNTHETIC_DATA_DIR, GeneralisedCols, dir_for_data_type, \
-    bad_partition_dir_for_data_type
+    bad_partition_dir_for_data_type, ROOT_RESULTS_DIR
 
 from pathlib import Path
+
 
 
 @dataclass
@@ -112,6 +112,40 @@ def load_labels(run_id: str, data_type: str = SyntheticDataType.normal_correlate
     labels_df = load_labels_file_for(labels_file_name)
 
     return labels_df
+
+def load_ticc_labels(run_id: str, data_type: str, completeness: str):
+    """Returns labels df for synthetic data with specified wandb run name
+    :param run_id: name of run that generated the dataset
+    :param data_type: select type from SyntheticDataType, defaults to normal correlated data
+    optional, if not given labels for run_id will be loaded
+    :param completeness: completeness level
+    Labels df has the columns specified in the SyntheticDataSegmentCols
+    """
+    root_results_dir = ROOT_RESULTS_DIR
+    ticc_folder = path.join(root_results_dir, 'use_case', 'from_wb', completeness, data_type)
+    labels_file_name = Path(ticc_folder, run_id + "-labels.csv")
+    map_file_name = Path(ticc_folder, run_id + "-map.csv")
+
+
+    print("Load labels data file with name: " + str(labels_file_name))
+
+    assert labels_file_name.exists(), "No labels files with name " + str(labels_file_name)
+
+    # load labels file
+    labels_df = pd.read_csv(labels_file_name, index_col=0)
+    # change types from string to arrays
+    labels_df[SyntheticDataSegmentCols.actual_correlation] = labels_df[
+        SyntheticDataSegmentCols.actual_correlation].apply(lambda x: ast.literal_eval(x))
+
+
+    # change cluster name to canonical patterns
+    map_df = pd.read_csv(map_file_name)
+    if map_df['closest_gt_ids'].dtype.kind != 'i':
+        map_df['closest_gt_ids'] = map_df['closest_gt_ids'].apply(lambda x: int(x.split(',')[0]))
+    pattern_map = dict(zip(map_df['result_cluster_id'].astype(int), map_df['closest_gt_ids'].astype(int)))
+    labels_df['cluster_id'] = labels_df['cluster_id'].map(pattern_map)
+    return labels_df
+
 
 
 def load_synthetic_data(run_id: str, data_type: str = SyntheticDataType.normal_correlated,

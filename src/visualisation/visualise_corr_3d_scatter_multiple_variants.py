@@ -88,7 +88,7 @@ def draw_cube_wireframe(ax, fontsize):
         ax.text(x * 1.09, y * 1.09, z * 1.05, label, fontsize=fontsize, ha='center', va='center', color=color,
                 weight=weight, zorder=float('inf'))
 
-def plot_data_2d(ax, data, ref_patterns, patterns_colours):
+def plot_data_2d(ax, data, ref_patterns, patterns_colours, secondary_data=None):
     """
     Plot correlation patterns in 2D showing only p_{12} and p_{23} plane
     Data filtered to show only patterns where p_{13} < 0.01
@@ -146,8 +146,23 @@ def plot_data_2d(ax, data, ref_patterns, patterns_colours):
         ax.scatter(x, y, c=corr_colour_id, cmap=distinct_cmap, s=60, edgecolors='none', marker='x', alpha=1, vmin=0,
                    vmax=25)
 
+    # plot secondary data
+    if secondary_data is not None:
+        sec_filtered = [(pattern_id, corr_vec) for pattern_id, corr_vec in secondary_data if
+                         pattern_id in filtered_ref_patterns.keys()]
 
-def plot_data(ax, data, ref_patterns, patterns_colours):
+        if sec_filtered:
+            corr_vectors = [segment[1] for segment in sec_filtered]
+            corr_colour_id = [segment[0] for segment in sec_filtered]
+            corr_vectors = np.array(corr_vectors)
+            x, y = corr_vectors[:, 0], corr_vectors[:, 2]  # Only p_{12} and p_{23}
+
+            ax.scatter(x, y, c=corr_colour_id, cmap=distinct_cmap, s=60, edgecolors='none', marker='^', alpha=1, vmin=0,
+                       vmax=25)
+
+
+
+def plot_data(ax, data, ref_patterns, patterns_colours, secondary_data=None):
     """
     Plot correlation patterns in 3d qube grid data is dictionary of all the correlations wth pattern ids as keys
     and correlation coefficient vectors as value
@@ -192,7 +207,17 @@ def plot_data(ax, data, ref_patterns, patterns_colours):
     corr_vectors = np.array(corr_vectors)
     x, y, z = corr_vectors[:, 0], corr_vectors[:, 1], corr_vectors[:, 2]
 
-    ax.scatter(x, y, c=corr_colour_id, cmap=distinct_cmap, s=60, edgecolors='none', marker='x', alpha=1)
+    ax.scatter(x, y, z, c=corr_colour_id, cmap=distinct_cmap, s=60, edgecolors='none', marker='x', alpha=1)
+
+    # Plot secondary data
+    if secondary_data is not None:
+        corr_vectors = [segment[1] for segment in secondary_data]
+        corr_colour_id = [segment[0] for segment in secondary_data]
+        corr_vectors = np.array(corr_vectors)
+        x, y, z = corr_vectors[:, 0], corr_vectors[:, 1], corr_vectors[:, 2]
+
+        ax.scatter(x, y, z, c=corr_colour_id, cmap=distinct_cmap, s=60, edgecolors='none', marker='^', alpha=1)
+
 
     # Plot relaxed canonical patterns
     extreme_points = np.array(list(ref_patterns.values()))
