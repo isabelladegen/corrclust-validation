@@ -60,6 +60,8 @@ class TICCWandbUseCaseConfig(TICCDefaultSettings):
     # results are saved in the same structure as generated data to distinguish between variants
     root_results_dir: str = ''
 
+    subject: str = ''
+
     # allows for sweeping if done in the future
     def as_dict(self):
         return asdict(self)

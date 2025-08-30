@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt
 from numpy.linalg import cholesky
 from scipy.stats import spearmanr, pearsonr, norm, _discrete_distns, _continuous_distns, kendalltau
@@ -227,21 +228,43 @@ def cholesky_correlate_data(data: np.array, correlations: [], cov_reg=0.0001):
     return cor_data.T
 
 
-def calculate_spearman_correlation(data: np.array, round_to: int = 3):
+def index_to_variates(flat_index, n):
+    """Convert flat correlation index to variate pair"""
+    i_indices, j_indices = np.triu_indices(n, k=1)
+    return i_indices[flat_index], j_indices[flat_index]
+
+
+def is_constant_column(col, tolerance=1e-10):
+    """Check if column  is constant"""
+    return np.abs(np.max(col) - np.min(col)) < tolerance
+
+
+def calculate_spearman_correlation(data: np.array, round_to: int = 3, deal_with_const: bool = False):
     """ Calculate the correlation for the data. Assumes that columns are variates and rows are observations.
     Warning: due to the special properties of correlation matrices, it is safer to truncate the correlations than
     round. E.g. a correlation of 0.99897654 rounded to 2 becomes 1.0. This perfect correlation can cause the
     resulting matrix not to be psd.
     :return: list of correlations ordered by np.triu_indices of the upper half of the correlation matrix
     """
+    assert round_to > 0, "you need to keep at least 1 decimal place"
+    if isinstance(data, pd.DataFrame):
+        data = data.to_numpy()
     n = data.shape[1]
     if data.shape[0] <= 1:
         return np.nan  # this is a thing in TICC
-    result = spearmanr(data)
-    if n == 2:
-        return_result = [result.correlation]
-    else:
-        return_result = result.correlation[np.triu_indices(n, 1)]
+    i_indices, j_indices = np.triu_indices(n, k=1)
+    return_result = []
+    for i, j in zip(i_indices, j_indices):
+        corr, _ = spearmanr(data[:, i], data[:, j])
+        if np.isnan(corr):
+            col1 = data[:, i]
+            col2 = data[:, j]
+            # both constant
+            if is_constant_column(col1) and is_constant_column(col2):
+                corr = 1  # set correlation to one if both are constant
+            else:  # one is constant
+                corr = 0  # set correlation to 0 if one is constant and the other not
+        return_result.append(corr)
 
     factor = 10 ** round_to  # shift decimals past point for truncation and back again
     return list(np.trunc(np.array(return_result) * factor) / factor)

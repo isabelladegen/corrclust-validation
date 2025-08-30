@@ -570,13 +570,37 @@ def test_correlation_calculation():
     # generate 2d data
     data = generate_observations(seed=seed, distribution=norm, size=(10000000, 1), loc=0, scale=1)
     same_obs = np.column_stack((data, data))
-    correlation = calculate_spearman_correlation(same_obs, 0)
-    assert_that(correlation, is_([1]))
+    correlation = calculate_spearman_correlation(same_obs, 1)
+    assert_that(correlation, is_([1.0]))
 
     # generate 3d data
     same_obs_3d = np.column_stack((data, data, data))
-    correlation_3d = calculate_spearman_correlation(same_obs_3d, 0)
-    assert_that(correlation_3d, is_([1, 1, 1]))
+    correlation_3d = calculate_spearman_correlation(same_obs_3d, 1)
+    assert_that(correlation_3d, is_([1.0, 1.0, 1.0]))
+
+def test_correlation_calculation_corner_cases():
+    # generate 2d both constant
+    data = np.full((100, 1), 3.2)
+    same_obs = np.column_stack((data, data))
+    correlation = calculate_spearman_correlation(same_obs, 1)
+    assert_that(correlation, is_([1]))
+
+    # generate 2d one constant
+    data2 = np.arange(1, 101).reshape(100, 1)
+    same_obs = np.column_stack((data, data2))
+    correlation = calculate_spearman_correlation(same_obs, 1)
+    assert_that(correlation, is_([0.0]))
+
+    # generate 3d data all constant
+    same_obs_3d = np.column_stack((data, data, data))
+    correlation_3d = calculate_spearman_correlation(same_obs_3d, 1)
+    assert_that(correlation_3d, is_([1.0, 1.0, 1.0]))
+
+    # generate 3d data one column constant
+    data3 = np.flip(data2)
+    same_obs_3d = np.column_stack((data, data2, data3))
+    correlation_3d = calculate_spearman_correlation(same_obs_3d, 1)
+    assert_that(correlation_3d, is_([0.0, 0.0, -0.9]))
 
 
 def test_correlations_get_clipped_not_rounded():

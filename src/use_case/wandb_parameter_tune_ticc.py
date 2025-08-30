@@ -16,11 +16,10 @@ from src.utils.plots.matplotlib_helper_functions import Backends
 from src.visualisation.run_average_rank_visualisations import data_variant_description
 from tests.use_case.ticc.test_ticc_runs_on_original_test_data import TICCSettings
 
-def one_run_ticc(original_config: TICCWandbUseCaseConfig, subject: str, save_results: bool = False):
+def one_run_ticc(original_config: TICCWandbUseCaseConfig, save_results: bool = False):
     """
     One run of ticc for given config and subject
     :param original_config: TICCWandbUseCaseConfig that configures which data variant and subjects TICC is trained and run on
-    :param subject: run_name of the subject to use
     :return: evaluates dict with key subject and value AlgorithmEvaluation, wandb summaries with key subject and value
      wandb dict with the keys and values logged to wandb
     """
@@ -30,12 +29,9 @@ def one_run_ticc(original_config: TICCWandbUseCaseConfig, subject: str, save_res
 
     # string description of data variant
     variant_description = data_variant_description[(original_config.completeness_level, original_config.data_type)]
-    # add data variant to wandb run name
-    run_name = subject + ":" + variant_description
 
     wandb.init(project=original_config.wandb_project_name,
                entity=original_config.wandb_entity,
-               name=run_name,
                mode=original_config.wandb_mode,
                notes=original_config.wandb_notes,
                tags=original_config.tags,
@@ -63,6 +59,7 @@ def one_run_ticc(original_config: TICCWandbUseCaseConfig, subject: str, save_res
     print("DATA VARIANT: " + variant_description)
     print("LOAD GROUND TRUTH DATA")
     data_dir = get_data_dir(root_data_dir=config.root_data_dir, extension_type=config.completeness_level)
+    subject = config.subject
     data_df, gt_labels_df = load_synthetic_data(subject, config.data_type, data_dir)
 
     data_np = data_df[config.data_cols].to_numpy()
@@ -72,6 +69,7 @@ def one_run_ticc(original_config: TICCWandbUseCaseConfig, subject: str, save_res
     result = ticc.fit(data=data_np, use_gmm_initialisation=config.use_gmm_initialisation,
                       reassign_points_to_zero_clusters=config.reassign_points_to_zero_clusters)
 
+    print("CALCULATE LABELS DF")
     result_labels_df = result.to_labels_df(subject)
 
     # log results df
@@ -173,7 +171,6 @@ if __name__ == "__main__":
     config.wandb_entity = WandbConfiguration.wandb_entity
     config.wandb_mode= 'online'
     config.wandb_notes= "tuning TICC"
-    tags = ['TICC tuning', 'normal', 'complete']
     config.root_data_dir = SYNTHETIC_DATA_DIR
     # we won't save the results
     config.root_results_dir = get_algorithm_use_case_result_dir(root_results_dir=ROOT_RESULTS_DIR,
@@ -186,7 +183,8 @@ if __name__ == "__main__":
     # run on all 30 subjects for each data variant
     run_names = pd.read_csv(GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
     train_on_subject = run_names[4]  # data to use for training
+    config.subject = train_on_subject
 
     sweep_config_grid = get_sweep_config('TICC Grid Normal 1')
     sweep_id = wandb.sweep(sweep_config_grid, project=config.wandb_project_name)
-    wandb.agent(sweep_id, function=lambda: one_run_ticc(config, subject=train_on_subject, save_results=False))
+    wandb.agent(sweep_id, function=lambda: one_run_ticc(config, save_results=False))
