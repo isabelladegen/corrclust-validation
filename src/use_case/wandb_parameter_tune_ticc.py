@@ -114,10 +114,12 @@ def one_run_ticc(original_config: TICCWandbUseCaseConfig, save_results: bool = F
         map_df.to_csv(map_file_name)
 
     # log numerical results
+    print("LOG RESULTS")
     wandb.log({
         "Jaccard Index": evaluate.jaccard_index(),
         "SWC": evaluate.silhouette_score(),
         "DBI": evaluate.dbi(),
+        "Invalid Segments": evaluate.n_invalid_segments(),
         "Pattern Discovery ": evaluate.pattern_discovery_percentage(),
         "Pattern Specificity": evaluate.pattern_specificity_percentage(),
         "Segmentation Ratio": evaluate.segmentation_ratio(),
@@ -151,7 +153,7 @@ def get_sweep_config(sweep_id: str):
                 'values': [23]
             },
             'switch_penalty': {
-                'values': [1.9, 20, 110, 150]
+                'values': [20, 110, 150, 200]
             },
             'lambda_var': {
                 'values': [0.11, 0.01, 0.001]

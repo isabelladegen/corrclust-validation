@@ -286,31 +286,43 @@ class AlgorithmEvaluation:
         }
         return pd.DataFrame(results)
 
-    def silhouette_score(self, distance_measure=DistanceMeasures.l5_cor_dist):
+    def silhouette_score(self, distance_measure=DistanceMeasures.l5_cor_dist, max_segments:int=6000):
         """
         Calculates silhouette score for your result. Note that this measure does not require
         ground truth information and used the correlations of the segments to judge
         the structure in the data. Refer to our benchmark and validation papers for more details
         """
-        y_pred = self._result_labels_df[SyntheticDataSegmentCols.pattern_id].to_numpy()
-        distance_matrix = calculate_distance_matrix_for(self._result_labels_df, distance_measure)
+        labels_df = self._result_labels_df.dropna(subset=[SyntheticDataSegmentCols.actual_correlation])
+        if labels_df.shape[0] > max_segments:
+            return np.nan
+        y_pred = labels_df[SyntheticDataSegmentCols.pattern_id].to_numpy()
+        distance_matrix = calculate_distance_matrix_for(labels_df, distance_measure)
         sil_avg = silhouette_avg_from_distances(distance_matrix, y_pred, round_to=self._round_to)
         return sil_avg
 
-    def dbi(self, distance_measure=DistanceMeasures.l5_cor_dist):
+    def dbi(self, distance_measure=DistanceMeasures.l5_cor_dist, max_segments:int=6000):
         """
         Calculates the davies bouldin index for your result. Note that this measure does not require
         ground truth information and used the correlations of the segments to judge
         the structure in the data. Refer to our benchmark and validation papers for more details
         """
+        labels_df = self._result_labels_df.dropna(subset=[SyntheticDataSegmentCols.actual_correlation])
+        if labels_df.shape[0] > max_segments:
+            return np.nan
         data_np = self._data[self._data_columns].to_numpy()
-        cluster_centroids = calculate_cluster_centroids(self._result_labels_df, data_np)
+        cluster_centroids = calculate_cluster_centroids(labels_df, data_np)
         dist_cluster_centroids = calculate_distances_between_cluster_centroids(cluster_centroids, distance_measure)
         dist_seg_cluster_centroid = calculate_distances_between_each_segment_and_its_cluster_centroid(
-            self._result_labels_df, cluster_centroids, distance_measure)
+            labels_df, cluster_centroids, distance_measure)
 
         dbi = calculate_dbi(dist_seg_cluster_centroid, dist_cluster_centroids, round_to=self._round_to)
         return dbi
+
+    def n_invalid_segments(self):
+        """
+        Number of segments with invalid correlation matrix
+        """
+        return self._result_labels_df[SyntheticDataSegmentCols.actual_correlation].isna().sum()
 
     def jaccard_index(self):
         """
