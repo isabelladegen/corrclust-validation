@@ -19,7 +19,9 @@ def calculate_mean_cluster_correlations(labels_df: pd.DataFrame, round_to: int):
     resulting_ids = labels_df[SyntheticDataSegmentCols.pattern_id].unique().tolist()
     for cluster_id in resulting_ids:
         cluster_df = labels_df[labels_df[SyntheticDataSegmentCols.pattern_id] == cluster_id]
-        correlations_np = np.array(cluster_df[SyntheticDataSegmentCols.actual_correlation].tolist())
+        # happens for TICC with segments of length 1
+        non_nan_correlations = cluster_df[SyntheticDataSegmentCols.actual_correlation].dropna()
+        correlations_np = np.array(non_nan_correlations.tolist())
 
         # calculate mean for each column
         resulting_clusters[cluster_id] = np.round(np.mean(correlations_np, axis=0), round_to)
