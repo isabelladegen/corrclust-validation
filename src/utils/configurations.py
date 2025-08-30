@@ -94,7 +94,7 @@ def get_algorithm_use_case_result_dir(root_results_dir: str, algorithm_id: str) 
     Path(folder).mkdir(parents=True, exist_ok=True)
     return folder
 
-def get_data_dir(root_data_dir: str = SYNTHETIC_DATA_DIR, extension_type: str = DataCompleteness.complete) -> str:
+def     get_data_dir(root_data_dir: str = SYNTHETIC_DATA_DIR, extension_type: str = DataCompleteness.complete) -> str:
     return path.join(root_data_dir, extension_type)
 
 
@@ -520,3 +520,4 @@ class WandbConfiguration:
     wandb_confirmatory_partitions_project_name: str = config['wandb_confirmatory_partitions_project_name']
     wandb_confirmatory_irregular_project_name: str = config['wandb_confirmatory_irregular_project_name']
     wandb_use_case_project_name: str = config['wandb_use_case_project_name']
+    wandb_ticc_tuning_project_name: str = config['wandb_ticc_tuning_project_name']
