@@ -1,20 +1,20 @@
-from dataclasses import dataclass, field, asdict
 from pathlib import Path
 
 import pandas as pd
+import multiprocessing as mp
+
 import wandb
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 
 from src.use_case.algorithm_evaluation import AlgorithmEvaluation
 from src.use_case.ticc.TICC_solver import TICC
 from src.use_case.wandb_run_ticc import TICCWandbUseCaseConfig
-from src.utils.configurations import WandbConfiguration, SyntheticDataVariates, SYNTHETIC_DATA_DIR, \
+from src.utils.configurations import WandbConfiguration, SYNTHETIC_DATA_DIR, \
     GENERATED_DATASETS_FILE_PATH, DataCompleteness, get_data_dir, get_algorithm_use_case_result_dir, \
     ROOT_RESULTS_DIR
 from src.utils.load_synthetic_data import SyntheticDataType, load_synthetic_data, SyntheticFileTypes
-from src.utils.plots.matplotlib_helper_functions import Backends
 from src.visualisation.run_average_rank_visualisations import data_variant_description
-from tests.use_case.ticc.test_ticc_runs_on_original_test_data import TICCSettings
+
 
 def one_run_ticc(original_config: TICCWandbUseCaseConfig, save_results: bool = False):
     """
@@ -63,7 +63,6 @@ def one_run_ticc(original_config: TICCWandbUseCaseConfig, save_results: bool = F
     data_df, gt_labels_df = load_synthetic_data(subject, config.data_type, data_dir)
 
     data_np = data_df[config.data_cols].to_numpy()
-
 
     print("TRAIN TICC ON SUBJECT: " + subject)
     result = ticc.fit(data=data_np, use_gmm_initialisation=config.use_gmm_initialisation,
@@ -162,6 +161,35 @@ def get_sweep_config(sweep_id: str):
     }
     return sweep_config
 
+def get_sweep_config_bayes(sweep_id: str):
+    bayes_sweep_config = {
+        'method': 'bayes',
+        'name': 'TICC CSTS Benchmark Sweep (' + sweep_id + ')',
+        'metric': {
+            'goal': 'maximize',
+            'name': 'SWC'
+        },
+        'parameters': {
+            'window_size': {
+                'values': [2, 3, 4, 5]
+            },
+            'number_of_clusters': {
+                'values': [23]
+            },
+            'switch_penalty': {
+                'min': 1, 'max': 500
+            },
+            'lambda_var': {
+                'min': 0.0001, 'max': 0.15, 'distribution': 'log_uniform'
+            },
+        },
+        'run_cap' : 100
+    }
+    return bayes_sweep_config
+
+def run_agent(sweep_id):
+    wandb.agent(sweep_id, function=lambda: one_run_ticc(config, save_results=False))
+
 
 if __name__ == "__main__":
     """ 
@@ -169,10 +197,10 @@ if __name__ == "__main__":
     evaluation results. These can be downloaded from wandb for analysis
     """
     config = TICCWandbUseCaseConfig()
-    config.wandb_project_name =WandbConfiguration.wandb_ticc_tuning_project_name
+    config.wandb_project_name = WandbConfiguration.wandb_ticc_tuning_project_name
     config.wandb_entity = WandbConfiguration.wandb_entity
-    config.wandb_mode= 'online'
-    config.wandb_notes= "tuning TICC"
+    config.wandb_mode = 'online'
+    config.wandb_notes = "tuning TICC"
     config.root_data_dir = SYNTHETIC_DATA_DIR
     # we won't save the results
     config.root_results_dir = get_algorithm_use_case_result_dir(root_results_dir=ROOT_RESULTS_DIR,
@@ -187,6 +215,18 @@ if __name__ == "__main__":
     train_on_subject = run_names[4]  # data to use for training
     config.subject = train_on_subject
 
-    sweep_config_grid = get_sweep_config('TICC Grid Normal 1')
-    sweep_id = wandb.sweep(sweep_config_grid, project=config.wandb_project_name)
-    wandb.agent(sweep_id, function=lambda: one_run_ticc(config, save_results=False))
+    # sweep_config_grid = get_sweep_config('TICC Grid Normal 1')
+    sweep_config_bayes = get_sweep_config_bayes('Normal 2')
+    sweep_id = wandb.sweep(sweep_config_bayes, project=config.wandb_project_name)
+
+    # Use multiple cores, leave one to the system
+    num_agents = 7
+    processes = []
+
+    for i in range(num_agents):
+        p = mp.Process(target=run_agent, args=(sweep_id,))
+        p.start()
+        processes.append(p)
+
+    for p in processes:
+        p.join()
