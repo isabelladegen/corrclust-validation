@@ -180,15 +180,15 @@ def get_sweep_config_bayes(sweep_id: str):
                 'min': 1, 'max': 500
             },
             'lambda_var': {
-                'min': 0.0001, 'max': 0.15, 'distribution': 'log_uniform'
+                'log_uniform_values': [0.0001, 0.15]
             },
         },
         'run_cap' : 100
     }
     return bayes_sweep_config
 
-def run_agent(sweep_id):
-    wandb.agent(sweep_id, function=lambda: one_run_ticc(config, save_results=False))
+def run_agent(sweep_id, configuration):
+    wandb.agent(sweep_id, function=lambda: one_run_ticc(configuration, save_results=False))
 
 
 if __name__ == "__main__":
@@ -220,11 +220,11 @@ if __name__ == "__main__":
     sweep_id = wandb.sweep(sweep_config_bayes, project=config.wandb_project_name)
 
     # Use multiple cores, leave one to the system
-    num_agents = 7
+    num_agents = 6
     processes = []
 
     for i in range(num_agents):
-        p = mp.Process(target=run_agent, args=(sweep_id,))
+        p = mp.Process(target=run_agent, args=(sweep_id,config))
         p.start()
         processes.append(p)
 
