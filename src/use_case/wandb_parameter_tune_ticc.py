@@ -1,3 +1,5 @@
+import os
+import time
 from pathlib import Path
 
 import pandas as pd
@@ -133,7 +135,6 @@ def one_run_ticc(original_config: TICCWandbUseCaseConfig, save_results: bool = F
     # build return results
     evaluates[subject] = evaluate
     wandb_summaries[subject] = dict(wandb.run.summary)
-    wandb.finish()
     return evaluates, wandb_summaries
 
 
@@ -161,6 +162,31 @@ def get_sweep_config(sweep_id: str):
     }
     return sweep_config
 
+def get_grid2_config(sweep_id: str):
+    """Intention is to use the same configuration for all benchmark with each of them perhaps being more or
+    less good for a DB
+    """
+    sweep_config = {
+        'name': 'TICC CSTS Benchmark Sweep (' + sweep_id + ')',
+        'method': 'grid',
+        'parameters': {
+            'window_size': {
+                'values': [2, 3]
+            },
+            'number_of_clusters': {
+                'values': [23]
+            },
+            'switch_penalty': {
+                'values': [5, 10, 15, 25]
+            },
+            'lambda_var': {
+                'values': [0.001, 0.002, 0.005]
+            },
+        }
+    }
+    return sweep_config
+
+
 def get_sweep_config_bayes(sweep_id: str):
     bayes_sweep_config = {
         'method': 'bayes',
@@ -180,14 +206,20 @@ def get_sweep_config_bayes(sweep_id: str):
                 'min': 1, 'max': 500
             },
             'lambda_var': {
-                'log_uniform_values': [0.0001, 0.15]
-            },
+                'distribution': 'log_uniform_values',
+                'min': 0.0001,
+                'max': 0.15
+            }
         },
-        'run_cap' : 100
+        'run_cap': 100
     }
     return bayes_sweep_config
 
+
 def run_agent(sweep_id, configuration):
+    # Critical: Isolate wandb service for this process
+    os.environ["WANDB_START_METHOD"] = "thread"
+    os.environ["WANDB_X_REQUIRE_LEGACY_SERVICE"] = "false"
     wandb.agent(sweep_id, function=lambda: one_run_ticc(configuration, save_results=False))
 
 
@@ -216,17 +248,21 @@ if __name__ == "__main__":
     config.subject = train_on_subject
 
     # sweep_config_grid = get_sweep_config('TICC Grid Normal 1')
-    sweep_config_bayes = get_sweep_config_bayes('Normal 2')
-    sweep_id = wandb.sweep(sweep_config_bayes, project=config.wandb_project_name)
+    # sweep_config_bayes = get_sweep_config_bayes('Normal 2')
+    sweep_config_grid3 = get_grid2_config('Normal 3')
+    sweep_id = wandb.sweep(sweep_config_grid3, project=config.wandb_project_name)
 
     # Use multiple cores, leave one to the system
-    num_agents = 6
+    num_agents = 3
     processes = []
 
+    mp.set_start_method('spawn', force=True)
+
     for i in range(num_agents):
-        p = mp.Process(target=run_agent, args=(sweep_id,config))
+        p = mp.Process(target=run_agent, args=(sweep_id, config))
         p.start()
         processes.append(p)
+        time.sleep(60)
 
     for p in processes:
         p.join()
