@@ -14,12 +14,12 @@ from src.visualisation.run_average_rank_visualisations import data_variant_descr
 
 
 def run_wilcox_signed_rank_tests_for_hypotheses(prereg_hypotheses: [], run_names: [], root_results_dir: str,
-                                                overall_ds_name: str):
+                                                overall_ds_name: str, alternative:str = "less"):
     stats_results = []
     alpha = 0.05
     target_power = 0.8
     bonferroni_adjust = 1  # no adjustment due to hierarchical testing
-    alternative = "less"  # one-sided confirmatory tests (h[2] better ranked than h[3]
+    # alternative = "less"  # one-sided confirmatory tests (h[2] better ranked than h[3]
 
     # Calculate stats
     for h in prereg_hypotheses:
