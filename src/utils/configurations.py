@@ -39,6 +39,7 @@ CONFIRMATORY_DATASETS_FILE_PATH = path.join(CONFIRMATORY_SYNTHETIC_DATA_DIR,
                                             'confirmatory-synthetic-correlated-data-n30.csv')
 
 VALID_ROOT_RESULTS_DIR = path.join(ROOT_DIR, 'validity_results')
+CONF_VALID_ROOT_RESULTS_DIR = path.join(ROOT_DIR, 'confirmatory_validity_results')
 
 MULTIPLE_DS_SUMMARY_FILE = 'multiple-datasets-summary.csv'
 OVERALL_SEGMENT_LENGTH_IMAGE = 'overall_segment_length_distributions.png'
