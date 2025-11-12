@@ -10,6 +10,24 @@ from src.utils.configurations import ROOT_RESULTS_DIR, SYNTHETIC_DATA_DIR, IRREG
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 
+threshold_values = {
+    EvaluationCriteria.inter_i: 0.1,
+    EvaluationCriteria.inter_ii: 1.0,
+    EvaluationCriteria.inter_iii: 0.7,
+    EvaluationCriteria.disc_i: 4,
+    EvaluationCriteria.disc_ii: 3,
+    EvaluationCriteria.disc_iii: 0.98,
+}
+
+df_thresholds = {
+    EvaluationCriteria.inter_i: lambda x: x <= threshold_values[EvaluationCriteria.inter_i],
+    EvaluationCriteria.inter_ii: lambda x: x == threshold_values[EvaluationCriteria.inter_ii],
+    EvaluationCriteria.inter_iii: lambda x: x > threshold_values[EvaluationCriteria.inter_iii],
+    EvaluationCriteria.disc_i: lambda x: x > threshold_values[EvaluationCriteria.disc_i],
+    EvaluationCriteria.disc_ii: lambda x: x < threshold_values[EvaluationCriteria.disc_i],
+    EvaluationCriteria.disc_iii: lambda x: x > threshold_values[EvaluationCriteria.disc_iii],
+}
+
 
 def calculate_mean_sd(measures, run_names, data_type, data_dir, root_results_dir):
     # Load all raw_criteria_data for this data variant
@@ -48,21 +66,14 @@ def calculate_mean_sd(measures, run_names, data_type, data_dir, root_results_dir
 
     result_df = mean_df.copy()
 
-    thresholds = {
-        EvaluationCriteria.inter_i: lambda x: x <= 0.1,
-        EvaluationCriteria.inter_ii: lambda x: x == 1.0,
-        EvaluationCriteria.inter_iii: lambda x: x > 0.7,
-        EvaluationCriteria.disc_i: lambda x: x > 4,
-        EvaluationCriteria.disc_ii: lambda x: x < 3,
-        EvaluationCriteria.disc_iii: lambda x: x > 0.98,
-    }
+
 
     for col in mean_df.columns:
         for idx in mean_df.index:
             mean_val = mean_df.loc[idx, col]
             sd_val = sd_df.loc[idx, col]
 
-            add_star = thresholds.get(col, lambda x: False)(mean_val)
+            add_star = df_thresholds.get(col, lambda x: False)(mean_val)
             star = "*" if add_star else ""
 
             result_df.loc[idx, col] = f"{mean_val} (SD {sd_val}){star}"
@@ -137,4 +148,3 @@ if __name__ == "__main__":
                                                  IRREGULAR_P90_DATA_DIR, ROOT_RESULTS_DIR)
     mean_sd_df_non_normal_10.to_csv(path.join(save_to_folder, 'external-mean_sd_non_normal_10.csv'))
 
-    print("lets see")
