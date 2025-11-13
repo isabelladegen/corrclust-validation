@@ -66,8 +66,6 @@ def calculate_mean_sd(measures, run_names, data_type, data_dir, root_results_dir
 
     result_df = mean_df.copy()
 
-
-
     for col in mean_df.columns:
         for idx in mean_df.index:
             mean_val = mean_df.loc[idx, col]
