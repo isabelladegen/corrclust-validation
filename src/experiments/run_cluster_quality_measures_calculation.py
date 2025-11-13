@@ -165,6 +165,16 @@ if __name__ == "__main__":
     #                      DistanceMeasures.foerstner_cor_dist]
     # data_types = [SyntheticDataType.rs_1min]
 
+    # distance_measures = [
+    #     DistanceMeasures.l2_with_ref,
+    #     DistanceMeasures.l3_with_ref,
+    #     DistanceMeasures.linf_with_ref,
+    #     DistanceMeasures.dot_transform_l1,  # dot transform + lp norms
+    #     DistanceMeasures.dot_transform_l2,
+    # ]
+    # data_types = [SyntheticDataType.normal_correlated]
+    # data_dirs = [SYNTHETIC_DATA_DIR]
+
     internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb,
                          ClusteringQualityMeasures.vrc, ClusteringQualityMeasures.dbi]
     data_types = [SyntheticDataType.raw, SyntheticDataType.normal_correlated,

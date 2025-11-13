@@ -26,6 +26,14 @@ if __name__ == "__main__":
                          DistanceMeasures.foerstner_cor_dist
                          ]
 
+    # distance_measures = [
+    #     DistanceMeasures.l2_with_ref,
+    #     DistanceMeasures.l3_with_ref,
+    #     DistanceMeasures.linf_with_ref,
+    #     DistanceMeasures.dot_transform_l1,  # dot transform + lp norms
+    #     DistanceMeasures.dot_transform_l2,
+    # ]
+
     min_corr_required = 0.5
 
     internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb,
