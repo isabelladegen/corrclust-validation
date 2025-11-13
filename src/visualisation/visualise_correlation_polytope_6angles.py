@@ -278,4 +278,4 @@ if __name__ == "__main__":
     fig = plot_polytope_4_views(
         resolution=80
     )
-    fig.savefig('correlation-polytop-6angles.png', dpi=300, bbox_inches='tight', pad_inches=0.2)
+    fig.savefig('correlation-polytop-transparent.png', dpi=300, bbox_inches='tight', pad_inches=0.2, transparent=True)

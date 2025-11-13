@@ -67,6 +67,7 @@ if __name__ == "__main__":
         # Create colored title
         x_start = 0.35
         x_offset = x_start
+        pattern = relaxed_patterns[pattern_idx]
         for i, (val, colors) in enumerate([
             (pattern[0], (c1, c2)),
             (pattern[1], (c1, c3)),
@@ -97,5 +98,5 @@ if __name__ == "__main__":
 
         plt.savefig(path.join(results_folder,
                               'normal_complete_ts_plot_pattern' + str(pattern_id) + '.png'), dpi=300,
-                    bbox_inches='tight')
+                    bbox_inches='tight', transparent=True)
         plt.show()
