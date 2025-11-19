@@ -4,8 +4,7 @@ import pandas as pd
 
 from src.data_generation.create_reduced_datasets import CreateReducedDatasets
 from src.data_generation.wandb_create_synthetic_data import save_data_labels_to_file
-from src.utils.configurations import GENERATED_DATASETS_FILE_PATH, SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, \
-    IRREGULAR_P90_DATA_DIR, ROOT_REDUCED_SYNTHETIC_DATA_DIR, get_root_folder_for_reduced_cluster, \
+from src.utils.configurations import GENERATED_DATASETS_FILE_PATH, SYNTHETIC_DATA_DIR, ROOT_REDUCED_SYNTHETIC_DATA_DIR, get_root_folder_for_reduced_cluster, \
     get_root_folder_for_reduced_segments, get_data_dir, DataCompleteness
 from src.utils.load_synthetic_data import SyntheticDataType
 
@@ -15,7 +14,7 @@ def create_reduced_datasets(root_data_dir: str, data_types: [str], completeness:
     for comp in completeness:
         for data_type in data_types:
             data_dir = get_data_dir(root_data_dir, comp)  # to read data
-            rd = CreateReducedDatasets(run_names=run_names, data_type=SyntheticDataType.normal_correlated,
+            rd = CreateReducedDatasets(run_names=run_names, data_type=data_type,
                                        data_dir=data_dir, drop_n_clusters=n_dropped_clusters,
                                        drop_n_segments=n_dropped_segments, base_seed=seed)
             # reduced clusters label and data dfs
