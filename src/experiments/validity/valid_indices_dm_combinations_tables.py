@@ -8,7 +8,7 @@ from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import GENERATED_DATASETS_FILE_PATH, ResultsType, ROOT_RESULTS_DIR, SYNTHETIC_DATA_DIR, \
     IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR, get_data_dir, \
     get_root_folder_for_reduced_cluster, DataCompleteness, get_root_folder_for_reduced_segments, \
-    ROOT_REDUCED_RESULTS_DIR
+    ROOT_REDUCED_RESULTS_DIR, number_for_completeness
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 
@@ -103,16 +103,6 @@ def calculate_mean_sd(distance_measures, internal_indices, run_names, data_type,
     # create df from dict
     results_df = pd.DataFrame(results)
     return results_df
-
-
-def number_for_completeness(comp):
-    if comp == DataCompleteness.complete:
-        return 100
-    if comp == DataCompleteness.irregular_p30:
-        return 70
-    if comp == DataCompleteness.irregular_p90:
-        return 10
-
 
 def construct_test_3(distance_measures, internal_measures, dropped_clusters, data_type, data_completeness,
                      root_result_dir, additional_filename: str = ''):

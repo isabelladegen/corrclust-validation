@@ -15,6 +15,14 @@ class DataCompleteness:
     irregular_p30: str = 'irregular_p30'  # 70% of data
     irregular_p90: str = 'irregular_p90'  # 10% of data
 
+def number_for_completeness(comp):
+    if comp == DataCompleteness.complete:
+        return 100
+    if comp == DataCompleteness.irregular_p30:
+        return 70
+    if comp == DataCompleteness.irregular_p90:
+        return 10
+
 
 ROOT_DIR = path.realpath(path.join(path.dirname(__file__), '../..'))
 PATTERNS_TO_MODEL_PATH = path.join(ROOT_DIR, 'src/data_generation/config/correlation_patterns_to_model.csv')
@@ -91,13 +99,15 @@ class ResultsType:
     distance_measure_evaluation: str = 'distance-measures-evaluation'  # statistical differences of distance measures
     dataset_description: str = 'dataset-description'
 
+
 def get_algorithm_use_case_result_dir(root_results_dir: str, algorithm_id: str) -> str:
     folder = path.join(root_results_dir, 'use_case', algorithm_id)
     # created folder if it doesn't exit
     Path(folder).mkdir(parents=True, exist_ok=True)
     return folder
 
-def     get_data_dir(root_data_dir: str = SYNTHETIC_DATA_DIR, extension_type: str = DataCompleteness.complete) -> str:
+
+def get_data_dir(root_data_dir: str = SYNTHETIC_DATA_DIR, extension_type: str = DataCompleteness.complete) -> str:
     return path.join(root_data_dir, extension_type)
 
 
