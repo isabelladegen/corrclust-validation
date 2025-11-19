@@ -128,7 +128,7 @@ def run_internal_measure_calculation_for_dataset(overall_ds_name: str, data_dict
                 print(f"  {result}")
 
 
-def load_all_clustering_data_for_subjects_and_data_type(run_ids: str, data_type: str, data_dir: str):
+def load_all_clustering_data_for_subjects_and_data_type(run_ids: [str], data_type: str, data_dir: str):
     """ Load all data for each data variant only ones to save time """
     data_dict = {}
     gt_labels_dict = {}
@@ -149,17 +149,17 @@ if __name__ == "__main__":
     overall_dataset_name = "n30"
     run_names = pd.read_csv(GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
     # run on 15th May 25
-    distance_measures = [DistanceMeasures.l1_cor_dist,
-                         DistanceMeasures.l1_with_ref,
-                         DistanceMeasures.l2_cor_dist,
-                         DistanceMeasures.l3_cor_dist,
-                         DistanceMeasures.l5_cor_dist,
-                         DistanceMeasures.l5_with_ref,
-                         DistanceMeasures.linf_cor_dist,
-                         DistanceMeasures.dot_transform_linf,
-                         DistanceMeasures.log_frob_cor_dist,
-                         DistanceMeasures.foerstner_cor_dist
-                         ]
+    # distance_measures = [DistanceMeasures.l1_cor_dist,
+    #                      DistanceMeasures.l1_with_ref,
+    #                      DistanceMeasures.l2_cor_dist,
+    #                      DistanceMeasures.l3_cor_dist,
+    #                      DistanceMeasures.l5_cor_dist,
+    #                      DistanceMeasures.l5_with_ref,
+    #                      DistanceMeasures.linf_cor_dist,
+    #                      DistanceMeasures.dot_transform_linf,
+    #                      DistanceMeasures.log_frob_cor_dist,
+    #                      DistanceMeasures.foerstner_cor_dist
+    #                      ]
     # distance_measures = [DistanceMeasures.dot_transform_linf,
     #                      DistanceMeasures.log_frob_cor_dist,
     #                      DistanceMeasures.foerstner_cor_dist]
@@ -175,11 +175,18 @@ if __name__ == "__main__":
     # data_types = [SyntheticDataType.normal_correlated]
     # data_dirs = [SYNTHETIC_DATA_DIR]
 
+    distance_measures = [
+        DistanceMeasures.dot_transform_l1,  # dot transform + lp norms
+        DistanceMeasures.dot_transform_l2,
+    ]
+    data_types = [SyntheticDataType.normal_correlated]
+    data_dirs = [IRREGULAR_P30_DATA_DIR]
+
     internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb,
                          ClusteringQualityMeasures.vrc, ClusteringQualityMeasures.dbi]
-    data_types = [SyntheticDataType.raw, SyntheticDataType.normal_correlated,
-                  SyntheticDataType.non_normal_correlated, SyntheticDataType.rs_1min]
-    data_dirs = [SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR]
+    # data_types = [SyntheticDataType.raw, SyntheticDataType.normal_correlated,
+    #               SyntheticDataType.non_normal_correlated, SyntheticDataType.rs_1min]
+    # data_dirs = [SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR]
     # Config for L2 only ran for downsampled, complete data
     # distance_measures = [DistanceMeasures.l2_cor_dist]
     # data_types = [SyntheticDataType.rs_1min]

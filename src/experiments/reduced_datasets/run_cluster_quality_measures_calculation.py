@@ -1,6 +1,7 @@
 import pandas as pd
 
-from src.experiments.run_cluster_quality_measures_calculation import run_internal_measure_calculation_for_dataset
+from src.experiments.run_cluster_quality_measures_calculation import run_internal_measure_calculation_for_dataset, \
+    load_all_clustering_data_for_subjects_and_data_type
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import GENERATED_DATASETS_FILE_PATH, ROOT_REDUCED_SYNTHETIC_DATA_DIR, DataCompleteness, \
     get_root_folder_for_reduced_cluster, get_data_dir, ROOT_REDUCED_RESULTS_DIR, get_root_folder_for_reduced_segments
@@ -17,7 +18,9 @@ if __name__ == "__main__":
 
     overall_dataset_name = "n30"
     run_names = pd.read_csv(GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
-    distance_measures = [DistanceMeasures.l1_cor_dist, DistanceMeasures.l5_cor_dist, DistanceMeasures.linf_cor_dist]
+    # distance_measures = [DistanceMeasures.l1_cor_dist, DistanceMeasures.l5_cor_dist, DistanceMeasures.linf_cor_dist]
+    distance_measures = [DistanceMeasures.l1_cor_dist, DistanceMeasures.l5_cor_dist, DistanceMeasures.l2_cor_dist, DistanceMeasures.l3_cor_dist, DistanceMeasures.dot_transform_l1,
+                         DistanceMeasures.dot_transform_l2]
     internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb,
                          ClusteringQualityMeasures.vrc, ClusteringQualityMeasures.dbi]
     data_types = [SyntheticDataType.normal_correlated, SyntheticDataType.non_normal_correlated]
@@ -33,12 +36,16 @@ if __name__ == "__main__":
             data_dir = get_data_dir(dir_for_cluster, complete)
             for data_type in data_types:
                 for distance_measure in distance_measures:
-                    print("Calculate Clustering Quality Measures data in:")
-                    print(data_dir)
-                    run_internal_measure_calculation_for_dataset(overall_dataset_name, run_names=run_names,
+                    print(f"Load all data for data type {data_type} and data dir {data_dir}")
+                    data_dict, gt_labels_dict, partitions_dict = load_all_clustering_data_for_subjects_and_data_type(
+                        run_ids=run_names, data_type=data_type, data_dir=data_dir)
+                    run_internal_measure_calculation_for_dataset(overall_dataset_name, data_dict=data_dict,
+                                                                 gt_labels_dict=gt_labels_dict,
+                                                                 partitions_dict=partitions_dict,
                                                                  distance_measure=distance_measure, data_type=data_type,
                                                                  data_dir=data_dir, results_dir=results_dir,
-                                                                 internal_measures=internal_measures)
+                                                                 internal_measures=internal_measures, n_cores=6)
+
     # Evaluate for segments
     print("CALCULATE FOR DROPPED SEGMENTS")
     for dropped_seg in n_dropped_segments:
@@ -48,9 +55,12 @@ if __name__ == "__main__":
             data_dir = get_data_dir(dir_for_segments, complete)
             for data_type in data_types:
                 for distance_measure in distance_measures:
-                    print("Calculate Clustering Quality Measures data in:")
-                    print(data_dir)
-                    run_internal_measure_calculation_for_dataset(overall_dataset_name, run_names=run_names,
+                    print(f"Load all data for data type {data_type} and data dir {data_dir}")
+                    data_dict, gt_labels_dict, partitions_dict = load_all_clustering_data_for_subjects_and_data_type(
+                        run_ids=run_names, data_type=data_type, data_dir=data_dir)
+                    run_internal_measure_calculation_for_dataset(overall_dataset_name, data_dict=data_dict,
+                                                                 gt_labels_dict=gt_labels_dict,
+                                                                 partitions_dict=partitions_dict,
                                                                  distance_measure=distance_measure, data_type=data_type,
                                                                  data_dir=data_dir, results_dir=results_dir,
-                                                                 internal_measures=internal_measures)
+                                                                 internal_measures=internal_measures, n_cores=6)
