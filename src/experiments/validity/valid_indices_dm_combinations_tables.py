@@ -15,7 +15,7 @@ from src.utils.load_synthetic_data import SyntheticDataType
 index_thresholds = {
     "optimal": {
         ClusteringQualityMeasures.silhouette_score: lambda x: x > 0.9,
-        ClusteringQualityMeasures.dbi: lambda x: x < 0.1
+        ClusteringQualityMeasures.dbi: lambda x: x < 0.15
     },
     "bad": {
         ClusteringQualityMeasures.silhouette_score: lambda x: x < 0,
@@ -125,7 +125,7 @@ def construct_test_4(distance_measures, internal_measures, dropped_segments, dat
                                                          data_type, data_dir, results_dir)
     comp = number_for_completeness(data_completeness)
     n_segments = 100 - dropped_segments
-    filename = f'{additional_filename}construct-3-mean_sd_{data_type}_{comp}_segments_{n_segments}.csv'
+    filename = f'{additional_filename}construct-4-mean_sd_{data_type}_{comp}_segments_{n_segments}.csv'
     df.to_csv(os.path.join(save_to_folder, filename))
 
 if __name__ == "__main__":
