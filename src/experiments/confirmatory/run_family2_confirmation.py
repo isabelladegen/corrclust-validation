@@ -14,7 +14,9 @@ from src.utils.load_synthetic_data import SyntheticDataType
 
 
 def run_family2_wilcox_signed_rank_tests_for_hypotheses(prereg_hypotheses: [], root_results_dir: str,
-                                                        overall_ds_name: str):
+                                                        overall_ds_name: str, save_to_results_dir:str=''):
+    if save_to_results_dir == '':
+        save_to_results_dir == root_results_dir
     alpha = 0.05
     target_power = 0.8
     bonferroni_adjust = 1  # no adjustment due to hierarchical testing
@@ -45,7 +47,7 @@ def run_family2_wilcox_signed_rank_tests_for_hypotheses(prereg_hypotheses: [], r
     store_results_in = internal_measure_evaluation_dir_for(
         overall_dataset_name=overall_ds_name,
         data_type='',  # all datatypes as rows
-        results_dir=root_results_dir,
+        results_dir=save_to_results_dir,
         data_dir='',  # all data data comp as rows
         distance_measure='')  # all distances measures included
 
