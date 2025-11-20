@@ -19,7 +19,9 @@ if __name__ == "__main__":
     root_reduced_dir = CONFIRMATORY_ROOT_REDUCED_SYNTHETIC_DATA_DIR
     base_results_dir = CONF_ROOT_REDUCED_RESULTS_DIR
 
-    distance_measure = DistanceMeasures.l5_cor_dist
+    distance_measures = [DistanceMeasures.l1_cor_dist, DistanceMeasures.l5_cor_dist, DistanceMeasures.l2_cor_dist,
+                         DistanceMeasures.l3_cor_dist, DistanceMeasures.dot_transform_l1,
+                         DistanceMeasures.dot_transform_l2]
     internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.dbi]
     data_types = [SyntheticDataType.normal_correlated, SyntheticDataType.non_normal_correlated]
 
@@ -39,16 +41,17 @@ if __name__ == "__main__":
                 print("Calculate Ground truth Clustering Quality Measures for completeness:")
                 print(data_dir)
                 print("and data type: " + data_type)
-                print("and distance measure: " + distance_measure)
                 data_dict, gt_labels_dict = load_all_ground_truth_data_for_all_subjects_and_data_type(
                     run_ids=run_names, data_type=data_type, data_dir=data_dir)
-                run_internal_measure_calculation_for_ground_truth(overall_dataset_name, run_names=run_names,
-                                                                  data_dict=data_dict,
-                                                                  gt_labels_dict=gt_labels_dict,
-                                                                  distance_measure=distance_measure,
-                                                                  data_type=data_type,
-                                                                  data_dir=data_dir, results_dir=results_dir,
-                                                                  internal_measures=internal_measures)
+                for dm in distance_measures:
+                    print("Distance measure: " + dm)
+                    run_internal_measure_calculation_for_ground_truth(overall_dataset_name, run_names=run_names,
+                                                                      data_dict=data_dict,
+                                                                      gt_labels_dict=gt_labels_dict,
+                                                                      distance_measure=dm,
+                                                                      data_type=data_type,
+                                                                      data_dir=data_dir, results_dir=results_dir,
+                                                                      internal_measures=internal_measures)
 
     # Evaluate for segments
     print("DROPPED SEGMENTS")
@@ -65,13 +68,14 @@ if __name__ == "__main__":
                 print("Calculate Ground truth Clustering Quality Measures for completeness:")
                 print(data_dir)
                 print("and data type: " + data_type)
-                print("and distance measure: " + distance_measure)
                 data_dict, gt_labels_dict = load_all_ground_truth_data_for_all_subjects_and_data_type(
                     run_ids=run_names, data_type=data_type, data_dir=data_dir)
-                run_internal_measure_calculation_for_ground_truth(overall_dataset_name, run_names=run_names,
-                                                                  data_dict=data_dict,
-                                                                  gt_labels_dict=gt_labels_dict,
-                                                                  distance_measure=distance_measure,
-                                                                  data_type=data_type,
-                                                                  data_dir=data_dir, results_dir=results_dir,
-                                                                  internal_measures=internal_measures)
+                for dm in distance_measures:
+                    print("Distance measure: " + dm)
+                    run_internal_measure_calculation_for_ground_truth(overall_dataset_name, run_names=run_names,
+                                                                      data_dict=data_dict,
+                                                                      gt_labels_dict=gt_labels_dict,
+                                                                      distance_measure=dm,
+                                                                      data_type=data_type,
+                                                                      data_dir=data_dir, results_dir=results_dir,
+                                                                      internal_measures=internal_measures)

@@ -13,20 +13,23 @@ if __name__ == "__main__":
     run_names = pd.read_csv(CONFIRMATORY_DATASETS_FILE_PATH)['Name'].tolist()
 
     # all variants but raw
-    data_types = [SyntheticDataType.normal_correlated, SyntheticDataType.non_normal_correlated,
-                  SyntheticDataType.rs_1min]
+    # data_types = [SyntheticDataType.normal_correlated, SyntheticDataType.non_normal_correlated,
+    #               SyntheticDataType.rs_1min]
+    data_types = [SyntheticDataType.normal_correlated, SyntheticDataType.non_normal_correlated]
     data_dirs = [CONFIRMATORY_SYNTHETIC_DATA_DIR, CONF_IRREGULAR_P30_DATA_DIR, CONF_IRREGULAR_P90_DATA_DIR]
 
     root_result_dir = CONF_ROOT_RESULTS_DIR
 
     # distance measures that appear in a preregistered hypothesis
-    distance_measures = [DistanceMeasures.l1_cor_dist,
-                         DistanceMeasures.l3_cor_dist,
-                         DistanceMeasures.l5_cor_dist,
-                         DistanceMeasures.linf_cor_dist,
-                         DistanceMeasures.l1_with_ref,
-                         DistanceMeasures.l5_with_ref,
-                         DistanceMeasures.foerstner_cor_dist]
+    # distance_measures = [DistanceMeasures.l1_cor_dist,
+    #                      DistanceMeasures.l3_cor_dist,
+    #                      DistanceMeasures.l5_cor_dist,
+    #                      DistanceMeasures.linf_cor_dist,
+    #                      DistanceMeasures.l1_with_ref,
+    #                      DistanceMeasures.l5_with_ref,
+    #                      DistanceMeasures.foerstner_cor_dist]
+    distance_measures = [DistanceMeasures.l2_cor_dist,
+                         DistanceMeasures.dot_transform_l1, DistanceMeasures.dot_transform_l2]
 
     # internal measures that appear in a preregistration form
     internal_measures = [ClusteringQualityMeasures.silhouette_score,  ClusteringQualityMeasures.dbi]
