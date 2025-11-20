@@ -1,0 +1,43 @@
+import pandas as pd
+
+from src.experiments.confirmatory.run_family4_confirmation import run_family4_wilcox_signed_rank_tests_for_hypotheses
+from src.utils.clustering_quality_measures import ClusteringQualityMeasures
+
+from src.utils.configurations import CONFIRMATORY_DATASETS_FILE_PATH, CONF_ROOT_RESULTS_DIR, \
+    CONF_IRREGULAR_P90_DATA_DIR, CONF_IRREGULAR_P30_DATA_DIR, CONFIRMATORY_SYNTHETIC_DATA_DIR, \
+    CONF_VALID_ROOT_RESULTS_DIR
+from src.utils.distance_measures import DistanceMeasures
+from src.utils.load_synthetic_data import SyntheticDataType
+
+if __name__ == "__main__":
+    # Confirm preregistered tests from exploratory phase for confirmatory data
+    overall_dataset_name = "n30"
+    run_names = pd.read_csv(CONFIRMATORY_DATASETS_FILE_PATH)['Name'].tolist()
+    root_result_dir = CONF_ROOT_RESULTS_DIR
+    save_results_dir = CONF_VALID_ROOT_RESULTS_DIR
+
+    non_normal = SyntheticDataType.non_normal_correlated
+    normal = SyntheticDataType.normal_correlated
+    sparse = CONF_IRREGULAR_P90_DATA_DIR
+    partial = CONF_IRREGULAR_P30_DATA_DIR
+    complete = CONFIRMATORY_SYNTHETIC_DATA_DIR
+
+    dbi = ClusteringQualityMeasures.dbi
+    swc = ClusteringQualityMeasures.silhouette_score
+
+    l5 = DistanceMeasures.l5_cor_dist
+    l3 = DistanceMeasures.l3_cor_dist
+
+    # preregistered hypotheses, sequential list of tuples
+    # (data_type, data_dir, internal measure1, internal measure2, distance measure)
+    # all written as x greater than y
+    hypotheses = [
+        (normal, sparse, dbi, swc, l5,),
+        (non_normal, sparse, dbi, swc, l5),
+    ]
+
+    # evaluate all hypotheses
+    run_family4_wilcox_signed_rank_tests_for_hypotheses(prereg_hypotheses=hypotheses,
+                                                        root_results_dir=root_result_dir,
+                                                        overall_ds_name=overall_dataset_name,
+                                                        run_names=run_names, save_results_dir=save_results_dir)
