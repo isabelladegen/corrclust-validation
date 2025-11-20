@@ -176,10 +176,9 @@ if __name__ == "__main__":
     # data_dirs = [SYNTHETIC_DATA_DIR]
 
     distance_measures = [
-        DistanceMeasures.dot_transform_l1,  # dot transform + lp norms
         DistanceMeasures.dot_transform_l2,
     ]
-    data_types = [SyntheticDataType.normal_correlated]
+    data_types = [SyntheticDataType.non_normal_correlated]
     data_dirs = [IRREGULAR_P30_DATA_DIR]
 
     internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb,

@@ -88,7 +88,9 @@ def wilcoxons_between(dm1: str, dm2: str, raw_values: pd.DataFrame, internal_mea
 
 
 def run_family3_wilcox_signed_rank_tests_for_hypotheses(prereg_hypotheses: [], root_results_dir: str,
-                                                        overall_ds_name: str, run_names: [str]):
+                                                        overall_ds_name: str, run_names: [str], save_results_dir:str=''):
+    if save_results_dir == '':
+        save_results_dir = root_results_dir
     alpha = 0.05
     target_power = 0.8
     bonferroni_adjust = 1  # no adjustment due to hierarchical testing
@@ -118,7 +120,7 @@ def run_family3_wilcox_signed_rank_tests_for_hypotheses(prereg_hypotheses: [], r
     store_results_in = internal_measure_evaluation_dir_for(
         overall_dataset_name=overall_ds_name,
         data_type='',  # all datatypes as rows
-        results_dir=root_results_dir,
+        results_dir=save_results_dir,
         data_dir='',  # all data data comp as rows
         distance_measure='')  # all distances measures included
 

@@ -27,7 +27,7 @@ if __name__ == "__main__":
                  IRREGULAR_P90_DATA_DIR]
     internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.dbi]
 
-    # only the once that pass corr r>0.5
+    # valid
     distance_measures = [DistanceMeasures.l1_cor_dist,
                          DistanceMeasures.l2_cor_dist,
                          DistanceMeasures.l3_cor_dist,
