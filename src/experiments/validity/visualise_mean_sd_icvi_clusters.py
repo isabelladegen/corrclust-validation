@@ -10,6 +10,7 @@ from src.utils.distance_measures import DistanceMeasures
 
 # TODO: load from results construct test 1 and 3 instead of hardcode here: Data for 23 clusters (original data)
 data_23 = {
+    'count': '23',
     'Normal 100%': {
         'SWC': {dist_labels[DistanceMeasures.l1_cor_dist]: (0.97, 0.00),
                 dist_labels[DistanceMeasures.l2_cor_dist]: (0.97, 0.00),
@@ -144,6 +145,7 @@ data_23 = {
 
 # Data for 11 clusters
 data_11 = {
+    'count': '11',
     'Normal 100%': {
         'SWC': {dist_labels[DistanceMeasures.l1_cor_dist]: (0.97, 0.01),
                 dist_labels[DistanceMeasures.l2_cor_dist]: (0.98, 0.01),
@@ -278,6 +280,7 @@ data_11 = {
 
 # Data for 6 clusters
 data_6 = {
+    'count': '6',
     'Normal 100%': {
         'SWC': {dist_labels[DistanceMeasures.l1_cor_dist]: (0.98, 0.01),
                 dist_labels[DistanceMeasures.l2_cor_dist]: (0.98, 0.01),
@@ -410,13 +413,11 @@ data_6 = {
     }
 }
 
-if __name__ == "__main__":
-    # legend title
-    legend_t = 'Clusters'
-    fontsize = 12
 
+def plot_errorbars_for_data(data_1, data_2, data_3, title):
+    global width, index
     # Thresholds
-    thresholds = {'SWC': 0.9, 'DBI': 0.15, 'VRC': 1000, 'PBM': 100}
+    thresholds = {'SWC': 0.9, 'DBI': 0.15, 'VRC': 1000, 'PBM': 10}
     y_limits = {'SWC': {'min': 0.3, 'max': 1},
                 'DBI': {'min': 0, 'max': 1},
                 'VRC': {'min': 0, 'max': 40000},
@@ -427,7 +428,6 @@ if __name__ == "__main__":
         'VRC': 'below',  # valid when > 1000
         'PBM': 'below',  # valid when > 100
     }
-
     # Setup
     conditions = ['Normal 100%', 'Normal 70%', 'Normal 10%', 'Non-normal 100%', 'Non-normal 10%']
     indices = ['SWC', 'DBI', 'VRC', 'PBM']
@@ -435,46 +435,43 @@ if __name__ == "__main__":
                  dist_labels[DistanceMeasures.l3_cor_dist], dist_labels[DistanceMeasures.l5_cor_dist],
                  dist_labels[DistanceMeasures.dot_transform_l1], dist_labels[DistanceMeasures.dot_transform_l2]]
     # colours = ['#008080','#008000', '#ca69ca']
-    colours = ['#8cbed8','#629318', '#ca69ca']
+    colours = ['#8cbed8', '#629318', '#ca69ca']
     marker_size = 6
     cap_size = 2
-
+    fontsize = 12
     fig, axes = plt.subplots(5, 4, figsize=(16, 12))
-
     x_positions = np.arange(len(distances))
     width = 0.25
-
     for row, condition in enumerate(conditions):
         for col, index in enumerate(indices):
             ax = axes[row, col]
 
             # Extract data for all cluster counts
-            means_23 = [data_23[condition][index][d][0] for d in distances]
-            sds_23 = [data_23[condition][index][d][1] for d in distances]
+            means_23 = [data_1[condition][index][d][0] for d in distances]
+            sds_23 = [data_1[condition][index][d][1] for d in distances]
 
-            means_11 = [data_11[condition][index][d][0] for d in distances]
-            sds_11 = [data_11[condition][index][d][1] for d in distances]
+            means_11 = [data_2[condition][index][d][0] for d in distances]
+            sds_11 = [data_2[condition][index][d][1] for d in distances]
 
-            means_6 = [data_6[condition][index][d][0] for d in distances]
-            sds_6 = [data_6[condition][index][d][1] for d in distances]
+            means_6 = [data_3[condition][index][d][0] for d in distances]
+            sds_6 = [data_3[condition][index][d][1] for d in distances]
 
             # Plot with offset positions
             ax.errorbar(x_positions - width, means_23, yerr=sds_23, fmt='o', capsize=cap_size,
                         color=colours[0], ecolor=colours[0], markersize=marker_size,
-                        label='23' if row == 0 and col == 0 else '')
+                        label=data_1['count'] if row == 0 and col == 0 else '')
 
             ax.errorbar(x_positions, means_11, yerr=sds_11, fmt='s', capsize=cap_size,
                         color=colours[1], ecolor=colours[1], markersize=marker_size,
-                        label='11' if row == 0 and col == 0 else '')
+                        label=data_2['count'] if row == 0 and col == 0 else '')
 
             ax.errorbar(x_positions + width, means_6, yerr=sds_6, fmt='^', capsize=cap_size,
                         color=colours[2], ecolor=colours[2], markersize=marker_size,
-                        label='6' if row == 0 and col == 0 else '')
-
+                        label=data_3['count'] if row == 0 and col == 0 else '')
 
             # Set consistent y-axis per column
-            ymax=  y_limits[index]['max']
-            ymin=  y_limits[index]['min']
+            ymax = y_limits[index]['max']
+            ymin = y_limits[index]['min']
             padding = (ymax - ymin) * 0.1
             ax.set_ylim(ymin - padding, ymax + padding)
 
@@ -504,11 +501,16 @@ if __name__ == "__main__":
                 ax.set_ylabel(condition, fontweight='bold', fontsize=fontsize)
 
             ax.margins(y=0.15)
-
     # Add legend
-    axes[0, 0].legend(loc='lower right', fontsize=fontsize, framealpha=0.9, title=legend_t, title_fontsize=fontsize)
-
+    axes[0, 0].legend(loc='lower right', fontsize=fontsize, framealpha=0.9, title=title, title_fontsize=fontsize)
     plt.tight_layout()
+
+
+if __name__ == "__main__":
+    # legend title
+    legend_t = 'Clusters'
+
+    plot_errorbars_for_data(data_23, data_11, data_6, legend_t)
     results_folder = path.join(VALID_ROOT_RESULTS_DIR, ResultsType.internal_measure_evaluation, 'images')
     os.makedirs(results_folder, exist_ok=True)
     plt.savefig(path.join(results_folder, 'structural_test_1_3_clusters.png'), dpi=300, bbox_inches='tight')
