@@ -88,12 +88,13 @@ def create_raw_box_plots(conditions_data, condition_names, distance_functions, c
             ax.axhline(y=threshold, color='black', linestyle='--', linewidth=1.5, alpha=0.7)
 
             ylim = ax.get_ylim()
+            alpha = 0.08
             if threshold_direction[criterion] == 'above':
-                ax.axhspan(threshold, ylim[1], alpha=0.15, color='grey', zorder=0)
-                ax.axhspan(ylim[0], threshold, alpha=0.15, color='green', zorder=0)
+                ax.axhspan(threshold, ylim[1], alpha=alpha, color='grey', zorder=0)
+                ax.axhspan(ylim[0], threshold, alpha=alpha, color='green', zorder=0)
             elif threshold_direction[criterion] == 'below':
-                ax.axhspan(threshold, ylim[1], alpha=0.15, color='green', zorder=0)
-                ax.axhspan(ylim[0], threshold, alpha=0.15, color='grey', zorder=0)
+                ax.axhspan(threshold, ylim[1], alpha=alpha, color='green', zorder=0)
+                ax.axhspan(ylim[0], threshold, alpha=alpha, color='grey', zorder=0)
 
             # Labels
             if row_idx == 0:
@@ -102,7 +103,8 @@ def create_raw_box_plots(conditions_data, condition_names, distance_functions, c
                 ax.set_ylabel(condition_name, fontsize=fontsize)
 
             # X-axis labels - only on bottom row
-            if row_idx == n_rows-1:  # Last row only
+            ax.tick_params(axis='y', labelsize=fontsize)
+            if row_idx == n_rows - 1:  # Last row only
                 ax.set_xticks(range(len(distance_functions)))
                 ax.set_xticklabels([dist_labels[df] for df in distance_functions], fontsize=fontsize)
             else:
@@ -117,6 +119,18 @@ def create_raw_box_plots(conditions_data, condition_names, distance_functions, c
     plt.show()
     return plt
 
+
+dist_labels = {
+    DistanceMeasures.l1_cor_dist: r'$L_1$',
+    DistanceMeasures.l2_cor_dist: r'$L_2$',
+    DistanceMeasures.l3_cor_dist: r'$L_3$',
+    DistanceMeasures.l5_cor_dist: r'$L_5$',
+    DistanceMeasures.dot_transform_l1: r'$L_{\text{dot}_1}$',
+    DistanceMeasures.dot_transform_l2: r'$L_{\text{dot}_2}$',
+    DistanceMeasures.linf_cor_dist: r'$L_{\infty}$',
+    DistanceMeasures.log_frob_cor_dist: r'$\log F$',  # light red (invalid)
+    DistanceMeasures.foerstner_cor_dist: r'$F$'  # pale red (invalid)
+}
 
 if __name__ == "__main__":
     # Create preregistration hypotheses
@@ -171,15 +185,6 @@ if __name__ == "__main__":
         DistanceMeasures.linf_cor_dist: '#FF6B6B',  # red (invalid)
         DistanceMeasures.log_frob_cor_dist: '#FFA07A',  # light red (invalid)
         DistanceMeasures.foerstner_cor_dist: '#FFB6B9'  # pale red (invalid)
-    }
-
-    dist_labels = {
-        DistanceMeasures.l1_cor_dist: r'$L_1$',
-        DistanceMeasures.l3_cor_dist: r'$L_3$',
-        DistanceMeasures.dot_transform_l2: r'$L_{\text{dot}_2}$',
-        DistanceMeasures.linf_cor_dist: r'$L_{\infty}$',
-        DistanceMeasures.log_frob_cor_dist: r'$\log F$',  # light red (invalid)
-        DistanceMeasures.foerstner_cor_dist: r'$F$'  # pale red (invalid)
     }
 
     # plot for passing
