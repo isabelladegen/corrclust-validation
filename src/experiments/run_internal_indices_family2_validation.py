@@ -21,9 +21,13 @@ def rank_distance_measures_by_raw_values_run_wilcox_signed_rank_tests(data_dirs:
                                                                       overall_ds_name: str,
                                                                       alpha: float,
                                                                       bf_adjust: int,
-                                                                      alternative: str, non_zero: float
+                                                                      alternative: str,
+                                                                      non_zero: float,
+                                                                      save_results_dir: str = ''
                                                                       ):
     all_stats_results = []
+    if save_results_dir == '':
+        save_results_dir = root_results_dir
 
     # calculate wilcox signed ranks per data variant
     for data_dir in data_dirs:
@@ -49,7 +53,7 @@ def rank_distance_measures_by_raw_values_run_wilcox_signed_rank_tests(data_dirs:
     store_results_in = internal_measure_evaluation_dir_for(
         overall_dataset_name=overall_ds_name,
         data_type='',  # all datatypes as rows
-        results_dir=root_results_dir,
+        results_dir=save_results_dir,
         data_dir='',  # all data data comp as rows
         distance_measure='')  # all distances measures included
 
