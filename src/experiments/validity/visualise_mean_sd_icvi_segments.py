@@ -285,8 +285,9 @@ if __name__ == "__main__":
     # same numbers but we plot for segments so change count
     data_1 = data_23
     data_1['count'] = 100
+    cond = ['Normal 100%', 'Normal 10%']
 
-    plot_errorbars_for_data(data_1, data_50, data_25, legend_t)
+    plot_errorbars_for_data(data_1, data_50, data_25, legend_t, cond, (16, 6))
     results_folder = path.join(VALID_ROOT_RESULTS_DIR, ResultsType.internal_measure_evaluation, 'images')
     os.makedirs(results_folder, exist_ok=True)
     plt.savefig(path.join(results_folder, 'structural_test_1_4_segments.png'), dpi=300, bbox_inches='tight')

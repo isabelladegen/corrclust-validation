@@ -159,8 +159,7 @@ if __name__ == "__main__":
 
     conditions_data = [data_n_100, data_n_10, data_nn_100, data_nn_10]
     # row names
-    condition_names = [r'$\bf{Normal}$' + '\n100%', r'$\bf{Normal}$' + '\n10%', r'$\bf{Non-normal}$' + '\n100%',
-                       r'$\bf{Non-normal}$' + '\n10%']
+    condition_names = [r'$\bf{Normal}$' + '\n100%', r'$\bf{Normal}$' + '\n10%']
 
     column_names = {
         EvaluationCriteria.inter_i: r'1. $d(A_m^x, P''_x)$',
@@ -195,7 +194,7 @@ if __name__ == "__main__":
         EvaluationCriteria.disc_ii
     ]
     create_raw_box_plots(conditions_data, condition_names, all_distance_functions[:4], criteria, colours,
-                         column_names, dist_labels, threshold_direction)
+                         column_names, dist_labels, threshold_direction, figsize=(16, 6))
 
     results_folder = path.join(VALID_ROOT_RESULTS_DIR, ResultsType.distance_measure_evaluation, 'images')
     os.makedirs(results_folder, exist_ok=True)

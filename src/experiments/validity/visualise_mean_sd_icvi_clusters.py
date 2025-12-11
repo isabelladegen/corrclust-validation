@@ -414,7 +414,7 @@ data_6 = {
 }
 
 
-def plot_errorbars_for_data(data_1, data_2, data_3, title):
+def plot_errorbars_for_data(data_1, data_2, data_3, title, conditions, figsize):
     global width, index
     # Thresholds
     thresholds = {'SWC': 0.9, 'DBI': 0.15, 'VRC': 1000, 'PBM': 10}
@@ -429,7 +429,7 @@ def plot_errorbars_for_data(data_1, data_2, data_3, title):
         'PBM': 'below',  # valid when > 100
     }
     # Setup
-    conditions = ['Normal 100%', 'Normal 70%', 'Normal 10%', 'Non-normal 100%', 'Non-normal 10%']
+
     indices = ['SWC', 'DBI', 'VRC', 'PBM']
     distances = [dist_labels[DistanceMeasures.l1_cor_dist], dist_labels[DistanceMeasures.l2_cor_dist],
                  dist_labels[DistanceMeasures.l3_cor_dist], dist_labels[DistanceMeasures.l5_cor_dist],
@@ -439,9 +439,11 @@ def plot_errorbars_for_data(data_1, data_2, data_3, title):
     marker_size = 6
     cap_size = 2
     fontsize = 12
-    fig, axes = plt.subplots(5, 4, figsize=(16, 12))
+    fig, axes = plt.subplots(len(conditions), len(indices), figsize=figsize)
     x_positions = np.arange(len(distances))
     width = 0.25
+    legend_row = len(conditions) - 1
+    legend_col = len(indices) - 1
     for row, condition in enumerate(conditions):
         for col, index in enumerate(indices):
             ax = axes[row, col]
@@ -459,15 +461,15 @@ def plot_errorbars_for_data(data_1, data_2, data_3, title):
             # Plot with offset positions
             ax.errorbar(x_positions - width, means_23, yerr=sds_23, fmt='o', capsize=cap_size,
                         color=colours[0], ecolor=colours[0], markersize=marker_size,
-                        label=data_1['count'] if row == 0 and col == 0 else '')
+                        label=data_1['count'] if row == legend_row and col == legend_col else '')
 
             ax.errorbar(x_positions, means_11, yerr=sds_11, fmt='s', capsize=cap_size,
                         color=colours[1], ecolor=colours[1], markersize=marker_size,
-                        label=data_2['count'] if row == 0 and col == 0 else '')
+                        label=data_2['count'] if row == legend_row and col == legend_col else '')
 
             ax.errorbar(x_positions + width, means_6, yerr=sds_6, fmt='^', capsize=cap_size,
                         color=colours[2], ecolor=colours[2], markersize=marker_size,
-                        label=data_3['count'] if row == 0 and col == 0 else '')
+                        label=data_3['count'] if row == legend_row and col == legend_col else '')
 
             # Set consistent y-axis per column
             ymax = y_limits[index]['max']
@@ -502,15 +504,16 @@ def plot_errorbars_for_data(data_1, data_2, data_3, title):
 
             ax.margins(y=0.15)
     # Add legend
-    axes[0, 0].legend(loc='lower right', fontsize=fontsize, framealpha=0.9, title=title, title_fontsize=fontsize)
+    axes[legend_row, legend_col].legend(loc='upper right', fontsize=fontsize, framealpha=0.9, title=title, title_fontsize=fontsize)
     plt.tight_layout()
 
 
 if __name__ == "__main__":
     # legend title
     legend_t = 'Clusters'
+    cond = ['Normal 100%', 'Normal 10%']
 
-    plot_errorbars_for_data(data_23, data_11, data_6, legend_t)
+    plot_errorbars_for_data(data_23, data_11, data_6, legend_t, cond, (16, 6))
     results_folder = path.join(VALID_ROOT_RESULTS_DIR, ResultsType.internal_measure_evaluation, 'images')
     os.makedirs(results_folder, exist_ok=True)
     plt.savefig(path.join(results_folder, 'structural_test_1_3_clusters.png'), dpi=300, bbox_inches='tight')
