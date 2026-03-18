@@ -400,7 +400,7 @@ class TICC:
 
         number_of_time_series = self.trained_model['time_series_col_size']
         test_data_number_of_ts = test_data.shape[1]
-        if test_data_number_of_ts is not number_of_time_series:
+        if test_data_number_of_ts != number_of_time_series:
             raise TypeError(
                 "test data must have the same number of time series like the training data. Expected: " + str(
                     number_of_time_series) + " got " + str(test_data_number_of_ts))
@@ -408,9 +408,8 @@ class TICC:
         # stack data same as in training
         stacked_test_data = self.stack_training_data(test_data)
 
-        if stacked_test_data.shape[1] is not number_of_time_series * self.window_size:
-            raise TypeError(
-                "Test data has wrong dimensions")
+        if stacked_test_data.shape[1] != number_of_time_series * self.window_size:
+            raise TypeError("Test data has wrong dimensions")
 
         # SMOOTHENING
         lle_all_points_clusters = self.smoothen_clusters(self.trained_model['computed_covariance'],

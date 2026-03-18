@@ -334,7 +334,7 @@ class TICCResult:
             print(all_adj_are_undirected)
             print('\n')
 
-        if len(differences_in_keys) is not 0:
+        if len(differences_in_keys):
             print("Cluster ids used in assignment are different to MRF")
             print(differences_in_keys)
             print('\n')

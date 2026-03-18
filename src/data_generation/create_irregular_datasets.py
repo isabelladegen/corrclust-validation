@@ -83,7 +83,7 @@ class CreateIrregularDataset:
                                                                data_dir=self.__data_dir)
 
         # if loading bad partitions
-        if bad_partition_name is not "":
+        if bad_partition_name != "":
             # load labels for bad partition and overwrites the label for good partition!!
             bad_partitions_dir = bad_partition_dir_for_data_type(self.__data_type, self.__data_dir)
             bad_file_full_path = path.join(bad_partitions_dir, self.__bad_partition_name)
