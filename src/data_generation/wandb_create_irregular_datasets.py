@@ -134,11 +134,12 @@ def create_irregular_datasets(config: CreateIrregularDSConfig, ds_name: str, see
         tb = traceback.format_exc()
         print(tb)  # try to get error into wandb log
         exit_code = 1
+        original_error = e
 
     wandb_summary_dic = dict(wandb.run.summary)
     wandb.finish(exit_code=exit_code)
     if exit_code == 1:
-        raise
+        raise original_error
     return {"raw": raw_desc, "nc": nc_desc, "nn": nn_desc, "rs": rs_desc}, wandb_summary_dic
 
 

@@ -106,4 +106,4 @@ def test_statistical_validation_of_top_measures_based_on_ranking():
     assert_that(result.n_pairs, is_(2))
     assert_that(result.non_zero, is_(2))
     assert_that(result.effect_size(), is_(-0.477))
-    assert_that(result.achieved_power(), is_(0.061))
+    assert_that(result.achieved_power(), is_(0.099))

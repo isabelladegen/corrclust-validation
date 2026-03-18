@@ -79,13 +79,15 @@ def save_data_labels_to_file(data_dir, data_type, data_df, labels_df, run_name):
     Path(file_dir).mkdir(parents=True, exist_ok=True)
     data_file_name = Path(file_dir, run_name + SyntheticFileTypes.data)
     labels_file_name = Path(file_dir, run_name + SyntheticFileTypes.labels)
+    labels_to_save = labels_df.copy()
+    data_to_save = data_df.copy()
     # convert arrays to strings for human readability
-    for col in [SyntheticDataSegmentCols.correlation_to_model, SyntheticDataSegmentCols.actual_correlation, SyntheticDataSegmentCols.actual_within_tolerance]:
-        labels_df[col] = labels_df[col].apply(lambda x: str(x) if isinstance(x, list) else x)
-    # convert datetime to string
-    data_df["datetime"] = data_df["datetime"].apply(lambda x: str(x))
-    data_df.to_parquet(data_file_name, index=False, engine="pyarrow")
-    labels_df.to_parquet(labels_file_name, index=False, engine="pyarrow")
+    for col in [SyntheticDataSegmentCols.correlation_to_model, SyntheticDataSegmentCols.actual_correlation,
+                SyntheticDataSegmentCols.actual_within_tolerance]:
+        labels_to_save[col] = labels_to_save[col].apply(lambda x: str(x) if isinstance(x, list) else x)
+    data_to_save["datetime"] = data_to_save["datetime"].apply(lambda x: str(x))
+    data_to_save.to_parquet(data_file_name, index=False, engine="pyarrow")
+    labels_to_save.to_parquet(labels_file_name, index=False, engine="pyarrow")
 
 
 def one_synthetic_creation_run(config: SyntheticDataConfig, seed: int = 6666):
@@ -295,4 +297,3 @@ if __name__ == "__main__":
     # exploratory data creation
     create_datasets(data_dir=SYNTHETIC_DATA_DIR, seed=666, wand_db_project_name=WandbConfiguration.wandb_project_name,
                     n=30, tag='30_ds_creation')
-

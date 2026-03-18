@@ -4,7 +4,7 @@ import pandas as pd
 from hamcrest import *
 
 from src.evaluation.internal_measure_assessment import get_full_filename_for_results_csv, IAResultsCSV
-from src.experiments.run_internal_measure_assessment import run_internal_measure_assessment_datasets_per_distance_measuer
+from src.experiments.run_internal_measure_assessment import run_internal_measure_assessment_datasets_per_distance_measure
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import internal_measure_evaluation_dir_for
 from src.utils.distance_measures import DistanceMeasures
@@ -24,11 +24,16 @@ def test_can_run_assessment_on_full_dataset_and_store_results_for_runs_with_all_
     distance_measure = DistanceMeasures.l1_cor_dist
     data_type = SyntheticDataType.normal_correlated
     test_results_dir = TEST_ROOT_RESULTS_DIR
-    run_internal_measure_assessment_datasets_per_distance_measuer(overall_ds_name=overall_ds_name, run_names=run_names,
+    run_internal_measure_assessment_datasets_per_distance_measure(overall_ds_name=overall_ds_name, run_names=run_names,
                                                                   distance_measure=distance_measure, data_type=data_type,
                                                                   data_dir=test_data_dir, results_dir=test_results_dir,
                                                                   internal_measures=[ClusteringQualityMeasures.silhouette_score,
-                                                                ClusteringQualityMeasures.pmb])
+                                                                ClusteringQualityMeasures.pmb],
+                                                                  alpha=0.05,
+                                                                  bf_adjust=1,
+                                                                  alternative='two-sided',
+                                                                  non_zero=0.001
+                                                                  )
 
     # check if the files have been created
     results_folder = internal_measure_evaluation_dir_for(

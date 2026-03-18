@@ -87,7 +87,7 @@ def create_paired_scatter_grid(exloratory_data_dict: {}, confirmatory_data_dict:
             ax.set_ylim(y_lim[0], y_lim[1])  # Set y lim
 
             if j == 0:
-                ax.set_ylabel(get_row_name_from(completeness.split()[0]), fontsize=fontsize, fontweight='bold')
+                ax.set_ylabel(get_row_name_from(completeness), fontsize=fontsize, fontweight='bold')
 
             # Only show x-axis elements for bottom row
             if i == len(completeness_levels) - 1:

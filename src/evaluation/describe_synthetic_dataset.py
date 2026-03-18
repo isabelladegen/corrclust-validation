@@ -12,7 +12,8 @@ from pandas._libs.tslibs import to_offset
 
 from src.utils.labels_utils import calculate_n_segments_within_tolerance_for, \
     calculate_n_segments_outside_tolerance_for, find_all_level_sets
-from src.utils.load_synthetic_data import load_synthetic_data, SyntheticDataType, load_labels_file_for
+from src.utils.load_synthetic_data import load_synthetic_data, SyntheticDataType, load_labels_file_for, \
+    SyntheticFileTypes
 from src.utils.configurations import GeneralisedCols, SyntheticDataVariates, SYNTHETIC_DATA_DIR, \
     bad_partition_dir_for_data_type
 from src.utils.plots.matplotlib_helper_functions import reset_matplotlib, fontsize, Backends, use_latex_labels
@@ -67,11 +68,11 @@ class DescribeSyntheticDataset:
         self.data_dir = data_dir
         self.value_range = value_range
         self.data, self.labels = load_synthetic_data(self.run_name, self.data_type, data_dir=data_dir)
-        if bad_partition_name is not "":
-            # load labels for bad partition and drops the previous one!!
+        if bad_partition_name != "":
             bad_partitions_dir = bad_partition_dir_for_data_type(self.data_type, self.data_dir)
-            bad_file_full_path = path.join(bad_partitions_dir, self.bad_partition_name)
-            self.labels = load_labels_file_for(Path(bad_file_full_path))
+            bad_file_full_path = Path(bad_partitions_dir, self.run_name + SyntheticFileTypes.bad_labels)
+            self.labels = load_labels_file_for(bad_file_full_path)
+            self.labels = self.labels[self.labels[SyntheticDataSegmentCols.cluster_desc] == bad_partition_name]
 
         if self.value_range is not None:  # needs to scale data first
             self.data = min_max_scaled_df(self.data, scale_range=self.value_range, columns=self.data_cols)

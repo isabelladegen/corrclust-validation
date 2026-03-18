@@ -320,13 +320,6 @@ def test_plot_actual_correlations_for_each_pattern():
     fig.savefig(path.join(images_dir, 'correlation_for_patterns-misty-forest-56.png'))
 
 
-# def test_stuff():
-#     dst = DescribeSyntheticDataset(run_name='breezy-leaf-30', data_type=SyntheticDataType.non_normal_correlated,
-#                                    data_dir=IRREGULAR_P90_DATA_DIR, backend=Backends.visible_tests.value)
-#     fig = dst.plot_correlation_matrix_for_each_pattern()
-#     fig.savefig("breezy-leave-30-complete-empirical-correlations.png", dpi=300, bbox_inches='tight')
-
-
 def test_plot_description_of_subgroups():
     # find pairs for this pattern
     pattern_id = 15
@@ -407,7 +400,7 @@ def test_can_load_irregular_dataset():
 
 def test_can_load_a_single_bad_partition():
     data_type = SyntheticDataType.non_normal_correlated
-    bad_partition_name = "misty-forest-56-wrong-clusters-15-labels.parquet"
+    bad_partition_name = "wrong-clusters-15"
     ds_bad = DescribeSyntheticDataset(run_name=a_ds_name, data_type=data_type, data_dir=test_data_dir,
                                       backend=backend, bad_partition_name=bad_partition_name)
 
@@ -415,4 +408,4 @@ def test_can_load_a_single_bad_partition():
     # MAE is higher due to the wrong segments assigned to the wrong cluster
     assert_that(ds_bad.mae_stats['mean'], greater_than(ds.mae_stats['mean']))
     # pattern id of first segment is 15 not 0 as in original dataset
-    assert_that(ds_bad.labels.loc[0, SyntheticDataSegmentCols.pattern_id], is_(15))
+    assert_that(ds_bad.labels.iloc[0][SyntheticDataSegmentCols.pattern_id], is_(15))

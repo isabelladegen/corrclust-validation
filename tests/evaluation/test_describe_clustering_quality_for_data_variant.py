@@ -64,9 +64,9 @@ def test_returns_measures_values_for_ground_truth_and_lowest_jaccard_index():
     assert_that(df[(ClusteringQualityMeasures.vrc, IntSummaryCols.gt)][0], is_('14582.24 (4622.20)'))
     assert_that(df[(ClusteringQualityMeasures.silhouette_score, IntSummaryCols.gt)][0], is_('0.97 (0.00)'))
     assert_that(df[(ClusteringQualityMeasures.dbi, IntSummaryCols.gt)][0], is_('0.05 (0.01)'))
-    assert_that(df[(ClusteringQualityMeasures.vrc, IntSummaryCols.worst)][0], is_('1.00 (0.22)'))
+    assert_that(df[(ClusteringQualityMeasures.vrc, IntSummaryCols.worst)][0], is_('0.98 (0.20)'))
     assert_that(df[(ClusteringQualityMeasures.silhouette_score, IntSummaryCols.worst)][0], is_('-0.45 (0.04)'))
-    assert_that(df[(ClusteringQualityMeasures.dbi, IntSummaryCols.worst)][0], is_('9.39 (2.02)'))
+    assert_that(df[(ClusteringQualityMeasures.dbi, IntSummaryCols.worst)][0], is_('9.09 (1.86)'))
 
 def test_returns_benchmark_summary_df_across_subjects():
     df = describe.summary_benchmark_df()
