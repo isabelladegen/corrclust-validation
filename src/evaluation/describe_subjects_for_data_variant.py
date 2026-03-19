@@ -232,7 +232,11 @@ class DescribeSubjectsForDataVariant:
         """
         # list of list
         values = self.all_time_gaps_in_seconds()
-        stats = pd.Series(values).describe().round(3)
+        if values and isinstance(values[0], (list, tuple)):
+            flat = [v for sublist in values for v in sublist]
+        else:
+            flat = values
+        stats = pd.Series(flat, dtype=float).describe().round(3)
         return stats
 
     def n_segments_outside_tolerance_stats(self, corr_type=CorrType.spearman):

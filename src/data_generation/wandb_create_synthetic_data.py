@@ -84,7 +84,8 @@ def save_data_labels_to_file(data_dir, data_type, data_df, labels_df, run_name):
     # convert arrays to strings for human readability
     for col in [SyntheticDataSegmentCols.correlation_to_model, SyntheticDataSegmentCols.actual_correlation,
                 SyntheticDataSegmentCols.actual_within_tolerance]:
-        labels_to_save[col] = labels_to_save[col].apply(lambda x: str(x) if isinstance(x, list) else x)
+        labels_to_save[col] = labels_to_save[col].apply(
+            lambda x: str([v.item() if hasattr(v, 'item') else v for v in x]) if isinstance(x, list) else x)
     data_to_save["datetime"] = data_to_save["datetime"].apply(lambda x: str(x))
     data_to_save.to_parquet(data_file_name, index=False, engine="pyarrow")
     labels_to_save.to_parquet(labels_file_name, index=False, engine="pyarrow")

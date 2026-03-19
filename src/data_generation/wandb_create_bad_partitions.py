@@ -220,18 +220,20 @@ def create_bad_partitions(config: CreateBadPartitionsConfig, ds_name: str, idx: 
         tb = traceback.format_exc()
         print(tb)  # try to get error into wandb log
         exit_code = 1
+        original_error = e
 
     wandb_summary_dic = dict(wandb.run.summary)
     wandb.finish(exit_code=exit_code)
     if exit_code == 1:
-        raise
+        raise original_error
     return summary, wandb_summary_dic
 
 
 def save_bad_partitions_labels_file(df, file_name):
     for col in [SyntheticDataSegmentCols.correlation_to_model, SyntheticDataSegmentCols.actual_correlation,
                 SyntheticDataSegmentCols.actual_within_tolerance]:
-        df[col] = df[col].apply(lambda x: str(x) if isinstance(x, list) else x)
+        df[col] = df[col].apply(
+            lambda x: str([v.item() if hasattr(v, 'item') else v for v in x]) if isinstance(x, list) else x)
     df.to_parquet(file_name, index=False, engine="pyarrow")
 
 

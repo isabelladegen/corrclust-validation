@@ -99,7 +99,7 @@ class KnnAllSyntheticDatasets:
                     fig.savefig(path.join(cm_path, ds_name + '.png'))
                 accuracy, precision, recall, f1 = knn_for_measure.evaluate_scores(average="macro")
 
-                print("f1: " + str(f1.round(2)))
+                print("f1: " + str(round(f1, 2)))
 
                 # update results
                 names.append(ds_name)
