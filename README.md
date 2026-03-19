@@ -83,10 +83,10 @@ git lfs install
 git clone https://huggingface.co/datasets/idegen/csts
 ```
 
-#### 3. Create conda environment
+#### 3. Create environment
 ```bash
-conda env create -f conda-exact.yml
-conda activate corr-24
+# Install uv if you don't have it: https://docs.astral.sh/uv/getting-started/installation/
+uv sync
 ```
 
 ```bash
