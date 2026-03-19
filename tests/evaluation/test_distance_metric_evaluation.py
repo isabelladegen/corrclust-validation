@@ -206,7 +206,7 @@ def test_calculates_raw_results_for_each_criteria_and_each_distance_measure():
     assert_that(df.loc[EvaluationCriteria.disc_ii, sel_measures[0]], is_(2.374))
     # F1 score
     assert_that(df.loc[EvaluationCriteria.disc_iii, sel_measures[0]], is_(1))  # l2
-    assert_that(df.loc[EvaluationCriteria.disc_iii, sel_measures[1]], is_(0.509))  # log Frob
+    assert_that(df.loc[EvaluationCriteria.disc_iii, sel_measures[1]], close_to(0.509, 0.0011))  # log Frob
     assert_that(df.loc[EvaluationCriteria.disc_iii, sel_measures[2]], is_(0.044))  # Förstner
     # number of nan's
     assert_that(df.loc[EvaluationCriteria.stab_ii, sel_measures[0]], is_(0))

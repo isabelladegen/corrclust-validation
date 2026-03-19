@@ -1,1 +1,2 @@
 *.ipynb linguist-documentation
+*.parquet diff=parquet

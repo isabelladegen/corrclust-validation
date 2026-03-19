@@ -88,6 +88,11 @@ git clone https://huggingface.co/datasets/idegen/csts
 conda env create -f conda-exact.yml
 conda activate corr-24
 ```
+
+```bash
+uv wandb login
+```
+
 ## Key Applications
 
 This codebase supports several research applications:
