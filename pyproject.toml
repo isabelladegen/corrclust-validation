@@ -1,7 +1,7 @@
 [project]
 name = "insulin-needs-private"
-version = "0.1.24" # version 1 generated in 2024 (migrated from uni) (EOL — upgrade when ready)
-requires-python = ">=3.9,<3.10"
+version = "0.1.26"
+requires-python = ">=3.12,<3.13"
 #needs brew install --cask mactex -> for some plots!
 dependencies = [
     "jupyter",
@@ -11,10 +11,10 @@ dependencies = [
     "numpy",
     "matplotlib",
     "seaborn",
-    "pandas",
+    "pandas>=2.2.2,<3", # staying at 2 to avoid copy on every write
     "numba",
-    "scikit-learn",
-    "scipy",
+    "scikit-learn>=1.4.2,<1.7", # for results reproducibility
+    "scipy>=1.13.1,<1.14", # for results reproducibility
     "pytest",
     "pyhamcrest",
     "plotly",

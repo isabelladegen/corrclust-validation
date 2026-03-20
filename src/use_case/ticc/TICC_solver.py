@@ -289,7 +289,7 @@ class TICC:
                     log_det_cov = log_det_dict[cluster]
                     lle = np.dot(x.reshape([1, (self.num_blocks - 1) * n]),
                                  np.dot(inv_cov_matrix, x.reshape([n * (self.num_blocks - 1), 1]))) + log_det_cov
-                    lle_all_points_clusters[point, cluster] = lle
+                    lle_all_points_clusters[point, cluster] = lle.item()
 
         return lle_all_points_clusters
 

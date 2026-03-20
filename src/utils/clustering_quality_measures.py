@@ -164,7 +164,7 @@ def silhouette_avg_from_distances(distances: np.array, y_pred: [], round_to: int
     seg_ids_to_remove = vals[counts > 2]
     mask = ~np.isin(np.arange(distances.shape[0]), seg_ids_to_remove)
     only_valid_distances = distances[mask][:, mask]
-    if seg_ids_to_remove > 0:
+    if len(seg_ids_to_remove) > 0:
         warnings.warn(f"Removed {len(seg_ids_to_remove)} segment(s) due to NaN distances.")
         print(f"Removed {len(seg_ids_to_remove)} segment(s) due to NaN distances.")
 
