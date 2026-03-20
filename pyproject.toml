@@ -1,5 +1,5 @@
 [project]
-name = "insulin-needs-private"
+name = "corr-24"
 version = "0.1.26"
 requires-python = ">=3.12,<3.13"
 #needs brew install --cask mactex -> for some plots!
@@ -26,7 +26,7 @@ dependencies = [
     "pyarrow",
     "sequana",
     "teneto",
-    "setuptools<70.0.0",
+    "setuptools",
 ]
 
 [tool.uv]
