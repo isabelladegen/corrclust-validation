@@ -29,12 +29,13 @@ STEEL_BLUE = (0.27, 0.39, 0.60)
 AMBER = (0.85, 0.65, 0.13)
 TERRACOTTA = (0.76, 0.43, 0.28)
 INDIGO = (0.29, 0.32, 0.55)
+PETROL_BLUE = (0.10, 0.42, 0.55)
 DUSTY_MAUVE = (0.55, 0.45, 0.50)
+BLUE_LIGHT_GREY = (0.62, 0.67, 0.77)
 MAUVE = (0.68, 0.47, 0.63)
 DEEP_MAUVE = (0.55, 0.35, 0.53)
+VIVID_EMERALD = (0.16, 0.65, 0.48)
 
-
-# The 4 vertices where the elliptope touches the cube
 ELLIPTOPE_VERTICES = np.array([
     [1, 1, 1], [1, -1, -1], [-1, 1, -1], [-1, -1, 1]
 ])
@@ -44,7 +45,7 @@ AXIS_LW = 5
 CUBE_LW = 3.5
 ARROW_SIZE = 0.045
 ARROW_LENGTH = 0.12
-FS = 30  # single font size for everything
+FS = 30
 
 HIDDEN_CORNERS = {(-1, 1, -1), (1, -1, 1), (-1, 1, 1), (1, -1, -1), (1, 1, -1), (-1, -1, 1), (0, -1, -1), (0, 1, -1),
                   (0, -1, 1)}
@@ -58,8 +59,41 @@ AXIS_LABELS = {
     "z": (r"\textbf{$\boldsymbol{\rho_{23}}$}", (0.08, -0.05, 1.28)),
 }
 
-VIEW_3D = (25, -40)  # standard 3/4 view: z up, y right, x toward viewer
-VIEW_FRONT = (0, 0)  # head-on at yz plane
+VIEW_3D = (25, -40)
+VIEW_FRONT = (0, 0)
+
+
+# ── Shared geometry helpers ───────────────────────────────────
+def _plane_coords(c1, c2, normal_axis="x"):
+    """Map 2D coordinates (c1, c2) into 3D, placing zeros on normal_axis."""
+    z = np.zeros_like(c1)
+    if normal_axis == "x":
+        return z, c1, c2
+    elif normal_axis == "y":
+        return c1, z, c2
+    elif normal_axis == "z":
+        return c1, c2, z
+
+
+def _vertex_dist_normalised(pts):
+    """Min Euclidean distance to nearest elliptope vertex, normalised to [0,1].
+    pts: array of shape (..., 3)."""
+    orig_shape = pts.shape[:-1]
+    flat = pts.reshape(-1, 3)
+    d = np.full(len(flat), np.inf)
+    for v in ELLIPTOPE_VERTICES:
+        d = np.minimum(d, np.sqrt(np.sum((flat - v) ** 2, axis=1)))
+    mx = np.max(d)
+    result = d / mx if mx > 0 else d
+    return result.reshape(orig_shape)
+
+
+def _fade_color(base_color, dist, fade):
+    """Blend base_color toward white by distance. Returns (N, 4) RGBA."""
+    r = np.zeros((len(dist), 4))
+    for ch in range(3):
+        r[:, ch] = base_color[ch] + (1.0 - base_color[ch]) * dist * fade
+    return r
 
 
 # ── Label helpers ─────────────────────────────────────────────
@@ -119,7 +153,7 @@ def _draw_axis(ax, axis, n=100, coloured=True):
     _draw_arrow(ax, 1.18, axis, arrow_color)
 
 
-def _draw_cube_wireframe(ax, n=80, coloured=True):
+def draw_cube_wireframe(ax, n=80, coloured=True):
     t = np.linspace(-1, 1, n)
     for axis in ("x", "y", "z"):
         for fix1 in (-1, 1):
@@ -136,49 +170,38 @@ def _draw_cube_wireframe(ax, n=80, coloured=True):
                     ax.plot(pts[:, 0], pts[:, 1], pts[:, 2], color="grey", lw=CUBE_LW, alpha=0.5)
 
 
-def _draw_grey_plane(ax, plane, alpha=0.08, color="gray"):
-    g = np.array([[-1, 1], [-1, 1]])
-    Z = np.zeros((2, 2))
-    surfaces = {"yz": (Z, g, g.T), "xy": (g, g.T, Z), "xz": (g, Z, g.T)}
-    X, Y, Zs = surfaces[plane]
-    ax.plot_surface(X, Y, Zs, alpha=alpha, color=color, shade=False)
-
-    # Outline: solid, no alpha
+def _draw_square_outline(ax, normal_axis="x", color="darkgray", lw=2, alpha=0.5):
     sq = np.array([[-1, -1], [-1, 1], [1, 1], [1, -1], [-1, -1]])
-    z = np.zeros(5)
-    outlines = {"yz": (z, sq[:, 0], sq[:, 1]),
-                "xy": (sq[:, 0], sq[:, 1], z),
-                "xz": (sq[:, 0], z, sq[:, 1])}
-    ax.plot(*outlines[plane], color=color, lw=1.5, alpha=1.0)
+    ax.plot(*_plane_coords(sq[:, 0], sq[:, 1], normal_axis),
+            color=color, lw=lw, alpha=alpha, zorder=8)
 
 
-def _draw_filled_circle(ax, plane_axis="x", alpha=0.4, color="darkgray",
-                        outline_color="darkgray", outline_lw=3):
+def draw_grey_plane(ax, normal_axis="x", alpha=0.08, color="gray",
+                    pane_filled=True):
+    """Draw a reference plane. pane_filled=False draws outline only."""
+    if pane_filled:
+        g = np.array([[-1, 1], [-1, 1]])
+        ax.plot_surface(*_plane_coords(g, g.T, normal_axis),
+                        alpha=alpha, color=color, shade=False)
+    _draw_square_outline(ax, normal_axis=normal_axis, color=color, lw=1.5, alpha=1.0)
+
+
+def _draw_filled_circle(ax, normal_axis="x", alpha=0.4, color="darkgray",
+                        outline_color=PETROL_BLUE, outline_lw=3):
     r_grid = np.linspace(0, 1, 50)
     t_grid = np.linspace(0, 2 * np.pi, 100)
     R, T = np.meshgrid(r_grid, t_grid)
     C1, C2 = R * np.cos(T), R * np.sin(T)
-    Z = np.zeros_like(R)
-    surfs = {"x": (Z, C1, C2), "y": (C1, Z, C2), "z": (C1, C2, Z)}
-    ax.plot_surface(*surfs[plane_axis], alpha=alpha, color=color, shade=False, zorder=5)
+    ax.plot_surface(*_plane_coords(C1, C2, normal_axis),
+                    alpha=alpha, color=color, shade=False, zorder=5)
 
     theta = np.linspace(0, 2 * np.pi, 200)
-    c, s, z = np.cos(theta), np.sin(theta), np.zeros(200)
-    lines = {"x": (z, c, s), "y": (c, z, s), "z": (c, s, z)}
-    ax.plot(*lines[plane_axis], color=outline_color, lw=outline_lw, zorder=10)
-
-
-def _draw_square_outline(ax, plane_axis="x", color="darkgray", lw=2, alpha=0.5):
-    sq = np.array([[-1, -1], [-1, 1], [1, 1], [1, -1], [-1, -1]])
-    z = np.zeros(5)
-    lines = {"x": (z, sq[:, 0], sq[:, 1]),
-             "y": (sq[:, 0], z, sq[:, 1]),
-             "z": (sq[:, 0], sq[:, 1], z)}
-    ax.plot(*lines[plane_axis], color=color, lw=lw, alpha=alpha, zorder=8)
+    ax.plot(*_plane_coords(np.cos(theta), np.sin(theta), normal_axis),
+            color=outline_color, lw=outline_lw, zorder=10)
 
 
 # ── Layout ────────────────────────────────────────────────────
-def _draw_axes_and_labels(ax, axes=("x", "y", "z"), coloured=True):
+def draw_axes_and_labels(ax, axes=("x", "y", "z"), coloured=True):
     for axis in axes:
         _draw_axis(ax, axis, coloured=coloured)
     for axis in axes:
@@ -186,7 +209,7 @@ def _draw_axes_and_labels(ax, axes=("x", "y", "z"), coloured=True):
         ax.text(*pos, text, fontsize=FS, color="black", zorder=10000)
 
 
-def _draw_corner_labels(ax, corners=None):
+def draw_corner_labels(ax, corners=None):
     if corners is None:
         corners = ALL_CORNERS
     for c in corners:
@@ -197,7 +220,7 @@ def _draw_corner_labels(ax, corners=None):
                 fontsize=FS, ha="center", va="center", zorder=10000)
 
 
-def _style_ax(ax, elev=25, azim=-60):
+def style_ax(ax, elev=25, azim=-60):
     ax.grid(False)
     ax.set_xticks([])
     ax.set_yticks([])
@@ -220,19 +243,19 @@ def _style_ax(ax, elev=25, azim=-60):
     ax.view_init(elev=elev, azim=azim)
 
 
-def _make_fig(draw_fn, save_path=None):
+def make_fig(draw_fn, save_path=None):
     fig = plt.figure(figsize=(14, 14))
     ax = fig.add_subplot(111, projection="3d")
     draw_fn(ax)
-    plt.tight_layout(pad=1.0)
+    plt.subplots_adjust(left=-0.15, right=1.15, top=1.15, bottom=-0.15)
     if save_path:
         fig.savefig(save_path, dpi=300, bbox_inches="tight",
-                    pad_inches=0.3, transparent=True)
+                    pad_inches=0, transparent=True)
     plt.show()
     return fig
 
 
-# ── Elliptope surface ─────────────────────────────────────────
+# ── Elliptope surface (unused, kept for reference) ────────────
 def _get_elliptope_sheets(n=120):
     """Upper and lower sheets of det(R)=0 boundary, parameterised by (ρ₁₂, ρ₁₃)."""
     rho12 = np.linspace(-1, 1, n)
@@ -243,30 +266,19 @@ def _get_elliptope_sheets(n=120):
     disc = np.clip(disc, 0, None)
     sqrt_disc = np.sqrt(disc)
 
-    upper = R12 * R13 + sqrt_disc  # z = ρ₂₃ upper
-    lower = R12 * R13 - sqrt_disc  # z = ρ₂₃ lower
+    upper = R12 * R13 + sqrt_disc
+    lower = R12 * R13 - sqrt_disc
 
     return R12, R13, upper, lower
 
-def _vertex_dist_normalised(pts):
-    """Min distance to nearest elliptope vertex, normalised to [0,1].
-    pts: array of shape (..., 3)."""
-    flat = pts.reshape(-1, 3)
-    d = np.full(len(flat), np.inf)
-    for v in ELLIPTOPE_VERTICES:
-        d = np.minimum(d, np.sqrt(np.sum((flat - v) ** 2, axis=1)))
-    mx = np.max(d)
-    result = d / mx if mx > 0 else d
-    return result.reshape(pts.shape[:-1])
 
 def _make_surface_colors(R12, alpha_dark=0.6, alpha_light=0.15,
                          color_dark=TEAL, color_light=(0.7, 0.8, 0.8),
                          split_at=0.0):
     """RGBA facecolor array: dark where R12 < split_at, light elsewhere."""
     rows, cols = R12.shape
-    # facecolors are (rows-1, cols-1) because they apply to quads
     fc = np.zeros((rows - 1, cols - 1, 4))
-    mid_r12 = (R12[:-1, :-1] + R12[1:, 1:]) / 2  # midpoint of each quad
+    mid_r12 = (R12[:-1, :-1] + R12[1:, 1:]) / 2
 
     dark_mask = mid_r12 < split_at
 
@@ -296,22 +308,10 @@ def _make_surface_colors_two_tone(R12, R13, Z,
     mid_z = (Z[:-1, :-1] + Z[1:, 1:]) / 2
 
     pts = np.stack([mid_x, mid_y, mid_z], axis=-1)
+    t = _vertex_dist_normalised(pts)
 
-    # Distance to nearest vertex
-    min_dist = np.full(mid_x.shape, np.inf)
-    for v in ELLIPTOPE_VERTICES:
-        d = np.sqrt((pts[..., 0] - v[0]) ** 2 +
-                    (pts[..., 1] - v[1]) ** 2 +
-                    (pts[..., 2] - v[2]) ** 2)
-        min_dist = np.minimum(min_dist, d)
-
-    max_d = np.max(min_dist)
-    t = min_dist / max_d  # 0 at corner, 1 far away
-
-    # Split mask
     mask_a = mid_x < split_at
 
-    # Blend each colour toward white
     for ch in range(3):
         fc[mask_a, ch] = color_a[ch] * (1 - t[mask_a]) + 1.0 * t[mask_a]
         fc[~mask_a, ch] = color_b[ch] * (1 - t[~mask_a]) + 1.0 * t[~mask_a]
@@ -327,8 +327,7 @@ def _make_surface_colors_depth(R12, R13, Z,
                                fade_strength=0.8,
                                split_color=None, split_at=0.0,
                                split_fade_strength=None):
-    """Colour fades toward white at centre. Alpha stays constant (no holes).
-    fade_strength: 0 = no fade, 1 = fully white at centre."""
+    """Colour fades toward white at centre. Alpha stays constant (no holes)."""
     rows, cols = R12.shape
     fc = np.zeros((rows - 1, cols - 1, 4))
 
@@ -337,14 +336,7 @@ def _make_surface_colors_depth(R12, R13, Z,
     mid_z = (Z[:-1, :-1] + Z[1:, 1:]) / 2
     pts = np.stack([mid_x, mid_y, mid_z], axis=-1)
 
-    min_dist = np.full(mid_x.shape, np.inf)
-    for v in ELLIPTOPE_VERTICES:
-        d = np.sqrt((pts[..., 0] - v[0]) ** 2 +
-                    (pts[..., 1] - v[1]) ** 2 +
-                    (pts[..., 2] - v[2]) ** 2)
-        min_dist = np.minimum(min_dist, d)
-
-    t = min_dist / np.max(min_dist)  # 0 at corner, 1 far away
+    t = _vertex_dist_normalised(pts)
 
     if split_color is not None:
         s_fade = split_fade_strength if split_fade_strength is not None else fade_strength
@@ -377,47 +369,41 @@ def _draw_elliptope(ax, n=120, color=GREY_MAUVE,
         surf.set_linewidth(edge_lw)
 
 
-def _draw_elliptope_wireframe(ax, n_slices=40, n_pts=200,
-                              color=GREY_MAUVE, split_color=None, split_at=0.0,
-                              lw=1.0, alpha=0.6, split_alpha=0.8,
-                              fade_strength=0.6, split_fade_strength=0.3):
+# ── Elliptope wireframe ───────────────────────────────────────
+def _draw_elliptope_curve(ax, pts, is_split_side,
+                          color, fade_strength, alpha,
+                          split_color, split_fade_strength, split_alpha, lw):
+    """Draw a single elliptope curve with per-segment colour from vertex distance."""
+    if len(pts) < 2:
+        return
+    dist = _vertex_dist_normalised(pts)
+    mid_dist = (dist[:-1] + dist[1:]) / 2
+
+    if is_split_side and split_color is not None:
+        fc = _fade_color(split_color, mid_dist, split_fade_strength)
+        fc[:, 3] = split_alpha
+    else:
+        fc = _fade_color(color, mid_dist, fade_strength)
+        fc[:, 3] = alpha
+
+    segments = [[pts[i], pts[i + 1]] for i in range(len(pts) - 1)]
+    lc = Line3DCollection(segments, colors=fc, linewidths=lw)
+    ax.add_collection3d(lc)
+
+
+def draw_elliptope_wireframe(ax, n_slices=40, n_pts=200,
+                             color=GREY_MAUVE, split_color=None, split_at=0.0,
+                             lw=1.0, alpha=0.6, split_alpha=0.8,
+                             fade_strength=0.6, split_fade_strength=0.3):
     """Elliptope as a coloured wireframe mesh. No surfaces, no artefacts."""
 
     rho12_vals = np.linspace(-1, 1, n_slices)
     rho13_vals = np.linspace(-1, 1, n_slices)
     t = np.linspace(-1, 1, n_pts)
 
-    def _fade_color(base_color, dist, fade):
-        """Blend base_color toward white by distance from nearest vertex."""
-        r = np.zeros((len(dist), 4))
-        for ch in range(3):
-            r[:, ch] = base_color[ch] + (1.0 - base_color[ch]) * dist * fade
-        return r
-
-    def _vertex_dist(pts):
-        """Min distance to nearest elliptope vertex, normalised to [0,1]."""
-        d = np.full(len(pts), np.inf)
-        for v in ELLIPTOPE_VERTICES:
-            d = np.minimum(d, np.sqrt(np.sum((pts - v) ** 2, axis=1)))
-        return d / np.max(d) if np.max(d) > 0 else d
-
-    def _draw_curve(pts, is_split_side):
-        """Draw a single curve with per-segment colour."""
-        if len(pts) < 2:
-            return
-        dist = _vertex_dist(pts)
-        mid_dist = (dist[:-1] + dist[1:]) / 2
-
-        if is_split_side and split_color is not None:
-            fc = _fade_color(split_color, mid_dist, split_fade_strength)
-            fc[:, 3] = split_alpha
-        else:
-            fc = _fade_color(color, mid_dist, fade_strength)
-            fc[:, 3] = alpha
-
-        segments = [[pts[i], pts[i + 1]] for i in range(len(pts) - 1)]
-        lc = Line3DCollection(segments, colors=fc, linewidths=lw)
-        ax.add_collection3d(lc)
+    curve_kw = dict(color=color, fade_strength=fade_strength, alpha=alpha,
+                    split_color=split_color, split_fade_strength=split_fade_strength,
+                    split_alpha=split_alpha, lw=lw)
 
     # Family 1: slices at fixed ρ₁₂ (horizontal ellipses)
     for r12 in rho12_vals:
@@ -428,16 +414,13 @@ def _draw_elliptope_wireframe(ax, n_slices=40, n_pts=200,
         t_v = t[valid]
         sqrt_d = np.sqrt(disc[valid])
         base = r12 * t_v
-
         is_split = r12 < split_at
 
-        # Upper sheet
         pts_u = np.column_stack([np.full(len(t_v), r12), t_v, base + sqrt_d])
-        _draw_curve(pts_u, is_split)
+        _draw_elliptope_curve(ax, pts_u, is_split, **curve_kw)
 
-        # Lower sheet
         pts_l = np.column_stack([np.full(len(t_v), r12), t_v, base - sqrt_d])
-        _draw_curve(pts_l, is_split)
+        _draw_elliptope_curve(ax, pts_l, is_split, **curve_kw)
 
     # Family 2: slices at fixed ρ₁₃ (vertical curves)
     for r13 in rho13_vals:
@@ -448,63 +431,57 @@ def _draw_elliptope_wireframe(ax, n_slices=40, n_pts=200,
         t_v = t[valid]
         sqrt_d = np.sqrt(disc[valid])
         base = t_v * r13
-
-        # Split by per-point ρ₁₂ value
         split_mask = t_v < split_at
 
-        # Upper sheet
         pts_u = np.column_stack([t_v, np.full(len(t_v), r13), base + sqrt_d])
-        # Split into contiguous runs
         for is_split, mask in [(True, split_mask), (False, ~split_mask)]:
             p = pts_u[mask]
             if len(p) >= 2:
-                _draw_curve(p, is_split)
+                _draw_elliptope_curve(ax, p, is_split, **curve_kw)
 
-        # Lower sheet
         pts_l = np.column_stack([t_v, np.full(len(t_v), r13), base - sqrt_d])
         for is_split, mask in [(True, split_mask), (False, ~split_mask)]:
             p = pts_l[mask]
             if len(p) >= 2:
-                _draw_curve(p, is_split)
+                _draw_elliptope_curve(ax, p, is_split, **curve_kw)
 
 
 # ── Figures ───────────────────────────────────────────────────
 def figure_1_cube(save_path=None):
     def draw(ax):
-        _style_ax(ax, *VIEW_3D)
-        _draw_grey_plane(ax, "yz", alpha=0.4, color="darkgray")
-        _draw_grey_plane(ax, "xy", alpha=0.4, color="lightgray")
-        _draw_cube_wireframe(ax)
-        _draw_axes_and_labels(ax)
-        _draw_corner_labels(ax)
+        style_ax(ax, *VIEW_3D)
+        draw_grey_plane(ax, "x", alpha=0.4, color="darkgray")
+        draw_grey_plane(ax, "z", alpha=0.4, color="lightgray")
+        draw_cube_wireframe(ax)
+        draw_axes_and_labels(ax)
+        draw_corner_labels(ax)
 
-    return _make_fig(draw, save_path)
+    return make_fig(draw, save_path)
 
 
-def figure_2_circle(save_path=None):
+def figure_2_circle(save_path=None, circle_color=PETROL_BLUE):
     def draw(ax):
-        _style_ax(ax, *VIEW_3D)
-        _draw_grey_plane(ax, "yz", alpha=0.4, color="darkgray")
-        _draw_grey_plane(ax, "xy", alpha=0.4, color="lightgray")
-        _draw_axes_and_labels(ax)
-        # Circle on yz plane (ρ₁₂=0)
+        style_ax(ax, *VIEW_3D)
+        draw_grey_plane(ax, "x", alpha=0.4, color="darkgray")
+        draw_grey_plane(ax, "z", alpha=0.4, color="lightgray")
+        draw_axes_and_labels(ax)
         theta = np.linspace(0, 2 * np.pi, 200)
         ax.plot(np.zeros(200), np.cos(theta), np.sin(theta),
-                color="darkgray", lw=3, zorder=10)
+                color=circle_color, lw=3, zorder=10)
 
-    return _make_fig(draw, save_path)
+    return make_fig(draw, save_path)
 
 
-def figure_3_circle_front(save_path=None):
+def figure_3_circle_front(save_path=None, circle_color=PETROL_BLUE):
     def draw(ax):
-        _style_ax(ax, *VIEW_FRONT)
-        _draw_filled_circle(ax, plane_axis="x")
-        _draw_square_outline(ax, plane_axis="x")
-        _draw_axes_and_labels(ax, axes=("y", "z"))
+        style_ax(ax, *VIEW_FRONT)
+        _draw_filled_circle(ax, normal_axis="x", outline_color=circle_color)
+        _draw_square_outline(ax, normal_axis="x")
+        draw_axes_and_labels(ax, axes=("y", "z"))
         face_corners = [(0, y, z) for y in (-1, 1) for z in (-1, 1)]
-        _draw_corner_labels(ax, corners=face_corners)
+        draw_corner_labels(ax, corners=face_corners)
 
-    return _make_fig(draw, save_path)
+    return make_fig(draw, save_path)
 
 
 # Constants
@@ -512,29 +489,29 @@ ELLIPTOPE_LW = 1.0
 ELLIPTOPE_ALPHA = 0.6
 ELLIPTOPE_SPLIT_ALPHA = 0.8
 N_SLICES = 70
-SPLIT_COLOUR = INDIGO
-LIGHT_SIDE_COLOUR = LIGHT_MAUVE
+SPLIT_COLOUR = PETROL_BLUE
+LIGHT_SIDE_COLOUR = BLUE_LIGHT_GREY
 
 
 def figure_4_elliptope(save_path=None, elev=25, azim=-50):
     def draw(ax):
-        _style_ax(ax, elev, azim)
-        _draw_elliptope_wireframe(ax, n_slices=N_SLICES,
-                                  color=LIGHT_SIDE_COLOUR,
-                                  split_color=SPLIT_COLOUR,
-                                  split_at=0.0,
-                                  lw=ELLIPTOPE_LW,
-                                  alpha=ELLIPTOPE_ALPHA,
-                                  split_alpha=ELLIPTOPE_SPLIT_ALPHA,
-                                  fade_strength=0.6,
-                                  split_fade_strength=0.5)
-        _draw_grey_plane(ax, "yz", alpha=0.15, color="darkgray")
-        _draw_grey_plane(ax, "xy", alpha=0.08, color="lightgray")
-        _draw_cube_wireframe(ax, coloured=False)
-        _draw_axes_and_labels(ax, coloured=False)
-        _draw_corner_labels(ax)
+        style_ax(ax, elev, azim)
+        draw_elliptope_wireframe(ax, n_slices=N_SLICES,
+                                 color=LIGHT_SIDE_COLOUR,
+                                 split_color=SPLIT_COLOUR,
+                                 split_at=0.0,
+                                 lw=ELLIPTOPE_LW,
+                                 alpha=ELLIPTOPE_ALPHA,
+                                 split_alpha=ELLIPTOPE_SPLIT_ALPHA,
+                                 fade_strength=0.6,
+                                 split_fade_strength=0.5)
+        draw_grey_plane(ax, "x", alpha=0.15, color="darkgray")
+        draw_grey_plane(ax, "z", alpha=0.08, color="lightgray")
+        draw_cube_wireframe(ax, coloured=False)
+        draw_axes_and_labels(ax, coloured=False)
+        draw_corner_labels(ax)
 
-    return _make_fig(draw, save_path)
+    return make_fig(draw, save_path)
 
 
 def figure_4_elliptope_gif(save_path="elliptope_rotation.gif",
@@ -543,22 +520,21 @@ def figure_4_elliptope_gif(save_path="elliptope_rotation.gif",
     fig = plt.figure(figsize=(14, 14))
     ax = fig.add_subplot(111, projection="3d")
 
-    # Draw once (static geometry)
-    _style_ax(ax, elev, -50)
-    _draw_elliptope_wireframe(ax, n_slices=N_SLICES,
-                              color=LIGHT_SIDE_COLOUR,
-                              split_color=SPLIT_COLOUR,
-                              split_at=0.0,
-                              lw=ELLIPTOPE_LW,
-                              alpha=ELLIPTOPE_ALPHA,
-                              split_alpha=ELLIPTOPE_SPLIT_ALPHA,
-                              fade_strength=0.6,
-                              split_fade_strength=0.5)
-    _draw_grey_plane(ax, "yz", alpha=0.15, color="darkgray")
-    _draw_grey_plane(ax, "xy", alpha=0.08, color="lightgray")
-    _draw_cube_wireframe(ax, coloured=False)
-    _draw_axes_and_labels(ax, coloured=False)
-    _draw_corner_labels(ax)
+    style_ax(ax, elev, -50)
+    draw_elliptope_wireframe(ax, n_slices=N_SLICES,
+                             color=LIGHT_SIDE_COLOUR,
+                             split_color=SPLIT_COLOUR,
+                             split_at=0.0,
+                             lw=ELLIPTOPE_LW,
+                             alpha=ELLIPTOPE_ALPHA,
+                             split_alpha=ELLIPTOPE_SPLIT_ALPHA,
+                             fade_strength=0.6,
+                             split_fade_strength=0.5)
+    draw_grey_plane(ax, "x", alpha=0.15, color="darkgray")
+    draw_grey_plane(ax, "z", alpha=0.08, color="lightgray")
+    draw_cube_wireframe(ax, coloured=False)
+    draw_axes_and_labels(ax, coloured=False)
+    draw_corner_labels(ax)
     plt.tight_layout(pad=1.0)
 
     frames = []
@@ -580,8 +556,8 @@ def figure_4_elliptope_gif(save_path="elliptope_rotation.gif",
 
 
 if __name__ == "__main__":
-    # figure_1_cube("fig1_cube.png")
-    # figure_2_circle("fig2_circle.png")
-    # figure_3_circle_front("fig3_circle_front.png")
+    figure_1_cube("img/fig1_cube.png")
+    figure_2_circle("img/fig2_circle.png")
+    figure_3_circle_front("img/fig3_circle_front.png")
     figure_4_elliptope("img/fig4_elliptope.png")
     figure_4_elliptope_gif("img/elliptope_rotation.gif")
