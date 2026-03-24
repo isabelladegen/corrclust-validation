@@ -88,9 +88,9 @@ def _render_rotation(draw_fn, n_frames=72, elev=25, start_azim=-50, dpi=100):
 
 
 DOT_COLOUR = VIVID_EMERALD
-DOT_SIZE = 240
+DOT_SIZE = 500
 CROSS_COLOUR = "darkgrey"
-CROSS_SIZE = 240
+CROSS_SIZE = 500
 
 
 # ── Figure 5a: static, 27 naive patterns on cube ─────────────
@@ -103,12 +103,12 @@ def figure_5a_patterns_on_cube(save_path=None, elev=25, azim=-50,
                                dot_color=DOT_COLOUR, dot_size=DOT_SIZE):
     def draw(ax):
         style_ax(ax, elev, azim)
-        draw_elliptope_wireframe(ax, n_slices=n_slices,
-                                 color=light_color, split_color=split_color,
-                                 split_at=0.0, lw=lw,
-                                 alpha=alpha, split_alpha=split_alpha,
-                                 fade_strength=wf_fade_strength,
-                                 split_fade_strength=wf_split_fade_strength)
+        # draw_elliptope_wireframe(ax, n_slices=n_slices,
+        #                          color=light_color, split_color=split_color,
+        #                          split_at=0.0, lw=lw,
+        #                          alpha=alpha, split_alpha=split_alpha,
+        #                          fade_strength=wf_fade_strength,
+        #                          split_fade_strength=wf_split_fade_strength)
         draw_grey_plane(ax, "x", alpha=0.15, color="darkgray",
                         pane_filled=pane_filled)
         draw_grey_plane(ax, "z", alpha=0.08, color="lightgray",
@@ -192,4 +192,4 @@ def figure_5_patterns_gif(save_path=None,
 if __name__ == "__main__":
     figure_5a_patterns_on_cube("img/fig5a_patterns_on_cube.png")
     figure_5b_patterns_adjusted("img/fig5b_patterns_adjusted.png")
-    figure_5_patterns_gif("img/fig5_elliptope_patterns_animated.gif")
+    # figure_5_patterns_gif("img/fig5_elliptope_patterns_animated.gif")
