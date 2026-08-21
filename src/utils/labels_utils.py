@@ -6,7 +6,8 @@ import pandas as pd
 
 from src.data_generation.generate_synthetic_correlated_data import calculate_spearman_correlation
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
-from src.utils.distance_measures import distance_calculation_method_for
+from src.data_generation.model_correlation_patterns import ModelCorrelationPatterns
+from src.utils.distance_measures import distance_calculation_method_for, DistanceMeasures, l1_distance_from_matrices
 
 
 def calculate_n_segments_within_tolerance_for(labels_df: pd.DataFrame):
@@ -217,43 +218,11 @@ def calculate_distance_matrix_for(labels_df: pd.DataFrame, distance_measure: str
         seg2 = pair[1]
         idx_seg1 = segment_ids.index(seg1)
         idx_seg2 = segment_ids.index(seg2)
-        corr1 = df[df[SyntheticDataSegmentCols.segment_id]==seg1][SyntheticDataSegmentCols.actual_correlation].values[0]
-        corr2 = df[df[SyntheticDataSegmentCols.segment_id]==seg2][SyntheticDataSegmentCols.actual_correlation].values[0]
+        corr1 = df[df[SyntheticDataSegmentCols.segment_id] == seg1][SyntheticDataSegmentCols.actual_correlation].values[
+            0]
+        corr2 = df[df[SyntheticDataSegmentCols.segment_id] == seg2][SyntheticDataSegmentCols.actual_correlation].values[
+            0]
         dist = distance_calc(corr1, corr2)
         distances[idx_seg1][idx_seg2] = dist
         distances[idx_seg2][idx_seg1] = dist
     return distances
-
-
-def find_all_level_sets(labels_df: pd.DataFrame):
-    """
-    Calculates all possible level sets and which pattern tuples belong to it. This method only works
-    if patterns to model are ideal!
-    :param labels_df: a labels dataframe
-    :return: dictionary of key level set id and values list of tuples of pattern pairs
-    """
-    patterns = labels_df[SyntheticDataSegmentCols.pattern_id].unique().tolist()
-    # all combinations of patterns
-    all_pattern_combinations = list(itertools.combinations_with_replacement(patterns, 2))
-    pattern_models = {pid: labels_df[labels_df[SyntheticDataSegmentCols.pattern_id] == pid][
-        SyntheticDataSegmentCols.correlation_to_model].iloc[0] for pid in patterns}
-
-    # dictionary of pattern id and pattern model
-    level_sets = {i: [] for i in range(6)}
-
-    # cycle through all pattern pairs and put them in the right level set based on number of changes
-    for combination in all_pattern_combinations:
-        p1 = pattern_models[combination[0]]
-        p2 = pattern_models[combination[1]]
-
-        # add up all the changes in the pattern
-        n_changes = 0
-        for idx, value1 in enumerate(p1):
-            value2 = p2[idx]
-            # difference between the two values in ideal distance, that is why we round
-            n_changes += round(abs(value1 - value2), 0)
-
-        # add pattern to the level set with that number of changes
-        level_sets[n_changes].append(combination)
-
-    return level_sets

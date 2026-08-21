@@ -12,7 +12,7 @@ from src.evaluation.knn_for_synthetic_wrapper import KNNForSyntheticWrapper
 from src.utils.configurations import Aggregators, distance_measure_evaluation_results_dir_for, \
     DISTANCE_MEASURE_EVALUATION_CRITERIA_RESULTS_FILE
 from src.utils.distance_measures import distance_calculation_method_for, DistanceMeasures
-from src.utils.labels_utils import find_all_level_sets
+from src.utils.level_sets import LevelSets
 from src.utils.load_synthetic_data import load_labels
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.utils.stats import ConfidenceIntervalCols, compare_ci_for_differences, calculate_hi_lo_difference_ci, \
@@ -71,8 +71,8 @@ inverse_criteria = [criteria_short_names[EvaluationCriteria.inter_i], criteria_s
 
 
 class DistanceMetricEvaluation:
-    def __init__(self, run_name: str, data_type: str, data_dir: str, measures: [], backend: str = Backends.none.value,
-                 round_to: int = 3):
+    def __init__(self, run_name: str, data_type: str, data_dir: str, measures: [], level_sets: LevelSets,
+                 backend: str = Backends.none.value, round_to: int = 3):
         self.backend = backend
         self.run_name = run_name
         self.data_type = data_type
@@ -81,11 +81,10 @@ class DistanceMetricEvaluation:
         self.__round_to = round_to
         self.__labels = load_labels(self.run_name, self.data_type, data_dir=data_dir)
         # dictionary of key level set id and values list of tuples of pattern pairs
-        self.level_sets = find_all_level_sets(self.__labels)
-        self.level_set_indices = list(self.level_sets.keys())
+        self.level_sets = level_sets
+        self.level_set_indices = self.level_sets.levels
         # adjacent level sets
-        self.adjacent_level_set_indices = [(self.level_set_indices[i], self.level_set_indices[i + 1]) for i in
-                                           range(len(self.level_set_indices) - 1)]
+        self.adjacent_level_set_indices = self.level_sets.adjacent_indices
         # calculate distances
         self.distances_df = self.__calculate_distances_df()
         # calculate statistics
@@ -316,18 +315,8 @@ class DistanceMetricEvaluation:
              SyntheticDataSegmentCols.correlation_to_model, SyntheticDataSegmentCols.actual_correlation]]
         segment_correlations.set_index(SyntheticDataSegmentCols.segment_id, inplace=True)
 
-        # 2. Get a lookup of what level set which pattern_id pair belong to, this is key pattern pair (both ways round)
-        # value level set
-        level_set_lookup = {}
-        for key, pattern_tuples_list in self.level_sets.items():
-            for pattern_pairs in pattern_tuples_list:
-                level_set_lookup[pattern_pairs] = key
-                # add in both order to not need to worry
-                level_set_lookup[(pattern_pairs[1], pattern_pairs[0])] = key
-
-        @lru_cache(maxsize=None)
-        def get_level_set_for_pattern_pairs(pattern_pair):
-            return level_set_lookup.get(pattern_pair) or level_set_lookup.get((pattern_pair[1], pattern_pair[0]))
+        # 2. Get a lookup of what level set which pattern_id pair belong to
+        level_set_lookup = self.level_sets.level_for_pair_lookup
 
         # 3. Create df of unique canonical patterns and their correlation to model
         unique_patterns_df = segment_correlations[SyntheticDataSegmentCols.pattern_id].drop_duplicates().to_frame()
@@ -368,7 +357,7 @@ class DistanceMetricEvaluation:
                 resulting_distances[measure].extend(distances)
 
         # look up the level set for the pair compared
-        level_sets = [get_level_set_for_pattern_pairs((px, py)) for px, py in zip(p_x_ids, p_y_ids)]
+        level_sets = [level_set_lookup[(px, py)] for px, py in zip(p_x_ids, p_y_ids)]
 
         # Create df from lists
         resulting_df = pd.DataFrame({

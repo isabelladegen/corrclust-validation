@@ -182,7 +182,7 @@ wandb/
 /tests/tables/
 
 /tests/results/
-/results/
+/results-beforeAug26/
 /tmp-24-env-exact.yml
 /tests/test_data/synthetic_data/raw/test-run-data.parquet
 /tests/test_data/synthetic_data/raw/test-run-labels.parquet
@@ -193,7 +193,7 @@ wandb/
 /src/utils/hf_tooling/hugging_face_README.md
 /from_HF/
 /src/utils/hf_tooling/huggingface_config.yaml
-/confirmatory_results/
+/confirmatory_results_beforeAug26/
 /src/utils/hf_tooling/confirmatory.py
 /src/utils/hf_tooling/exploratory.py
 /src/utils/hf_tooling/csts-api.json
@@ -206,7 +206,8 @@ wandb/
 /src/visualisation/2d-polytop-cross-sections-patterns.png
 /src/visualisation/polytop-3d-with-patterns.png
 /src/visualisation/polytope-3D-6angles-with-patterns-arrows.png
-/validity_results/
-/confirmatory_validity_results/
+/validity_results_beforeAug26/
+/confirmatory_validity_results_beforeAug26/
 /src/visualisation/correlation-polytop-transparent.png
 /src/visualisation/elliptop_illustrations/img/
+*beforeAug26

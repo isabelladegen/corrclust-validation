@@ -11,7 +11,8 @@ from matplotlib.collections import EllipseCollection
 from pandas._libs.tslibs import to_offset
 
 from src.utils.labels_utils import calculate_n_segments_within_tolerance_for, \
-    calculate_n_segments_outside_tolerance_for, find_all_level_sets
+    calculate_n_segments_outside_tolerance_for
+from src.utils.level_sets import LevelSets
 from src.utils.load_synthetic_data import load_synthetic_data, SyntheticDataType, load_labels_file_for, \
     SyntheticFileTypes
 from src.utils.configurations import GeneralisedCols, SyntheticDataVariates, SYNTHETIC_DATA_DIR, \
@@ -222,7 +223,7 @@ class DescribeSyntheticDataset:
             by=pattern_id_col).reset_index(drop=True)
 
         # dictionary of key level set id and values list of tuples of pattern pairs
-        self.level_sets = find_all_level_sets(self.labels)
+        self.level_sets = LevelSets().pairs_for_level_lookup
         # list index is level set id, value is a list of all pattern pairs as tuple in that level set
         self.patterns_by_level_set = list(self.level_sets.values())
 

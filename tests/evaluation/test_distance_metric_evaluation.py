@@ -7,6 +7,7 @@ from src.evaluation.distance_metric_evaluation import DistanceMetricEvaluation, 
     read_csv_of_raw_values_for_all_criteria, DistanceMeasureCols
 from src.utils.configurations import Aggregators
 from src.utils.distance_measures import DistanceMeasures
+from src.utils.level_sets import LevelSets
 from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
 from tests.test_utils.configurations_for_testing import TEST_IMAGES_DIR, TEST_IRREGULAR_P90_DATA_DIR, \
@@ -20,7 +21,7 @@ images_dir = TEST_IMAGES_DIR
 sel_measures = [DistanceMeasures.l2_cor_dist, DistanceMeasures.log_frob_cor_dist,
                 DistanceMeasures.foerstner_cor_dist]
 ev = DistanceMetricEvaluation(run_name=a_ds_name, data_type=SyntheticDataType.non_normal_correlated,
-                              data_dir=test_data_dir, measures=sel_measures, backend=backend)
+                              data_dir=test_data_dir, measures=sel_measures, level_sets=LevelSets(), backend=backend)
 
 
 def test_calculates_distances_for_all_empirical_correlations_to_all_canonical_patterns():
@@ -45,14 +46,12 @@ def test_calculate_ci_of_mean_differences_between_adjacent_level_sets_for_each_d
 
     # check ci (measures are ordered Foerstner, L2, Log Frob)
     assert_that(df[df[DistanceMeasureCols.compared] == (0, 1)][DistanceMeasureCols.stat_diff].tolist(),
-                contains_exactly("lower", "lower", "lower"))
+                contains_exactly("overlap", "lower", "overlap"))
     assert_that(df[df[DistanceMeasureCols.compared] == (1, 2)][DistanceMeasureCols.stat_diff].tolist(),
-                contains_exactly("higher", "lower", "higher"))
-    assert_that(df[df[DistanceMeasureCols.compared] == (2, 3)][DistanceMeasureCols.stat_diff].tolist(),
                 contains_exactly("lower", "lower", "lower"))
+    assert_that(df[df[DistanceMeasureCols.compared] == (2, 3)][DistanceMeasureCols.stat_diff].tolist(),
+                contains_exactly("higher", "lower", "higher"))
     assert_that(df[df[DistanceMeasureCols.compared] == (3, 4)][DistanceMeasureCols.stat_diff].tolist(),
-                contains_exactly("overlap", "lower", "higher"))
-    assert_that(df[df[DistanceMeasureCols.compared] == (4, 5)][DistanceMeasureCols.stat_diff].tolist(),
                 contains_exactly("lower", "lower", "lower"))
 
 
@@ -62,9 +61,9 @@ def test_per_level_set_statistics_calculation():
     # all measures have been calculated
     assert_that(len(df[DistanceMeasureCols.type].unique()), is_(len(sel_measures)))
     # all level sets calculated
-    assert_that(len(df[DistanceMeasureCols.level_set].unique()), is_(6))
+    assert_that(len(df[DistanceMeasureCols.level_set].unique()), is_(5))
     # each distance measure has the right number of rows
-    assert_that(df[DistanceMeasureCols.level_set].shape[0], is_(len(sel_measures) * 6))
+    assert_that(df[DistanceMeasureCols.level_set].shape[0], is_(len(sel_measures) * 5))
 
     # calculate a mean for one of the measures for level set 4
     m = sel_measures[1]
@@ -83,14 +82,12 @@ def test_can_calculate_level_rate_of_increase_between_adjacent_levels():
     result_df = ev.rate_of_increase_between_level_sets()
 
     # row for each measure and each level set pair
-    assert_that(result_df.shape[0], is_(len(sel_measures) * (len(ev.level_sets) - 1)))
+    assert_that(result_df.shape[0], is_(len(sel_measures) * (len(LevelSets().levels) - 1)))
 
     # check some values
     m = sel_measures[0]
     df_m = result_df.loc[(result_df[DistanceMeasureCols.type] == m)]
     result_l01 = df_m.loc[(df_m[DistanceMeasureCols.compared] == (0, 1))][DistanceMeasureCols.rate_of_increase].values[
-        0]
-    result_l45 = df_m.loc[(df_m[DistanceMeasureCols.compared] == (4, 5))][DistanceMeasureCols.rate_of_increase].values[
         0]
 
     # calculate by hand here
@@ -99,12 +96,9 @@ def test_can_calculate_level_rate_of_increase_between_adjacent_levels():
         [DistanceMeasureCols.level_set, Aggregators.mean]]
     l0 = mean_for_m[mean_for_m[DistanceMeasureCols.level_set] == 0][Aggregators.mean].values[0]
     l1 = mean_for_m[mean_for_m[DistanceMeasureCols.level_set] == 1][Aggregators.mean].values[0]
-    l4 = mean_for_m[mean_for_m[DistanceMeasureCols.level_set] == 4][Aggregators.mean].values[0]
-    l5 = mean_for_m[mean_for_m[DistanceMeasureCols.level_set] == 5][Aggregators.mean].values[0]
 
     # check results are the same
     assert_that(result_l01, is_((l1 - l0).round(3)))
-    assert_that(result_l45, is_((l5 - l4).round(3)))
 
 
 def test_calculate_normalised_distances_for_each_distance_level():
@@ -199,11 +193,11 @@ def test_calculates_raw_results_for_each_criteria_and_each_distance_measure():
     assert_that(df.loc[EvaluationCriteria.inter_ii, sel_measures[1]], is_(False))  # log frob
     assert_that(df.loc[EvaluationCriteria.inter_ii, sel_measures[2]], is_(False))  # Förstner
     # avg rate of increase between level set
-    assert_that(df.loc[EvaluationCriteria.inter_iii, sel_measures[0]], is_(0.506))
+    assert_that(df.loc[EvaluationCriteria.inter_iii, sel_measures[0]], is_(0.628))
     # overall entropy
     assert_that(df.loc[EvaluationCriteria.disc_i, sel_measures[0]], is_(4.519))
     # average level set entropy
-    assert_that(df.loc[EvaluationCriteria.disc_ii, sel_measures[0]], is_(2.374))
+    assert_that(df.loc[EvaluationCriteria.disc_ii, sel_measures[0]], is_(2.495))
     # F1 score
     assert_that(df.loc[EvaluationCriteria.disc_iii, sel_measures[0]], is_(1))  # l2
     assert_that(df.loc[EvaluationCriteria.disc_iii, sel_measures[1]], close_to(0.509, 0.0011))  # log Frob
