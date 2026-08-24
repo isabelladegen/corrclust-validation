@@ -5,8 +5,9 @@ import numpy as np
 import pandas as pd
 
 from src.evaluation.distance_metric_evaluation import EvaluationCriteria, read_csv_of_raw_values_for_all_criteria
+from src.experiments.validity.distance_measure_validity import DistanceMeasureValidity
 from src.utils.configurations import ROOT_RESULTS_DIR, SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, \
-    IRREGULAR_P90_DATA_DIR, GENERATED_DATASETS_FILE_PATH, ResultsType
+    IRREGULAR_P90_DATA_DIR, GENERATED_DATASETS_FILE_PATH, ResultsType, Aggregators
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 
@@ -28,67 +29,51 @@ df_thresholds = {
     EvaluationCriteria.disc_iii: lambda x: x > threshold_values[EvaluationCriteria.disc_iii],
 }
 
+valid_df_column_names = {
+    EvaluationCriteria.inter_i: "d L0",
+    EvaluationCriteria.inter_ii: "avg d",
+    EvaluationCriteria.inter_iii: "r",
+    EvaluationCriteria.disc_i: "H_D",
+    EvaluationCriteria.disc_ii: "H_L",
+    EvaluationCriteria.disc_iii: "F1",
+}
 
-def calculate_mean_sd(measures, run_names, data_type, data_dir, root_results_dir):
+_CRITERIA = [EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii, EvaluationCriteria.inter_iii,
+             EvaluationCriteria.disc_i, EvaluationCriteria.disc_ii, EvaluationCriteria.disc_iii]
+
+
+def calculate_mean_sd_min_max(measures, run_names, data_type, data_dir, root_results_dir):
+    """Mean, SD, min, max across subjects, for one data variant. Returns a MultiIndex-column
+        df: level 0 = EvaluationCriteria, level 1 = Aggregators stat, index = distance_measure."""
     # Load all raw_criteria_data for this data variant
     measures = measures
-    criteria = [EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii, EvaluationCriteria.inter_iii,
-                EvaluationCriteria.disc_i, EvaluationCriteria.disc_ii, EvaluationCriteria.disc_iii]
+
     raw_dfs = []
     for run_name in run_names:
         raw_criteria_df = read_csv_of_raw_values_for_all_criteria(run_name=run_name, data_type=data_type,
                                                                   data_dir=data_dir,
                                                                   base_results_dir=root_results_dir)
         # filter measures and criteria
-        raw_dfs.append(raw_criteria_df.loc[criteria, measures])
+        raw_dfs.append(raw_criteria_df.loc[_CRITERIA, measures])
 
     # Stack all DataFrames along a new axis
-    stacked_data = np.stack([df.values for df in raw_dfs])
+    stacked_data = np.stack([df.values for df in raw_dfs]).astype(float)  # (subjects, criteria, measures)
 
-    # Calculate mean along the first axis (across DataFrames - subjects)
-    mean_values = np.round(np.mean(stacked_data, axis=0).astype(float), 2)
-
-    # Create new DataFrame with median values
-    # Using the column names and index from the first DataFrame
-    mean_df = pd.DataFrame(
-        mean_values,
-        columns=raw_dfs[0].columns,
-        index=raw_dfs[0].index
-    ).T
-
-    # Calculate SD
-    sd_values = np.round(np.std(stacked_data.astype(float), axis=0, ddof=1), 2)
-    sd_df = pd.DataFrame(
-        sd_values,
-        columns=raw_dfs[0].columns,
-        index=raw_dfs[0].index
-    ).T
-
-    result_df = mean_df.copy()
-
-    for col in mean_df.columns:
-        for idx in mean_df.index:
-            mean_val = mean_df.loc[idx, col]
-            sd_val = sd_df.loc[idx, col]
-
-            add_star = df_thresholds.get(col, lambda x: False)(mean_val)
-            star = "*" if add_star else ""
-
-            result_df.loc[idx, col] = f"{mean_val} (SD {sd_val}){star}"
-
-    # rename columns
-    column_names = {
-        EvaluationCriteria.inter_i: "d L0",
-        EvaluationCriteria.inter_ii: "avg d",
-        EvaluationCriteria.inter_iii: "r",
-        EvaluationCriteria.disc_i: "H_D",
-        EvaluationCriteria.disc_ii: "H_L",
-        EvaluationCriteria.disc_iii: "F1",
+    stat_values = {
+        Aggregators.mean: np.mean(stacked_data, axis=0),
+        Aggregators.std: np.std(stacked_data, axis=0, ddof=1),
+        Aggregators.min: np.min(stacked_data, axis=0),
+        Aggregators.max: np.max(stacked_data, axis=0),
     }
 
-    result_df = result_df.rename(columns=column_names)
+    # calculate all stats
+    stat_dfs = []
+    for stat, values in stat_values.items():
+        df = pd.DataFrame(np.round(values, 2), columns=raw_dfs[0].columns, index=raw_dfs[0].index).T
+        df.columns = pd.MultiIndex.from_product([df.columns, [stat]])
+        stat_dfs.append(df)
 
-    return result_df
+    return pd.concat(stat_dfs, axis=1).sort_index(axis=1, level=0)
 
 
 if __name__ == "__main__":
@@ -116,33 +101,32 @@ if __name__ == "__main__":
     save_to_folder = path.join(root_result_dir, ResultsType.distance_measure_evaluation, 'validity-outcomes')
     os.makedirs(save_to_folder, exist_ok=True)
 
-    mean_sd_df_normal_100 = calculate_mean_sd(distance_measures, run_names, SyntheticDataType.normal_correlated,
-                                              SYNTHETIC_DATA_DIR, ROOT_RESULTS_DIR)
-    mean_sd_df_normal_100.to_csv(path.join(save_to_folder, 'construct-mean_sd_normal_100.csv'))
+    variants = {
+        'normal_100': (SyntheticDataType.normal_correlated, SYNTHETIC_DATA_DIR),
+        'normal_70': (SyntheticDataType.normal_correlated, IRREGULAR_P30_DATA_DIR),
+        'normal_10': (SyntheticDataType.normal_correlated, IRREGULAR_P90_DATA_DIR),
+        'non_normal_100': (SyntheticDataType.non_normal_correlated, SYNTHETIC_DATA_DIR),
+        'non_normal_10': (SyntheticDataType.non_normal_correlated, IRREGULAR_P90_DATA_DIR),
+        'raw_100': (SyntheticDataType.raw, SYNTHETIC_DATA_DIR),
+        'downsampled_100': (SyntheticDataType.rs_1min, SYNTHETIC_DATA_DIR),
+    }
 
-    # discriminant
-    mean_sd_df_raw_100 = calculate_mean_sd(distance_measures, run_names, SyntheticDataType.raw, SYNTHETIC_DATA_DIR,
-                                           ROOT_RESULTS_DIR)
-    mean_sd_df_raw_100.to_csv(path.join(save_to_folder, 'discriminant-mean_sd_raw_100.csv'))
+    # calculate and save stats df
+    stats = {}
+    for name, (data_type, data_dir) in variants.items():
+        stats[name] = calculate_mean_sd_min_max(distance_measures, run_names, data_type, data_dir, root_result_dir)
+        stats[name].to_csv(path.join(save_to_folder, f'summary_statistics_{name}.csv'))
 
-    mean_sd_df_downsampled_100 = calculate_mean_sd(distance_measures, run_names, SyntheticDataType.rs_1min,
-                                                   SYNTHETIC_DATA_DIR, ROOT_RESULTS_DIR)
-    mean_sd_df_downsampled_100.to_csv(path.join(save_to_folder, 'discriminant-mean_sd_downsampled_100.csv'))
+    # create validity assessment class
+    validity = DistanceMeasureValidity(normal_100=stats['normal_100'], normal_70=stats['normal_70'],
+                                       normal_10=stats['normal_10'], non_normal_100=stats['non_normal_100'],
+                                       non_normal_10=stats['non_normal_10'], raw_100=stats['raw_100'],
+                                       downsampled_100=stats['downsampled_100'])
 
-    # external validity
-    mean_sd_df_normal_70 = calculate_mean_sd(distance_measures, run_names, SyntheticDataType.normal_correlated,
-                                             IRREGULAR_P30_DATA_DIR, ROOT_RESULTS_DIR)
-    mean_sd_df_normal_70.to_csv(path.join(save_to_folder, 'external-mean_sd_normal_70.csv'))
+    # save mean (sd) * table for each variant considered
+    for name in variants:
+        validity.mean_sd_valid_summary_table(stats[name]).to_csv(
+            path.join(save_to_folder, f'mean_sd_valid_{name}.csv'))
 
-    mean_sd_df_normal_10 = calculate_mean_sd(distance_measures, run_names, SyntheticDataType.normal_correlated,
-                                             IRREGULAR_P90_DATA_DIR, ROOT_RESULTS_DIR)
-    mean_sd_df_normal_10.to_csv(path.join(save_to_folder, 'external-mean_sd_normal_10.csv'))
-
-    mean_sd_df_non_normal_100 = calculate_mean_sd(distance_measures, run_names, SyntheticDataType.non_normal_correlated,
-                                                  SYNTHETIC_DATA_DIR, ROOT_RESULTS_DIR)
-    mean_sd_df_non_normal_100.to_csv(path.join(save_to_folder, 'external-mean_sd_non_normal_100.csv'))
-
-    mean_sd_df_non_normal_10 = calculate_mean_sd(distance_measures, run_names, SyntheticDataType.non_normal_correlated,
-                                                 IRREGULAR_P90_DATA_DIR, ROOT_RESULTS_DIR)
-    mean_sd_df_non_normal_10.to_csv(path.join(save_to_folder, 'external-mean_sd_non_normal_10.csv'))
-
+    # overall validity results
+    validity.overall_validity().to_csv(path.join(save_to_folder, 'overall_validity_results.csv'))

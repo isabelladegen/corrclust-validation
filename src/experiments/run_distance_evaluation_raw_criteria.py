@@ -18,8 +18,6 @@ def run_distance_evaluation_raw_criteria_for_ds(data_dirs: [str], dataset_types:
             for run_name in run_names:
                 ev = DistanceMetricEvaluation(run_name=run_name, data_type=data_type, data_dir=data_dir,
                                               measures=distance_measures, level_sets = ls, backend=backend)
-                #todo save per run raw values too
-                # ev.distances_df.to_csv(os.path.expanduser('~/Downloads/out.csv'))
                 ev.save_csv_of_raw_values_for_all_criteria(run_name=run_name, base_results_dir=root_result_dir)
 
 

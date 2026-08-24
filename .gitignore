@@ -211,3 +211,4 @@ wandb/
 /src/visualisation/correlation-polytop-transparent.png
 /src/visualisation/elliptop_illustrations/img/
 *beforeAug26
+/results/
