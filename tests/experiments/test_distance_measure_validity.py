@@ -2,7 +2,8 @@ import pandas as pd
 from hamcrest import *
 
 from src.evaluation.distance_metric_evaluation import EvaluationCriteria, criteria_short_names
-from src.experiments.validity.distance_measure_validity import DistanceMeasureValidity, ValidityResultColumns
+from src.experiments.validity.distance_measure_validity import DistanceMeasureValidity, ValidityResultColumns, \
+    INITIAL_PAPER_RULE, DROPPING_OVERALL_ENTROPY
 from src.utils.configurations import Aggregators
 
 # Comfortably passes every structural criterion and predictive criterion validity.
@@ -22,15 +23,31 @@ _UNUSED_TABLE.columns = pd.MultiIndex.from_product([_UNUSED_TABLE.columns, [Aggr
 # helper function to create validity class with minimal data given to test conditions
 def _create_validity_class(normal_100=None, normal_70=None, normal_10=None,
                            non_normal_100=None, non_normal_10=None, raw_100=None, downsampled_100=None):
-    return DistanceMeasureValidity(
-        normal_100=normal_100 if normal_100 is not None else _UNUSED_TABLE,
-        normal_70=normal_70 if normal_70 is not None else _UNUSED_TABLE,
-        normal_10=normal_10 if normal_10 is not None else _UNUSED_TABLE,
-        non_normal_100=non_normal_100 if non_normal_100 is not None else _UNUSED_TABLE,
-        non_normal_10=non_normal_10 if non_normal_10 is not None else _UNUSED_TABLE,
-        raw_100=raw_100 if raw_100 is not None else _UNUSED_TABLE,
-        downsampled_100=downsampled_100 if downsampled_100 is not None else _UNUSED_TABLE,
-    )
+    # use all criteria
+    return DistanceMeasureValidity(validity_rule=INITIAL_PAPER_RULE,
+                                   normal_100=normal_100 if normal_100 is not None else _UNUSED_TABLE,
+                                   normal_70=normal_70 if normal_70 is not None else _UNUSED_TABLE,
+                                   normal_10=normal_10 if normal_10 is not None else _UNUSED_TABLE,
+                                   non_normal_100=non_normal_100 if non_normal_100 is not None else _UNUSED_TABLE,
+                                   non_normal_10=non_normal_10 if non_normal_10 is not None else _UNUSED_TABLE,
+                                   raw_100=raw_100 if raw_100 is not None else _UNUSED_TABLE,
+                                   downsampled_100=downsampled_100 if downsampled_100 is not None else _UNUSED_TABLE,
+                                   )
+
+
+def _create_validity_class_without_overall_entropy(normal_100=None, normal_70=None, normal_10=None,
+                                                   non_normal_100=None, non_normal_10=None, raw_100=None,
+                                                   downsampled_100=None):
+    # remove overall entropy criteria
+    return DistanceMeasureValidity(validity_rule=DROPPING_OVERALL_ENTROPY,
+                                   normal_100=normal_100 if normal_100 is not None else _UNUSED_TABLE,
+                                   normal_70=normal_70 if normal_70 is not None else _UNUSED_TABLE,
+                                   normal_10=normal_10 if normal_10 is not None else _UNUSED_TABLE,
+                                   non_normal_100=non_normal_100 if non_normal_100 is not None else _UNUSED_TABLE,
+                                   non_normal_10=non_normal_10 if non_normal_10 is not None else _UNUSED_TABLE,
+                                   raw_100=raw_100 if raw_100 is not None else _UNUSED_TABLE,
+                                   downsampled_100=downsampled_100 if downsampled_100 is not None else _UNUSED_TABLE,
+                                   )
 
 
 # ---------------------------------------------------------------------------
@@ -361,3 +378,134 @@ def test_formatted_results_omits_star_when_criterion_fails_threshold():
     result = _create_validity_class().mean_sd_valid_summary_table(df)
 
     assert_that(result.loc["DM 1", criteria_short_names[EvaluationCriteria.inter_i]], is_("0.11 (SD 0.01)"))
+
+
+from src.experiments.validity.distance_measure_validity import DistanceMeasureValidity, ValidityResultColumns, \
+    INITIAL_PAPER_RULE, DROPPING_OVERALL_ENTROPY, ValidityRule
+
+
+# ---------------------------------------------------------------------------
+# must_hold corner cases:
+# DROPPING_OVERALL_ENTROPY, where inter_i/ii/iii are mandatory and disc_ii is optional.
+# ---------------------------------------------------------------------------
+def test_discrimination_invalid_at_threshold_if_not_part_of_evaluated_rules():
+    normal_100 = pd.DataFrame([{**_VALID_ROW, EvaluationCriteria.disc_i: 4.0}], index=["DM 1"])
+    normal_100.columns = pd.MultiIndex.from_product([normal_100.columns, [Aggregators.mean]])
+    result = _create_validity_class_without_overall_entropy(normal_100=normal_100).structural_validity()
+    assert_that(result.columns, not_(has_item(ValidityResultColumns.result_for(EvaluationCriteria.disc_i))))
+    assert_that(result.columns, not_(has_item(ValidityResultColumns.mean_value_for(EvaluationCriteria.disc_i))))
+
+
+def test_structural_valid_when_dropping_disc_i_and_all_four_criteria_pass():
+    normal_100 = pd.DataFrame([_VALID_ROW], index=["DM 1"])
+    normal_100.columns = pd.MultiIndex.from_product([normal_100.columns, [Aggregators.mean]])
+    result = _create_validity_class_without_overall_entropy(normal_100=normal_100).structural_validity()
+    assert_that(result.loc["DM 1", ValidityResultColumns.structural], is_(True))
+
+
+def test_structural_invalid_when_dropping_disc_i_and_only_three_of_four_pass():
+    # minimum=4 over 4 criteria with no must_hold means every criterion is effectively
+    # mandatory once disc_i is removed, disc_ii failing alone should be enough to fail it
+    normal_100 = pd.DataFrame([{**_VALID_ROW, EvaluationCriteria.disc_ii: 3.0}], index=["DM 1"])
+    normal_100.columns = pd.MultiIndex.from_product([normal_100.columns, [Aggregators.mean]])
+    result = _create_validity_class_without_overall_entropy(normal_100=normal_100).structural_validity()
+    assert_that(result.loc["DM 1", ValidityResultColumns.structural], is_(False))
+
+
+def test_discriminant_no_pattern_valid_when_mandatory_criteria_fail_despite_disc_ii_passing_by_coincidence():
+    raw_100 = pd.DataFrame([_NO_PATTERN_ROW], index=["DM 1"])
+    raw_100.columns = pd.MultiIndex.from_product([raw_100.columns, [Aggregators.mean]])
+    result = _create_validity_class_without_overall_entropy(raw_100=raw_100).discriminant_validity()
+    assert_that(result.loc["DM 1", ValidityResultColumns.discriminant_no_pattern], is_(True))
+
+
+def test_discriminant_no_pattern_invalid_when_a_mandatory_criterion_shows_pattern_on_raw_data():
+    row = {**_NO_PATTERN_ROW, EvaluationCriteria.inter_ii: 1.0}  # inter_ii passes on raw, shouldn't
+    raw_100 = pd.DataFrame([row], index=["DM 1"])
+    raw_100.columns = pd.MultiIndex.from_product([raw_100.columns, [Aggregators.mean]])
+    result = _create_validity_class_without_overall_entropy(raw_100=raw_100).discriminant_validity()
+    assert_that(result.loc["DM 1", ValidityResultColumns.discriminant_no_pattern], is_(False))
+
+
+_DROPPED_RULE_MANDATORY_WORSE_DISC_II_IMPROVES = {
+    EvaluationCriteria.inter_i: 0.08,  # worse than 0.05
+    EvaluationCriteria.inter_ii: 0.99,  # worse than 1.0
+    EvaluationCriteria.inter_iii: 0.75,  # worse than 0.9
+    EvaluationCriteria.disc_i: 4.5,  # unused by this rule
+    EvaluationCriteria.disc_ii: 1.0,  # improves from 2.0, not worse
+    EvaluationCriteria.disc_iii: 0.99,  # unused by this rule
+}
+
+_DROPPED_RULE_ONE_MANDATORY_DOES_NOT_WORSEN = {
+    EvaluationCriteria.inter_i: 0.08,  # worse
+    EvaluationCriteria.inter_ii: 0.99,  # worse
+    EvaluationCriteria.inter_iii: 0.9,  # unchanged, not worse
+    EvaluationCriteria.disc_i: 4.5,
+    EvaluationCriteria.disc_ii: 2.5,  # worse, irrelevant, not mandatory
+    EvaluationCriteria.disc_iii: 0.99,
+}
+
+
+def test_discriminant_degradation_valid_when_mandatory_criteria_worsen_despite_disc_ii_improving():
+    normal_100 = pd.DataFrame([_REFERENCE_ROW], index=["DM 1"])
+    normal_100.columns = pd.MultiIndex.from_product([normal_100.columns, [Aggregators.mean]])
+    downsampled_100 = pd.DataFrame([_DROPPED_RULE_MANDATORY_WORSE_DISC_II_IMPROVES], index=["DM 1"])
+    downsampled_100.columns = pd.MultiIndex.from_product([downsampled_100.columns, [Aggregators.mean]])
+    result = _create_validity_class_without_overall_entropy(
+        normal_100=normal_100, downsampled_100=downsampled_100).discriminant_validity()
+    assert_that(result.loc["DM 1", ValidityResultColumns.discriminant_degradation], is_(True))
+
+
+def test_discriminant_degradation_invalid_when_a_mandatory_criterion_does_not_worsen():
+    normal_100 = pd.DataFrame([_REFERENCE_ROW], index=["DM 1"])
+    normal_100.columns = pd.MultiIndex.from_product([normal_100.columns, [Aggregators.mean]])
+    downsampled_100 = pd.DataFrame([_DROPPED_RULE_ONE_MANDATORY_DOES_NOT_WORSEN], index=["DM 1"])
+    downsampled_100.columns = pd.MultiIndex.from_product([downsampled_100.columns, [Aggregators.mean]])
+    result = _create_validity_class_without_overall_entropy(
+        normal_100=normal_100, downsampled_100=downsampled_100).discriminant_validity()
+    assert_that(result.loc["DM 1", ValidityResultColumns.discriminant_degradation], is_(False))
+
+
+def test_structural_invalid_when_a_mandatory_criterion_fails_despite_minimum_met():
+    custom_rule = ValidityRule(
+        structural_criteria=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii,
+                             EvaluationCriteria.inter_iii, EvaluationCriteria.disc_ii],
+        structural_must_hold=[EvaluationCriteria.inter_i],
+        structural_minimum=0,  # the other three are fully lenient
+        discriminant_no_pattern_criteria=[EvaluationCriteria.inter_i], discriminant_no_pattern_minimum=1,
+        discriminant_degradation_criteria=[EvaluationCriteria.inter_i], discriminant_degradation_minimum=1,
+        criterion_predictive=EvaluationCriteria.disc_iii,
+    )
+    # inter_i fails (0.11 > 0.1), the other three all comfortably pass
+    normal_100 = pd.DataFrame([{**_VALID_ROW, EvaluationCriteria.inter_i: 0.11}], index=["DM 1"])
+    normal_100.columns = pd.MultiIndex.from_product([normal_100.columns, [Aggregators.mean]])
+    result = DistanceMeasureValidity(
+        validity_rule=custom_rule, normal_100=normal_100, normal_70=_UNUSED_TABLE, normal_10=_UNUSED_TABLE,
+        non_normal_100=_UNUSED_TABLE, non_normal_10=_UNUSED_TABLE, raw_100=_UNUSED_TABLE,
+        downsampled_100=_UNUSED_TABLE).structural_validity()
+    assert_that(result.loc["DM 1", ValidityResultColumns.structural], is_(False))
+
+
+# ---------------------------------------------------------------------------
+# criterion_predictive decoupling: confirms criterion_validity() reads whichever
+# criterion the rule names, not something fixed to disc_iii.
+# ---------------------------------------------------------------------------
+
+def test_criterion_validity_uses_whichever_criterion_predictive_the_rule_specifies():
+    custom_rule = ValidityRule(
+        structural_criteria=[EvaluationCriteria.inter_i],
+        structural_minimum=1,
+        discriminant_no_pattern_criteria=[EvaluationCriteria.inter_i],
+        discriminant_no_pattern_minimum=1,
+        discriminant_degradation_criteria=[EvaluationCriteria.inter_i],
+        discriminant_degradation_minimum=1,
+        criterion_predictive=EvaluationCriteria.disc_i,
+    )
+    normal_100 = pd.DataFrame([{**_VALID_ROW, EvaluationCriteria.disc_i: 4.01}], index=["DM 1"])
+    normal_100.columns = pd.MultiIndex.from_product([normal_100.columns, [Aggregators.mean]])
+    result = DistanceMeasureValidity(
+        validity_rule=custom_rule, normal_100=normal_100, normal_70=_UNUSED_TABLE, normal_10=_UNUSED_TABLE,
+        non_normal_100=_UNUSED_TABLE, non_normal_10=_UNUSED_TABLE, raw_100=_UNUSED_TABLE,
+        downsampled_100=_UNUSED_TABLE).criterion_validity()
+    assert_that(result.loc["DM 1", ValidityResultColumns.criterion], is_(True))
+    assert_that(result.columns, has_item(ValidityResultColumns.mean_value_for(EvaluationCriteria.disc_i)))

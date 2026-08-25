@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
 
 from src.evaluation.distance_metric_evaluation import EvaluationCriteria, read_csv_of_raw_values_for_all_criteria
-from src.experiments.validity.valid_distance_functions_tables import threshold_values
+from src.experiments.validity.distance_measure_validity import DM_THRESHOLDS
 from src.utils.configurations import GENERATED_DATASETS_FILE_PATH, ROOT_RESULTS_DIR, IRREGULAR_P90_DATA_DIR, \
     IRREGULAR_P30_DATA_DIR, SYNTHETIC_DATA_DIR, ResultsType, VALID_ROOT_RESULTS_DIR
 from src.utils.distance_measures import DistanceMeasures
@@ -84,7 +84,7 @@ def create_raw_box_plots(conditions_data, condition_names, distance_functions, c
                 patch.set_facecolor(colours[dist_func])
                 patch.set_alpha(0.7)
 
-            threshold = threshold_values[criterion]
+            threshold = DM_THRESHOLDS[criterion]
             ax.axhline(y=threshold, color='black', linestyle='--', linewidth=1.5, alpha=0.7)
 
             ylim = ax.get_ylim()
