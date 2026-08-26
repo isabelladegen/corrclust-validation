@@ -1,10 +1,13 @@
 import ast
+import itertools
 from dataclasses import dataclass
 from functools import lru_cache
 from os import path
 
 import numpy as np
+import pandas
 import pandas as pd
+from scipy.stats import mannwhitneyu
 
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.data_generation.model_correlation_patterns import ModelCorrelationPatterns
@@ -51,6 +54,7 @@ class EvaluationCriteria:
     inter_i: str = "Interpretability: L_0 close to zero"
     inter_ii: str = "Interpretability: levels sets sig different and correct order"
     inter_iii: str = "Interpretability: higher rate of increase between level sets"
+    scale_free_inter_iii: str = "Cliff's'Delta: min scale-free magnitude of level-set separation"
     disc_i: str = "Discriminative Power: higher overall entropy"
     disc_ii: str = "Discriminative Power: lower level set entropy"
     disc_iii: str = "Discriminative Power: higher macro F1 score"
@@ -61,6 +65,7 @@ criteria_short_names = {
     EvaluationCriteria.inter_i: '1. L_0=0',
     EvaluationCriteria.inter_ii: '2. L_d diff',
     EvaluationCriteria.inter_iii: '3. L_d inc',
+    EvaluationCriteria.scale_free_inter_iii: '3. min δ',
     EvaluationCriteria.disc_i: '4. H_D',
     EvaluationCriteria.disc_ii: '5. H_L',
     EvaluationCriteria.disc_iii: '6. F1',
@@ -122,6 +127,48 @@ class DistanceMetricEvaluation:
             DistanceMeasureCols.type: measures,
             DistanceMeasureCols.rate_of_increase: rate_of_increase,
         })
+
+    def __cliffs_delta(self, x: np.ndarray, y: np.ndarray) -> float:
+        """
+        Calculates Cliff's delta between two independent samples.
+        delta = P(x > y) - P(x < y), range [-1, 1]. +-1 means no overlap between
+        the samples, 0 means complete overlap. Ties contribute 0 (split evenly
+        between the two directions).
+        :param x: values for group 1
+        :param y: values for group 2
+        :return: Cliff's delta
+        """
+        n1, n2 = len(x), len(y)
+        u_stat, _ = mannwhitneyu(x, y, alternative='two-sided')
+        a12 = u_stat / (n1 * n2)
+        return 2 * a12 - 1
+
+    def calculate_cliffs_delta_between_level_sets(self) -> pd.DataFrame:
+        """
+        Calculates Cliff's delta for every pair of level sets (all combinations, not just
+        adjacent) for each distance measure. Returns full results, does not reduce to a
+        min/max/mean, that decision is left to the calling function.
+        :returns pd.DataFrame with columns:
+            DistanceMeasureCols.compared -> tuple of the two level sets compared
+            a column per distance measure -> absolute Cliff's delta for that measure, that pair
+        """
+        df = self.distances_df
+        level_set_pairs = list(itertools.combinations(self.level_set_indices, 2))
+
+        results = {measure: [] for measure in self.__measures}
+        for measure in self.__measures:
+            for ls1, ls2 in level_set_pairs:
+                x = df.loc[df[DistanceMeasureCols.level_set] == ls1, measure]
+                y = df.loc[df[DistanceMeasureCols.level_set] == ls2, measure]
+                x = x[np.isfinite(x)].to_numpy()
+                y = y[np.isfinite(y)].to_numpy()
+                results[measure].append(abs(self.__cliffs_delta(x, y)))
+
+        results[DistanceMeasureCols.compared] = level_set_pairs
+        result_df = pd.DataFrame(results)
+        ordered = [DistanceMeasureCols.compared]
+        ordered.extend(self.__measures)
+        return result_df[ordered]
 
     def calculate_level_set_shannon_entropy(self, n_bins: int = 50):
         """
@@ -199,6 +246,7 @@ class DistanceMetricEvaluation:
             EvaluationCriteria.inter_i,
             EvaluationCriteria.inter_ii,
             EvaluationCriteria.inter_iii,
+            EvaluationCriteria.scale_free_inter_iii,
             EvaluationCriteria.disc_i,
             EvaluationCriteria.disc_ii,
             EvaluationCriteria.disc_iii,
@@ -208,6 +256,7 @@ class DistanceMetricEvaluation:
         inter_i = []
         inter_ii = []
         inter_iii = []
+        scale_free_inter_iii = []
         disc_i = []
         disc_ii = []
         disc_iii = []
@@ -222,6 +271,9 @@ class DistanceMetricEvaluation:
         rate_of_increase = self.rate_of_increase_between_level_sets()
         average_rate = rate_of_increase.groupby(DistanceMeasureCols.type)[
             DistanceMeasureCols.rate_of_increase].mean().round(round_to)
+
+        # cliff's delta
+        cliffdelta = self.calculate_cliffs_delta_between_level_sets()
 
         # overall entropy df
         n_bins = 50
@@ -247,6 +299,8 @@ class DistanceMetricEvaluation:
                 self.ci_for_mean_differences[self.ci_for_mean_differences[DistanceMeasureCols.type] == measure][
                     DistanceMeasureCols.stat_diff].eq('lower').all())
             inter_iii.append(average_rate.loc[measure])
+            # scale free inter_iii replacement
+            scale_free_inter_iii.append(cliffdelta[measure].min().round(self.__round_to))
             # Discriminative power Criteria
             disc_i.append(overall_entropy[measure])
             disc_ii.append(level_set_entropy[measure].mean().round(self.__round_to))
@@ -263,6 +317,7 @@ class DistanceMetricEvaluation:
             inter_i,
             inter_ii,
             inter_iii,
+            scale_free_inter_iii,
             disc_i,
             disc_ii,
             disc_iii,
@@ -423,14 +478,19 @@ class DistanceMetricEvaluation:
             results[measure] = nan_count + inf_count
         return results
 
-    def save_csv_of_raw_values_for_all_criteria(self, run_name: str, base_results_dir: str):
+    def save_a_raw_csv(self, df: pandas.DataFrame, filename: str, run_name: str, base_results_dir: str):
         """ Saves the raw criteria values dataframe in the results folder as csv file"""
         result_dir = distance_measure_evaluation_results_dir_for(run_name=run_name,
                                                                  data_type=self.data_type,
                                                                  base_results_dir=base_results_dir,
                                                                  data_dir=self.data_dir)
+        df.to_csv(path.join(result_dir, filename))
+
+    def save_csv_of_raw_values_for_all_criteria(self, run_name: str, base_results_dir: str):
+        """ Saves the raw criteria values dataframe in the results folder as csv file"""
         results_df = self.raw_results_for_each_criteria(round_to=self.__round_to)
-        results_df.to_csv(path.join(result_dir, DISTANCE_MEASURE_EVALUATION_CRITERIA_RESULTS_FILE))
+        self.save_a_raw_csv(df=results_df, filename=DISTANCE_MEASURE_EVALUATION_CRITERIA_RESULTS_FILE,
+                            run_name=run_name, base_results_dir=base_results_dir)
 
 
 def read_csv_of_raw_values_for_all_criteria(run_name: str, data_type: str, data_dir: str,

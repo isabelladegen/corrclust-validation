@@ -181,7 +181,7 @@ def test_different_bins_for_entropy_per_level_set():
 
 def test_calculates_raw_results_for_each_criteria_and_each_distance_measure():
     df = ev.raw_results_for_each_criteria()
-    assert_that(df.shape, is_((7, len(sel_measures))))
+    assert_that(df.shape, is_((8, len(sel_measures))))
     # check value added for each measure
     # level 0 avg distances
     assert_that(df.loc[EvaluationCriteria.inter_i, sel_measures[0]], is_(0.072))  # l2
@@ -194,6 +194,8 @@ def test_calculates_raw_results_for_each_criteria_and_each_distance_measure():
     assert_that(df.loc[EvaluationCriteria.inter_ii, sel_measures[2]], is_(False))  # Förstner
     # avg rate of increase between level set
     assert_that(df.loc[EvaluationCriteria.inter_iii, sel_measures[0]], is_(0.628))
+    # cliff's delta
+    assert_that(df.loc[EvaluationCriteria.scale_free_inter_iii, sel_measures[0]], is_(0.689))
     # overall entropy
     assert_that(df.loc[EvaluationCriteria.disc_i, sel_measures[0]], is_(4.519))
     # average level set entropy

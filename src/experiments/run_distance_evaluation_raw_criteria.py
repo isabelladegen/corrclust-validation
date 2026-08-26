@@ -17,20 +17,30 @@ def run_distance_evaluation_raw_criteria_for_ds(data_dirs: [str], dataset_types:
         for data_type in dataset_types:
             for run_name in run_names:
                 ev = DistanceMetricEvaluation(run_name=run_name, data_type=data_type, data_dir=data_dir,
-                                              measures=distance_measures, level_sets = ls, backend=backend)
+                                              measures=distance_measures, level_sets=ls, backend=backend)
+                ev.save_a_raw_csv(df=ev.calculate_cliffs_delta_between_level_sets(), filename='raw_cliffs_delta.csv',
+                                  run_name=run_name, base_results_dir=root_result_dir)
+                ev.save_a_raw_csv(df=ev.distances_df, filename='raw_distances.csv', run_name=run_name,
+                                  base_results_dir=root_result_dir)
+                ev.save_a_raw_csv(df=ev.ci_for_mean_differences, filename='raw_ci_mean_differences.csv',
+                                  run_name=run_name, base_results_dir=root_result_dir)
                 ev.save_csv_of_raw_values_for_all_criteria(run_name=run_name, base_results_dir=root_result_dir)
 
 
 if __name__ == "__main__":
     # configuration to calculate raw distance measure criteria for the N30 dataset
     root_result_dir = ROOT_RESULTS_DIR
-    dataset_types = [SyntheticDataType.raw,
-                     SyntheticDataType.normal_correlated,
-                     SyntheticDataType.non_normal_correlated,
-                     SyntheticDataType.rs_1min]
-    data_dirs = [SYNTHETIC_DATA_DIR,
-                 IRREGULAR_P30_DATA_DIR,
-                 IRREGULAR_P90_DATA_DIR]
+    dataset_types = [
+        SyntheticDataType.raw,
+        SyntheticDataType.normal_correlated,
+        SyntheticDataType.non_normal_correlated,
+        SyntheticDataType.rs_1min
+    ]
+    data_dirs = [
+        SYNTHETIC_DATA_DIR,
+        IRREGULAR_P30_DATA_DIR,
+        IRREGULAR_P90_DATA_DIR
+    ]
 
     # this is an extensive list
     distance_measures = [DistanceMeasures.l1_cor_dist,  # lp norms
