@@ -110,22 +110,46 @@ INITIAL_PAPER_RULE = ValidityRule(
     criterion_predictive=EvaluationCriteria.disc_iii,
 )
 
+# removing entropy based rules since not derivable from theory
+STRICT_MUST_PASS_RULES = ValidityRule(
+    structural_criteria=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii, EvaluationCriteria.inter_iii,
+                         EvaluationCriteria.disc_i, EvaluationCriteria.disc_ii],
+    structural_must_hold=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii, EvaluationCriteria.inter_iii],
+    structural_minimum=0, # entropy can fail
+    discriminant_no_pattern_criteria=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii,
+                                      EvaluationCriteria.inter_iii, EvaluationCriteria.disc_i,
+                                      EvaluationCriteria.disc_ii, EvaluationCriteria.disc_iii],
+    discriminant_no_pattern_must_hold=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii,
+                                       EvaluationCriteria.inter_iii, EvaluationCriteria.disc_iii],
+    discriminant_no_pattern_minimum=0, # entropy can fail
+    discriminant_degradation_criteria=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii,
+                                       EvaluationCriteria.inter_iii, EvaluationCriteria.disc_i,
+                                       EvaluationCriteria.disc_ii, EvaluationCriteria.disc_iii],
+    discriminant_degradation_must_hold=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_iii,
+                                        EvaluationCriteria.disc_iii], #allwoing the levels set still to pass structural 2
+    discriminant_degradation_minimum=0, # entropy can fail
+    criterion_predictive=EvaluationCriteria.disc_iii,
+)
+
 DROPPING_OVERALL_ENTROPY = ValidityRule(
     structural_criteria=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii, EvaluationCriteria.inter_iii,
                          EvaluationCriteria.disc_ii],
     structural_minimum=4,
     discriminant_no_pattern_criteria=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii,
-                                      EvaluationCriteria.inter_iii, EvaluationCriteria.disc_ii],
+                                      EvaluationCriteria.inter_iii, EvaluationCriteria.disc_ii,
+                                      EvaluationCriteria.disc_iii],
     discriminant_no_pattern_must_hold=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii,
-                                       EvaluationCriteria.inter_iii],
-    discriminant_no_pattern_minimum=0, # level set entropy can fail since noise has low entropy
+                                       EvaluationCriteria.inter_iii, EvaluationCriteria.disc_iii],
+    discriminant_no_pattern_minimum=0,  # level set entropy can pass by coincidence, everything else must fail
     discriminant_degradation_criteria=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii,
-                                       EvaluationCriteria.inter_iii, EvaluationCriteria.disc_ii],
+                                       EvaluationCriteria.inter_iii, EvaluationCriteria.disc_ii,
+                                       EvaluationCriteria.disc_iii],
     discriminant_degradation_must_hold=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii,
-                                        EvaluationCriteria.inter_iii],
-    discriminant_degradation_minimum=0, # level set entropy can fail since nosie has low entropy
+                                        EvaluationCriteria.inter_iii, EvaluationCriteria.disc_iii],
+    discriminant_degradation_minimum=0,  # level set entropy can stay flat, everything else must worsen
     criterion_predictive=EvaluationCriteria.disc_iii,
 )
+
 
 class DistanceMeasureValidity:
     """Decides validity of distance measures per Table 1 (methodology sec 4.2.1). Constructed
