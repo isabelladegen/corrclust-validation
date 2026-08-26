@@ -37,6 +37,7 @@ DM_THRESHOLDS = {
     EvaluationCriteria.inter_i: 0.1,
     EvaluationCriteria.inter_ii: 1.0,
     EvaluationCriteria.inter_iii: 0.7,
+    EvaluationCriteria.scale_free_inter_iii: 0.4,
     EvaluationCriteria.disc_i: 4,
     EvaluationCriteria.disc_ii: 3,
     EvaluationCriteria.disc_iii: 0.98,
@@ -94,7 +95,6 @@ class CriteriaRule:
 
 
 # various rules
-
 INITIAL_PAPER_RULE = ValidityRule(
     structural_criteria=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii, EvaluationCriteria.inter_iii,
                          EvaluationCriteria.disc_i, EvaluationCriteria.disc_ii],
@@ -131,6 +131,27 @@ STRICT_MUST_PASS_RULES = ValidityRule(
     criterion_predictive=EvaluationCriteria.disc_iii,
 )
 
+# strictly must pass for rule 1-3 plus rule 3 replaced with cliffs delta
+REVIEWED_RULES = ValidityRule(
+    structural_criteria=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii, EvaluationCriteria.scale_free_inter_iii,
+                         EvaluationCriteria.disc_i, EvaluationCriteria.disc_ii],
+    structural_must_hold=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii, EvaluationCriteria.scale_free_inter_iii],
+    structural_minimum=0, # entropy can fail
+    discriminant_no_pattern_criteria=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii,
+                                      EvaluationCriteria.scale_free_inter_iii, EvaluationCriteria.disc_i,
+                                      EvaluationCriteria.disc_ii, EvaluationCriteria.disc_iii],
+    discriminant_no_pattern_must_hold=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii,
+                                       EvaluationCriteria.scale_free_inter_iii, EvaluationCriteria.disc_iii],
+    discriminant_no_pattern_minimum=0, # entropy can fail
+    discriminant_degradation_criteria=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii,
+                                       EvaluationCriteria.scale_free_inter_iii, EvaluationCriteria.disc_i,
+                                       EvaluationCriteria.disc_ii, EvaluationCriteria.disc_iii],
+    discriminant_degradation_must_hold=[EvaluationCriteria.inter_i, EvaluationCriteria.scale_free_inter_iii,
+                                        EvaluationCriteria.disc_iii], #allwoing the levels set still to pass structural 2
+    discriminant_degradation_minimum=0, # entropy can fail
+    criterion_predictive=EvaluationCriteria.disc_iii,
+)
+
 DROPPING_OVERALL_ENTROPY = ValidityRule(
     structural_criteria=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii, EvaluationCriteria.inter_iii,
                          EvaluationCriteria.disc_ii],
@@ -161,6 +182,7 @@ class DistanceMeasureValidity:
         EvaluationCriteria.inter_i: (lambda x: x <= DM_THRESHOLDS[EvaluationCriteria.inter_i], True),
         EvaluationCriteria.inter_ii: (lambda x: x == DM_THRESHOLDS[EvaluationCriteria.inter_ii], False),
         EvaluationCriteria.inter_iii: (lambda x: x > DM_THRESHOLDS[EvaluationCriteria.inter_iii], False),
+        EvaluationCriteria.scale_free_inter_iii: (lambda x: x > DM_THRESHOLDS[EvaluationCriteria.scale_free_inter_iii], False),
         EvaluationCriteria.disc_i: (lambda x: x > DM_THRESHOLDS[EvaluationCriteria.disc_i], False),
         EvaluationCriteria.disc_ii: (lambda x: x < DM_THRESHOLDS[EvaluationCriteria.disc_ii], True),
         EvaluationCriteria.disc_iii: (lambda x: x > DM_THRESHOLDS[EvaluationCriteria.disc_iii], False),

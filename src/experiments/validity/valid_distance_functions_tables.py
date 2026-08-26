@@ -6,7 +6,7 @@ import pandas as pd
 
 from src.evaluation.distance_metric_evaluation import read_csv_of_raw_values_for_all_criteria
 from src.experiments.validity.distance_measure_validity import DistanceMeasureValidity, DM_THRESHOLDS, \
-    INITIAL_PAPER_RULE, DROPPING_OVERALL_ENTROPY, STRICT_MUST_PASS_RULES
+    INITIAL_PAPER_RULE, DROPPING_OVERALL_ENTROPY, STRICT_MUST_PASS_RULES, REVIEWED_RULES
 from src.utils.configurations import ROOT_RESULTS_DIR, SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, \
     IRREGULAR_P90_DATA_DIR, GENERATED_DATASETS_FILE_PATH, ResultsType, Aggregators
 from src.utils.distance_measures import DistanceMeasures
@@ -89,7 +89,7 @@ if __name__ == "__main__":
         stats[name].to_csv(path.join(save_to_folder, f'summary_statistics_{name}.csv'))
 
     # create validity assessment class
-    validity = DistanceMeasureValidity(validity_rule=STRICT_MUST_PASS_RULES,
+    validity = DistanceMeasureValidity(validity_rule=REVIEWED_RULES,
                                        normal_100=stats['normal_100'],
                                        normal_70=stats['normal_70'],
                                        normal_10=stats['normal_10'], non_normal_100=stats['non_normal_100'],
