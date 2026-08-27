@@ -78,12 +78,12 @@ class ModifiedPatternGenerator:
         return pd.DataFrame(rows)
 
 
-def save_modified_patterns(df: pd.DataFrame, file_path:str=MODIFIED_PATTERNS_PATH):
+def save_modified_patterns(df: pd.DataFrame, file_path: str = MODIFIED_PATTERNS_PATH):
     Path(file_path).parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(file_path, index=False)
 
 
-def read_modified_patterns(file:str=MODIFIED_PATTERNS_PATH) -> pd.DataFrame:
+def read_modified_patterns(file: str = MODIFIED_PATTERNS_PATH) -> pd.DataFrame:
     assert (path.exists(file))
     df = pd.read_csv(file)
     # change to list type
@@ -98,5 +98,3 @@ if __name__ == "__main__":
     modified_patterns = generator.generate()
 
     save_modified_patterns(modified_patterns)
-
-
