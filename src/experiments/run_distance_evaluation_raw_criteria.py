@@ -27,6 +27,8 @@ def run_distance_evaluation_raw_criteria_for_ds(data_dirs: [str], dataset_types:
                                   run_name=run_name, base_results_dir=root_result_dir)
                 ev.save_a_raw_csv(df=ev.distances_df, filename='raw_distances.csv', run_name=run_name,
                                   base_results_dir=root_result_dir)
+                ev.save_a_raw_csv(df= ev.ci_for_mean_differences_clustered, filename='none_independence_corrected_raw_ci_mean_differences.csv',
+                                  run_name=run_name, base_results_dir=root_result_dir)
                 ev.save_a_raw_csv(df=ev.ci_for_mean_differences, filename='raw_ci_mean_differences.csv',
                                   run_name=run_name, base_results_dir=root_result_dir)
                 ev.save_csv_of_raw_values_for_all_criteria(run_name=run_name, base_results_dir=root_result_dir)

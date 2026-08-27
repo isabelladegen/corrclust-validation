@@ -175,6 +175,29 @@ def calculate_lo_ci(mean_series, std_df, count_df):
     return mean_series - 1.96 * std_df[column] / np.sqrt(count_df[column])
 
 
+def clustered_mean_and_deviation_sums(df: pd.DataFrame, cluster_col: str, value_col: str):
+    """Mean and per-cluster deviation sums for one group (Kish, 1965 cluster-sampling variance)."""
+    n = len(df)
+    ybar = df[value_col].mean()
+    dev_sums = df.groupby(cluster_col)[value_col].apply(lambda x: (x - ybar).sum())
+    return ybar, dev_sums, n
+
+
+def clustered_ci_for_mean_difference(rows_g1: pd.DataFrame, rows_g2: pd.DataFrame,
+                                     cluster_col: str, value_col: str, z: float = 1.96):
+    """CI for mean(g1)-mean(g2), clustering by cluster_col, with covariance correction
+    for clusters present in both groups (Var(A-B) = Var(A)+Var(B)-2Cov(A,B))."""
+    m1, dev1, n1 = clustered_mean_and_deviation_sums(rows_g1, cluster_col, value_col)
+    m2, dev2, n2 = clustered_mean_and_deviation_sums(rows_g2, cluster_col, value_col)
+    var1 = (dev1 ** 2).sum() / n1 ** 2
+    var2 = (dev2 ** 2).sum() / n2 ** 2
+    shared = dev1.index.intersection(dev2.index)
+    cov = (dev1[shared] * dev2[shared]).sum() / (n1 * n2) if len(shared) else 0.0
+    diff = m1 - m2
+    se = np.sqrt(var1 + var2 - 2 * cov)
+    return diff, diff - z * se, diff + z * se, se
+
+
 def calculate_hi_lo_difference_ci(n1, n2, s1, s2, m1, m2, z=1.96):
     """Returns ci for e.g difference of mean values (m1, m2) but could be difference of other values
     :param n1: count for first group

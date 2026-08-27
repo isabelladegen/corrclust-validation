@@ -19,7 +19,7 @@ from src.utils.level_sets import LevelSets
 from src.utils.load_synthetic_data import load_labels
 from src.utils.plots.matplotlib_helper_functions import Backends
 from src.utils.stats import ConfidenceIntervalCols, compare_ci_for_differences, calculate_hi_lo_difference_ci, \
-    gaussian_critical_z_value_for
+    gaussian_critical_z_value_for, clustered_ci_for_mean_difference
 
 
 @dataclass
@@ -102,6 +102,7 @@ class DistanceMetricEvaluation:
         # calculate statistics
         self.per_level_set_distance_statistics_df = self.__calculate_per_level_sets_distance_statistics()
         self.ci_for_mean_differences, self.alpha_for_level_set_ci = self.__calculate_ci_for_mean_differences_between_adjacent_level_sets()
+        self.ci_for_mean_differences_clustered, self.alpha_for_level_set_ci_clustered = self.__calculate_clustered_ci_for_mean_differences_between_adjacent_level_sets()
         self.normalised_distance_df = self.__normalise_distances()
 
     def rate_of_increase_between_level_sets(self):
@@ -339,10 +340,11 @@ class DistanceMetricEvaluation:
         for measure in self.__measures:
             # Interpretability Criteria
             inter_i.append(distances_for_level_set0.loc[measure, Aggregators.mean])
-            scale_free_inter_i.append(round(l0_cliffs_delta[measure].item(),self.__round_to))
-            inter_ii.append(
-                self.ci_for_mean_differences[self.ci_for_mean_differences[DistanceMeasureCols.type] == measure][
-                    DistanceMeasureCols.stat_diff].eq('lower').all())
+            scale_free_inter_i.append(round(l0_cliffs_delta[measure].item(), self.__round_to))
+            inter_ii.append(self.ci_for_mean_differences_clustered[
+                                self.ci_for_mean_differences_clustered[DistanceMeasureCols.type] == measure][
+                                DistanceMeasureCols.stat_diff].eq('lower').all()
+                            )
             inter_iii.append(average_rate.loc[measure])
             # scale free inter_iii replacement
             scale_free_inter_iii.append(cliffdelta[measure].min().round(self.__round_to))
@@ -524,6 +526,14 @@ class DistanceMetricEvaluation:
 
         return resulting_df
 
+    def __calculate_clustered_ci_for_mean_differences_between_adjacent_level_sets(self, alpha=0.05, bonferroni=True,
+                                                                                  two_tailed=True):
+        a, ci_df = calculate_clustered_ci_of_mean_differences_for_distance_measures(
+            self.adjacent_level_set_indices, self.distances_df,
+            DistanceMeasureCols.level_set, DistanceMeasureCols.segment_id,
+            self.__measures, alpha, bonferroni, two_tailed)
+        return ci_df, a
+
     def __calculate_ci_for_mean_differences_between_adjacent_level_sets(self, alpha: float = 0.05,
                                                                         bonferroni: bool = True,
                                                                         two_tailed: bool = True):
@@ -605,6 +615,38 @@ def read_csv_of_raw_values_for_all_criteria(run_name: str, data_type: str, data_
     full_path = path.join(result_dir, file_name)
     columns = pd.read_csv(full_path, nrows=0, index_col=0).columns
     return pd.read_csv(full_path, index_col=0, converters={col: ast.literal_eval for col in columns})
+
+
+def calculate_clustered_ci_of_mean_differences_for_distance_measures(value_combinations, distances_df: pd.DataFrame,
+                                                                     column_for_values: str, cluster_col: str,
+                                                                     measures: list, alpha: float = 0.05,
+                                                                     bonferroni: bool = True, two_tailed: bool = True):
+    compared, dist_measures, mean_diffs, lo_diffs, hi_diffs, stat_diffs, ci_widths, ses = ([] for _ in range(8))
+    a = alpha / len(value_combinations) if bonferroni else alpha
+    z_alpha = gaussian_critical_z_value_for(a, two_tailed=two_tailed)
+
+    for level_set1, level_set2 in value_combinations:
+        g1_all = distances_df[distances_df[column_for_values] == level_set1]
+        g2_all = distances_df[distances_df[column_for_values] == level_set2]
+        for measure in measures:
+            rows_g1 = g1_all[[cluster_col, measure]].dropna()
+            rows_g2 = g2_all[[cluster_col, measure]].dropna()
+            diff, lo_ci, hi_ci, se = clustered_ci_for_mean_difference(rows_g1, rows_g2, cluster_col, measure, z_alpha)
+            compared.append((level_set1, level_set2));
+            dist_measures.append(measure)
+            mean_diffs.append(diff);
+            lo_diffs.append(lo_ci);
+            hi_diffs.append(hi_ci)
+            stat_diffs.append(compare_ci_for_differences(lo_ci, hi_ci))
+            ci_widths.append(hi_ci - lo_ci);
+            ses.append(se)
+
+    return a, pd.DataFrame({
+        DistanceMeasureCols.compared: compared, DistanceMeasureCols.type: dist_measures,
+        DistanceMeasureCols.stat_diff: stat_diffs, DistanceMeasureCols.mean_diff: mean_diffs,
+        ConfidenceIntervalCols.ci_96lo: lo_diffs, ConfidenceIntervalCols.ci_96hi: hi_diffs,
+        ConfidenceIntervalCols.width: ci_widths, ConfidenceIntervalCols.standard_error: ses,
+    })
 
 
 def calculate_ci_of_mean_differences_between_two_values_for_distance_measures(value_combinations, stats: pd.DataFrame,
