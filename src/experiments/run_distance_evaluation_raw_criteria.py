@@ -21,7 +21,7 @@ def run_distance_evaluation_raw_criteria_for_ds(data_dirs: [str], dataset_types:
                 ev = DistanceMetricEvaluation(run_name=run_name, data_type=data_type, data_dir=data_dir,
                                               measures=distance_measures, level_sets=ls,
                                               modified_patterns=modified_patterns, backend=backend)
-                ev.save_a_raw_csv(df=ev.calculate_cliffs_delta_between_L_0_and_modified_patterns(), filename='raw_cliffs_delta_L0_and_modified_patterns.csv',
+                ev.save_a_raw_csv(df=ev.distances_to_modified_patterns, filename='raw_distances_to_modified_patterns.csv',
                                   run_name=run_name, base_results_dir=root_result_dir)
                 ev.save_a_raw_csv(df=ev.calculate_cliffs_delta_between_level_sets(), filename='raw_cliffs_delta.csv',
                                   run_name=run_name, base_results_dir=root_result_dir)
