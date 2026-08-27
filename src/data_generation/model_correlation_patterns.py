@@ -30,15 +30,13 @@ def check_if_psd(correlation_coefficients: [], tol=1e-10):
     return np.all(eigenvalues > -tol)
 
 
-def check_triangle_inequality(r12, r13, r23):
+def check_valid_coefficients(r12, r13, r23):
     """
-    Source: Claude Sonnet 3.5
-    Check if correlation vector satisfies triangle inequality:
+    Check if determinant is bigger than 0 for psd
     1 + r12*r23*r13 ≥ (r12^2 + r23^2 + r13^2)/2
     """
-    lhs = 1 + r12 * r23 * r13
-    rhs = (r12 ** 2 + r23 ** 2 + r13 ** 2) / 2
-    return lhs >= rhs
+    det = 1 - r12 ** 2 - r13 ** 2 - r23 ** 2 + 2 * r12 * r13 * r23
+    return det >= 0
 
 
 def has_two_strong_correlations(correlation_coefficients: []):

@@ -26,6 +26,7 @@ def number_for_completeness(comp):
 
 ROOT_DIR = path.realpath(path.join(path.dirname(__file__), '../..'))
 PATTERNS_TO_MODEL_PATH = path.join(ROOT_DIR, 'src/data_generation/config/correlation_patterns_to_model.csv')
+MODIFIED_PATTERNS_PATH = path.join(ROOT_DIR, 'src/evaluation/config/modified_correlation_patterns.csv')
 DISTRIBUTION_PARAMS_TO_MODEL_PATH = path.join(ROOT_DIR,
                                               'src/data_generation/config/n30_genextreme_nbinom_genextreme_params.csv')
 CONFIRMATORY_SYNTHETIC_DATA_DIR = path.join(ROOT_DIR, 'csts/confirmatory')
