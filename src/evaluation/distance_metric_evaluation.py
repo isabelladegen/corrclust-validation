@@ -1,7 +1,6 @@
 import ast
 import itertools
 from dataclasses import dataclass
-from functools import lru_cache
 from os import path
 
 import numpy as np
@@ -12,6 +11,7 @@ from scipy.stats import mannwhitneyu
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.data_generation.model_correlation_patterns import ModelCorrelationPatterns
 from src.evaluation.knn_for_synthetic_wrapper import KNNForSyntheticWrapper
+from src.evaluation.modified_pattern_generator import ModifiedCols
 from src.utils.configurations import Aggregators, distance_measure_evaluation_results_dir_for, \
     DISTANCE_MEASURE_EVALUATION_CRITERIA_RESULTS_FILE
 from src.utils.distance_measures import distance_calculation_method_for, DistanceMeasures
@@ -31,6 +31,7 @@ class DistanceMeasureCols:
     compared_to_pattern_id: str = "P_y"
     a_x = "Segment Correlation A_x"
     relaxed_p_x = "Relaxed canonical pattern"
+    modified_p_x = "Modified pattern"
     type: str = "distance measure"
     pair1: str = "Pattern pair 1"
     pair2: str = "Pattern pair 2"
@@ -52,6 +53,7 @@ class DistanceMeasureCols:
 @dataclass
 class EvaluationCriteria:
     inter_i: str = "Interpretability: L_0 close to zero"
+    scale_free_inter_i: str = "L_0 well below pattern shifted by 0.1"
     inter_ii: str = "Interpretability: levels sets sig different and correct order"
     inter_iii: str = "Interpretability: higher rate of increase between level sets"
     scale_free_inter_iii: str = "Cliff's'Delta: min scale-free magnitude of level-set separation"
@@ -63,6 +65,7 @@ class EvaluationCriteria:
 
 criteria_short_names = {
     EvaluationCriteria.inter_i: '1. L_0=0',
+    EvaluationCriteria.scale_free_inter_i: "1. L_0 << P'_{x→0.1}",
     EvaluationCriteria.inter_ii: '2. L_d diff',
     EvaluationCriteria.inter_iii: '3. L_d inc',
     EvaluationCriteria.scale_free_inter_iii: '3. min δ',
@@ -72,12 +75,13 @@ criteria_short_names = {
 }
 
 # criteria for which lower values are better
-inverse_criteria = [criteria_short_names[EvaluationCriteria.inter_i], criteria_short_names[EvaluationCriteria.disc_ii]]
+inverse_criteria = [criteria_short_names[EvaluationCriteria.inter_i], criteria_short_names[EvaluationCriteria.disc_ii],
+                    criteria_short_names[EvaluationCriteria.scale_free_inter_i]]
 
 
 class DistanceMetricEvaluation:
     def __init__(self, run_name: str, data_type: str, data_dir: str, measures: [], level_sets: LevelSets,
-                 backend: str = Backends.none.value, round_to: int = 3):
+                 modified_patterns: pd.DataFrame, backend: str = Backends.none.value, round_to: int = 3):
         self.backend = backend
         self.run_name = run_name
         self.data_type = data_type
@@ -92,6 +96,9 @@ class DistanceMetricEvaluation:
         self.adjacent_level_set_indices = self.level_sets.adjacent_indices
         # calculate distances
         self.distances_df = self.__calculate_distances_df()
+        # calculate distances for Level Set 0 to modified patterns
+        self.modified_patterns = modified_patterns
+        self.distances_to_modified_patterns = self.__calculate_L0_to_modified_patterns_distances_df()
         # calculate statistics
         self.per_level_set_distance_statistics_df = self.__calculate_per_level_sets_distance_statistics()
         self.ci_for_mean_differences, self.alpha_for_level_set_ci = self.__calculate_ci_for_mean_differences_between_adjacent_level_sets()
@@ -170,6 +177,38 @@ class DistanceMetricEvaluation:
         ordered.extend(self.__measures)
         return result_df[ordered]
 
+    def calculate_cliffs_delta_between_L_0_and_modified_patterns(self) -> pd.DataFrame:
+        """
+        Calculates Cliff's delta between a subject's real level-set-0 distances
+        (each segment against its own relaxed pattern) and the modified patterns
+        distances (each pattern against its own MAE-shifted by 0.1 version), for each distance
+        measure.
+
+        Deliberately does NOT take the absolute value, unlike
+        calculate_cliffs_delta_between_level_sets. There, direction was meaningless,
+        any pair of level sets could come out positive or negative depending on
+        itertools.combinations' arbitrary ordering, only magnitude mattered. Here,
+        direction is the actual claim being tested: a valid distance function must put
+        the distances between achieved pattern and relaxed pattern stochastically below the distances
+        between achieved pattern and modified pattern, so delta must
+        come out large and negative.
+
+        :returns pd.DataFrame with one row, one column per distance measure, each
+            holding the signed Cliff's delta for that measure.
+        """
+        real_l0_distances = self.distances_df.loc[self.distances_df[DistanceMeasureCols.level_set] == 0]
+        modified_distances = self.distances_to_modified_patterns
+
+        results = {}
+        for measure in self.__measures:
+            x = real_l0_distances[measure]
+            x = x[np.isfinite(x)].to_numpy()
+            y = modified_distances[measure]
+            y = y[np.isfinite(y)].to_numpy()
+            results[measure] = [self.__cliffs_delta(x, y)]
+
+        return pd.DataFrame(results)[self.__measures]
+
     def calculate_level_set_shannon_entropy(self, n_bins: int = 50):
         """
         Calculates the Shannon's entropy for each distance measure per level set
@@ -244,6 +283,7 @@ class DistanceMetricEvaluation:
         columns = self.__measures.copy()
         indices = [
             EvaluationCriteria.inter_i,
+            EvaluationCriteria.scale_free_inter_i,
             EvaluationCriteria.inter_ii,
             EvaluationCriteria.inter_iii,
             EvaluationCriteria.scale_free_inter_iii,
@@ -254,6 +294,7 @@ class DistanceMetricEvaluation:
         ]
 
         inter_i = []
+        scale_free_inter_i = []
         inter_ii = []
         inter_iii = []
         scale_free_inter_iii = []
@@ -266,6 +307,9 @@ class DistanceMetricEvaluation:
         distances_for_level_set0 = self.per_level_set_distance_statistics_df.loc[
             self.per_level_set_distance_statistics_df[DistanceMeasureCols.level_set] == 0][
             [DistanceMeasureCols.type, Aggregators.mean]].round(3).set_index(DistanceMeasureCols.type, drop=True)
+
+        # cliff's delta for level set 0
+        l0_cliffs_delta = self.calculate_cliffs_delta_between_L_0_and_modified_patterns()
 
         # rate of increase df
         rate_of_increase = self.rate_of_increase_between_level_sets()
@@ -295,6 +339,7 @@ class DistanceMetricEvaluation:
         for measure in self.__measures:
             # Interpretability Criteria
             inter_i.append(distances_for_level_set0.loc[measure, Aggregators.mean])
+            scale_free_inter_i.append(round(l0_cliffs_delta[measure].item(),self.__round_to))
             inter_ii.append(
                 self.ci_for_mean_differences[self.ci_for_mean_differences[DistanceMeasureCols.type] == measure][
                     DistanceMeasureCols.stat_diff].eq('lower').all())
@@ -315,6 +360,7 @@ class DistanceMetricEvaluation:
 
         data = [
             inter_i,
+            scale_free_inter_i,
             inter_ii,
             inter_iii,
             scale_free_inter_iii,
@@ -427,6 +473,55 @@ class DistanceMetricEvaluation:
         # add results from distance measures
         for measure, values in resulting_distances.items():
             resulting_df[measure] = values
+        return resulting_df
+
+    def __calculate_L0_to_modified_patterns_distances_df(self):
+        """
+        Calculates distances between each segment's empirical correlation (A_x) and the
+        MAE-boundary-shifted version of its own pattern, i.e. the level-set-0 comparison
+        against the simulated L_0 boundary reference rather than against the segment's own
+        relaxed pattern. Called once per subject.
+
+        :return: pd.DataFrame with columns:
+                DistanceMeasureCols.segment_id -> segment id
+                DistanceMeasureCols.canonical_pattern_id -> canonical pattern id for P_x
+                DistanceMeasureCols.compared_to_pattern_id -> same as canonical_pattern_id,
+                    kept only for structural parity with __calculate_distances_df
+                DistanceMeasureCols.level_set -> always 0, kept for the same reason
+                DistanceMeasureCols.a_x -> segment's empirical correlation coefficients
+                DistanceMeasureCols.modified_p_x -> the MAE-boundary-shifted pattern compared against
+                Measure_names -> column for each measure in self.__measures and the distance for that measure
+        """
+        segment_correlations = self.__labels[
+            [SyntheticDataSegmentCols.segment_id, SyntheticDataSegmentCols.pattern_id,
+             SyntheticDataSegmentCols.actual_correlation]].copy()
+
+        modified_patterns_df = self.modified_patterns.copy()[[ModifiedCols.id, ModifiedCols.modified_pattern]
+        ].rename(columns={ModifiedCols.id: '_modified_pattern_id'})
+
+        merged = segment_correlations.merge(
+            modified_patterns_df,
+            left_on=SyntheticDataSegmentCols.pattern_id,
+            right_on='_modified_pattern_id',
+            how='left'
+        ).drop(columns='_modified_pattern_id')
+
+        resulting_df = pd.DataFrame({
+            DistanceMeasureCols.segment_id: merged[SyntheticDataSegmentCols.segment_id],
+            DistanceMeasureCols.canonical_pattern_id: merged[SyntheticDataSegmentCols.pattern_id],
+            DistanceMeasureCols.compared_to_pattern_id: merged[SyntheticDataSegmentCols.pattern_id],
+            DistanceMeasureCols.level_set: 0,
+            DistanceMeasureCols.a_x: merged[SyntheticDataSegmentCols.actual_correlation],
+            DistanceMeasureCols.modified_p_x: merged[ModifiedCols.modified_pattern],
+        })
+
+        for measure in self.__measures:
+            calc_distance = distance_calculation_method_for(measure)
+            resulting_df[measure] = resulting_df.apply(
+                lambda row: calc_distance(row[DistanceMeasureCols.a_x], row[DistanceMeasureCols.modified_p_x]),
+                axis=1
+            )
+
         return resulting_df
 
     def __calculate_ci_for_mean_differences_between_adjacent_level_sets(self, alpha: float = 0.05,

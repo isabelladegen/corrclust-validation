@@ -5,6 +5,7 @@ from hamcrest import *
 
 from src.evaluation.distance_metric_evaluation import DistanceMetricEvaluation, EvaluationCriteria, \
     read_csv_of_raw_values_for_all_criteria, DistanceMeasureCols
+from src.evaluation.modified_pattern_generator import read_modified_patterns
 from src.utils.configurations import Aggregators
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.level_sets import LevelSets
@@ -21,7 +22,8 @@ images_dir = TEST_IMAGES_DIR
 sel_measures = [DistanceMeasures.l2_cor_dist, DistanceMeasures.log_frob_cor_dist,
                 DistanceMeasures.foerstner_cor_dist]
 ev = DistanceMetricEvaluation(run_name=a_ds_name, data_type=SyntheticDataType.non_normal_correlated,
-                              data_dir=test_data_dir, measures=sel_measures, level_sets=LevelSets(), backend=backend)
+                              data_dir=test_data_dir, measures=sel_measures, level_sets=LevelSets(), modified_patterns=
+                              read_modified_patterns(), backend=backend)
 
 
 def test_calculates_distances_for_all_empirical_correlations_to_all_canonical_patterns():
@@ -181,12 +183,16 @@ def test_different_bins_for_entropy_per_level_set():
 
 def test_calculates_raw_results_for_each_criteria_and_each_distance_measure():
     df = ev.raw_results_for_each_criteria()
-    assert_that(df.shape, is_((8, len(sel_measures))))
+    assert_that(df.shape, is_((9, len(sel_measures))))
     # check value added for each measure
     # level 0 avg distances
     assert_that(df.loc[EvaluationCriteria.inter_i, sel_measures[0]], is_(0.072))  # l2
     assert_that(df.loc[EvaluationCriteria.inter_i, sel_measures[1]], is_(7.219))  # log frob
     assert_that(df.loc[EvaluationCriteria.inter_i, sel_measures[2]], is_(7.549))  # Förstner
+    # assert scale free inter one
+    assert_that(df.loc[EvaluationCriteria.scale_free_inter_i, sel_measures[0]], is_(-0.93)) # l2
+    assert_that(df.loc[EvaluationCriteria.scale_free_inter_i, sel_measures[1]], is_(-0.001)) # log frob
+    assert_that(df.loc[EvaluationCriteria.scale_free_inter_i, sel_measures[2]], is_(0.988)) # Förstner
     # check each criterion is calculated
     # means of all adjacent level sets are sig different
     assert_that(df.loc[EvaluationCriteria.inter_ii, sel_measures[0]], is_(True))  # l2
@@ -206,6 +212,12 @@ def test_calculates_raw_results_for_each_criteria_and_each_distance_measure():
     assert_that(df.loc[EvaluationCriteria.disc_iii, sel_measures[2]], is_(0.044))  # Förstner
     # number of nan's
     assert_that(df.loc[EvaluationCriteria.stab_ii, sel_measures[0]], is_(0))
+
+
+def test_calculates_distances_for_L0_to_modfied_patterns():
+    df = ev.distances_to_modified_patterns
+
+    assert_that(df.shape, is_((100, 9)))
 
 
 def test_saves_results(tmp_path):
