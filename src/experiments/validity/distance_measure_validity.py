@@ -114,7 +114,7 @@ INITIAL_PAPER_RULE = ValidityRule(
 # strictly must pass for rule 1-3, 1 and 3 now scale free with cliff's delta, 2 corrected for independence issue
 REVIEWED_RULES = ValidityRule(
     structural_criteria=[EvaluationCriteria.scale_free_inter_i, EvaluationCriteria.inter_ii,
-                         EvaluationCriteria.scale_free_inter_iii, EvaluationCriteria.disc_ii],
+                         EvaluationCriteria.scale_free_inter_iii],
     structural_must_hold=[EvaluationCriteria.scale_free_inter_i, EvaluationCriteria.inter_ii,
                           EvaluationCriteria.scale_free_inter_iii],
     structural_minimum=0,
@@ -226,36 +226,66 @@ class DistanceMeasureValidity:
     def convergent_validity(self) -> bool:
         return bool(self.structural_validity()[ValidityResultColumns.structural].sum() >= 2)
 
+    def discriminant_validity_details(self) -> pd.DataFrame:
+        """Per-criterion detail for both discriminant checks; no_pattern and degradation can use
+        different criteria/rules (see ValidityRule), so each is evaluated independently. Ends with
+        Discriminant, not Overall."""
+        result = pd.DataFrame(index=self._normal_100.index)
+
+        no_pattern_satisfied = {}
+        for criterion in self._validity_rule.no_pattern.criteria:
+            short = criteria_short_names[criterion]
+            satisfied = ~self._passes(self._raw_100, criterion)
+            result[f"{short}_raw_mean"] = self._raw_100[(criterion, Aggregators.mean)]
+            result[f"{short}_raw_pass"] = satisfied
+            no_pattern_satisfied[criterion] = satisfied
+        result[ValidityResultColumns.discriminant_no_pattern] = self._validity_rule.no_pattern.evaluate(
+            no_pattern_satisfied)
+
+        degradation_satisfied = {}
+        for criterion in self._validity_rule.degradation.criteria:
+            short = criteria_short_names[criterion]
+            satisfied = self._is_worse(self._downsampled_100, self._normal_100, criterion)
+            result[f"{short}_ds_mean"] = self._downsampled_100[(criterion, Aggregators.mean)]
+            result[f"{short}_ds_pass"] = satisfied
+            degradation_satisfied[criterion] = satisfied
+        result[ValidityResultColumns.discriminant_degradation] = self._validity_rule.degradation.evaluate(
+            degradation_satisfied)
+
+        result[ValidityResultColumns.discriminant] = (
+                result[ValidityResultColumns.discriminant_no_pattern]
+                & result[ValidityResultColumns.discriminant_degradation])
+        return result
+
     def discriminant_validity(self) -> pd.DataFrame:
-        no_pattern_satisfied = {c: ~self._passes(self._raw_100, c) for c in self._validity_rule.no_pattern.criteria}
-        no_pattern_pass = self._validity_rule.no_pattern.evaluate(no_pattern_satisfied)
+        details = self.discriminant_validity_details()
+        cols = [ValidityResultColumns.discriminant_no_pattern, ValidityResultColumns.discriminant_degradation,
+                ValidityResultColumns.discriminant]
+        return details[cols]
 
-        degradation_satisfied = {c: self._is_worse(self._downsampled_100, self._normal_100, c)
-                                 for c in self._validity_rule.degradation.criteria}
-        degrades_pass = self._validity_rule.degradation.evaluate(degradation_satisfied)
-
-        return pd.DataFrame({
-            ValidityResultColumns.discriminant_no_pattern: no_pattern_pass,
-            ValidityResultColumns.discriminant_degradation: degrades_pass,
-            ValidityResultColumns.discriminant: no_pattern_pass & degrades_pass,
-        })
+    def external_validity_details(self) -> pd.DataFrame:
+        """Per-criterion structural detail for each of the four external conditions (same structural
+        rule reused as-is, see class docstring). Ends with External, not Overall."""
+        result = pd.DataFrame(index=self._normal_100.index)
+        conditions = {
+            ValidityResultColumns.external_normal_70: self._normal_70,
+            ValidityResultColumns.external_normal_10: self._normal_10,
+            ValidityResultColumns.external_non_normal_100: self._non_normal_100,
+            ValidityResultColumns.external_non_normal_10: self._non_normal_10,
+        }
+        for label, df in conditions.items():
+            detail = self._structural_result(df).add_prefix(f"{label}_")
+            detail = detail.rename(columns={f"{label}_{ValidityResultColumns.structural}": label})
+            result = result.join(detail)
+        result[ValidityResultColumns.external] = result[list(conditions.keys())].all(axis=1)
+        return result
 
     def external_validity(self) -> pd.DataFrame:
-        # unchanged below: each call to _structural_result already goes through
-        # self._rule.structural, so external reuses the same rule automatically
-        result = pd.DataFrame(index=self._normal_100.index)
-        result[ValidityResultColumns.external_normal_70] = self._structural_result(self._normal_70)[
-            ValidityResultColumns.structural]
-        result[ValidityResultColumns.external_normal_10] = self._structural_result(self._normal_10)[
-            ValidityResultColumns.structural]
-        result[ValidityResultColumns.external_non_normal_100] = self._structural_result(self._non_normal_100)[
-            ValidityResultColumns.structural]
-        result[ValidityResultColumns.external_non_normal_10] = self._structural_result(self._non_normal_10)[
-            ValidityResultColumns.structural]
+        details = self.external_validity_details()
         cols = [ValidityResultColumns.external_normal_70, ValidityResultColumns.external_normal_10,
-                ValidityResultColumns.external_non_normal_100, ValidityResultColumns.external_non_normal_10]
-        result[ValidityResultColumns.external] = result[cols].all(axis=1)
-        return result
+                ValidityResultColumns.external_non_normal_100, ValidityResultColumns.external_non_normal_10,
+                ValidityResultColumns.external]
+        return details[cols]
 
     def overall_validity(self) -> pd.DataFrame:
         overall = pd.concat([self.structural_validity(), self.criterion_validity(),

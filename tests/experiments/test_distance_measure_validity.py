@@ -433,7 +433,7 @@ _DROPPED_RULE_MANDATORY_WORSE_DISC_II_IMPROVES = {
     EvaluationCriteria.inter_iii: 0.75,  # worse than 0.9
     EvaluationCriteria.disc_i: 4.5,  # unused by this rule
     EvaluationCriteria.disc_ii: 1.0,  # improves from 2.0, not worse
-    EvaluationCriteria.disc_iii: 0.99,  # unused by this rule
+    EvaluationCriteria.disc_iii: 0.985,  # mandatory here, worse than 0.99
 }
 
 _DROPPED_RULE_ONE_MANDATORY_DOES_NOT_WORSEN = {

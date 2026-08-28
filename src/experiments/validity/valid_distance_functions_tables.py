@@ -103,3 +103,5 @@ if __name__ == "__main__":
 
     # overall validity results
     validity.overall_validity().to_csv(path.join(save_to_folder, 'overall_validity_results.csv'))
+    validity.external_validity_details().to_csv(path.join(save_to_folder, 'external_validity_results.csv'))
+    validity.discriminant_validity_details().to_csv(path.join(save_to_folder, 'discriminant_validity_results.csv'))
