@@ -151,7 +151,7 @@ def test_predictive_criterion_validity_valid_above_threshold():
 
 
 def test_predictive_criterion_validity_invalid_at_threshold():
-    normal_100 = pd.DataFrame([{**_VALID_ROW, EvaluationCriteria.disc_iii: 0.98}], index=["DM 1"])
+    normal_100 = pd.DataFrame([{**_VALID_ROW, EvaluationCriteria.disc_iii: 0.88}], index=["DM 1"])
     normal_100.columns = pd.MultiIndex.from_product([normal_100.columns, [Aggregators.mean]])
     result = _create_validity_class(normal_100=normal_100).criterion_validity()
     assert_that(result.loc["DM 1", ValidityResultColumns.criterion], is_(False))

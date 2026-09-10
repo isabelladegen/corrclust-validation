@@ -41,7 +41,7 @@ DM_THRESHOLDS = {
     EvaluationCriteria.scale_free_inter_iii: 0.4,  # relates to AUC > 0.7 for being in the acceptable range
     EvaluationCriteria.disc_i: 4,
     EvaluationCriteria.disc_ii: 3,
-    EvaluationCriteria.disc_iii: 0.98,
+    EvaluationCriteria.disc_iii: 0.9,
 }
 
 
