@@ -200,7 +200,7 @@ _REFERENCE_ROW = {
 # worse on every degradation criterion, still individually valid
 _ALL_WORSE_ROW = {
     EvaluationCriteria.inter_i: 0.08,
-    EvaluationCriteria.inter_ii: 1.0,
+    EvaluationCriteria.inter_ii: 0,
     EvaluationCriteria.inter_iii: 0.75,
     EvaluationCriteria.disc_i: 4.2,
     EvaluationCriteria.disc_ii: 2.5,
@@ -208,7 +208,7 @@ _ALL_WORSE_ROW = {
 }
 
 # worse on 4 of 5 (predictive criterion validity held at the reference value)
-_FOUR_OF_FIVE_WORSE_ROW = {**_ALL_WORSE_ROW, EvaluationCriteria.disc_iii: 0.99}
+_FOUR_OF_FIVE_WORSE_ROW = {**_ALL_WORSE_ROW, EvaluationCriteria.disc_ii: 2.0}
 
 # worse on only 3 of 5 (identity preservation also held at the reference value)
 _THREE_OF_FIVE_WORSE_ROW = {**_FOUR_OF_FIVE_WORSE_ROW, EvaluationCriteria.inter_i: 0.05}
@@ -305,6 +305,18 @@ def test_external_validity_invalid_when_non_normal_10_condition_fails():
     invalid_table.columns = pd.MultiIndex.from_product([invalid_table.columns, [Aggregators.mean]])
     result = _create_validity_class(normal_70=valid_table, normal_10=valid_table,
                                     non_normal_100=valid_table, non_normal_10=invalid_table).external_validity()
+    assert_that(result.loc["DM 1", ValidityResultColumns.external], is_(False))
+
+
+_CRITERION_INVALID_ROW = {**_VALID_ROW, EvaluationCriteria.disc_iii: 0.5}  # fails disc_iii, structural still holds
+
+def test_external_validity_invalid_when_criterion_predictive_fails_in_one_condition():
+    valid_table = pd.DataFrame([_VALID_ROW], index=["DM 1"])
+    valid_table.columns = pd.MultiIndex.from_product([valid_table.columns, [Aggregators.mean]])
+    cp_invalid_table = pd.DataFrame([_CRITERION_INVALID_ROW], index=["DM 1"])
+    cp_invalid_table.columns = pd.MultiIndex.from_product([cp_invalid_table.columns, [Aggregators.mean]])
+    result = _create_validity_class(normal_70=cp_invalid_table, normal_10=valid_table,
+                                    non_normal_100=valid_table, non_normal_10=valid_table).external_validity()
     assert_that(result.loc["DM 1", ValidityResultColumns.external], is_(False))
 
 

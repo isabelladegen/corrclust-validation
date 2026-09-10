@@ -102,11 +102,11 @@ INITIAL_PAPER_RULE = ValidityRule(
     structural_minimum=4,
     discriminant_no_pattern_criteria=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii,
                                       EvaluationCriteria.inter_iii, EvaluationCriteria.disc_i,
-                                      EvaluationCriteria.disc_ii, EvaluationCriteria.disc_iii],
+                                      EvaluationCriteria.disc_ii],
     discriminant_no_pattern_minimum=4,
     discriminant_degradation_criteria=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii,
                                        EvaluationCriteria.inter_iii, EvaluationCriteria.disc_i,
-                                       EvaluationCriteria.disc_ii, EvaluationCriteria.disc_iii],
+                                       EvaluationCriteria.disc_ii],
     discriminant_degradation_minimum=4,
     criterion_predictive=EvaluationCriteria.disc_iii,
 )
@@ -118,39 +118,36 @@ REVIEWED_RULES = ValidityRule(
     structural_must_hold=[EvaluationCriteria.scale_free_inter_i, EvaluationCriteria.inter_ii,
                           EvaluationCriteria.scale_free_inter_iii],
     structural_minimum=0,
-    discriminant_no_pattern_criteria=[EvaluationCriteria.scale_free_inter_i,
-                                      EvaluationCriteria.inter_ii,
-                                      EvaluationCriteria.scale_free_inter_iii, EvaluationCriteria.disc_iii],
+    discriminant_no_pattern_criteria=[EvaluationCriteria.scale_free_inter_i, EvaluationCriteria.inter_ii,
+                                      EvaluationCriteria.scale_free_inter_iii],
     discriminant_no_pattern_must_hold=[EvaluationCriteria.scale_free_inter_i, EvaluationCriteria.inter_ii,
-                                       EvaluationCriteria.scale_free_inter_iii, EvaluationCriteria.disc_iii],
+                                       EvaluationCriteria.scale_free_inter_iii],
     discriminant_no_pattern_minimum=0,
     discriminant_degradation_criteria=[EvaluationCriteria.scale_free_inter_i,
                                        EvaluationCriteria.inter_ii,
-                                       EvaluationCriteria.scale_free_inter_iii, EvaluationCriteria.disc_iii],
-    discriminant_degradation_must_hold=[EvaluationCriteria.scale_free_inter_i, EvaluationCriteria.scale_free_inter_iii,
-                                        EvaluationCriteria.disc_iii],
+                                       EvaluationCriteria.scale_free_inter_iii],
+    discriminant_degradation_must_hold=[EvaluationCriteria.scale_free_inter_i, EvaluationCriteria.scale_free_inter_iii],
     # allowing the levels set still to pass structural 2
     discriminant_degradation_minimum=0,
-    criterion_predictive=EvaluationCriteria.disc_iii,
+    criterion_predictive=EvaluationCriteria.disc_iii,  # run for construct, discriminant and external!
 )
 
 # removing entropy based rules since not derivable from theory
 STRICT_MUST_PASS_RULES = ValidityRule(
     structural_criteria=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii, EvaluationCriteria.inter_iii,
                          EvaluationCriteria.disc_i, EvaluationCriteria.disc_ii],
-    structural_must_hold=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii, EvaluationCriteria.inter_iii],
+    structural_must_hold=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii],
     structural_minimum=0,  # entropy can fail
     discriminant_no_pattern_criteria=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii,
                                       EvaluationCriteria.inter_iii, EvaluationCriteria.disc_i,
-                                      EvaluationCriteria.disc_ii, EvaluationCriteria.disc_iii],
+                                      EvaluationCriteria.disc_ii],
     discriminant_no_pattern_must_hold=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii,
-                                       EvaluationCriteria.inter_iii, EvaluationCriteria.disc_iii],
+                                       EvaluationCriteria.inter_iii],
     discriminant_no_pattern_minimum=0,  # entropy can fail
     discriminant_degradation_criteria=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii,
                                        EvaluationCriteria.inter_iii, EvaluationCriteria.disc_i,
-                                       EvaluationCriteria.disc_ii, EvaluationCriteria.disc_iii],
-    discriminant_degradation_must_hold=[EvaluationCriteria.scale_free_inter_i, EvaluationCriteria.inter_iii,
-                                        EvaluationCriteria.disc_iii],
+                                       EvaluationCriteria.disc_ii],
+    discriminant_degradation_must_hold=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_iii],
     # allwoing the levels set still to pass structural 2
     discriminant_degradation_minimum=0,  # entropy can fail
     criterion_predictive=EvaluationCriteria.disc_iii,
@@ -161,16 +158,14 @@ DROPPING_OVERALL_ENTROPY = ValidityRule(
                          EvaluationCriteria.disc_ii],
     structural_minimum=4,
     discriminant_no_pattern_criteria=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii,
-                                      EvaluationCriteria.inter_iii, EvaluationCriteria.disc_ii,
-                                      EvaluationCriteria.disc_iii],
+                                      EvaluationCriteria.inter_iii, EvaluationCriteria.disc_ii],
     discriminant_no_pattern_must_hold=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii,
-                                       EvaluationCriteria.inter_iii, EvaluationCriteria.disc_iii],
+                                       EvaluationCriteria.inter_iii],
     discriminant_no_pattern_minimum=0,  # level set entropy can pass by coincidence, everything else must fail
     discriminant_degradation_criteria=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii,
-                                       EvaluationCriteria.inter_iii, EvaluationCriteria.disc_ii,
-                                       EvaluationCriteria.disc_iii],
+                                       EvaluationCriteria.inter_iii, EvaluationCriteria.disc_ii, ],
     discriminant_degradation_must_hold=[EvaluationCriteria.inter_i, EvaluationCriteria.inter_ii,
-                                        EvaluationCriteria.inter_iii, EvaluationCriteria.disc_iii],
+                                        EvaluationCriteria.inter_iii],
     discriminant_degradation_minimum=0,  # level set entropy can stay flat, everything else must worsen
     criterion_predictive=EvaluationCriteria.disc_iii,
 )
@@ -232,6 +227,10 @@ class DistanceMeasureValidity:
         Discriminant, not Overall."""
         result = pd.DataFrame(index=self._normal_100.index)
 
+        # criterion
+        cp = self._validity_rule.criterion_predictive
+        cp_short = criteria_short_names[cp]
+
         no_pattern_satisfied = {}
         for criterion in self._validity_rule.no_pattern.criteria:
             short = criteria_short_names[criterion]
@@ -239,8 +238,11 @@ class DistanceMeasureValidity:
             result[f"{short}_raw_mean"] = self._raw_100[(criterion, Aggregators.mean)]
             result[f"{short}_raw_pass"] = satisfied
             no_pattern_satisfied[criterion] = satisfied
-        result[ValidityResultColumns.discriminant_no_pattern] = self._validity_rule.no_pattern.evaluate(
-            no_pattern_satisfied)
+        cp_no_pattern = ~self._passes(self._raw_100, cp)
+        result[f"{cp_short}_raw_mean"] = self._raw_100[(cp, Aggregators.mean)]
+        result[f"{cp_short}_raw_pass"] = cp_no_pattern
+        result[ValidityResultColumns.discriminant_no_pattern] = (
+                self._validity_rule.no_pattern.evaluate(no_pattern_satisfied) & cp_no_pattern)
 
         degradation_satisfied = {}
         for criterion in self._validity_rule.degradation.criteria:
@@ -249,8 +251,11 @@ class DistanceMeasureValidity:
             result[f"{short}_ds_mean"] = self._downsampled_100[(criterion, Aggregators.mean)]
             result[f"{short}_ds_pass"] = satisfied
             degradation_satisfied[criterion] = satisfied
-        result[ValidityResultColumns.discriminant_degradation] = self._validity_rule.degradation.evaluate(
-            degradation_satisfied)
+        cp_degradation = self._is_worse(self._downsampled_100, self._normal_100, cp)
+        result[f"{cp_short}_ds_mean"] = self._downsampled_100[(cp, Aggregators.mean)]
+        result[f"{cp_short}_ds_pass"] = cp_degradation
+        result[ValidityResultColumns.discriminant_degradation] = (
+                    self._validity_rule.degradation.evaluate(degradation_satisfied) & cp_degradation)
 
         result[ValidityResultColumns.discriminant] = (
                 result[ValidityResultColumns.discriminant_no_pattern]
@@ -267,6 +272,8 @@ class DistanceMeasureValidity:
         """Per-criterion structural detail for each of the four external conditions (same structural
         rule reused as-is, see class docstring). Ends with External, not Overall."""
         result = pd.DataFrame(index=self._normal_100.index)
+        cp = self._validity_rule.criterion_predictive
+
         conditions = {
             ValidityResultColumns.external_normal_70: self._normal_70,
             ValidityResultColumns.external_normal_10: self._normal_10,
@@ -276,6 +283,10 @@ class DistanceMeasureValidity:
         for label, df in conditions.items():
             detail = self._structural_result(df).add_prefix(f"{label}_")
             detail = detail.rename(columns={f"{label}_{ValidityResultColumns.structural}": label})
+            cp_pass = self._passes(df, cp)
+            detail[f"{label}_{ValidityResultColumns.mean_value_for(cp)}"] = df[(cp, Aggregators.mean)]
+            detail[f"{label}_{ValidityResultColumns.result_for(cp)}"] = cp_pass
+            detail[label] = detail[label] & cp_pass
             result = result.join(detail)
         result[ValidityResultColumns.external] = result[list(conditions.keys())].all(axis=1)
         return result
