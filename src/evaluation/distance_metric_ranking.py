@@ -16,11 +16,13 @@ class RankingStats:
 
 
 class DistanceMetricRanking:
-    def __init__(self, raw_criteria_data: {}, distance_measures: [], round_to: int = 3):
+    def __init__(self, raw_criteria_data: {}, distance_measures: [], ranking_criteria: {}, round_to: int = 3):
         """
         Class to rank distance metric both for one or multiple datasets. Rank 1 is best!
         :param raw_criteria_data: dictionary with key=ds-name and value= DistanceMeasureEvaluation df of raw values
         :param distance_measures: list of distance measures (see DistanceMeasures for valid values) that will be ranked
+        :param ranking_criteria: dictionary of which criteria to rank and value True (for lower values are better),
+        False (for higher values are better), or boolean (True is better)
         we assume the raw_criteria_data includes the results for each measure, if it includes more, only the ones
         provided here will be ranked
         """
@@ -31,14 +33,7 @@ class DistanceMetricRanking:
         # True: ascending -> higher values get higher ranks, i.e.lower values are better
         # False: descending -> lower values get higher ranks, i.e. higher values are better
         # 'boolean': special case for pass/fail criterion -> True best rank
-        self.ranking_criteria = {
-            EvaluationCriteria.inter_i: True,  # L0 closer to zero
-            EvaluationCriteria.inter_ii: 'boolean',  # significant differences LS
-            EvaluationCriteria.inter_iii: False,  # higher average rate of increase
-            EvaluationCriteria.disc_i: False,  # higher overall entropy
-            EvaluationCriteria.disc_ii: True,  # lower average LS entropy
-            EvaluationCriteria.disc_iii: False,  # higher F1 score
-        }
+        self.ranking_criteria = ranking_criteria
 
     def ranking_df_for_ds(self, run_name: str, root_results_dir: str = None, data_type: str = None,
                           data_dir: str = None):

@@ -3,7 +3,7 @@ from collections import Counter
 
 import pandas as pd
 
-from src.evaluation.distance_metric_evaluation import read_csv_of_raw_values_for_all_criteria
+from src.evaluation.distance_metric_evaluation import read_csv_of_raw_values_for_all_criteria, EvaluationCriteria
 from src.evaluation.distance_metric_ranking import DistanceMetricRanking
 from src.utils.configurations import ROOT_RESULTS_DIR, GENERATED_DATASETS_FILE_PATH, SYNTHETIC_DATA_DIR, \
     IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR
@@ -23,7 +23,21 @@ def run_ranking_for(data_dirs: [str], dataset_types: [str], run_names: [str], ro
                                                                           base_results_dir=root_result_dir)
                 raw_criteria_data[run_name] = raw_criteria_df
             # 2. rank (this also saves the per criterion ranking as well as the overall)
-            ranker = DistanceMetricRanking(raw_criteria_data, distance_measures)
+            # prereview_ranking_criteria = {
+            #     EvaluationCriteria.inter_i: True,  # L0 closer to zero
+            #     EvaluationCriteria.inter_ii: 'boolean',  # significant differences LS
+            #     EvaluationCriteria.inter_iii: False,  # higher average rate of increase
+            #     EvaluationCriteria.disc_i: False,  # higher overall entropy
+            #     EvaluationCriteria.disc_ii: True,  # lower average LS entropy
+            #     EvaluationCriteria.disc_iii: False,  # higher F1 score
+            # }
+            ranking_criteria = {
+                EvaluationCriteria.scale_free_inter_i: True,  # smaller cliff's delta is better
+                EvaluationCriteria.inter_ii: 'boolean',  # significant differences LS
+                EvaluationCriteria.scale_free_inter_iii: False,  # higher cliff's delta is better
+                EvaluationCriteria.disc_iii: False,  # higher F1 score
+            }
+            ranker = DistanceMetricRanking(raw_criteria_data, distance_measures, ranking_criteria)
             overall_rank = ranker.calculate_overall_rank(overall_ds_name=overall_ds_name,
                                                          root_results_dir=root_result_dir,
                                                          data_type=data_type, data_dir=data_dir)

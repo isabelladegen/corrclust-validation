@@ -20,7 +20,15 @@ raw1 = read_csv_of_raw_values_for_all_criteria(ds_name1, data_type, test_data_di
 ds_name2 = "test-ranking2"
 raw2 = read_csv_of_raw_values_for_all_criteria(ds_name2, data_type, test_data_dir, base_results_dir)
 raw_criteria_data = {ds_name1: raw1, ds_name2: raw2}
-ranker = DistanceMetricRanking(raw_criteria_data, distance_measures)
+ranking_criteria = {
+            EvaluationCriteria.inter_i: True,  # L0 closer to zero
+            EvaluationCriteria.inter_ii: 'boolean',  # significant differences LS
+            EvaluationCriteria.inter_iii: False,  # higher average rate of increase
+            EvaluationCriteria.disc_i: False,  # higher overall entropy
+            EvaluationCriteria.disc_ii: True,  # lower average LS entropy
+            EvaluationCriteria.disc_iii: False,  # higher F1 score
+        }
+ranker = DistanceMetricRanking(raw_criteria_data, distance_measures, ranking_criteria)
 
 
 def test_ranks_each_distance_metric_criteria():
