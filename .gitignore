@@ -212,3 +212,4 @@ wandb/
 /src/visualisation/elliptop_illustrations/img/
 *beforeAug26
 /results/
+/validity_results/
