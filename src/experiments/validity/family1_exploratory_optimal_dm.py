@@ -20,16 +20,14 @@ if __name__ == "__main__":
     complete = SYNTHETIC_DATA_DIR
 
     # hypotheses, sequential list of tuples (data_type, data_dir, measure 1, measure 2)
-    # from distance_measures_mean_ranks.csv - manually created
-    # nn - complete (L3 and dt_L2 are equivalent)
-    # nn - partial (dt_L2 cest but equivalent to L3 are equivalent)
+    # created from dm_hypothesis_by_overall_ranking.csv per data variant
     hypotheses = [
-        (normal, complete, DistanceMeasures.l3_cor_dist, DistanceMeasures.l1_cor_dist),
-        (normal, partial, DistanceMeasures.l3_cor_dist, DistanceMeasures.l1_cor_dist),
-        (normal, sparse, DistanceMeasures.l3_cor_dist, DistanceMeasures.l1_cor_dist),
-        (non_normal, complete, DistanceMeasures.l3_cor_dist, DistanceMeasures.l1_cor_dist),
-        (non_normal, partial, DistanceMeasures.dot_transform_l2, DistanceMeasures.l1_cor_dist),
-        (non_normal, sparse, DistanceMeasures.dot_transform_l2, DistanceMeasures.l3_cor_dist),
+        (normal, complete, DistanceMeasures.l1_cor_dist, DistanceMeasures.dot_transform_l1),
+        (normal, partial, DistanceMeasures.l1_cor_dist, DistanceMeasures.dot_transform_l1),
+        (normal, sparse, DistanceMeasures.l1_cor_dist, DistanceMeasures.dot_transform_l1),
+        (non_normal, complete, DistanceMeasures.l1_cor_dist, DistanceMeasures.dot_transform_l1),
+        (non_normal, partial, DistanceMeasures.l1_cor_dist, DistanceMeasures.dot_transform_l1),
+        (non_normal, sparse, DistanceMeasures.l1_cor_dist, DistanceMeasures.dot_transform_l1),
     ]
 
     # evaluate all hypotheses
