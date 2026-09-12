@@ -1,8 +1,7 @@
 import pandas as pd
 from hamcrest import *
 
-from src.evaluation.boundary_pattern_generator import ModifiedPatternGenerator, ModifiedCols, save_modified_patterns, \
-    read_modified_patterns
+from src.evaluation.modified_pattern_generator import ModifiedPatternGenerator, ModifiedCols
 
 
 def test_creates_23_patterns_all_boundary_inwards_of_the_elliptope():

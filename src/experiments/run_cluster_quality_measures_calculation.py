@@ -175,11 +175,12 @@ if __name__ == "__main__":
     # data_types = [SyntheticDataType.normal_correlated]
     # data_dirs = [SYNTHETIC_DATA_DIR]
 
+    # For tests basic setup
     distance_measures = [
-        DistanceMeasures.dot_transform_l2,
+        DistanceMeasures.l1_cor_dist, DistanceMeasures.l1_with_ref
     ]
-    data_types = [SyntheticDataType.non_normal_correlated]
-    data_dirs = [IRREGULAR_P30_DATA_DIR]
+    data_types = [SyntheticDataType.normal_correlated, SyntheticDataType.non_normal_correlated]
+    data_dirs = [SYNTHETIC_DATA_DIR]
 
     internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb,
                          ClusteringQualityMeasures.vrc, ClusteringQualityMeasures.dbi]
@@ -219,4 +220,4 @@ if __name__ == "__main__":
                                                              distance_measure=distance_measure, data_type=data_type,
                                                              data_dir=data_dir, results_dir=results_dir,
                                                              internal_measures=internal_measures,
-                                                             n_cores=6)
+                                                             n_cores=8)

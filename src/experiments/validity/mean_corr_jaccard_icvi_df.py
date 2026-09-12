@@ -49,6 +49,8 @@ def calculate_mean_sd_for(distance_measures, internal_measures, data_type, data_
 
 
 if __name__ == "__main__":
+    """This requires correlation_summary.csv --> internal_measure_assessment, 
+    which needs run_cluster_quality_measures_calculation -> which needs to run describe_bad_partitions.py"""
     distance_measures = [DistanceMeasures.l1_cor_dist,  # lp norms
                          DistanceMeasures.l2_cor_dist,
                          DistanceMeasures.l3_cor_dist,
