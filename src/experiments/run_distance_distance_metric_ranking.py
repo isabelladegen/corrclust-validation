@@ -6,7 +6,7 @@ import pandas as pd
 from src.evaluation.distance_metric_evaluation import read_csv_of_raw_values_for_all_criteria, EvaluationCriteria
 from src.evaluation.distance_metric_ranking import DistanceMetricRanking, RankingStats
 from src.utils.configurations import ROOT_RESULTS_DIR, GENERATED_DATASETS_FILE_PATH, SYNTHETIC_DATA_DIR, \
-    IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR, distance_measure_evaluation_results_dir_for
+    IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR, distance_measure_evaluation_results_dir_for, ResultsType
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 
@@ -90,7 +90,8 @@ def run_ranking_for(data_dirs: [str], dataset_types: [str], run_names: [str], ro
         mean_ranks = combined.mean(axis=0)
         tiers = tiers_from_mean_ranks(mean_ranks)
         tiers_df = tiers_to_df(tiers)
-        overall_folder = os.path.join(root_result_dir, overall_ds_name)
+        folder_name = os.path.join(root_result_dir, ResultsType.distance_measure_evaluation)
+        overall_folder = os.path.join(folder_name, overall_ds_name)
         os.makedirs(overall_folder, exist_ok=True)
         tiers_df.to_csv(str(os.path.join(overall_folder, "dm_hypothesis_by_overall_ranking.csv")), index=False)
         readable_tiers = [(measures, float(rank_value)) for measures, rank_value in tiers]

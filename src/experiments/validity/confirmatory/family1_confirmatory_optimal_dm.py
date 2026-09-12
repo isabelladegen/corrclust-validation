@@ -21,12 +21,12 @@ if __name__ == "__main__":
 
     # preregistered family 1 hypotheses
     hypotheses = [
-        (normal, complete, DistanceMeasures.l3_cor_dist, DistanceMeasures.l1_cor_dist),
-        (normal, partial, DistanceMeasures.l3_cor_dist, DistanceMeasures.l1_cor_dist),
-        (non_normal, complete, DistanceMeasures.l3_cor_dist, DistanceMeasures.l1_cor_dist),
-        (non_normal, partial, DistanceMeasures.dot_transform_l2, DistanceMeasures.l1_cor_dist),
-        (non_normal, sparse, DistanceMeasures.dot_transform_l2, DistanceMeasures.l3_cor_dist),
-        (normal, sparse, DistanceMeasures.l3_cor_dist, DistanceMeasures.l1_cor_dist),
+        (non_normal, complete, DistanceMeasures.l1_cor_dist, DistanceMeasures.dot_transform_l1),
+        (normal, complete, DistanceMeasures.l1_cor_dist, DistanceMeasures.dot_transform_l1),
+        (normal, partial, DistanceMeasures.l1_cor_dist, DistanceMeasures.dot_transform_l1),
+        (non_normal, partial, DistanceMeasures.l1_cor_dist, DistanceMeasures.dot_transform_l1),
+        (non_normal, sparse, DistanceMeasures.l1_cor_dist, DistanceMeasures.dot_transform_l1),
+        (normal, sparse, DistanceMeasures.l1_cor_dist, DistanceMeasures.dot_transform_l1),
     ]
 
     # evaluate all hypotheses
