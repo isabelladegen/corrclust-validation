@@ -6,10 +6,20 @@ import pandas as pd
 from src.evaluation.distance_metric_evaluation import read_csv_of_raw_values_for_all_criteria, EvaluationCriteria
 from src.evaluation.distance_metric_ranking import DistanceMetricRanking, RankingStats
 from src.utils.configurations import ROOT_RESULTS_DIR, GENERATED_DATASETS_FILE_PATH, SYNTHETIC_DATA_DIR, \
-    IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR
+    IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR, distance_measure_evaluation_results_dir_for
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 
+def tiers_from_mean_ranks(mean_ranks: pd.Series):
+    """returns list of (list_of_tied_measures, rank_value) tuples, best (lowest) first"""
+    return [(mean_ranks.index[mean_ranks == rank_value].tolist(), rank_value)
+           for rank_value in sorted(mean_ranks.unique())]
+
+
+def tiers_to_df(tiers) -> pd.DataFrame:
+    return pd.DataFrame([{'tier': i + 1, 'rank': rank_value, 'measure': measure}
+                         for i, (measures, rank_value) in enumerate(tiers)
+                         for measure in measures])
 
 def run_ranking_for(data_dirs: [str], dataset_types: [str], run_names: [str], root_result_dir: str,
                     distance_measures: [str], overall_ds_name: str):
@@ -50,7 +60,18 @@ def run_ranking_for(data_dirs: [str], dataset_types: [str], run_names: [str], ro
                                                                               data_type=data_type, data_dir=data_dir)
             all_average_rankings.append(average_ranking_df.drop(columns=RankingStats.best))
 
-            # 4. Calculate most frequent min measure in overall rank
+            # 4. per-variant hypothesis of ranked dm ranks averaged across subjects
+            variant_mean_ranks = average_ranking_df.drop(columns=RankingStats.best).mean(axis=0)
+            variant_tiers = tiers_from_mean_ranks(variant_mean_ranks)
+            variant_tiers_df = tiers_to_df(variant_tiers)
+            variant_result_dir = distance_measure_evaluation_results_dir_for(run_name=overall_ds_name,
+                                                                             data_type=data_type,
+                                                                             base_results_dir=root_result_dir,
+                                                                             data_dir=data_dir)
+            variant_tiers_df.to_csv(str(os.path.join(variant_result_dir, f"dm_hypothesis_by_overall_ranking.csv")),
+                                    index=False)
+
+            # 5. Calculate most frequent min measure in overall rank
             min_ranks = overall_rank.min(axis=1)  # per row min
             # a dict {'run_name':[list of min ranked measures (columns]}
             min_results = {a_run: overall_rank.columns[overall_rank.loc[a_run] == min_ranks[a_run]].tolist()
@@ -64,18 +85,14 @@ def run_ranking_for(data_dirs: [str], dataset_types: [str], run_names: [str], ro
             print_dir = os.path.basename(os.path.normpath(data_dir))
             print(print_dir + " type: " + data_type + " -> Best measure(s): " + str(best_measures))
 
-        # 5. Combine hypothesis across every data_dir/data_type, take mean per measure as-is (no rounding), build tiers
+        # 6. Combine hypothesis across every data_dir/data_type, take mean per measure as-is (no rounding), build tiers
         combined = pd.concat(all_average_rankings, axis=0)
         mean_ranks = combined.mean(axis=0)
-        tiers = [(mean_ranks.index[mean_ranks == rank_value].tolist(), rank_value)
-                 for rank_value in sorted(mean_ranks.unique())]
-
-        tiers_df = pd.DataFrame([{'tier': i + 1, 'rank': rank_value, 'measure': measure}
-                                 for i, (measures, rank_value) in enumerate(tiers)
-                                 for measure in measures])
+        tiers = tiers_from_mean_ranks(mean_ranks)
+        tiers_df = tiers_to_df(tiers)
         overall_folder = os.path.join(root_result_dir, overall_ds_name)
         os.makedirs(overall_folder, exist_ok=True)
-        tiers_df.to_csv(str(os.path.join(overall_folder, "dm_hypothesis_by_overall_top_2_ranking.csv")), index=False)
+        tiers_df.to_csv(str(os.path.join(overall_folder, "dm_hypothesis_by_overall_ranking.csv")), index=False)
         readable_tiers = [(measures, float(rank_value)) for measures, rank_value in tiers]
         print(overall_ds_name + " -> Overall tiers (best to worst): " + str(readable_tiers))
 
