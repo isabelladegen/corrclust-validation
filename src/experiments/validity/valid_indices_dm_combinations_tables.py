@@ -136,6 +136,7 @@ if __name__ == "__main__":
                          DistanceMeasures.l2_cor_dist,
                          DistanceMeasures.l3_cor_dist,
                          DistanceMeasures.l5_cor_dist,
+                         DistanceMeasures.l1_with_ref,
                          DistanceMeasures.dot_transform_l1,  # dot transform + lp norms
                          DistanceMeasures.dot_transform_l2]
 
