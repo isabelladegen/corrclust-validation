@@ -28,11 +28,13 @@ if __name__ == "__main__":
     internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.dbi]
 
     # valid
-    distance_measures = [DistanceMeasures.l1_cor_dist,
+    distance_measures =  [DistanceMeasures.l1_cor_dist,  # lp norms
                          DistanceMeasures.l2_cor_dist,
                          DistanceMeasures.l3_cor_dist,
                          DistanceMeasures.l5_cor_dist,
-                         DistanceMeasures.dot_transform_l2
+                         DistanceMeasures.l1_with_ref, # newly valid since reviewed tests
+                         DistanceMeasures.dot_transform_l1,  # dot transform + lp norms
+                         DistanceMeasures.dot_transform_l2,
                          ]
 
     rank_distance_measures_by_raw_values_run_wilcox_signed_rank_tests(data_dirs=data_dirs, dataset_types=dataset_types,

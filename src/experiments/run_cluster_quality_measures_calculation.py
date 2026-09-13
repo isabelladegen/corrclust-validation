@@ -176,11 +176,24 @@ if __name__ == "__main__":
     # data_dirs = [SYNTHETIC_DATA_DIR]
 
     # For tests basic setup
-    distance_measures = [
-        DistanceMeasures.l1_cor_dist, DistanceMeasures.l1_with_ref
-    ]
-    data_types = [SyntheticDataType.normal_correlated, SyntheticDataType.non_normal_correlated]
-    data_dirs = [SYNTHETIC_DATA_DIR]
+    # distance_measures = [
+    #     DistanceMeasures.l1_cor_dist, DistanceMeasures.l1_with_ref
+    # ]
+    # data_types = [SyntheticDataType.normal_correlated, SyntheticDataType.non_normal_correlated]
+    # data_dirs = [SYNTHETIC_DATA_DIR]
+
+    # For reviewed paper
+    # valid dm
+    distance_measures = [DistanceMeasures.l1_cor_dist,  # lp norms
+                         DistanceMeasures.l2_cor_dist,
+                         DistanceMeasures.l3_cor_dist,
+                         DistanceMeasures.l5_cor_dist,
+                         DistanceMeasures.l1_with_ref,
+                         DistanceMeasures.dot_transform_l1,  # dot transform + lp norms
+                         DistanceMeasures.dot_transform_l2]
+    data_types = [SyntheticDataType.raw, SyntheticDataType.normal_correlated,
+                  SyntheticDataType.non_normal_correlated, SyntheticDataType.rs_1min]
+    data_dirs = [SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR]
 
     internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb,
                          ClusteringQualityMeasures.vrc, ClusteringQualityMeasures.dbi]
