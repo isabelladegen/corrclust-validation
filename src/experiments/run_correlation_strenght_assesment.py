@@ -11,6 +11,15 @@ from src.utils.load_synthetic_data import SyntheticDataType
 from src.visualisation.run_average_rank_visualisations import data_variant_description
 
 if __name__ == "__main__":
+    """
+    Requires that internal measures were calculated per: distance_measure, data_dir, data_type for each subject
+    Loaded via read_clustering_quality_measures() -> produced by run_cluster_quality_measures_calculation.py
+
+    Output: per combination, correlation_summary.csv (correlation of each
+    internal measure vs Jaccard, per subject). Plus one aggregated
+    passes_min_correlation.csv across all combinations (mean correlation per
+    internal measure, pass/fail vs min_corr_required).
+    """
     overall_dataset_name = "n30"
     root_result_dir = ROOT_RESULTS_DIR
     run_names = pd.read_csv(GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
@@ -38,12 +47,12 @@ if __name__ == "__main__":
 
     internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb,
                          ClusteringQualityMeasures.vrc, ClusteringQualityMeasures.dbi]
-    # data_types = [SyntheticDataType.normal_correlated,
-    #               SyntheticDataType.non_normal_correlated, SyntheticDataType.rs_1min]
-    # data_types = [SyntheticDataType.normal_correlated, SyntheticDataType.non_normal_correlated]
-    # data_dirs = [SYNTHETIC_DATA_DIR, IRREGULAR_P90_DATA_DIR]
-    data_types = [SyntheticDataType.normal_correlated]
-    data_dirs = [IRREGULAR_P30_DATA_DIR]
+    data_types = [SyntheticDataType.normal_correlated,
+                  SyntheticDataType.non_normal_correlated, SyntheticDataType.rs_1min]
+    data_types = [SyntheticDataType.normal_correlated, SyntheticDataType.non_normal_correlated]
+    data_dirs = [SYNTHETIC_DATA_DIR, IRREGULAR_P90_DATA_DIR]
+    # data_types = [SyntheticDataType.normal_correlated]
+    # data_dirs = [IRREGULAR_P30_DATA_DIR]
 
     data_variants = []
     dms = []
