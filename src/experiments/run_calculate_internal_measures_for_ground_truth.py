@@ -75,6 +75,14 @@ def load_all_ground_truth_data_for_all_subjects_and_data_type(run_ids: str, data
 
 
 if __name__ == "__main__":
+    """
+     Input: raw synthetic data + ground truth labels per subject, per (data_type, data_dir),
+     loaded via load_synthetic_data(). No prior calculated CSV is read by this loop.
+
+     Output: per (distance_measure, data_type, data_dir) combination, one
+     internal_measures_for_ground_truth.csv (via internal_measure_calculation_dir_for()),
+     containing ground truth values for each configured internal measure.
+     """
     # Calculate the internal measure for all distance measures but only ground truth ds
     overall_dataset_name = "n30"
     run_names = pd.read_csv(GENERATED_DATASETS_FILE_PATH)['Name'].tolist()

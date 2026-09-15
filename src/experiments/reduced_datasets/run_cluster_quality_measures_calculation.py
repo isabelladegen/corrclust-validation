@@ -18,8 +18,12 @@ if __name__ == "__main__":
 
     overall_dataset_name = "n30"
     run_names = pd.read_csv(GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
-    # distance_measures = [DistanceMeasures.l1_cor_dist, DistanceMeasures.l5_cor_dist, DistanceMeasures.linf_cor_dist]
-    distance_measures = [DistanceMeasures.l1_cor_dist, DistanceMeasures.l5_cor_dist, DistanceMeasures.l2_cor_dist, DistanceMeasures.l3_cor_dist, DistanceMeasures.dot_transform_l1,
+    distance_measures = [DistanceMeasures.l1_cor_dist,
+                         DistanceMeasures.l2_cor_dist,
+                         DistanceMeasures.l3_cor_dist,
+                         DistanceMeasures.l5_cor_dist,
+                         DistanceMeasures.l1_with_ref,
+                         DistanceMeasures.dot_transform_l1,
                          DistanceMeasures.dot_transform_l2]
     internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb,
                          ClusteringQualityMeasures.vrc, ClusteringQualityMeasures.dbi]
@@ -63,4 +67,4 @@ if __name__ == "__main__":
                                                                  partitions_dict=partitions_dict,
                                                                  distance_measure=distance_measure, data_type=data_type,
                                                                  data_dir=data_dir, results_dir=results_dir,
-                                                                 internal_measures=internal_measures, n_cores=6)
+                                                                 internal_measures=internal_measures, n_cores=8)
