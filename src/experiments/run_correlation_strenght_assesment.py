@@ -44,7 +44,7 @@ if __name__ == "__main__":
                          DistanceMeasures.dot_transform_l1,  # dot transform + lp norms
                          DistanceMeasures.dot_transform_l2]
 
-    min_corr_required = ICVIValCriteria.jaccard_corr
+    min_corr_required = ICVIValCriteria.get_threshold_for(ICVIValCriteria.jaccard_corr)
 
     internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb,
                          ClusteringQualityMeasures.vrc, ClusteringQualityMeasures.dbi]

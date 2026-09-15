@@ -75,6 +75,8 @@ DISTANCE_MEASURE_EVALUATION_CRITERIA_RANKS_RESULTS_FILE = 'rank_evaluation_crite
 DISTANCE_MEASURE_EVALUATION_OVERALL_RANKS_RESULTS_FILE = 'per_ds_rank_evaluation_criteria_results.csv'
 DISTANCE_MEASURE_EVALUATION_AVERAGE_RANKS_PER_CRITERIA_RESULTS_FILE = 'per_criteria_avg_rank_evaluation_criteria_results.csv'
 DISTANCE_MEASURE_EVALUATION_TOP_BOTTOM_MEASURES = 'top_bottom_distance_measures.csv'
+LATEX_TABLES_FOLDER_NAME = 'latex-tables'
+ICVI_MEAN_RESULTS_LATEX_FILE = 'icvi-mean-results.tex'
 
 
 @dataclass
@@ -386,6 +388,17 @@ def get_internal_measures_summary_file_name(ds_name: str):
     :return: the file name for the results csv
     """
     return ds_name + '_measures_summary.csv'
+
+def get_latex_results_path(results_dir: str, filename: str):
+    """ Returns the path to where to save latex table files. Creates a latex-tables folder in the given
+    results_dir if it doesn't exist, and returns the full path to save filename to.
+    :param results_dir: the results folder where to add the latex-tables folder to
+    :param filename: the name of the latex file
+    :return: the full file name including path to save a latex file
+    """
+    folder = path.join(results_dir, LATEX_TABLES_FOLDER_NAME)
+    Path(folder).mkdir(parents=True, exist_ok=True)
+    return path.join(folder, filename)
 
 
 def load_private_yaml():

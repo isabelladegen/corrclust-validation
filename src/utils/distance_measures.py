@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import overload
+from typing import overload, ClassVar
 
 import numpy as np
 import pandas as pd
@@ -32,6 +32,57 @@ class DistanceMeasures:
     dot_transform_linf: str = "Dot transf Linf"
     dot_transform_l1: str = "Dot transf L1"
     dot_transform_l2: str = "Dot transf L2"
+
+    _order: ClassVar[dict] = {
+        l1_cor_dist: 10,
+        l2_cor_dist: 20,
+        l3_cor_dist: 30,
+        l5_cor_dist: 40,
+        l10_cor_dist: 50,
+        l50_cor_dist: 60,
+        l100_cor_dist: 70,
+        linf_cor_dist: 80,
+        l1_with_ref: 110,
+        l2_with_ref: 120,
+        l3_with_ref: 130,
+        l5_with_ref: 140,
+        l10_with_ref: 150,
+        l50_with_ref: 160,
+        l100_with_ref: 170,
+        linf_with_ref: 180,
+        dot_transform_l1: 210,
+        dot_transform_l2: 220,
+        dot_transform_linf: 280,
+        cosine: 300,
+        log_frob_cor_dist: 310,
+        foerstner_cor_dist: 320,
+    }
+
+    _latex: ClassVar[dict] = {
+        l1_cor_dist: r"\dLp[1]",
+        l2_cor_dist: r"\dLp[2]",
+        l3_cor_dist: r"\dLp[3]",
+        l5_cor_dist: r"\dLp[5]",
+        linf_cor_dist: r"\dLp[\infty]",
+        l1_with_ref: r"\dRefp[1]",
+        l2_with_ref: r"\dRefp[2]",
+        l3_with_ref: r"\dRefp[3]",
+        l5_with_ref: r"\dRefp[5]",
+        linf_with_ref: r"\dRefp[\infty]",
+        dot_transform_l1: r"\dDotp[1]",
+        dot_transform_l2: r"\dDotp[2]",
+        dot_transform_linf: r"\dDotp[\infty]",
+        log_frob_cor_dist: r"\dlogF",
+        foerstner_cor_dist: r"\dFoer",
+    }
+
+    @staticmethod
+    def order_measures(measures: list) -> list:
+        return sorted(measures, key=lambda m: DistanceMeasures._order[m])
+
+    @staticmethod
+    def get_latex_for_measure(measure: str) -> str:
+        return DistanceMeasures._latex[measure]
 
 
 short_distance_measure_names = {

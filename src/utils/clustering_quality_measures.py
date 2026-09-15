@@ -1,5 +1,6 @@
 import warnings
 from dataclasses import dataclass
+from typing import ClassVar
 
 import numpy as np
 from sklearn import metrics
@@ -13,13 +14,30 @@ class ClusteringQualityMeasures:
     dbi: str = "DBI"
     jaccard_index: str = "Jaccard"
 
-    @staticmethod  # this was required due to a mistake in the naming of silhouette and pbm
+    _order: ClassVar[dict] = {
+        silhouette_score: 10,
+        dbi: 20,
+        vrc: 30,
+        pmb: 40,
+        jaccard_index: 50,
+    }
+
+    _display_names: ClassVar[dict] = {
+        silhouette_score: "SWC",
+        pmb: "PBM",
+        vrc: "VRC",
+        dbi: "DBI",
+        jaccard_index: "Jaccard",
+    }
+
+    @staticmethod
+    def order_measures(measures: list) -> list:
+        return sorted(measures, key=lambda m: ClusteringQualityMeasures._order[m])
+
+    # this is required due to a mistake in the naming of silhouette and pbm in certain csv files
+    @staticmethod
     def get_display_name_for_measure(measure: str):
-        if measure == ClusteringQualityMeasures.pmb:
-            return "PBM"
-        if measure == ClusteringQualityMeasures.silhouette_score:
-            return "SWC"
-        return measure
+        return ClusteringQualityMeasures._display_names[measure]
 
 
 def calculate_vrc(distances_seg_cluster_centroid: {}, distance_cluster_centroids_to_data: {},

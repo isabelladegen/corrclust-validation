@@ -7,7 +7,7 @@ from pyarrow import ArrowInvalid
 
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.utils.configurations import SYNTHETIC_DATA_DIR, GeneralisedCols, dir_for_data_type, \
-    bad_partition_dir_for_data_type, ROOT_RESULTS_DIR
+    bad_partition_dir_for_data_type, ROOT_RESULTS_DIR, get_data_completeness_from, number_for_completeness
 
 from pathlib import Path
 
@@ -23,6 +23,31 @@ class SyntheticDataSets:
     blooming_donkey: str = "blooming-donkey-23"
     perfect_run_1min_sampling: str = "1min-splendid-sunset-12"
 
+@dataclass
+class DataVariant:
+    """Combines a SyntheticDataType with the data_dir it lives in, since 100%/70%/10%
+    completeness is only encoded via directory today (see DataCompleteness comments)."""
+    data_type: str
+    data_dir: str
+
+    @property
+    def completeness(self) -> str:
+        return get_data_completeness_from(self.data_dir)
+
+    @property
+    def percentage(self) -> int:
+        return number_for_completeness(self.completeness)
+
+    def display_name(self) -> str:
+        return SyntheticDataType.get_display_name_for_data_type(self.data_type)
+
+    def label(self) -> str:
+        """e.g. 'Normal 100\\%', for use as the LaTeX table's condition header."""
+        return f"{self.display_name()} {self.percentage}\\%"
+
+    def file_suffix(self) -> str:
+        """e.g. 'normal_100', matches the existing {data_type}_{comp} pattern in calculate_mean_sd_for."""
+        return f"{self.data_type}_{self.percentage}"
 
 @dataclass
 class SyntheticDataType:
