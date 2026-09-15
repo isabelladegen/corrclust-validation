@@ -3,6 +3,7 @@ import pandas as pd
 from src.evaluation.internal_measure_assessment import InternalMeasureAssessment, get_full_filename_for_results_csv, \
     IAResultsCSV
 from src.experiments.run_cluster_quality_measures_calculation import read_clustering_quality_measures
+from src.experiments.validity.icvi_validity import ICVIValCriteria
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import SYNTHETIC_DATA_DIR, IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR, \
     GENERATED_DATASETS_FILE_PATH, ROOT_RESULTS_DIR, internal_measure_evaluation_dir_for, get_data_completeness_from
@@ -43,7 +44,7 @@ if __name__ == "__main__":
                          DistanceMeasures.dot_transform_l1,  # dot transform + lp norms
                          DistanceMeasures.dot_transform_l2]
 
-    min_corr_required = 0.5
+    min_corr_required = ICVIValCriteria.jaccard_corr
 
     internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb,
                          ClusteringQualityMeasures.vrc, ClusteringQualityMeasures.dbi]
