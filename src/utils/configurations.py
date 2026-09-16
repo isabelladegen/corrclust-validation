@@ -15,6 +15,7 @@ class DataCompleteness:
     irregular_p30: str = 'irregular_p30'  # 70% of data
     irregular_p90: str = 'irregular_p90'  # 10% of data
 
+
 def number_for_completeness(comp):
     if comp == DataCompleteness.complete:
         return 100
@@ -77,6 +78,12 @@ DISTANCE_MEASURE_EVALUATION_AVERAGE_RANKS_PER_CRITERIA_RESULTS_FILE = 'per_crite
 DISTANCE_MEASURE_EVALUATION_TOP_BOTTOM_MEASURES = 'top_bottom_distance_measures.csv'
 LATEX_TABLES_FOLDER_NAME = 'latex-tables'
 ICVI_MEAN_RESULTS_LATEX_FILE = 'icvi-mean-results.tex'
+ICVI_CONSTRUCT_TEST1_LATEX_FILE = 'icvi-construct-test1.tex'
+ICVI_CONSTRUCT_TEST2_LATEX_FILE = 'icvi-construct-test2.tex'
+ICVI_CONSTRUCT_TEST3_SWC_LATEX_FILE = 'icvi-construct-test3_swc.tex'
+ICVI_CONSTRUCT_TEST3_VRC_LATEX_FILE = 'icvi-construct-test3_vrc.tex'
+ICVI_CONSTRUCT_TEST4_SWC_LATEX_FILE = 'icvi-construct-test4_swc.tex'
+ICVI_CONSTRUCT_TEST4_VRC_LATEX_FILE = 'icvi-construct-test4_vrc.tex'
 
 
 @dataclass
@@ -388,6 +395,14 @@ def get_internal_measures_summary_file_name(ds_name: str):
     :return: the file name for the results csv
     """
     return ds_name + '_measures_summary.csv'
+
+
+def icvi_latex_path(filename: str, ds_name: str, root_results_dir: str) -> str:
+    return get_latex_results_path(
+        internal_measure_evaluation_dir_for(overall_dataset_name=ds_name, data_type="",
+                                            results_dir=root_results_dir, data_dir="", distance_measure=""),
+        filename)
+
 
 def get_latex_results_path(results_dir: str, filename: str):
     """ Returns the path to where to save latex table files. Creates a latex-tables folder in the given

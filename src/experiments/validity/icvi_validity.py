@@ -57,29 +57,53 @@ class ICVIValCriteria:
         return ICVIValCriteria._thresholds[ICVIValCriteria.criterion]
 
     @staticmethod
+    def _tier_for(criteria: str, data_type: str) -> "ICVITier":
+        if data_type == SyntheticDataType.raw:
+            return ICVITier.no_structure
+        elif data_type == SyntheticDataType.rs_1min:
+            return ICVIValCriteria._ds_tier_for_test[criteria]
+        return ICVIValCriteria._normal_tier_for_test[criteria]
+
+    @staticmethod
+    def _is_floor(tier: "ICVITier", measure: str) -> bool:
+        return (tier == ICVITier.excellent) == ClusteringQualityMeasures.is_higher_better(measure)
+
+    @staticmethod
     def passes(criteria: str, value: float, measure: str = None,
                data_type: str = SyntheticDataType.normal_correlated) -> bool:
         if criteria == ICVIValCriteria.criterion:
             return abs(value) > ICVIValCriteria._thresholds[criteria]
-        if data_type == SyntheticDataType.raw:
-            tier = ICVITier.no_structure
-        elif data_type == SyntheticDataType.rs_1min:
-            tier = ICVIValCriteria._ds_tier_for_test[criteria]
-        else:
-            tier = ICVIValCriteria._normal_tier_for_test[criteria]
+        tier = ICVIValCriteria._tier_for(criteria, data_type)
         return ICVIValCriteria._passes_tier(tier, value, measure)
 
     @staticmethod
-    def _passes_tier(tier: ICVITier, value: float, measure: str) -> bool:
-        higher_is_better = ClusteringQualityMeasures.is_higher_better(measure)
+    def _passes_tier(tier: "ICVITier", value: float, measure: str) -> bool:
         if tier == ICVITier.between_poor_and_excellent:
             excellent_t = ICVIValCriteria._tier_thresholds[measure][ICVITier.excellent]
             poor_t = ICVIValCriteria._tier_thresholds[measure][ICVITier.poor]
             lo, hi = sorted([excellent_t, poor_t])
             return lo < value < hi
         t = ICVIValCriteria._tier_thresholds[measure][tier]
-        is_floor = (tier == ICVITier.excellent) == higher_is_better
-        return (value > t) if is_floor else (value < t)
+        return (value > t) if ICVIValCriteria._is_floor(tier, measure) else (value < t)
+
+    @staticmethod
+    def comparison_for(criteria: str, measure: str,
+                       data_type: str = SyntheticDataType.normal_correlated) -> tuple:
+        """('>' or '<', threshold) describing this criteria's pass condition for `measure`.
+        Raises for between_poor_and_excellent, which is a band, not a single-sided threshold."""
+        tier = ICVIValCriteria._tier_for(criteria, data_type)
+        if tier == ICVITier.between_poor_and_excellent:
+            raise ValueError(f"{criteria} is a two-sided band, not a single threshold")
+        symbol = '>' if ICVIValCriteria._is_floor(tier, measure) else '<'
+        return symbol, ICVIValCriteria._tier_thresholds[measure][tier]
+
+    @staticmethod
+    def footnote_text_for(criteria: str, measures: list) -> str:
+        parts = []
+        for m in measures:
+            symbol, threshold = ICVIValCriteria.comparison_for(criteria, m)
+            parts.append(f'{ClusteringQualityMeasures.get_display_name_for_measure(m)} {symbol} {threshold}')
+        return ', '.join(parts)
 
     @staticmethod
     def display_name_for(criteria: str) -> str:
@@ -110,9 +134,22 @@ class CriteriaForVariant:
         ds_100: [ICVIValCriteria.criterion, ICVIValCriteria.structural_1],
     }
 
+    _display_names: ClassVar[dict] = {
+        normal_100: 'Normal 100\\%',
+        normal_70: 'Normal 70\\%',
+        normal_10: 'Normal 10\\%',
+        non_normal_100: 'Non-normal 100\\%',
+        non_normal_10: 'Non-normal 10\\%',
+    }
+
     @staticmethod
     def criteria_for(variant: str) -> list:
         return CriteriaForVariant._tests_for_variant[variant]
+
+    @staticmethod
+    def display_name_for(variant: str) -> str:
+        return CriteriaForVariant._display_names[variant]
+
 
 @dataclass
 class ICVIValidityResultColumns:
@@ -140,7 +177,7 @@ class ICVIValidity:
     """
 
     def __init__(self, internal_measures: list, normal_100: dict, normal_70: dict, normal_10: dict,
-                 non_normal_100: dict, non_normal_10: dict, raw_100: dict, downsampled_100: dict):
+                 non_normal_100: dict, non_normal_10: dict, raw_100: dict, downsampled_100: dict, round_to: int = 2):
         """Each data variant is a dict, keyed by ICVIValCriteria fields based on which criteria applies to the variant:
                  {structural_1: gt_df, structural_2: worst_df, structural_3: [gt_k11_df, gt_k6_df],
                  structural_4: [gt_m50_df, gt_m25_df], criterion: criterion_df}."""
@@ -152,6 +189,7 @@ class ICVIValidity:
         self._non_normal_10 = non_normal_10
         self._raw_100 = raw_100
         self._downsampled_100 = downsampled_100
+        self._round_to = round_to
 
     def structural_validity(self) -> pd.DataFrame:
         return self._stacked(lambda m: self._structural_detail_for_measure(
@@ -204,8 +242,30 @@ class ICVIValidity:
             sd = df[(measure, Aggregators.std)]
             star = mean.apply(lambda x, m=measure: ICVIValCriteria.passes(criteria, x, m, data_type)).map(
                 {True: "*", False: ""})
+            mean_str = mean.map(lambda x: f"{x:.{self._round_to}f}")
+            sd_str = sd.map(lambda x: f"{x:.{self._round_to}f}")
             result[ClusteringQualityMeasures.get_display_name_for_measure(measure)] = (
-                    mean.astype(str) + " (SD " + sd.astype(str) + ")" + star)
+                    mean_str + " (SD " + sd_str + ")" + star)
+        return result
+
+    def mean_sd_valid_summary_table_for_subcriteria(self, dfs: list, criteria: str, sub_labels: tuple,
+                                                    measures: list = None,
+                                                    data_type: str = SyntheticDataType.normal_correlated) -> pd.DataFrame:
+        """dfs: [df_for_first_sub_condition, df_for_second_sub_condition], e.g. [k11_df, k6_df].
+        Star logic is identical to mean_sd_valid_summary_table, applied independently per cell."""
+        measures = measures if measures is not None else self._internal_measures
+        result = pd.DataFrame(index=dfs[0].index)
+        for measure in measures:
+            display = ClusteringQualityMeasures.get_display_name_for_measure(measure)
+            for df, lbl in zip(dfs, sub_labels):
+                mean = df[(measure, Aggregators.mean)]
+                sd = df[(measure, Aggregators.std)]
+                star = mean.apply(lambda x, m=measure: ICVIValCriteria.passes(criteria, x, m, data_type)).map(
+                    {True: "*", False: ""})
+                mean_str = mean.map(lambda x: f"{x:.{self._round_to}f}")
+                sd_str = sd.map(lambda x: f"{x:.{self._round_to}f}")
+                result[(display, lbl)] = mean_str + " (SD " + sd_str + ")" + star
+        result.columns = pd.MultiIndex.from_tuples(result.columns)
         return result
 
     def _stacked(self, per_measure_fn) -> pd.DataFrame:
@@ -303,4 +363,3 @@ class ICVIValidity:
             result = structural_detail if result is None else result.join(structural_detail)
         result[ICVIValidityResultColumns.external] = result[list(conditions.keys())].all(axis=1)
         return result
-
