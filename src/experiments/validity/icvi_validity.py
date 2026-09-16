@@ -98,11 +98,21 @@ class ICVIValCriteria:
         return symbol, ICVIValCriteria._tier_thresholds[measure][tier]
 
     @staticmethod
-    def footnote_text_for(criteria: str, measures: list) -> str:
+    def footnote_text_for(criteria: str, measures: list, data_type: str = None) -> str:
+        tier_data_type = data_type if data_type in (SyntheticDataType.raw, SyntheticDataType.rs_1min) \
+            else SyntheticDataType.normal_correlated
         parts = []
         for m in measures:
-            symbol, threshold = ICVIValCriteria.comparison_for(criteria, m)
-            parts.append(f'{ClusteringQualityMeasures.get_display_name_for_measure(m)} {symbol} {threshold}')
+            display = ClusteringQualityMeasures.get_display_name_for_measure(m)
+            tier = ICVIValCriteria._tier_for(criteria, tier_data_type)
+            if tier == ICVITier.between_poor_and_excellent:
+                excellent_t = ICVIValCriteria._tier_thresholds[m][ICVITier.excellent]
+                poor_t = ICVIValCriteria._tier_thresholds[m][ICVITier.poor]
+                lo, hi = sorted([excellent_t, poor_t])
+                parts.append(f'{lo} < {display} < {hi}')
+            else:
+                symbol, threshold = ICVIValCriteria.comparison_for(criteria, m, tier_data_type)
+                parts.append(f'{display} {symbol} {threshold}')
         return ', '.join(parts)
 
     @staticmethod
@@ -140,6 +150,8 @@ class CriteriaForVariant:
         normal_10: 'Normal 10\\%',
         non_normal_100: 'Non-normal 100\\%',
         non_normal_10: 'Non-normal 10\\%',
+        raw_100: 'Raw 100\\%',
+        ds_100: 'Downsampled 100\\%',
     }
 
     @staticmethod

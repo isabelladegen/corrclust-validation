@@ -391,4 +391,4 @@ def test_summary_table_omits_star_when_criterion_fails():
     result = _validity(measures=[ClusteringQualityMeasures.silhouette_score]).mean_sd_valid_summary_table(
         df, ICVIValCriteria.structural_1)
     assert_that(result.loc["DM 1", ClusteringQualityMeasures.get_display_name_for_measure(
-        ClusteringQualityMeasures.silhouette_score)], is_("0.5 (SD 0.01)"))
+        ClusteringQualityMeasures.silhouette_score)], is_("0.50 (SD 0.01)"))

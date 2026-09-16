@@ -84,6 +84,7 @@ ICVI_CONSTRUCT_TEST3_SWC_LATEX_FILE = 'icvi-construct-test3_swc.tex'
 ICVI_CONSTRUCT_TEST3_VRC_LATEX_FILE = 'icvi-construct-test3_vrc.tex'
 ICVI_CONSTRUCT_TEST4_SWC_LATEX_FILE = 'icvi-construct-test4_swc.tex'
 ICVI_CONSTRUCT_TEST4_VRC_LATEX_FILE = 'icvi-construct-test4_vrc.tex'
+ICVI_DISCRIMINANT_LATEX_FILE = 'icvi-discriminant.tex'
 
 
 @dataclass

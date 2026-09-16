@@ -12,7 +12,8 @@ from src.utils.configurations import GENERATED_DATASETS_FILE_PATH, ResultsType, 
     get_root_folder_for_reduced_cluster, DataCompleteness, get_root_folder_for_reduced_segments, \
     ROOT_REDUCED_RESULTS_DIR, Aggregators, ICVI_CONSTRUCT_TEST3_SWC_LATEX_FILE, \
     ICVI_CONSTRUCT_TEST3_VRC_LATEX_FILE, ICVI_CONSTRUCT_TEST4_SWC_LATEX_FILE, ICVI_CONSTRUCT_TEST4_VRC_LATEX_FILE, \
-    ICVI_MEAN_RESULTS_LATEX_FILE, ICVI_CONSTRUCT_TEST1_LATEX_FILE, ICVI_CONSTRUCT_TEST2_LATEX_FILE, icvi_latex_path
+    ICVI_MEAN_RESULTS_LATEX_FILE, ICVI_CONSTRUCT_TEST1_LATEX_FILE, ICVI_CONSTRUCT_TEST2_LATEX_FILE, icvi_latex_path, \
+    ICVI_DISCRIMINANT_LATEX_FILE
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 
@@ -118,8 +119,8 @@ def build_stats_for_data_variant(variant, distance_measures, internal_measures, 
     return result
 
 
-def generate_latex_table_for_icvi_mean_correlation(results_by_condition: dict, internal_measures: list,
-                                                   distance_measures: list, footnote: str) -> str:
+def generate_latex_table_for_icvi_means(results_by_condition: dict, internal_measures: list,
+                                        distance_measures: list, footnote: str) -> str:
     ordered_internal_measures = ClusteringQualityMeasures.order_measures(internal_measures)
     ordered_distance_measures = DistanceMeasures.order_measures(distance_measures)
 
@@ -263,17 +264,19 @@ if __name__ == "__main__":
         stats[variant][ICVIValCriteria.criterion], ICVIValCriteria.criterion)
         for variant in construct_conditions}
     with open(icvi_latex_path(ICVI_MEAN_RESULTS_LATEX_FILE, ds_name, main_result_dir), 'w') as f:
-        f.write(generate_latex_table_for_icvi_mean_correlation(
+        f.write(generate_latex_table_for_icvi_means(
             criterion_results, internal_measures, distance_measures,
             f'$|r|>{ICVIValCriteria.criterion_threshold()}$'))
 
     # Structural 1 and 2
     for criteria, filename in [(ICVIValCriteria.structural_1, ICVI_CONSTRUCT_TEST1_LATEX_FILE),
                                (ICVIValCriteria.structural_2, ICVI_CONSTRUCT_TEST2_LATEX_FILE)]:
-        results = {CriteriaForVariant.display_name_for(variant): validity.mean_sd_valid_summary_table(stats[variant][criteria], criteria)
-                   for variant in construct_conditions}
+        results = {
+            CriteriaForVariant.display_name_for(variant): validity.mean_sd_valid_summary_table(stats[variant][criteria],
+                                                                                               criteria)
+            for variant in construct_conditions}
         with open(icvi_latex_path(filename, ds_name, main_result_dir), 'w') as f:
-            f.write(generate_latex_table_for_icvi_mean_correlation(
+            f.write(generate_latex_table_for_icvi_means(
                 results, internal_measures, distance_measures,
                 ICVIValCriteria.footnote_text_for(criteria, internal_measures)))
 
@@ -288,9 +291,36 @@ if __name__ == "__main__":
     ]
     for criteria, sub_labels, swc_dbi_file, vrc_pbm_file in sub_criteria_specs:
         for measure_pair, filename in [(swc_dbi, swc_dbi_file), (vrc_pbm, vrc_pbm_file)]:
-            results = {CriteriaForVariant.display_name_for(variant): validity.mean_sd_valid_summary_table_for_subcriteria(
-                stats[variant][criteria], criteria, sub_labels, measures=measure_pair)
+            results = {
+                CriteriaForVariant.display_name_for(variant): validity.mean_sd_valid_summary_table_for_subcriteria(
+                    stats[variant][criteria], criteria, sub_labels, measures=measure_pair)
                 for variant in construct_conditions}
             with open(icvi_latex_path(filename, ds_name, main_result_dir), 'w') as f:
                 f.write(generate_latex_table_for_icvi_subcriteria(
                     results, measure_pair, distance_measures, sub_labels, criteria))
+
+    # Discriminant Latex
+    raw_formatted = validity.mean_sd_valid_summary_table(
+        stats[CriteriaForVariant.raw_100][ICVIValCriteria.structural_1],
+        ICVIValCriteria.structural_1, data_type=SyntheticDataType.raw)
+
+    downsampled_formatted = validity.mean_sd_valid_summary_table(
+        stats[CriteriaForVariant.ds_100][ICVIValCriteria.structural_1],
+        ICVIValCriteria.structural_1, data_type=SyntheticDataType.rs_1min)
+
+    discriminant_condition = {
+        CriteriaForVariant.display_name_for(CriteriaForVariant.raw_100): raw_formatted,
+        CriteriaForVariant.display_name_for(CriteriaForVariant.ds_100): downsampled_formatted,
+    }
+
+    disc_footnote = ('for raw ' + ICVIValCriteria.footnote_text_for(
+        ICVIValCriteria.structural_1, internal_measures, data_type=SyntheticDataType.raw) +
+                     '; downsampled ' + ICVIValCriteria.footnote_text_for(
+                ICVIValCriteria.structural_1, internal_measures, data_type=SyntheticDataType.rs_1min))
+
+    discriminant_table = generate_latex_table_for_icvi_means(discriminant_condition, internal_measures,
+                                                             distance_measures,
+                                                             disc_footnote)
+
+    with open(icvi_latex_path(ICVI_DISCRIMINANT_LATEX_FILE, ds_name, main_result_dir), 'w') as f:
+        f.write(discriminant_table)
