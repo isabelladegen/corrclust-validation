@@ -3,12 +3,14 @@ import os
 import pandas as pd
 
 from src.evaluation.describe_bad_partitions import DescribeBadPartCols
+from src.evaluation.internal_measure_assessment import read_internal_assessment_result_for, IAResultsCSV
 from src.experiments.run_cluster_quality_measures_calculation import read_clustering_quality_measures
+from src.experiments.validity.icvi_validity import ICVIValidity, ICVIValCriteria, CriteriaForVariant
 from src.utils.clustering_quality_measures import ClusteringQualityMeasures
 from src.utils.configurations import GENERATED_DATASETS_FILE_PATH, ResultsType, ROOT_RESULTS_DIR, SYNTHETIC_DATA_DIR, \
     IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR, get_data_dir, \
     get_root_folder_for_reduced_cluster, DataCompleteness, get_root_folder_for_reduced_segments, \
-    ROOT_REDUCED_RESULTS_DIR, number_for_completeness
+    ROOT_REDUCED_RESULTS_DIR, number_for_completeness, Aggregators
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.load_synthetic_data import SyntheticDataType
 
@@ -104,29 +106,121 @@ def calculate_mean_sd(distance_measures, internal_indices, run_names, data_type,
     results_df = pd.DataFrame(results)
     return results_df
 
+
 def construct_test_3(distance_measures, internal_measures, dropped_clusters, data_type, data_completeness,
                      root_result_dir, additional_filename: str = ''):
     dir_for_cluster = get_root_folder_for_reduced_cluster(root_result_dir, dropped_clusters)
     results_dir = get_root_folder_for_reduced_cluster(root_result_dir, dropped_clusters)
     data_dir = get_data_dir(dir_for_cluster, data_completeness)
     df = calculate_mean_sd(distance_measures, internal_measures, run_names,
-                                                         data_type, data_dir, results_dir)
+                           data_type, data_dir, results_dir)
     comp = number_for_completeness(data_completeness)
     n_clusters = 23 - dropped_clusters
     filename = f'{additional_filename}construct-3-mean_sd_{data_type}_{comp}_cluster_{n_clusters}.csv'
     df.to_csv(os.path.join(save_to_folder, filename))
 
-def construct_test_4(distance_measures, internal_measures, dropped_segments, data_type, data_completeness,
-                     root_result_dir, additional_filename: str = ''):
-    dir_for_segments = get_root_folder_for_reduced_segments(root_reduced_dir, dropped_segments)
-    results_dir = get_root_folder_for_reduced_segments(root_result_dir, dropped_segments)
-    data_dir = get_data_dir(dir_for_segments, data_completeness)
-    df = calculate_mean_sd(distance_measures, internal_measures, run_names,
-                                                         data_type, data_dir, results_dir)
-    comp = number_for_completeness(data_completeness)
-    n_segments = 100 - dropped_segments
-    filename = f'{additional_filename}construct-4-mean_sd_{data_type}_{comp}_segments_{n_segments}.csv'
-    df.to_csv(os.path.join(save_to_folder, filename))
+
+# def construct_test_4(distance_measures, internal_measures, dropped_segments, data_type, data_completeness,
+#                      root_result_dir, additional_filename: str = ''):
+#     dir_for_segments = get_root_folder_for_reduced_segments(root_reduced_dir, dropped_segments)
+#     results_dir = get_root_folder_for_reduced_segments(root_result_dir, dropped_segments)
+#     data_dir = get_data_dir(dir_for_segments, data_completeness)
+#     df = calculate_mean_sd(distance_measures, internal_measures, run_names,
+#                                                          data_type, data_dir, results_dir)
+#     comp = number_for_completeness(data_completeness)
+#     n_segments = 100 - dropped_segments
+#     filename = f'{additional_filename}construct-4-mean_sd_{data_type}_{comp}_segments_{n_segments}.csv'
+#     df.to_csv(os.path.join(save_to_folder, filename))
+
+def _to_multiindex_stats_df(distance_measures: list, internal_measures: list, stats: dict) -> pd.DataFrame:
+    """stats: {measure: [(mean, sd), ...]} in distance_measures order. Returns a MultiIndex-column
+    df: level 0 = internal measure, level 1 = Aggregators stat, index = distance_measure."""
+    data = {}
+    for idx in internal_measures:
+        data[(idx, Aggregators.mean)] = [v[0] for v in stats[idx]]
+        data[(idx, Aggregators.std)] = [v[1] for v in stats[idx]]
+    df = pd.DataFrame(data, index=distance_measures)
+    df.columns = pd.MultiIndex.from_tuples(df.columns)
+    return df
+
+
+def calculate_criterion_stats(distance_measures: list, internal_measures: list, data_type: str, data_dir: str,
+                              root_result_dir: str) -> pd.DataFrame:
+    """Raw mean/sd of correlation with Jaccard, per measure, per distance measure, for one data
+    variant. Reads correlation_summary.csv (produced by InternalMeasureAssessment)."""
+    stats = {idx: [] for idx in internal_measures}
+    for dm in distance_measures:
+        summary = read_internal_assessment_result_for(IAResultsCSV.correlation_summary, "n30", root_result_dir,
+                                                      data_type, data_dir, dm)
+        for measure in internal_measures:
+            col = f"r {measure}, Jaccard"
+            stats[measure].append((round(summary[col].mean(), 3), round(summary[col].std(), 3)))
+    return _to_multiindex_stats_df(distance_measures, internal_measures, stats)
+
+
+def select_ground_truth_row(subject_df: pd.DataFrame) -> pd.DataFrame:
+    return subject_df[(subject_df[DescribeBadPartCols.n_wrong_clusters] == 0) &
+                      (subject_df[DescribeBadPartCols.n_obs_shifted] == 0)]
+
+
+def select_worst_row(subject_df: pd.DataFrame) -> pd.DataFrame:
+    """Worst engineered partition"""
+    return \
+        subject_df.sort_values(by=[DescribeBadPartCols.n_wrong_clusters, DescribeBadPartCols.errors],
+                               ascending=False).iloc[
+            [0]]
+
+
+def calculate_stats_for_selection(distance_measures, internal_measures, run_names, data_type, data_dir,
+                                  root_results_dir, select_row, round_to=3):
+    stats = {idx: [] for idx in internal_measures}
+    for dm in distance_measures:
+        subject_dfs = read_clustering_quality_measures(overall_ds_name="n30", data_type=data_type,
+                                                       root_results_dir=root_results_dir, data_dir=data_dir,
+                                                       distance_measure=dm, run_names=run_names)
+        rows = []
+        for subject_df in subject_dfs:
+            row = select_row(subject_df)
+            assert len(row) == 1, f"Expected exactly one row, got {len(row)}"
+            rows.append(row)
+        selected = pd.concat(rows, ignore_index=True)
+        for idx in internal_measures:
+            stats[idx].append((round(selected[idx].mean(), round_to), round(selected[idx].std(), round_to)))
+    return _to_multiindex_stats_df(distance_measures, internal_measures, stats)
+
+
+def build_stats_for_data_variant(variant, distance_measures, internal_measures, run_names, data_type, data_dir,
+                                 root_results_dir,
+                                 root_reduced_dir, completeness):
+    criteria = CriteriaForVariant.criteria_for(variant)
+    result = {}
+    for crit in criteria:
+        if crit == ICVIValCriteria.criterion:
+            result[crit] = calculate_criterion_stats(distance_measures, internal_measures, data_type, data_dir,
+                                                     root_results_dir)
+        if crit == ICVIValCriteria.structural_1:
+            result[crit] = calculate_stats_for_selection(distance_measures, internal_measures, run_names, data_type,
+                                                         data_dir, root_results_dir, select_ground_truth_row)
+        if crit == ICVIValCriteria.structural_2:
+            result[crit] = calculate_stats_for_selection(distance_measures, internal_measures, run_names, data_type,
+                                                         data_dir, root_results_dir, select_worst_row)
+        if crit == ICVIValCriteria.structural_3:
+            result[crit] = [calculate_stats_for_selection(distance_measures, internal_measures, run_names, data_type,
+                                                          get_data_dir(
+                                                              get_root_folder_for_reduced_cluster(root_reduced_dir, n),
+                                                              completeness),
+                                                          get_root_folder_for_reduced_cluster(root_reduced_dir, n),
+                                                          select_ground_truth_row) for n in (12, 17)]
+        if crit == ICVIValCriteria.structural_4:
+            result[crit] = [calculate_stats_for_selection(distance_measures, internal_measures, run_names, data_type,
+                                                          get_data_dir(
+                                                              get_root_folder_for_reduced_segments(root_reduced_dir, n),
+                                                              completeness),
+                                                          get_root_folder_for_reduced_segments(root_reduced_dir, n),
+                                                          select_ground_truth_row) for n in (50, 75)]
+
+    return result
+
 
 if __name__ == "__main__":
     main_result_dir = ROOT_RESULTS_DIR
@@ -148,96 +242,138 @@ if __name__ == "__main__":
     save_to_folder = os.path.join(main_result_dir, ResultsType.internal_measure_evaluation, 'validity-outcomes')
     os.makedirs(save_to_folder, exist_ok=True)
 
-    # calculate mean and sd for each criterion for valid dm and IVCI combinations
-    # 1. Structural pass 4 tests for Normal 100%
-    mean_sd_df_normal_100 = calculate_mean_sd(distance_measures, internal_measures, run_names,
-                                              SyntheticDataType.normal_correlated,
-                                              SYNTHETIC_DATA_DIR, main_result_dir)
-    mean_sd_df_normal_100.to_csv(os.path.join(save_to_folder, 'construct-1-2-mean_sd_normal_100.csv'))
+    variants = {
+        CriteriaForVariant.normal_100: (SyntheticDataType.normal_correlated, SYNTHETIC_DATA_DIR,
+                                        DataCompleteness.complete),
+        CriteriaForVariant.normal_70: (SyntheticDataType.normal_correlated, IRREGULAR_P30_DATA_DIR,
+                                       DataCompleteness.irregular_p30),
+        CriteriaForVariant.normal_10: (SyntheticDataType.normal_correlated, IRREGULAR_P90_DATA_DIR,
+                                       DataCompleteness.irregular_p90),
+        CriteriaForVariant.non_normal_100: (SyntheticDataType.non_normal_correlated, SYNTHETIC_DATA_DIR,
+                                            DataCompleteness.complete),
+        CriteriaForVariant.non_normal_10: (SyntheticDataType.non_normal_correlated, IRREGULAR_P90_DATA_DIR,
+                                           DataCompleteness.irregular_p90),
+        CriteriaForVariant.raw_100: (SyntheticDataType.raw, SYNTHETIC_DATA_DIR, DataCompleteness.complete),
+        CriteriaForVariant.ds_100: (SyntheticDataType.rs_1min, SYNTHETIC_DATA_DIR, DataCompleteness.complete),
+    }
 
-    # 2.1 Discriminant fail 4 structural test for raw 100%
-    mean_sd_df_raw_100 = calculate_mean_sd(distance_measures, internal_measures, run_names,
-                                           SyntheticDataType.raw,
-                                           SYNTHETIC_DATA_DIR, main_result_dir)
-    mean_sd_df_raw_100.to_csv(os.path.join(save_to_folder, 'discriminant-mean_sd_raw_100.csv'))
+    stats = {}
+    for variant, (data_type, data_dir, completeness) in variants.items():
+        stats[variant] = build_stats_for_data_variant(variant, distance_measures, internal_measures, run_names,
+                                                      data_type, data_dir,
+                                                      ROOT_RESULTS_DIR, ROOT_REDUCED_RESULTS_DIR, completeness)
+        print(variant)
 
-    # 2.2 Discriminant degrade 4 structural tests for ds 100%
-    mean_sd_df_ds_100 = calculate_mean_sd(distance_measures, internal_measures, run_names,
-                                          SyntheticDataType.rs_1min,
-                                          SYNTHETIC_DATA_DIR, main_result_dir)
-    mean_sd_df_ds_100.to_csv(os.path.join(save_to_folder, 'discriminant-mean_sd_ds_100.csv'))
+    # # saving stats
+    # for criteria, value in stats[name].items():
+    #     if isinstance(value, list):
+    #         for i, df in enumerate(value):
+    #             df.to_csv(path.join(save_to_folder, f'stats_{name}_{criteria}_{i}.csv'))
+    #     else:
+    #         value.to_csv(path.join(save_to_folder, f'stats_{name}_{criteria}.csv'))
 
-    # 3. External Validity pass 4 structural for Normal 70% and 10% and NN 100% and 10%
-    mean_sd_df_normal_70 = calculate_mean_sd(distance_measures, internal_measures, run_names,
-                                             SyntheticDataType.normal_correlated,
-                                             IRREGULAR_P30_DATA_DIR, main_result_dir)
-    mean_sd_df_normal_70.to_csv(os.path.join(save_to_folder, 'external-construct-1-2-mean_sd_normal_70.csv'))
+    validity = ICVIValidity(internal_measures=internal_measures, **stats)
 
-    mean_sd_df_normal_10 = calculate_mean_sd(distance_measures, internal_measures, run_names,
-                                             SyntheticDataType.normal_correlated,
-                                             IRREGULAR_P90_DATA_DIR, main_result_dir)
-    mean_sd_df_normal_10.to_csv(os.path.join(save_to_folder, 'external-construct-1-2-mean_sd_normal_10.csv'))
+    # save mean (sd) * table for each variant considered
+    # for name in variants:
+    #     validity.mean_sd_valid_summary_table(stats[name]).to_csv(
+    #         path.join(save_to_folder, f'mean_sd_valid_{name}.csv'))
 
-    mean_sd_df_non_normal_100 = calculate_mean_sd(distance_measures, internal_measures, run_names,
-                                                  SyntheticDataType.non_normal_correlated,
-                                                  SYNTHETIC_DATA_DIR, main_result_dir)
-    mean_sd_df_non_normal_100.to_csv(os.path.join(save_to_folder, 'external-construct-1-2-mean_sd_non_normal_100.csv'))
+    # overall validity results
+    validity.overall_validity().to_csv(os.path.join(save_to_folder, 'overall_validity_results.csv'))
+    validity.external_validity_details().to_csv(os.path.join(save_to_folder, 'external_validity_results.csv'))
+    validity.discriminant_validity_details().to_csv(os.path.join(save_to_folder, 'discriminant_validity_results.csv'))
 
-    mean_sd_df_non_normal_10 = calculate_mean_sd(distance_measures, internal_measures, run_names,
-                                                 SyntheticDataType.non_normal_correlated,
-                                                 IRREGULAR_P90_DATA_DIR, main_result_dir)
-    mean_sd_df_non_normal_10.to_csv(os.path.join(save_to_folder, 'external-construct-1-2-mean_sd_non_normal_10.csv'))
-
-    root_reduced_dir = ROOT_REDUCED_RESULTS_DIR
-
-    # 4. Construct Structural Test 3 (different number of clusters) for Normal 100%
-    construct_test_3(distance_measures, internal_measures, 12, SyntheticDataType.normal_correlated,
-                     DataCompleteness.complete, root_reduced_dir)
-    construct_test_3(distance_measures, internal_measures, 17, SyntheticDataType.normal_correlated,
-                     DataCompleteness.complete, root_reduced_dir)
-
-    # 4. External structural test 3 Normal 70%, 10% and
-    construct_test_3(distance_measures, internal_measures, 12, SyntheticDataType.normal_correlated,
-                     DataCompleteness.irregular_p30, root_reduced_dir, 'external_')
-    construct_test_3(distance_measures, internal_measures, 17, SyntheticDataType.normal_correlated,
-                     DataCompleteness.irregular_p30, root_reduced_dir, 'external_')
-    construct_test_3(distance_measures, internal_measures, 12, SyntheticDataType.normal_correlated,
-                     DataCompleteness.irregular_p90, root_reduced_dir, 'external_')
-    construct_test_3(distance_measures, internal_measures, 17, SyntheticDataType.normal_correlated,
-                     DataCompleteness.irregular_p90, root_reduced_dir, 'external_')
-
-    #4. External structural test 3 Non-normal 100% and 10%
-    construct_test_3(distance_measures, internal_measures, 12, SyntheticDataType.non_normal_correlated,
-                     DataCompleteness.complete, root_reduced_dir, 'external_')
-    construct_test_3(distance_measures, internal_measures, 17, SyntheticDataType.non_normal_correlated,
-                     DataCompleteness.complete, root_reduced_dir, 'external_')
-    construct_test_3(distance_measures, internal_measures, 12, SyntheticDataType.non_normal_correlated,
-                     DataCompleteness.irregular_p90, root_reduced_dir, 'external_')
-    construct_test_3(distance_measures, internal_measures, 17, SyntheticDataType.non_normal_correlated,
-                     DataCompleteness.irregular_p90, root_reduced_dir, 'external_')
-
-    # 5. Construct Structural Test 5 (different number of clusters) for Normal 100%
-    construct_test_4(distance_measures, internal_measures, 50, SyntheticDataType.normal_correlated,
-                     DataCompleteness.complete, root_reduced_dir)
-    construct_test_4(distance_measures, internal_measures, 75, SyntheticDataType.normal_correlated,
-                     DataCompleteness.complete, root_reduced_dir)
-
-    # 5. External structural test 4 Normal 70%, 10% and
-    construct_test_4(distance_measures, internal_measures, 50, SyntheticDataType.normal_correlated,
-                     DataCompleteness.irregular_p30, root_reduced_dir, 'external_')
-    construct_test_4(distance_measures, internal_measures, 75, SyntheticDataType.normal_correlated,
-                     DataCompleteness.irregular_p30, root_reduced_dir, 'external_')
-    construct_test_4(distance_measures, internal_measures, 50, SyntheticDataType.normal_correlated,
-                     DataCompleteness.irregular_p90, root_reduced_dir, 'external_')
-    construct_test_4(distance_measures, internal_measures, 75, SyntheticDataType.normal_correlated,
-                     DataCompleteness.irregular_p90, root_reduced_dir, 'external_')
-
-    # 5. External structural test 4 Non-normal 100% and 10%
-    construct_test_4(distance_measures, internal_measures, 50, SyntheticDataType.non_normal_correlated,
-                   DataCompleteness.complete, root_reduced_dir, 'external_')
-    construct_test_4(distance_measures, internal_measures, 75, SyntheticDataType.non_normal_correlated,
-                   DataCompleteness.complete, root_reduced_dir, 'external_')
-    construct_test_4(distance_measures, internal_measures, 50, SyntheticDataType.non_normal_correlated,
-                   DataCompleteness.irregular_p90, root_reduced_dir, 'external_')
-    construct_test_4(distance_measures, internal_measures, 75, SyntheticDataType.non_normal_correlated,
-                     DataCompleteness.irregular_p90, root_reduced_dir, 'external_')
+    # # calculate mean and sd for each criterion for valid dm and IVCI combinations
+    # # 1. Structural pass 4 tests for Normal 100%
+    # mean_sd_df_normal_100 = calculate_mean_sd(distance_measures, internal_measures, run_names,
+    #                                           SyntheticDataType.normal_correlated,
+    #                                           SYNTHETIC_DATA_DIR, main_result_dir)
+    # mean_sd_df_normal_100.to_csv(os.path.join(save_to_folder, 'construct-1-2-mean_sd_normal_100.csv'))
+    #
+    # # 2.1 Discriminant fail 4 structural test for raw 100%
+    # mean_sd_df_raw_100 = calculate_mean_sd(distance_measures, internal_measures, run_names,
+    #                                        SyntheticDataType.raw,
+    #                                        SYNTHETIC_DATA_DIR, main_result_dir)
+    # mean_sd_df_raw_100.to_csv(os.path.join(save_to_folder, 'discriminant-mean_sd_raw_100.csv'))
+    #
+    # # 2.2 Discriminant degrade 4 structural tests for ds 100%
+    # mean_sd_df_ds_100 = calculate_mean_sd(distance_measures, internal_measures, run_names,
+    #                                       SyntheticDataType.rs_1min,
+    #                                       SYNTHETIC_DATA_DIR, main_result_dir)
+    # mean_sd_df_ds_100.to_csv(os.path.join(save_to_folder, 'discriminant-mean_sd_ds_100.csv'))
+    #
+    # # 3. External Validity pass 4 structural for Normal 70% and 10% and NN 100% and 10%
+    # mean_sd_df_normal_70 = calculate_mean_sd(distance_measures, internal_measures, run_names,
+    #                                          SyntheticDataType.normal_correlated,
+    #                                          IRREGULAR_P30_DATA_DIR, main_result_dir)
+    # mean_sd_df_normal_70.to_csv(os.path.join(save_to_folder, 'external-construct-1-2-mean_sd_normal_70.csv'))
+    #
+    # mean_sd_df_normal_10 = calculate_mean_sd(distance_measures, internal_measures, run_names,
+    #                                          SyntheticDataType.normal_correlated,
+    #                                          IRREGULAR_P90_DATA_DIR, main_result_dir)
+    # mean_sd_df_normal_10.to_csv(os.path.join(save_to_folder, 'external-construct-1-2-mean_sd_normal_10.csv'))
+    #
+    # mean_sd_df_non_normal_100 = calculate_mean_sd(distance_measures, internal_measures, run_names,
+    #                                               SyntheticDataType.non_normal_correlated,
+    #                                               SYNTHETIC_DATA_DIR, main_result_dir)
+    # mean_sd_df_non_normal_100.to_csv(os.path.join(save_to_folder, 'external-construct-1-2-mean_sd_non_normal_100.csv'))
+    #
+    # mean_sd_df_non_normal_10 = calculate_mean_sd(distance_measures, internal_measures, run_names,
+    #                                              SyntheticDataType.non_normal_correlated,
+    #                                              IRREGULAR_P90_DATA_DIR, main_result_dir)
+    # mean_sd_df_non_normal_10.to_csv(os.path.join(save_to_folder, 'external-construct-1-2-mean_sd_non_normal_10.csv'))
+    #
+    # root_reduced_dir = ROOT_REDUCED_RESULTS_DIR
+    #
+    # # 4. Construct Structural Test 3 (different number of clusters) for Normal 100%
+    # construct_test_3(distance_measures, internal_measures, 12, SyntheticDataType.normal_correlated,
+    #                  DataCompleteness.complete, root_reduced_dir)
+    # construct_test_3(distance_measures, internal_measures, 17, SyntheticDataType.normal_correlated,
+    #                  DataCompleteness.complete, root_reduced_dir)
+    #
+    # # 4. External structural test 3 Normal 70%, 10% and
+    # construct_test_3(distance_measures, internal_measures, 12, SyntheticDataType.normal_correlated,
+    #                  DataCompleteness.irregular_p30, root_reduced_dir, 'external_')
+    # construct_test_3(distance_measures, internal_measures, 17, SyntheticDataType.normal_correlated,
+    #                  DataCompleteness.irregular_p30, root_reduced_dir, 'external_')
+    # construct_test_3(distance_measures, internal_measures, 12, SyntheticDataType.normal_correlated,
+    #                  DataCompleteness.irregular_p90, root_reduced_dir, 'external_')
+    # construct_test_3(distance_measures, internal_measures, 17, SyntheticDataType.normal_correlated,
+    #                  DataCompleteness.irregular_p90, root_reduced_dir, 'external_')
+    #
+    # #4. External structural test 3 Non-normal 100% and 10%
+    # construct_test_3(distance_measures, internal_measures, 12, SyntheticDataType.non_normal_correlated,
+    #                  DataCompleteness.complete, root_reduced_dir, 'external_')
+    # construct_test_3(distance_measures, internal_measures, 17, SyntheticDataType.non_normal_correlated,
+    #                  DataCompleteness.complete, root_reduced_dir, 'external_')
+    # construct_test_3(distance_measures, internal_measures, 12, SyntheticDataType.non_normal_correlated,
+    #                  DataCompleteness.irregular_p90, root_reduced_dir, 'external_')
+    # construct_test_3(distance_measures, internal_measures, 17, SyntheticDataType.non_normal_correlated,
+    #                  DataCompleteness.irregular_p90, root_reduced_dir, 'external_')
+    #
+    # # 5. Construct Structural Test 5 (different number of clusters) for Normal 100%
+    # construct_test_4(distance_measures, internal_measures, 50, SyntheticDataType.normal_correlated,
+    #                  DataCompleteness.complete, root_reduced_dir)
+    # construct_test_4(distance_measures, internal_measures, 75, SyntheticDataType.normal_correlated,
+    #                  DataCompleteness.complete, root_reduced_dir)
+    #
+    # # 5. External structural test 4 Normal 70%, 10% and
+    # construct_test_4(distance_measures, internal_measures, 50, SyntheticDataType.normal_correlated,
+    #                  DataCompleteness.irregular_p30, root_reduced_dir, 'external_')
+    # construct_test_4(distance_measures, internal_measures, 75, SyntheticDataType.normal_correlated,
+    #                  DataCompleteness.irregular_p30, root_reduced_dir, 'external_')
+    # construct_test_4(distance_measures, internal_measures, 50, SyntheticDataType.normal_correlated,
+    #                  DataCompleteness.irregular_p90, root_reduced_dir, 'external_')
+    # construct_test_4(distance_measures, internal_measures, 75, SyntheticDataType.normal_correlated,
+    #                  DataCompleteness.irregular_p90, root_reduced_dir, 'external_')
+    #
+    # # 5. External structural test 4 Non-normal 100% and 10%
+    # construct_test_4(distance_measures, internal_measures, 50, SyntheticDataType.non_normal_correlated,
+    #                DataCompleteness.complete, root_reduced_dir, 'external_')
+    # construct_test_4(distance_measures, internal_measures, 75, SyntheticDataType.non_normal_correlated,
+    #                DataCompleteness.complete, root_reduced_dir, 'external_')
+    # construct_test_4(distance_measures, internal_measures, 50, SyntheticDataType.non_normal_correlated,
+    #                DataCompleteness.irregular_p90, root_reduced_dir, 'external_')
+    # construct_test_4(distance_measures, internal_measures, 75, SyntheticDataType.non_normal_correlated,
+    #                  DataCompleteness.irregular_p90, root_reduced_dir, 'external_')

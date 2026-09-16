@@ -109,7 +109,7 @@ if __name__ == "__main__":
     internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb,
                          ClusteringQualityMeasures.vrc, ClusteringQualityMeasures.dbi]
 
-    corr_threshold = ICVIValCriteria.get_threshold_for(ICVIValCriteria.jaccard_corr)
+    corr_threshold = ICVIValCriteria.criterion_threshold()
 
     data_variants = [
         DataVariant(SyntheticDataType.normal_correlated, SYNTHETIC_DATA_DIR),  # normal 100%

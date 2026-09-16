@@ -30,6 +30,14 @@ class ClusteringQualityMeasures:
         jaccard_index: "Jaccard",
     }
 
+    _higher_is_better: ClassVar[dict] = {
+        silhouette_score: True,
+        dbi: False,
+        vrc: True,
+        pmb: True,
+        jaccard_index: True,
+    }
+
     @staticmethod
     def order_measures(measures: list) -> list:
         return sorted(measures, key=lambda m: ClusteringQualityMeasures._order[m])
@@ -38,6 +46,10 @@ class ClusteringQualityMeasures:
     @staticmethod
     def get_display_name_for_measure(measure: str):
         return ClusteringQualityMeasures._display_names[measure]
+
+    @staticmethod
+    def is_higher_better(measure: str) -> bool:
+        return ClusteringQualityMeasures._higher_is_better[measure]
 
 
 def calculate_vrc(distances_seg_cluster_centroid: {}, distance_cluster_centroids_to_data: {},
