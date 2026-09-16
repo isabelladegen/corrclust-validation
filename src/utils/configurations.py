@@ -85,6 +85,14 @@ ICVI_CONSTRUCT_TEST3_VRC_LATEX_FILE = 'icvi-construct-test3_vrc.tex'
 ICVI_CONSTRUCT_TEST4_SWC_LATEX_FILE = 'icvi-construct-test4_swc.tex'
 ICVI_CONSTRUCT_TEST4_VRC_LATEX_FILE = 'icvi-construct-test4_vrc.tex'
 ICVI_DISCRIMINANT_LATEX_FILE = 'icvi-discriminant.tex'
+DF_CONSTRUCT_NORMAL_LATEX_FILE = 'df-construct-normal.tex'
+DF_DISCRIMINANT_RAW_LATEX_FILE = 'df-discriminant-raw.tex'
+DF_DISCRIMINANT_DOWNSAMPLED_LATEX_FILE = 'df-discriminant-downsampled.tex'
+DF_EXTERNAL_NORMAL_70_LATEX_FILE = 'df-external-normal-70.tex'
+DF_EXTERNAL_NORMAL_10_LATEX_FILE = 'df-external-normal-10.tex'
+DF_EXTERNAL_NON_NORMAL_100_LATEX_FILE = 'df-external-non-normal-100.tex'
+DF_EXTERNAL_NON_NORMAL_10_LATEX_FILE = 'df-external-non-normal-10.tex'
+STRUCTURAL_2_CI_FILENAME = 'none_independence_corrected_raw_ci_mean_differences.csv'
 
 
 @dataclass

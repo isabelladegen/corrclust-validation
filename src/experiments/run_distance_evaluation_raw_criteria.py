@@ -3,7 +3,7 @@ import pandas as pd
 from src.evaluation.distance_metric_evaluation import DistanceMetricEvaluation
 from src.evaluation.modified_pattern_generator import read_modified_patterns
 from src.utils.configurations import ROOT_RESULTS_DIR, GENERATED_DATASETS_FILE_PATH, SYNTHETIC_DATA_DIR, \
-    IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR
+    IRREGULAR_P30_DATA_DIR, IRREGULAR_P90_DATA_DIR, STRUCTURAL_2_CI_FILENAME
 from src.utils.distance_measures import DistanceMeasures
 from src.utils.level_sets import LevelSets
 from src.utils.load_synthetic_data import SyntheticDataType
@@ -27,7 +27,7 @@ def run_distance_evaluation_raw_criteria_for_ds(data_dirs: [str], dataset_types:
                                   run_name=run_name, base_results_dir=root_result_dir)
                 ev.save_a_raw_csv(df=ev.distances_df, filename='raw_distances.csv', run_name=run_name,
                                   base_results_dir=root_result_dir)
-                ev.save_a_raw_csv(df= ev.ci_for_mean_differences_clustered, filename='none_independence_corrected_raw_ci_mean_differences.csv',
+                ev.save_a_raw_csv(df= ev.ci_for_mean_differences_clustered, filename=STRUCTURAL_2_CI_FILENAME,
                                   run_name=run_name, base_results_dir=root_result_dir)
                 ev.save_a_raw_csv(df=ev.ci_for_mean_differences, filename='raw_ci_mean_differences.csv',
                                   run_name=run_name, base_results_dir=root_result_dir)
