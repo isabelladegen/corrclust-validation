@@ -21,8 +21,8 @@ def tiers_to_df(tiers) -> pd.DataFrame:
                          for i, (measures, rank_value) in enumerate(tiers)
                          for measure in measures])
 
-def run_ranking_for(data_dirs: [str], dataset_types: [str], run_names: [str], root_result_dir: str,
-                    distance_measures: [str], overall_ds_name: str):
+def run_ranking_for(data_dirs: list, dataset_types: list, run_names: list, root_result_dir: str,
+                    distance_measures: list, overall_ds_name: str):
     all_average_rankings = []
 
     for data_dir in data_dirs:

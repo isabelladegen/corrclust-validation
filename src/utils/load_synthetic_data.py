@@ -7,7 +7,8 @@ from pyarrow import ArrowInvalid
 
 from src.data_generation.generate_synthetic_segmented_dataset import SyntheticDataSegmentCols
 from src.utils.configurations import SYNTHETIC_DATA_DIR, GeneralisedCols, dir_for_data_type, \
-    bad_partition_dir_for_data_type, ROOT_RESULTS_DIR, get_data_completeness_from, number_for_completeness
+    bad_partition_dir_for_data_type, ROOT_RESULTS_DIR, get_data_completeness_from, number_for_completeness, \
+    DataCompleteness
 
 from pathlib import Path
 
@@ -107,6 +108,17 @@ class SyntheticDataType:
             data_type) else ''
         return " ".join(
             filter(None, [SyntheticDataType.get_log_key_for_data_type(data_type), extension, resample_rule]))
+
+    @staticmethod
+    def display_name_for_type_and_data_dir(data_type: str, data_dir: str) -> str:
+        completeness = DataCompleteness.for_data_dir(data_dir)
+        return f"{SyntheticDataType.get_display_name_for_data_type(data_type)} {number_for_completeness(completeness)}%"
+
+    @staticmethod
+    def latex_name_for_type_and_data_dir(data_type: str, data_dir: str) -> str:
+        completeness = DataCompleteness.for_data_dir(data_dir)
+        return f"{SyntheticDataType.get_display_name_for_data_type(data_type)} {number_for_completeness(completeness)}\\%"
+
 
 
 @dataclass

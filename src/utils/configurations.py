@@ -15,6 +15,23 @@ class DataCompleteness:
     irregular_p30: str = 'irregular_p30'  # 70% of data
     irregular_p90: str = 'irregular_p90'  # 10% of data
 
+    @staticmethod
+    def for_data_dir(data_dir: str) -> str:
+        if data_dir.endswith(DataCompleteness.irregular_p30):
+            return DataCompleteness.irregular_p30
+        if data_dir.endswith(DataCompleteness.irregular_p90):
+            return DataCompleteness.irregular_p90
+        return DataCompleteness.complete
+
+    @staticmethod
+    def number_for_data_dir(data_dir: str) -> int:
+        completeness = DataCompleteness.complete
+        if data_dir.endswith(DataCompleteness.irregular_p30):
+            completeness = DataCompleteness.irregular_p30
+        if data_dir.endswith(DataCompleteness.irregular_p90):
+            completeness = DataCompleteness.complete
+
+        return number_for_completeness(completeness)
 
 def number_for_completeness(comp):
     if comp == DataCompleteness.complete:

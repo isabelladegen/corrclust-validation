@@ -10,9 +10,9 @@ from src.utils.load_synthetic_data import SyntheticDataType
 from src.utils.plots.matplotlib_helper_functions import Backends
 
 
-def run_distance_evaluation_raw_criteria_for_ds(data_dirs: [str], dataset_types: [str], run_names: [str],
+def run_distance_evaluation_raw_criteria_for_ds(data_dirs: list, dataset_types: list, run_names: list,
                                                 root_result_dir: str,
-                                                distance_measures: [str], backend=Backends.none.value):
+                                                distance_measures: list, backend=Backends.none.value):
     ls = LevelSets()
     modified_patterns = read_modified_patterns()
     for data_dir in data_dirs:
