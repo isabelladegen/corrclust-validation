@@ -65,8 +65,6 @@ def create_avg_rank_latex_table(data_dirs: list, dataset_types: list, distance_m
         rows.append(f"{label} & " + " & ".join(cells) + r" \\")
     rows_str = "\n".join(rows)
 
-    footnote_measure = f"${DistanceMeasures.get_latex_for_measure(DistanceMeasures.l1_cor_dist)}$"
-
     return (
         r"\begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}" + col_spec + "}\n"
         r"\toprule" + "\n"
@@ -102,16 +100,16 @@ if __name__ == "__main__":
                          DistanceMeasures.dot_transform_l2,
                          ]
 
-    # # 1. Calculate raw criteria for valid distance measures
-    # # Recalculation would not be required but given the root_results dir is where we read and safe to this is simpler
-    # # THIS SAVES TO VALIDITY_RESULTS HENCE WHY RECALCULATING - SIGH
-    # run_distance_evaluation_raw_criteria_for_ds(data_dirs=data_dirs, dataset_types=data_types, run_names=run_names,
-    #                                             root_result_dir=root_results_dir, distance_measures=distance_measures)
-    #
-    # # 2. Rank distance measures
-    # run_ranking_for(data_dirs=data_dirs, dataset_types=data_types, run_names=run_names,
-    #                 root_result_dir=root_results_dir, distance_measures=distance_measures,
-    #                 overall_ds_name=overall_dataset_name)
+    1. Calculate raw criteria for valid distance measures
+    Recalculation would not be required but given the root_results dir is where we read and safe to this is simpler
+    THIS SAVES TO VALIDITY_RESULTS HENCE WHY RECALCULATING - SIGH
+    run_distance_evaluation_raw_criteria_for_ds(data_dirs=data_dirs, dataset_types=data_types, run_names=run_names,
+                                                root_result_dir=root_results_dir, distance_measures=distance_measures)
+
+    # 2. Rank distance measures
+    run_ranking_for(data_dirs=data_dirs, dataset_types=data_types, run_names=run_names,
+                    root_result_dir=root_results_dir, distance_measures=distance_measures,
+                    overall_ds_name=overall_dataset_name)
 
     # 3. Create LaTeX table of average ranks for the paper
     latex = create_avg_rank_latex_table(data_dirs=data_dirs, dataset_types=data_types,

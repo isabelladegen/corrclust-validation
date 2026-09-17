@@ -29,7 +29,7 @@ class DataCompleteness:
         if data_dir.endswith(DataCompleteness.irregular_p30):
             completeness = DataCompleteness.irregular_p30
         if data_dir.endswith(DataCompleteness.irregular_p90):
-            completeness = DataCompleteness.complete
+            completeness = DataCompleteness.irregular_p90
 
         return number_for_completeness(completeness)
 
