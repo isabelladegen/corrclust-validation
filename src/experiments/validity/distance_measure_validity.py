@@ -356,7 +356,7 @@ class DistanceMeasureValidity:
     def mean_sd_valid_summary_table(self, df: pd.DataFrame, criteria: list = None, data_type: str = None,
                                     reference_df: pd.DataFrame = None) -> pd.DataFrame:
         """Validity summary table for one data variant: 'mean (SD sd)*' per distance measure per
-        criterion, star = passes its threshold. Assumes mean/sd are already rounded upstream.
+        criterion, star = passes its threshold. Formats mean/sd to 2dp, calculations happen on unrounded numbers.
         Self-contained per criterion, so works on any of the 7 condition tables without
         needing to know which one it is. Criteria without a rule (e.g. stability) are skipped."""
         criteria = criteria if criteria is not None else df.columns.get_level_values(0).unique()
@@ -368,7 +368,9 @@ class DistanceMeasureValidity:
             sd = df[(criterion, Aggregators.std)]
             star = self.passes(df, criterion, data_type, reference_df).map({True: "*", False: ""})
             column = criteria_short_names[criterion]
-            result[column] = mean.astype(str) + " (SD " + sd.astype(str) + ")" + star
+            mean_str = mean.map(lambda x: f'{x:.2f}')
+            sd_str = sd.map(lambda x: f'{x:.2f}')
+            result[column] = mean_str + " (SD " + sd_str + ")" + star
         return result
 
     def _structural_result(self, df: pd.DataFrame, rule: CriteriaRule = None,

@@ -54,7 +54,7 @@ def format_structural_2_column(per_pair: pd.DataFrame) -> pd.Series:
     weakest = per_pair.loc[weakest_idx.values].copy()
     weakest.index = weakest_idx.index
     pair = weakest[DistanceMeasureCols.compared].astype(str).str.replace(', ', ',', regex=False)
-    mean_str = weakest[Aggregators.mean].round(2).astype(str)
+    mean_str = weakest[Aggregators.mean].map(lambda x: f'{x:.2f}')
     return mean_str + ' ' + pair
 
 
@@ -85,7 +85,7 @@ def calculate_mean_sd_min_max(measures, run_names, data_type, data_dir, root_res
     # calculate all stats
     stat_dfs = []
     for stat, values in stat_values.items():
-        df = pd.DataFrame(np.round(values, 2), columns=raw_dfs[0].columns, index=raw_dfs[0].index).T
+        df = pd.DataFrame(values, columns=raw_dfs[0].columns, index=raw_dfs[0].index).T
         df.columns = pd.MultiIndex.from_product([df.columns, [stat]])
         stat_dfs.append(df)
 
@@ -97,9 +97,9 @@ def generate_latex_table_for_distance_measures(result_df: pd.DataFrame, distance
     ordered_distance_measures = DistanceMeasures.order_measures(distance_measures)
     columns = [criteria_short_names[c] for c in criteria_order]
     header = ' & '.join(EvaluationCriteriaLatex.header_for(c) for c in criteria_order)
-    col_spec = 'l ' + ' '.join(['c'] * len(criteria_order))
+    col_spec = 'l ' + ' '.join([r'>{\centering\arraybackslash}X'] * len(criteria_order))   # was: ' '.join(['c'] * len(criteria_order))
 
-    lines = [r'\begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}' + col_spec + '}', r'\toprule',
+    lines = [r'\begin{tabularx}{\columnwidth}{' + col_spec + '}', r'\toprule',              # was: \begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}' + col_spec + '}'
              '& ' + header + r' \\', r'\midrule']
     for dm in ordered_distance_measures:
         if dm not in result_df.index:
@@ -113,7 +113,7 @@ def generate_latex_table_for_distance_measures(result_df: pd.DataFrame, distance
     if EvaluationCriteria.inter_ii in criteria_order:
         lines.append(r'\multicolumn{' + str(n_cols) + r'}{l}{' + EvaluationCriteriaLatex.STRUCTURAL_2_FOOTNOTE_MARK +
                      ' ' + EvaluationCriteriaLatex.STRUCTURAL_2_FOOTNOTE_TEXT + r'.} \\')
-    lines.append(r'\end{tabular*}')
+    lines.append(r'\end{tabularx}')                                                          # was: \end{tabular*}
     return '\n'.join(lines)
 
 
@@ -150,9 +150,9 @@ class EvaluationCriteriaLatex:
     STRUCTURAL_2_CONDITION: ClassVar[str] = r"$\avgLevelSetDistance[i] <^* \avgLevelSetDistance[j]$"
     STRUCTURAL_2_FOOTNOTE_MARK: ClassVar[str] = r"$^{**}$"
     STRUCTURAL_2_FOOTNOTE_TEXT: ClassVar[str] = (
-        r"Adjacent level-set pair $(\levelSetIndex_i, \levelSetIndex_j)$ closest to zero: mean "
-        r"$\min\{\avgLevelSetDistance[i]-\avgLevelSetDistance[j] > 0\}$, else mean "
-        r"$\max(\avgLevelSetDistance[i]-\avgLevelSetDistance[j])$"
+        r"Mean $\min(\avgLevelSetDistance[i]-\avgLevelSetDistance[j])$ if $\geq 0$ or mean "
+        r"$\max(\avgLevelSetDistance[i]-\avgLevelSetDistance[j])$ if $< 0$ "
+        r"and indices $(\levelSetIndex_i, \levelSetIndex_j)$ for adjacent level-set pair closest to zero"
     )
     @staticmethod
     def header_for(criterion: str) -> str:
