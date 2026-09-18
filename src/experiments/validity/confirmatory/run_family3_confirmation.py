@@ -27,6 +27,7 @@ if __name__ == "__main__":
 
     l5 = DistanceMeasures.l5_cor_dist
     l3 = DistanceMeasures.l3_cor_dist
+    dt2 = DistanceMeasures.dot_transform_l2
 
     # preregistered hypotheses, sequential list of tuples
     # (data_type, data_dir, internal measure, distance measure 1, distance measure 2)
@@ -35,10 +36,11 @@ if __name__ == "__main__":
         (normal, complete, swc, l5, l3),
         (non_normal, complete, swc, l5, l3),
         (normal, partial, swc, l5, l3),
-        (non_normal, partial, swc, l5, l3),
         (normal, sparse, swc, l5, l3),
-        (non_normal, sparse, swc, l5, l3),
         (normal, partial, dbi, l5, l3),
+        (normal, partial, dbi, l5, l3),
+        (normal, sparse, dbi, l5, dt2),
+        (non_normal, sparse, dbi, l5, dt2),
     ]
 
     # evaluate all hypotheses
