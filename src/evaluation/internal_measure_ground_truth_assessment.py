@@ -51,8 +51,8 @@ class GroupAssessmentCols:
 class InternalMeasureGroundTruthAssessment:
     """Calculates per data variant and per internal measure which distance measure works best and worst"""
 
-    def __init__(self, overall_ds_name: str, internal_measures: [str], distance_measures: [str], data_type: str,
-                 data_dir: str, root_results_dir: str, round_to: int = 3):
+    def __init__(self, overall_ds_name: str, internal_measures: list, distance_measures: list, data_type: str,
+                 data_dir: str, root_results_dir: str, round_to: int = 3, valid_icvi_dms=None):
         self.overall_ds_name = overall_ds_name
         self.distance_measures = distance_measures
         self.internal_measures = internal_measures
@@ -62,6 +62,7 @@ class InternalMeasureGroundTruthAssessment:
         self.round_to = round_to
         # key=distance measure, value df of ground truth calculation
         self.ground_truth_calculation_dfs = {}
+        self.valid_icvi_dms = valid_icvi_dms
 
         for distance_measure in distance_measures:
             # read all internal measures for a distance measure
@@ -74,8 +75,8 @@ class InternalMeasureGroundTruthAssessment:
 
     def rank_distance_measures_for_each_internal_measure(self):
         """
-        Ranks each distance measure for each internal measure and returns dictionary of ranks keyed
-        by internal measure name
+        Ranks each distance measure for each internal measure if valid_icvi_dms is none otherwise only valid pairs
+        and returns dictionary of ranks keyed by internal measure name
         :return dictionary{key=internal measure name: values= df with rows=run-names, columns= distance measures,
         cells=rank for that distance measure for that run
         """
@@ -91,6 +92,7 @@ class InternalMeasureGroundTruthAssessment:
     def raw_scores_for_each_internal_measure(self):
         """
         Reshapes data into dictionary of raw score per internal measure
+        If valid_icvi_dms is not none it will only use pairs that are valid for each measure
         :return dictionary{key=internal measure name: values= df with rows=run-names, columns=distance measures, values=
         internal measure score for that distance measure and run}
         """
@@ -102,10 +104,14 @@ class InternalMeasureGroundTruthAssessment:
             measure_df = pd.DataFrame(index=run_names)
             # Fill in values for each distance measure
             for distance_measure, df in self.ground_truth_calculation_dfs.items():
+                if self.valid_icvi_dms and distance_measure not in self.valid_icvi_dms[measure]:
+                    continue
                 if measure in df.columns:
                     # Set the run name as index for easier merging
                     temp_df = df.set_index(DescribeBadPartCols.name)
                     measure_df[distance_measure] = temp_df[measure]
+                else:
+                    print(f"Skipped measure {measure} since not in ground_truth_calculation_dfs")
 
             result_dict[measure] = measure_df
 
@@ -159,7 +165,8 @@ class InternalMeasureGroundTruthAssessment:
                                         non_zero: float = 0.0001):
         """
         Calculates for each internal measure the wilcoxon's signed rank test between different distance measures in a
-        step-down fashion until it finds a significant difference between two measures
+        step-down fashion until it finds a significant difference between two measures.
+        If valid_icvi_dms is not present all pairs are tested otherwise only the valid dms for an ICVI
         :param alpha: significance level
         :param bonferroni_adjust: divide alpha by this to adjust for multiplicity
         :param alternative: which alternative to test
@@ -295,7 +302,9 @@ class InternalMeasureGroundTruthAssessment:
             achieved_powers.append(wilc_result.achieved_power(alpha=alpha, bonferroni_adjust=bonferroni_adjust,
                                                               alternative=alternative))
             alphas_used.append(alpha)
-            n_target_powers.append(wilc_result.sample_size_for_power(target_power=target_power, alternative=alternative, alpha=alpha, bonferroni_adjust=bonferroni_adjust))
+            n_target_powers.append(
+                wilc_result.sample_size_for_power(target_power=target_power, alternative=alternative, alpha=alpha,
+                                                  bonferroni_adjust=bonferroni_adjust))
             is_significances.append(wilc_result.is_significant(alpha=alpha, bonferroni_adjust=bonferroni_adjust))
 
         results_dict = {

@@ -100,9 +100,9 @@ if __name__ == "__main__":
                          DistanceMeasures.dot_transform_l2,
                          ]
 
-    1. Calculate raw criteria for valid distance measures
-    Recalculation would not be required but given the root_results dir is where we read and safe to this is simpler
-    THIS SAVES TO VALIDITY_RESULTS HENCE WHY RECALCULATING - SIGH
+    # 1. Calculate raw criteria for valid distance measures
+    # Recalculation would not be required but given the root_results dir is where we read and safe to this is simpler
+    # THIS SAVES TO VALIDITY_RESULTS HENCE WHY RECALCULATING - SIGH
     run_distance_evaluation_raw_criteria_for_ds(data_dirs=data_dirs, dataset_types=data_types, run_names=run_names,
                                                 root_result_dir=root_results_dir, distance_measures=distance_measures)
 

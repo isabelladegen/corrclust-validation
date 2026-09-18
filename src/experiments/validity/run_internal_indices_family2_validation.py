@@ -1,4 +1,5 @@
 import os
+from itertools import chain
 
 import pandas as pd
 
@@ -25,17 +26,22 @@ if __name__ == "__main__":
     data_dirs = [SYNTHETIC_DATA_DIR,
                  IRREGULAR_P30_DATA_DIR,
                  IRREGULAR_P90_DATA_DIR]
-    internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.dbi]
 
-    # valid
-    distance_measures =  [DistanceMeasures.l1_cor_dist,  # lp norms
-                         DistanceMeasures.l2_cor_dist,
-                         DistanceMeasures.l3_cor_dist,
-                         DistanceMeasures.l5_cor_dist,
-                         DistanceMeasures.l1_with_ref, # newly valid since reviewed tests
-                         DistanceMeasures.dot_transform_l1,  # dot transform + lp norms
-                         DistanceMeasures.dot_transform_l2,
-                         ]
+    valid_icvi_dms = {ClusteringQualityMeasures.silhouette_score: [DistanceMeasures.l1_cor_dist,
+                                                                   DistanceMeasures.l2_cor_dist,
+                                                                   DistanceMeasures.l3_cor_dist,
+                                                                   DistanceMeasures.l5_cor_dist,
+                                                                   DistanceMeasures.dot_transform_l1,
+                                                                   DistanceMeasures.dot_transform_l2],
+                      ClusteringQualityMeasures.dbi: [DistanceMeasures.l2_cor_dist,
+                                                      DistanceMeasures.l3_cor_dist,
+                                                      DistanceMeasures.l5_cor_dist,
+                                                      DistanceMeasures.dot_transform_l2],
+
+                      }
+
+    internal_measures = list(valid_icvi_dms.keys())
+    distance_measures = list(dict.fromkeys(chain.from_iterable(valid_icvi_dms.values())))
 
     rank_distance_measures_by_raw_values_run_wilcox_signed_rank_tests(data_dirs=data_dirs, dataset_types=dataset_types,
                                                                       overall_ds_name="n30",
@@ -46,5 +52,6 @@ if __name__ == "__main__":
                                                                       alternative="two-sided",
                                                                       bf_adjust=1,
                                                                       non_zero=0.0001,
-                                                                      save_results_dir=save_results_dir
+                                                                      save_results_dir=save_results_dir,
+                                                                      valid_icvi_dms = valid_icvi_dms
                                                                       )

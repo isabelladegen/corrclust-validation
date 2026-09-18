@@ -86,24 +86,28 @@ if __name__ == "__main__":
     # Calculate the internal measure for all distance measures but only ground truth ds
     overall_dataset_name = "n30"
     run_names = pd.read_csv(GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
-    # all measures
+    # all measures -> reduced to valdi ICVI+DM combinaitons
     distance_measures = [DistanceMeasures.l1_cor_dist,  # lp norms
                          DistanceMeasures.l2_cor_dist,
                          DistanceMeasures.l3_cor_dist,
                          DistanceMeasures.l5_cor_dist,
-                         DistanceMeasures.linf_cor_dist,
-                         DistanceMeasures.l1_with_ref,  # lp norms with reference vector
-                         DistanceMeasures.l2_with_ref,
-                         DistanceMeasures.l3_with_ref,
-                         DistanceMeasures.l5_with_ref,
-                         DistanceMeasures.linf_with_ref,
+                         # DistanceMeasures.linf_cor_dist,
+                         # DistanceMeasures.l1_with_ref,  # lp norms with reference vector
+                         # DistanceMeasures.l2_with_ref,
+                         # DistanceMeasures.l3_with_ref,
+                         # DistanceMeasures.l5_with_ref,
+                         # DistanceMeasures.linf_with_ref,
                          DistanceMeasures.dot_transform_l1,  # dot transform + lp norms
                          DistanceMeasures.dot_transform_l2,
-                         DistanceMeasures.dot_transform_linf,
-                         DistanceMeasures.log_frob_cor_dist,  # correlation metrix
-                         DistanceMeasures.foerstner_cor_dist]
-    internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.pmb,
-                         ClusteringQualityMeasures.vrc, ClusteringQualityMeasures.dbi]
+                         # DistanceMeasures.dot_transform_linf,
+                         # DistanceMeasures.log_frob_cor_dist,  # correlation metrix
+                         # DistanceMeasures.foerstner_cor_dist
+                         ]
+    internal_measures = [ClusteringQualityMeasures.silhouette_score,
+                         # ClusteringQualityMeasures.pmb,
+                         # ClusteringQualityMeasures.vrc,
+                         ClusteringQualityMeasures.dbi
+                         ]
     data_types = [SyntheticDataType.raw, SyntheticDataType.normal_correlated,
                   SyntheticDataType.non_normal_correlated, SyntheticDataType.rs_1min]
     # data_types = [ SyntheticDataType.rs_1min]

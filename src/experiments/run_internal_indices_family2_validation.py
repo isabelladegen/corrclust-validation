@@ -23,7 +23,8 @@ def rank_distance_measures_by_raw_values_run_wilcox_signed_rank_tests(data_dirs:
                                                                       bf_adjust: int,
                                                                       alternative: str,
                                                                       non_zero: float,
-                                                                      save_results_dir: str = ''
+                                                                      save_results_dir: str = '',
+                                                                      valid_icvi_dms=None
                                                                       ):
     all_stats_results = []
     if save_results_dir == '':
@@ -37,11 +38,12 @@ def rank_distance_measures_by_raw_values_run_wilcox_signed_rank_tests(data_dirs:
                                                       distance_measures=distance_measures,
                                                       data_dir=data_dir,
                                                       data_type=data_type,
-                                                      root_results_dir=root_results_dir)
+                                                      root_results_dir=root_results_dir,
+                                                      valid_icvi_dms=valid_icvi_dms)
             variant_desc = data_variant_description[(get_data_completeness_from(data_dir), data_type)]
 
             stats_results_df = ga.wilcoxons_signed_rank_step_down(alpha=alpha, bonferroni_adjust=bf_adjust,
-                                                               alternative=alternative, non_zero=non_zero)
+                                                                  alternative=alternative, non_zero=non_zero)
 
             # add data variant column
             stats_results_df.insert(0, "Data Variant", variant_desc)
