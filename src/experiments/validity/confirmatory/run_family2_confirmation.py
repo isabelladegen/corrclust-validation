@@ -46,6 +46,9 @@ if __name__ == "__main__":
         (non_normal, partial, dbi, l5, l3),
     ]
 
+    # Interpretation Confirmed: effect_direction = sign of the median of nonzero (values1 − values2),
+    # so effect size > 0 means dm_1 > dm_2 (by median), effect size < 0 means dm_1 < dm_2.
+
     # evaluate all hypotheses
     run_family2_wilcox_signed_rank_tests_for_hypotheses(prereg_hypotheses=hypotheses,
                                                         root_results_dir=root_result_dir,
