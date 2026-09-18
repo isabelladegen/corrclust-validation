@@ -55,6 +55,7 @@ class EvaluationCriteria:
     inter_i: str = "Interpretability: L_0 close to zero"
     scale_free_inter_i: str = "L_0 well below pattern shifted by 0.1"
     inter_ii: str = "Interpretability: levels sets sig different and correct order"
+    inter_ii_values: str = "smallest_average_increase"
     inter_iii: str = "Interpretability: higher rate of increase between level sets"
     scale_free_inter_iii: str = "Cliff's'Delta: min scale-free magnitude of level-set separation"
     disc_i: str = "Discriminative Power: higher overall entropy"
