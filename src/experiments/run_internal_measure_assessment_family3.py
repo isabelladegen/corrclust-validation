@@ -92,7 +92,7 @@ def wilcoxons_signed_rank_correlation_step_down(correlations_for_internal_measur
 def run_wilcox_signed_rank_for(overall_ds_name: str, run_names: [str], distance_measures: [str],
                                data_type: str, data_dir: str, results_dir: str,
                                internal_measures: [str], alternative: str, non_zero: float, bonferroni_adjust: int,
-                               alpha: float):
+                               alpha: float, valid_icvi_dms = None):
     """ Runs the internal measure assessment on all ds in the csv files of the generated runs
     :param overall_ds_name: a name for the dataset we're using e.g. n30 or n2
     :param run_names: list of run_names to load (subjects)
@@ -106,6 +106,7 @@ def run_wilcox_signed_rank_for(overall_ds_name: str, run_names: [str], distance_
     :param non_zero: non-zero value to control what differences are considered 0
     :param bonferroni_adjust: how much bonferroni adjustment to use
     :param alpha: how much significant differences we should consider
+    :param valid_icvi_dms if supplied only ranks valid icvi+dm pairs
     :return wilcox results as a list of series for each internal measure
     """
     overall_df = calculate_correlation_summary_for(data_dir, data_type, distance_measures, internal_measures,
@@ -115,7 +116,12 @@ def run_wilcox_signed_rank_for(overall_ds_name: str, run_names: [str], distance_
     wilx_results = []
     variant_desc = data_variant_description[(get_data_completeness_from(data_dir), data_type)]
     for im in internal_measures:
-        wilx = wilcoxons_signed_rank_correlation_step_down(overall_df[im], im, alpha, bonferroni_adjust, alternative,
+        values_im = overall_df[im]
+        # filter data to valid icvi+dm pair if provided
+        if valid_icvi_dms is not None:
+            values_im = values_im[[dm for dm in valid_icvi_dms[im] if dm in values_im.columns]]
+
+        wilx = wilcoxons_signed_rank_correlation_step_down(values_im, im, alpha, bonferroni_adjust, alternative,
                                                            non_zero)
 
         wilx = pd.concat([pd.Series({'Data Variant': variant_desc}), wilx])

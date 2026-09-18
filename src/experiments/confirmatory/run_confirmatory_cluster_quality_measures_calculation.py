@@ -28,8 +28,8 @@ if __name__ == "__main__":
     #                      DistanceMeasures.l1_with_ref,
     #                      DistanceMeasures.l5_with_ref,
     #                      DistanceMeasures.foerstner_cor_dist]
-    distance_measures = [DistanceMeasures.l2_cor_dist,
-                         DistanceMeasures.dot_transform_l1, DistanceMeasures.dot_transform_l2]
+    distance_measures = [DistanceMeasures.l3_cor_dist,
+                         DistanceMeasures.l5_cor_dist, DistanceMeasures.dot_transform_l2]
 
     # internal measures that appear in a preregistration form
     internal_measures = [ClusteringQualityMeasures.silhouette_score,  ClusteringQualityMeasures.dbi]

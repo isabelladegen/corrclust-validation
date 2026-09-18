@@ -1,4 +1,5 @@
 import os
+from itertools import chain
 
 import pandas as pd
 
@@ -26,15 +27,22 @@ if __name__ == "__main__":
     non_zero = 0.001
     bonferroni_adjust = 1
 
-    # valid
-    distance_measures = [DistanceMeasures.l1_cor_dist,
-                         DistanceMeasures.l2_cor_dist,
-                         DistanceMeasures.l3_cor_dist,
-                         DistanceMeasures.l5_cor_dist,
-                         DistanceMeasures.dot_transform_l2
-                         ]
+    # valid icvi+dm combination
+    valid_icvi_dms = {ClusteringQualityMeasures.silhouette_score: [DistanceMeasures.l1_cor_dist,
+                                                                   DistanceMeasures.l2_cor_dist,
+                                                                   DistanceMeasures.l3_cor_dist,
+                                                                   DistanceMeasures.l5_cor_dist,
+                                                                   DistanceMeasures.dot_transform_l1,
+                                                                   DistanceMeasures.dot_transform_l2],
+                      ClusteringQualityMeasures.dbi: [DistanceMeasures.l2_cor_dist,
+                                                      DistanceMeasures.l3_cor_dist,
+                                                      DistanceMeasures.l5_cor_dist,
+                                                      DistanceMeasures.dot_transform_l2],
 
-    internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.dbi]
+                      }
+
+    internal_measures = list(valid_icvi_dms.keys())
+    distance_measures = list(dict.fromkeys(chain.from_iterable(valid_icvi_dms.values())))
 
     run_names = pd.read_csv(GENERATED_DATASETS_FILE_PATH)['Name'].tolist()
 
@@ -50,7 +58,8 @@ if __name__ == "__main__":
                                                       alternative=alternative,
                                                       non_zero=non_zero,
                                                       bonferroni_adjust=bonferroni_adjust,
-                                                      alpha=alpha)
+                                                      alpha=alpha,
+                                                      valid_icvi_dms = valid_icvi_dms)
             results.extend(wilx_results)
 
     # store result
