@@ -119,6 +119,10 @@ class ICVIValCriteria:
     def display_name_for(criteria: str) -> str:
         return ICVIValCriteria._display_names[criteria]
 
+    @staticmethod
+    def excellent_threshold_for(measure: str) -> float:
+        return ICVIValCriteria._tier_thresholds[measure][ICVITier.excellent]
+
 
 @dataclass
 class CriteriaForVariant:

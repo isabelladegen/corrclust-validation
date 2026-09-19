@@ -24,13 +24,30 @@ if __name__ == "__main__":
     root_reduced_dir = ROOT_REDUCED_SYNTHETIC_DATA_DIR
     base_results_dir = ROOT_REDUCED_RESULTS_DIR
 
-    distance_measures = [DistanceMeasures.l1_cor_dist,  # lp norms
-                         DistanceMeasures.l5_cor_dist,
-                         DistanceMeasures.linf_cor_dist]
-    internal_measures = [ClusteringQualityMeasures.silhouette_score, ClusteringQualityMeasures.dbi]
-    data_types = [SyntheticDataType.normal_correlated, SyntheticDataType.non_normal_correlated]
+    distance_measures = [
+        DistanceMeasures.l1_cor_dist,
+        DistanceMeasures.l2_cor_dist,
+        DistanceMeasures.l3_cor_dist,
+        DistanceMeasures.l5_cor_dist,
+        DistanceMeasures.l1_with_ref,
+        DistanceMeasures.dot_transform_l2
+    ]
+    internal_measures = [
+        ClusteringQualityMeasures.silhouette_score,
+        ClusteringQualityMeasures.dbi,
+        ClusteringQualityMeasures.vrc,
+        ClusteringQualityMeasures.pmb
+    ]
+    data_types = [
+        SyntheticDataType.normal_correlated,
+        SyntheticDataType.non_normal_correlated
+    ]
 
-    data_completeness = [DataCompleteness.complete, DataCompleteness.irregular_p30, DataCompleteness.irregular_p90]
+    data_completeness = [
+        DataCompleteness.complete,
+        DataCompleteness.irregular_p30,
+        DataCompleteness.irregular_p90
+    ]
 
     # Evaluate for clusters
     print("CLUSTERS")
