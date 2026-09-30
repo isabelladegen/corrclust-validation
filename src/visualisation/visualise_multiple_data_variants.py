@@ -526,8 +526,8 @@ def create_scatter_grid(data_dict: {}, measure_cols: list, figsize: tuple = (12,
     fig.subplots_adjust(hspace=0.5, wspace=0.3, right=0.85)
 
     # Set up colors for different measures
-    measure_colors = sns.color_palette("husl", n_colors=len(measure_cols))
-    markers = ['o', 'x', 's', '^']  # Marker styles
+    measure_colors =  measure_colors = ['#014D40','#3FA9DC']
+    markers = ['x', 'o', 's', '^']  # Marker styles
 
     # Plot each subplot
     axes = []
@@ -639,7 +639,7 @@ def create_scatter_grid(data_dict: {}, measure_cols: list, figsize: tuple = (12,
                                          linestyle='None'))
     last_ax = axes[-1][-1]
     last_ax.legend(handles=legend_handles,
-                   loc='upper left',
+                   loc='upper right',
                    fontsize=fontsize - 2,
                    frameon=True,
                    edgecolor='black',
@@ -670,11 +670,11 @@ def create_scatter_row(data_dict: {}, reference_measure: str, measure_cols: [str
     # Create figure with standard size (no extra width needed now)
     fig = plt.figure(figsize=figsize)
     gs = GridSpec(1, len(measure_cols))
-    fig.subplots_adjust(hspace=0.5, wspace=0.3, right=0.85)
+    fig.subplots_adjust(hspace=0.5, wspace=0.3)
 
     # Set up colors for different measures
-    measure_colors = sns.color_palette("husl", n_colors=2)
-    markers = ['o', 'x']  # Marker styles
+    measure_colors = ['#014D40','#3FA9DC']
+    markers = ['x', 'o']  # Marker styles
 
     for i, measure in enumerate(measure_cols):
         ax = fig.add_subplot(gs[0, i])
@@ -756,6 +756,21 @@ def create_scatter_row(data_dict: {}, reference_measure: str, measure_cols: [str
 
         # Customize spines
         sns.despine(ax=ax)
+
+    legend_handles = [
+        plt.Line2D([0], [0], marker=markers[0], color=measure_colors[0],
+                   label='Accuracy', markersize=8, linestyle='None'),
+        plt.Line2D([0], [0], marker=markers[1], color=measure_colors[1],
+                   label='ICVI', markersize=8, linestyle='None'),
+    ]
+
+    ax.legend(handles=legend_handles,
+              loc='upper left',
+              bbox_to_anchor=(0.03, 0.97),
+              fontsize=12,
+              frameon=True,
+              edgecolor='black',
+              facecolor='white')
 
     # Adjust layout
     plt.tight_layout()

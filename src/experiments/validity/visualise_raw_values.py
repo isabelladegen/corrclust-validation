@@ -183,10 +183,10 @@ if __name__ == "__main__":
     condition_names = [r'$\bf{Normal}$' + '\n100%', r'$\bf{Normal}$' + '\n10%']
 
     column_names = {
-        EvaluationCriteria.scale_free_inter_i: r'1. $\Delta_{\text{Cliff}}$',
-        EvaluationCriteria.inter_ii_values: r'2. $\overline{\gamma^{\mathfrak{L}_i}} - \overline{\gamma^{\mathfrak{L}_j}}$',
-        EvaluationCriteria.scale_free_inter_iii: r'3. $\Delta_{\text{Cliff}}$',
-        EvaluationCriteria.disc_iii: r'6. $F_1$',
+        EvaluationCriteria.scale_free_inter_i: r'S1: $\Delta_{\text{Cliff}}$',
+        EvaluationCriteria.inter_ii_values: r'S2: $\overline{\gamma^{\mathfrak{L}_i}} - \overline{\gamma^{\mathfrak{L}_j}}$',
+        EvaluationCriteria.scale_free_inter_iii: r'S3: $\Delta_{\text{Cliff}}$',
+        EvaluationCriteria.disc_iii: r'C: $F_1$',
     }
 
     # 'above': grey shades from the threshold up to the top of the axis, green shades from the bottom

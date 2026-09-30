@@ -26,8 +26,8 @@ def clustering_quality_visualisations(data_dirs: [str], data_types: [str], run_f
                                                                           ClusteringQualityMeasures.dbi,
                                                                           ClusteringQualityMeasures.vrc,
                                                                           ClusteringQualityMeasures.pmb],
-                                                        data_type=SyntheticDataType.non_normal_correlated,
-                                                        completeness=DataCompleteness.irregular_p30,
+                                                        data_type=SyntheticDataType.normal_correlated,
+                                                        completeness=DataCompleteness.complete,
                                                         save_fig=True)
         for quality_measure in clustering_quality_measures:
             vds.violin_plots_for_quality_measure(quality_measure=quality_measure, save_fig=save_fig, figsize=figsize1)
@@ -47,18 +47,24 @@ if __name__ == "__main__":
     save_fig = True
     overall_ds_name = "n30"
     root_result_dir = ROOT_RESULTS_DIR
-    dataset_types = [SyntheticDataType.raw,
-                     SyntheticDataType.normal_correlated,
-                     SyntheticDataType.non_normal_correlated,
-                     SyntheticDataType.rs_1min]
-    data_dirs = [SYNTHETIC_DATA_DIR,
-                 IRREGULAR_P30_DATA_DIR,
-                 IRREGULAR_P90_DATA_DIR]
+    dataset_types = [
+        SyntheticDataType.raw,
+        SyntheticDataType.normal_correlated,
+        SyntheticDataType.non_normal_correlated,
+        SyntheticDataType.rs_1min
+    ]
+    data_dirs = [
+        SYNTHETIC_DATA_DIR,
+        IRREGULAR_P30_DATA_DIR,
+        IRREGULAR_P90_DATA_DIR
+    ]
 
-    distance_measures = [DistanceMeasures.l1_cor_dist,
-                         DistanceMeasures.l1_with_ref,
-                         DistanceMeasures.l5_cor_dist,
-                         DistanceMeasures.foerstner_cor_dist]
+    distance_measures = [
+        # DistanceMeasures.l1_cor_dist,
+        # DistanceMeasures.l1_with_ref,
+        DistanceMeasures.l5_cor_dist,
+        # DistanceMeasures.foerstner_cor_dist
+    ]
 
     # Config for L2 only ran for downsampled, complete data
     # distance_measures = [DistanceMeasures.l2_cor_dist]

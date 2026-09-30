@@ -27,7 +27,7 @@ class ClusteringQualityMeasures:
         pmb: "PBM",
         vrc: "VRC",
         dbi: "DBI",
-        jaccard_index: "Jaccard",
+        jaccard_index: "Accuracy",
     }
 
     _higher_is_better: ClassVar[dict] = {

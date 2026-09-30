@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.gridspec import GridSpec
@@ -395,6 +397,7 @@ class VisualiseClusteringQualityMeasuresForDataVariants:
                 overall_dataset_name=self.overall_ds_name,
                 results_dir=self.result_root_dir,
                 distance_measure=self.distance_measure)
+            os.makedirs(folder, exist_ok=True)
             # add an image results folder
             file_name = "_".join([data_type, completeness, self.distance_measure, MULTI_MEASURES_SCATTER_PLOT])
             file_name = get_image_results_path(folder, file_name)
