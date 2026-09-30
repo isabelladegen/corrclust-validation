@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.colors import LinearSegmentedColormap, to_rgba, to_rgb
 import matplotlib
 from mpl_toolkits.mplot3d.art3d import Line3DCollection, Poly3DCollection
 from PIL import Image
@@ -62,8 +62,63 @@ AXIS_LABELS = {
 VIEW_3D = (25, -40)
 VIEW_FRONT = (0, 0)
 
+class DepthSortedLine3DCollection(Line3DCollection):
+    """Segments re-sorted back-to-front on every draw, so lines from different
+    primitives interleave correctly (mplot3d only sorts whole artists)."""
+
+    def __init__(self, segments, colors, linewidths, **kwargs):
+        self._segs = np.asarray(segments, dtype=float)   # (N, 2, 3)
+        self._cols = np.asarray(colors, dtype=float)     # (N, 4)
+        self._lws = np.asarray(linewidths, dtype=float)  # (N,)
+        super().__init__(self._segs, colors=self._cols,
+                         linewidths=self._lws, **kwargs)
+
+    def do_3d_projection(self):
+        mid = self._segs.mean(axis=1)
+        h = np.c_[mid, np.ones(len(mid))] @ self.axes.M.T
+        depth = h[:, 2] / h[:, 3]
+        order = np.argsort(-depth)  # furthest first, as in Poly3DCollection
+        self.set_segments(self._segs[order])
+        self.set_color(self._cols[order])
+        self.set_linewidth(self._lws[order])
+        return super().do_3d_projection()
+
+
+class LineBuffer:
+    """Collects polylines from several primitives, flushed as one sorted artist."""
+
+    def __init__(self):
+        self.segs, self.cols, self.lws = [], [], []
+
+    def add_polyline(self, pts, color, lw, alpha=None):
+        pts = np.asarray(pts, dtype=float)
+        if len(pts) < 2:
+            return
+        n = len(pts) - 1
+        self.segs.append(np.stack([pts[:-1], pts[1:]], axis=1))
+        if isinstance(color, np.ndarray) and color.ndim == 2:
+            self.cols.append(color)
+        else:
+            self.cols.append(np.tile(to_rgba(color, alpha), (n, 1)))
+        self.lws.append(np.full(n, lw, dtype=float))
+
+    def flush(self, ax, zorder=2):
+        if not self.segs:
+            return
+        lc = DepthSortedLine3DCollection(np.concatenate(self.segs),
+                                         np.concatenate(self.cols),
+                                         np.concatenate(self.lws))
+        lc.set_capstyle("round")
+        lc.set_zorder(zorder)
+        ax.add_collection3d(lc)
+        self.segs, self.cols, self.lws = [], [], []
 
 # ── Shared geometry helpers ───────────────────────────────────
+def _on_white(color, alpha):
+    """Opaque colour that looks like `color` at `alpha` over white."""
+    r, g, b = to_rgb(color)
+    return (1 - alpha + alpha * r, 1 - alpha + alpha * g, 1 - alpha + alpha * b)
+
 def _plane_coords(c1, c2, normal_axis="x"):
     """Map 2D coordinates (c1, c2) into 3D, placing zeros on normal_axis."""
     z = np.zeros_like(c1)
@@ -113,13 +168,14 @@ def _corner_label(vals):
 
 
 # ── Drawing primitives ────────────────────────────────────────
-def _colored_line_1d(ax, pts, varying_vals, lw=CUBE_LW):
-    n = len(pts)
-    segments = [[pts[i], pts[i + 1]] for i in range(n - 1)]
+def _colored_line_1d(ax, pts, varying_vals, lw=CUBE_LW, buf=None):
     midpoints = (varying_vals[:-1] + varying_vals[1:]) / 2
     colors = CORR_CMAP((midpoints + 1) / 2)
-    lc = Line3DCollection(segments, colors=colors, linewidths=lw)
-    ax.add_collection3d(lc)
+    if buf is not None:
+        buf.add_polyline(pts, colors, lw)
+        return
+    segments = [[pts[i], pts[i + 1]] for i in range(len(pts) - 1)]
+    ax.add_collection3d(Line3DCollection(segments, colors=colors, linewidths=lw))
 
 
 def _draw_arrow(ax, tip, axis, colour=TEAL):
@@ -134,7 +190,7 @@ def _draw_arrow(ax, tip, axis, colour=TEAL):
     ax.add_collection3d(Poly3DCollection([verts], color=colour, zorder=10000))
 
 
-def _draw_axis(ax, axis, n=100, coloured=True):
+def _draw_axis(ax, axis, n=100, coloured=True, buf=None):
     t_color = np.linspace(-1, 1, n)
     t_pos = np.linspace(-1, 1.06, n)
     zeros = np.zeros(n)
@@ -145,15 +201,18 @@ def _draw_axis(ax, axis, n=100, coloured=True):
     elif axis == "z":
         pts = np.column_stack([zeros, zeros, t_pos])
     if coloured:
-        _colored_line_1d(ax, pts, t_color, lw=AXIS_LW)
+        _colored_line_1d(ax, pts, t_color, lw=AXIS_LW, buf=buf)
         arrow_color = TEAL
     else:
-        ax.plot(pts[:, 0], pts[:, 1], pts[:, 2], color="grey", lw=AXIS_LW, alpha=0.8)
+        if buf is not None:
+            buf.add_polyline(pts, _on_white("grey", 0.8), AXIS_LW)
+        else:
+            ax.plot(pts[:, 0], pts[:, 1], pts[:, 2], color="grey", lw=AXIS_LW, alpha=0.8)
         arrow_color = "grey"
     _draw_arrow(ax, 1.18, axis, arrow_color)
 
 
-def draw_cube_wireframe(ax, n=80, coloured=True):
+def draw_cube_wireframe(ax, n=80, coloured=True, buf=None):
     t = np.linspace(-1, 1, n)
     for axis in ("x", "y", "z"):
         for fix1 in (-1, 1):
@@ -165,26 +224,35 @@ def draw_cube_wireframe(ax, n=80, coloured=True):
                 elif axis == "z":
                     pts = np.column_stack([np.full(n, fix1), np.full(n, fix2), t])
                 if coloured:
-                    _colored_line_1d(ax, pts, t, lw=CUBE_LW)
+                    _colored_line_1d(ax, pts, t, lw=CUBE_LW, buf=buf)
+                elif buf is not None:
+                    buf.add_polyline(pts, _on_white("grey", 0.7), CUBE_LW)
                 else:
                     ax.plot(pts[:, 0], pts[:, 1], pts[:, 2], color="grey", lw=CUBE_LW, alpha=0.5)
 
 
-def _draw_square_outline(ax, normal_axis="x", color="darkgray", lw=2, alpha=0.5):
-    sq = np.array([[-1, -1], [-1, 1], [1, 1], [1, -1], [-1, -1]])
-    ax.plot(*_plane_coords(sq[:, 0], sq[:, 1], normal_axis),
-            color=color, lw=lw, alpha=alpha, zorder=8)
+
+def _draw_square_outline(ax, normal_axis="x", color="darkgray", lw=2, alpha=0.5,
+                         buf=None, n=80):
+    corners = np.array([[-1, -1], [-1, 1], [1, 1], [1, -1], [-1, -1]], dtype=float)
+    t = np.linspace(0, 1, n)[:-1, None]
+    sq = np.vstack([a + t * (b - a) for a, b in zip(corners[:-1], corners[1:])]
+                   + [corners[-1:]])
+    xyz = _plane_coords(sq[:, 0], sq[:, 1], normal_axis)
+    if buf is not None:
+        buf.add_polyline(np.column_stack(xyz), color, lw, alpha=alpha)
+    else:
+        ax.plot(*xyz, color=color, lw=lw, alpha=alpha, zorder=8)
 
 
 def draw_grey_plane(ax, normal_axis="x", alpha=0.08, color="gray",
-                    pane_filled=True):
-    """Draw a reference plane. pane_filled=False draws outline only."""
+                    pane_filled=True, buf=None):
     if pane_filled:
         g = np.array([[-1, 1], [-1, 1]])
         ax.plot_surface(*_plane_coords(g, g.T, normal_axis),
-                        alpha=alpha, color=color, shade=False)
-    _draw_square_outline(ax, normal_axis=normal_axis, color=color, lw=1.5, alpha=1.0)
-
+                        alpha=alpha, color=color, shade=False, zorder=1)
+    _draw_square_outline(ax, normal_axis=normal_axis, color=color,
+                         lw=2.5, alpha=1.0, buf=buf)
 
 def _draw_filled_circle(ax, normal_axis="x", alpha=0.4, color="darkgray",
                         outline_color=PETROL_BLUE, outline_lw=3):
@@ -372,29 +440,29 @@ def _draw_elliptope(ax, n=120, color=GREY_MAUVE,
 # ── Elliptope wireframe ───────────────────────────────────────
 def _draw_elliptope_curve(ax, pts, is_split_side,
                           color, fade_strength, alpha,
-                          split_color, split_fade_strength, split_alpha, lw):
-    """Draw a single elliptope curve with per-segment colour from vertex distance."""
+                          split_color, split_fade_strength, split_alpha, lw,
+                          buf=None):
     if len(pts) < 2:
         return
     dist = _vertex_dist_normalised(pts)
     mid_dist = (dist[:-1] + dist[1:]) / 2
-
     if is_split_side and split_color is not None:
         fc = _fade_color(split_color, mid_dist, split_fade_strength)
         fc[:, 3] = split_alpha
     else:
         fc = _fade_color(color, mid_dist, fade_strength)
         fc[:, 3] = alpha
-
+    if buf is not None:
+        buf.add_polyline(pts, fc, lw)
+        return
     segments = [[pts[i], pts[i + 1]] for i in range(len(pts) - 1)]
-    lc = Line3DCollection(segments, colors=fc, linewidths=lw)
-    ax.add_collection3d(lc)
+    ax.add_collection3d(Line3DCollection(segments, colors=fc, linewidths=lw))
 
 
 def draw_elliptope_wireframe(ax, n_slices=40, n_pts=200,
                              color=GREY_MAUVE, split_color=None, split_at=0.0,
                              lw=1.0, alpha=0.6, split_alpha=0.8,
-                             fade_strength=0.6, split_fade_strength=0.3):
+                             fade_strength=0.6, split_fade_strength=0.3, buf=None):
     """Elliptope as a coloured wireframe mesh. No surfaces, no artefacts."""
 
     rho12_vals = np.linspace(-1, 1, n_slices)
@@ -403,7 +471,7 @@ def draw_elliptope_wireframe(ax, n_slices=40, n_pts=200,
 
     curve_kw = dict(color=color, fade_strength=fade_strength, alpha=alpha,
                     split_color=split_color, split_fade_strength=split_fade_strength,
-                    split_alpha=split_alpha, lw=lw)
+                    split_alpha=split_alpha, lw=lw, buf=buf)
 
     # Family 1: slices at fixed ρ₁₂ (horizontal ellipses)
     for r12 in rho12_vals:
@@ -444,6 +512,41 @@ def draw_elliptope_wireframe(ax, n_slices=40, n_pts=200,
             p = pts_l[mask]
             if len(p) >= 2:
                 _draw_elliptope_curve(ax, p, is_split, **curve_kw)
+
+def draw_elliptope_rings(ax, rings_per_unit=35, n_meridians=48, n_pts=200,
+                         x_range=(-1.0, 1.0), color=GREY_MAUVE, split_color=None,
+                         split_at=0.0, lw=1.0, alpha=0.6, split_alpha=0.8,
+                         fade_strength=0.6, split_fade_strength=0.5, buf=None):
+    """Elliptope wireframe in shape-adapted coordinates (v12, theta).
+    Rings: cross-section ellipses at fixed v12 (circle at 0, straight edge at +-1).
+    Meridians: fixed theta, running from the edge through the circle."""
+    kw = dict(color=color, fade_strength=fade_strength, alpha=alpha,
+              split_color=split_color, split_fade_strength=split_fade_strength,
+              split_alpha=split_alpha, lw=lw, buf=buf)
+
+    def xyz(x, th):
+        u = np.sqrt(1 + x) * np.cos(th)
+        w = np.sqrt(1 - x) * np.sin(th)
+        return np.column_stack([x, (u + w) / np.sqrt(2), (u - w) / np.sqrt(2)])
+
+    x0, x1 = x_range
+    p0, p1 = np.arccos(-x0), np.arccos(-x1)
+    n = int(round(abs(p1 - p0) / np.pi * 2 * rings_per_unit))
+    ring_x = -np.cos(np.linspace(p0, p1, n + 1))
+    # keep interior rings, plus the ends at |v12| = 1 (the straight edges)
+    ring_x = [x for i, x in enumerate(ring_x)
+              if 0 < i < len(ring_x) - 1 or np.isclose(abs(x), 1)]
+    th = np.linspace(0, 2 * np.pi, n_pts)
+    for x in ring_x:
+        _draw_elliptope_curve(ax, xyz(np.full_like(th, x), th), x < split_at, **kw)
+
+    xs = -np.cos(np.linspace(p0, p1, n_pts))
+    for t in np.linspace(0, 2 * np.pi, n_meridians, endpoint=False):
+        pts = xyz(xs, np.full_like(xs, t))
+        side = xs < split_at
+        for is_split, m in [(True, side), (False, ~side)]:
+            if m.sum() >= 2:
+                _draw_elliptope_curve(ax, pts[m], is_split, **kw)
 
 
 # ── Figures ───────────────────────────────────────────────────
