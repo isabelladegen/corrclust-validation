@@ -37,7 +37,9 @@ def partition_visualisation(data_dirs, dataset_types, run_names, root_results_di
                 os.makedirs(folder, exist_ok=True)
                 image_name = get_image_name_based_on_data_dir_and_data_type(PARTITIONS_QUALITY_DESCRIPTION, data_dir,
                                                                             data_type)
-                fig.savefig(path.join(folder, image_name), dpi=300, bbox_inches='tight')
+                whole_path = path.join(folder, image_name)
+                print(f'Saving {whole_path}')
+                fig.savefig(whole_path, dpi=300, bbox_inches='tight')
 
 
 if __name__ == "__main__":
@@ -45,13 +47,17 @@ if __name__ == "__main__":
     backend = Backends.visible_tests.value
     save_fig = True
     root_result_dir = ROOT_RESULTS_DIR
-    dataset_types = [SyntheticDataType.raw,
-                     SyntheticDataType.normal_correlated,
-                     SyntheticDataType.non_normal_correlated,
-                     SyntheticDataType.rs_1min]
-    data_dirs = [SYNTHETIC_DATA_DIR,
-                 IRREGULAR_P30_DATA_DIR,
-                 IRREGULAR_P90_DATA_DIR]
+    dataset_types = [
+        # SyntheticDataType.raw,
+        SyntheticDataType.normal_correlated,
+        SyntheticDataType.non_normal_correlated,
+        SyntheticDataType.rs_1min
+    ]
+    data_dirs = [
+        SYNTHETIC_DATA_DIR,
+        # IRREGULAR_P30_DATA_DIR,
+        # IRREGULAR_P90_DATA_DIR
+    ]
 
     distance_measures = [DistanceMeasures.l1_cor_dist,
                          DistanceMeasures.l1_with_ref,

@@ -104,7 +104,14 @@ class PartitionVisualisation:
         ax.fill_between(x_line, y25, y75, color='dodgerblue', alpha=.3)
         ax.grid(axis='x', linestyle='dotted')
         ax.grid(axis='y', linestyle='dotted')
-        ax.set_ylabel(column, fontsize=fontsize)
+        if column == ClusteringQualityMeasures.jaccard_index:
+            ax.set_ylabel(ClusteringQualityMeasures.get_display_name_for_measure(column) + "\n TP/T", fontsize=fontsize)
+        elif column == DescribeBadPartCols.n_wrong_clusters:
+            ax.set_ylabel("Assignment Errors\n(n segments)", fontsize=fontsize)
+        elif column == DescribeBadPartCols.n_obs_shifted:
+            ax.set_ylabel("Segmentation Errors\n(n observations)", fontsize=fontsize)
+        else:
+            ax.set_ylabel(column, fontsize=fontsize)
         set_axis_label_font_size(ax)
 
     def plot_multiple_quality_measures(self, columns: [str], backend: str = Backends.none.value):
