@@ -25,9 +25,9 @@ CORNER_LABEL_FS = 42
 PANEL_V_FRAC = 0.92  # figure height as a fraction of panel_size; lower = tighter
 
 V_AXIS_LABELS = {
-    "x": (r"$\boldsymbol{v_{12}}$", (1.28, -0.05, -0.05)),
-    "y": (r"$\boldsymbol{v_{13}}$", (0.08, 1.28, 0.05)),
-    "z": (r"$\boldsymbol{v_{23}}$", (0.08, -0.05, 1.28)),
+    "x": (r"$\boldsymbol{a_{12}}$", (1.28, -0.05, -0.05)),
+    "y": (r"$\boldsymbol{a_{13}}$", (0.08, 1.28, 0.05)),
+    "z": (r"$\boldsymbol{a_{23}}$", (0.08, -0.05, 1.28)),
 }
 
 # ── Pattern subsets (aligned with RELAXED_POS) ────────────────
